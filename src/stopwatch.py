@@ -1,5 +1,5 @@
 import time
-import tools
+import pytools
 
 
 
@@ -57,5 +57,5 @@ def print_job_summary():
 
 HIDDEN_JOBS = []
 VISIBLE_JOBS = []
-JOB_TIMES = tools.DictionaryWithDefault(lambda x: 0)
-PRINT_JOBS = tools.Reference(True)
+JOB_TIMES = pytools.DictionaryWithDefault(lambda x: 0)
+PRINT_JOBS = pytools.Reference(True)
