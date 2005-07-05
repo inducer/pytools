@@ -40,36 +40,6 @@ class FunctionValueCache(object):
     
 
 
-class LexicographicSequencer(object):
-    def __init__(self, container, limits):
-        self._Container = container
-        self._Dimensions = [high-low for low, high in limits]
-        self._Low = [low for low, high in limits]
-
-    def __len__(self):
-        return product(self._Dimensions)
-
-    def translate_single_index(self, index):
-        indices = []
-        remaining_size = len(self)
-        if not (0 <= index < remaining_size):
-            raise IndexError, "invalid subscript to sequencer object"
-        for i,sz in enumerate(self._Dimensions):
-            remaining_size /= sz
-            quotient, index = divmod(index, remaining_size)
-            indices.append(quotient + self._Low[i])
-        return tuple(indices)
-
-    def get_all_indices(self):
-        return [self.translate_single_index(i) for i in range(len(self))]
-
-    def __getitem__(self, index):
-        return self._Container[self.translate_single_index(index)]
-
-  
-
-
-
 class DictionaryWithDefault(object):
     def __init__(self, default_value_generator, start = {}):
         self._Dictionary = dict(start)
@@ -223,34 +193,6 @@ class SparseVector(DictionaryWithDefault):
         result = SparseVector()
         for key in self:
             result[key] = other * self[key]
-        return result
-
-
-
-
-class LinearSystemOfEquations:
-    # UNTESTED.
-    def __init__(self):
-        self.Equations = []
-        self.SymbolMap = {}
-        pass
-
-    def register_equation(self, coeffs_and_symbols, rhs):
-        self.Equations.append(([
-            (coeff, self.SymbolMap.setdefault(symbol, len(self.SymbolMap)))
-            for coeff, symbol  in coeffs_and_symbols], rhs))
-
-    def solve(self, typecode = num.Float):
-        m = num.zeros((len(self.Equations), len(self.SymbolMap)), typecode)
-        rhs = num.zeros((len(self.SymbolMap),), typecode)
-        for i, (eq, rhs) in enumerate(self.Equations):
-            for coeff, j in eq:
-                m[i,j] = coeff
-            rhs[i] = rhs
-        sol = la.solve_linear_equations(m, rhs)
-        result = {}
-        for sym, index in self.SymbolMap.iteritems():
-            result[sym] = sol[index]
         return result
 
 

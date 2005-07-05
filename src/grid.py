@@ -1,6 +1,38 @@
+import pytools
+
 import pylinear.array as num
 import pylinear.linear_algebra as la
 
+
+
+
+class LexicographicSequencer(object):
+    def __init__(self, container, limits):
+        self._Container = container
+        self._Dimensions = [high-low for low, high in limits]
+        self._Low = [low for low, high in limits]
+
+    def __len__(self):
+        return pytools.product(self._Dimensions)
+
+    def translate_single_index(self, index):
+        indices = []
+        remaining_size = len(self)
+        if not (0 <= index < remaining_size):
+            raise IndexError, "invalid subscript to sequencer object"
+        for i,sz in enumerate(self._Dimensions):
+            remaining_size /= sz
+            quotient, index = divmod(index, remaining_size)
+            indices.append(quotient + self._Low[i])
+        return tuple(indices)
+
+    def get_all_indices(self):
+        return [self.translate_single_index(i) for i in range(len(self))]
+
+    def __getitem__(self, index):
+        return self._Container[self.translate_single_index(index)]
+
+  
 
 
 
@@ -79,7 +111,7 @@ class FiniteGrid(Grid):
     def grid_point_count(self):
         """Returns the number of grid intervals in each direction.
         """
-        return product(self.grid_point_counts())
+        return pytools.product(self.grid_point_counts())
 
     def is_within_bounds(self, key):
         for el, (low, high) in zip(key, self._Limits):
@@ -135,7 +167,7 @@ def make_subdivision_grid(origin, grid_vectors, limits):
 
 def make_cell_centered_grid(origin, grid_vectors, limits):
     my_gvs = [gv / float(high - low) for gv, (low, high) in zip(grid_vectors, limits)]
-    return FiniteGrid(origin + general_sum(my_gvs) * 0.5,
+    return FiniteGrid(origin + pytools.general_sum(my_gvs) * 0.5,
                        my_gvs, limits)
     
 
