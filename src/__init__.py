@@ -1,14 +1,13 @@
 import math, sys, operator, types
 
-import pylinear.array as num
-import pylinear.linear_algebra as la
-import pylinear.operation as op
-import pylinear.toybox as toybox
 
 
 
-
-delta = toybox.delta
+def delta(x,y):
+    if x == y:
+        return 1
+    else:
+        return 0
 
 
 
@@ -68,142 +67,6 @@ class LexicographicSequencer(object):
         return self._Container[self.translate_single_index(index)]
 
   
-
-
-class Grid(object):
-    def __init__(self, origin, grid_vectors):
-        self._Origin = origin
-        self._GridVectors = grid_vectors
-
-    def grid_vectors(self):
-        return self._GridVectors
-
-    def __getitem__(self, index):
-        result = self._Origin.copy()
-        for i, gv in zip(index, self._GridVectors):
-            result += i * gv
-        return result
-
-    def find_closest_grid_point_index(self, point):
-        tmat = num.array(self._GridVectors).T
-        float_coords = tmat <<num.solve>> (point - self._Origin)
-        return tuple([int(round(c)) for c in float_coords])
-
-    def interpolate_prid_point_index(self, point):
-        tmat = num.array(self._GridVectors).T
-        float_coords = tmat <<num.solve>> (point - self._Origin)
-        rounded_down_int_coords = [int(math.floor(c)) for c in float_coords]
-        neighbors = [rounded_down_int_coords]
-        for d in range(len(self._GridVectors)):
-            new_neighbors = []
-            for item in neighbors:
-                new_neighbors.append(item) 
-                new_neighbor = item[:]
-                new_neighbor[d] += 1
-                new_neighbors.append(new_neighbor)
-            neighbors = new_neighbors
-        weights = []
-        for neighbor in neighbors:
-            weight = product([1-abs(a-b) for a,b in zip(float_coords, neighbor)])
-            if abs(weight) >= 1e-5:
-                weights.append((weight, tuple(neighbor)))
-        return weights
-
-
-
-
-class FiniteGrid(Grid):
-    def __init__(self, origin, grid_vectors, limits):
-        """Instantiates a finite grid. The limits are specified as a
-        list of tuples of (low, high) values, one for each grid vector.
-        For the index of a dimension, we assert, as is usual in Python:
-
-        low <= index < high,
-
-        such that there are (high-low) gridpoints and (high-low-1)
-        grid intervals
-        """
-        assert len(grid_vectors) == len(limits)
-        
-        Grid.__init__(self, origin, grid_vectors)
-        self._Limits = limits
-
-    def limits(self):
-        return self._Limits
-
-    def __iter__(self):
-        return iter(self.as_sequence().get_all_indices())
-
-    def iterkeys(self):
-        return self.__iter__()
-
-    def grid_point_counts(self):
-        """Returns the number of grid intervals in each direction.
-        """
-        return [high-low for low, high in self._Limits]
-
-    def grid_point_count(self):
-        """Returns the number of grid intervals in each direction.
-        """
-        return product(self.grid_point_counts())
-
-    def is_within_bounds(self, key):
-        for el, (low, high) in zip(key, self._Limits):
-            if not (low <= el < high):
-                return False
-        return True
-
-    def as_sequence(self):
-        return LexicographicSequencer(self, self._Limits)
-
-    def chop_upper_boundary(self, by = 1):
-        return FiniteGrid(self._Origin, self._GridVectors,
-                          [(low, high-by) for low, high in self._Limits])
-
-    def chop_lower_boundary(self, by = 1):
-        return FiniteGrid(self._Origin, self._GridVectors,
-                          [(low+by, high) for low, high in self._Limits])
-
-    def chop_both_boundaries(self, by = 1):
-        return FiniteGrid(self._Origin, self._GridVectors,
-                          [(low+by, high-by) for low, high in self._Limits])
-
-    def enlarge_at_upper_boundary(self, by = 1):
-        return FiniteGrid(self._Origin, self._GridVectors,
-                          [(low, high+by) for low, high in self._Limits])
-
-    def enlarge_at_lower_boundary(self, by = 1):
-        return FiniteGrid(self._Origin, self._GridVectors,
-                          [(low-by, high) for low, high in self._Limits])
-
-    def enlarge_at_both_boundaries(self, by = 1):
-        return FiniteGrid(self._Origin, self._GridVectors,
-                          [(low-by, high+by) for low, high in self._Limits])
-
-    def reduce_periodically(self, key):
-        return tuple([
-            el % (high-low) for el, (low, high) in zip(key, self._Limits)])
-
-    def reduce_to_closest(self, key):
-        return tuple([
-            max(min(high-1, el), low) for el, (low, high) in zip(key, self._Limits)])
-  
-
-
-
-def make_subdivision_grid(origin, grid_vectors, limits):
-    interval_counts = [high - low - 1 for low, high in limits]
-    my_gvs = [gv / float(ivs) for gv, ivs in zip(grid_vectors, interval_counts)]
-    return FiniteGrid(origin, my_gvs, limits)
-    
-
-
-
-def make_cell_centered_grid(origin, grid_vectors, limits):
-    my_gvs = [gv / float(high - low) for gv, (low, high) in zip(grid_vectors, limits)]
-    return FiniteGrid(origin + general_sum(my_gvs) * 0.5,
-                       my_gvs, limits)
-    
 
 
 
@@ -300,110 +163,6 @@ def add_tuples(t1, t2):
 def negate_tuple(t1):
     return tuple([-t1v for t1v in t1])
 
-
-
-
-# Numerical algorithms -------------------------------------------------------
-def abs_squared(x):
-    return (x.conjugate() * x).real
-
-
-
-
-def find_zero_by_newton(f, fprime, x_start, tolerance = 1e-12, maxit = 10):
-    it = 0
-    while it < maxit:
-        it += 1
-        f_value = f(x_start)
-        if math.fabs(f_value) < tolerance:
-            return x_start
-        x_start -= f_value / fprime(x_start)
-    raise RuntimeError, "Newton iteration failed, a zero was not found"
-
-
-
-
-def find_vector_zero_by_newton(f, fprime, x_start, tolerance = 1e-12, maxit = 10):
-    it = 0
-    while it < maxit:
-        it += 1
-        f_value = f(x_start)
-        if op.norm_2(f_value) < tolerance:
-            return x_start
-        x_start -= num.matrixmultiply(la.inverse(fprime(x_start)), f_value)
-    raise RuntimeError, "Newton iteration failed, a zero was not found"
-
-
-
-
-def distance_to_line(start_point, direction, point):
-    # Ansatz: start_point + alpha * direction 
-    # <start_point + alpha * direction - point, direction> = 0!
-    alpha = - num.innerproduct(start_point - point, direction) / \
-            op.norm_2_squared(direction)
-    foot_point = start_point + alpha * direction
-    return op.norm_2(point - foot_point), alpha
-
-
-
-
-def angle_cosine_between_vectors(vec1, vec2):
-    return vec1*vec2.H / (op.norm_2(vec1)*op.norm_2(vec2))
-
-
-
-
-def interpolate_vector_list(vectors, inbetween_points):
-    if len(vectors) == 0:
-        return []
-
-    result = [vectors[0]]
-    last_vector = vectors[0]
-    for vector in vectors[1:]:
-        for i in range(inbetween_points):
-            result.append(last_vector + (vector-last_vector) \
-                          * float(i+1) \
-                          / float(inbetween_points+1))
-        result.append(vector)
-        last_vector = vector
-    return result
-
-
-
-
-def make_rotation_matrix(radians, n = 2, axis1 = 0, axis2 = 1, typecode = num.Float):
-    mat = num.identity(n, typecode)
-    mat[axis1,axis1] = math.cos(radians)
-    mat[axis2,axis1] = math.sin(radians)
-    mat[axis1,axis2] = -math.sin(radians)
-    mat[axis2,axis2] = math.cos(radians)
-    return mat
-
-
-
-
-def get_parallelogram_volume(vectors):
-    if vectors[0].shape[0] == 2:
-        return vectors[0][0] * vectors[1][1] - vectors[1][0] * vectors[0][1]
-    else:
-        raise RuntimeError, "not implemented"
-
-
-
-
-def unit_vector(i, dim, typecode = num.Float):
-    uvec = num.zeros((dim,), typecode)
-    uvec[i] = 1
-    return uvec
-
-
-
-
-def conjugate(value):
-    try:
-        return value.conjugate()
-    except AttributeError:
-        return value
 
 
 
@@ -880,17 +639,6 @@ def generate_all_integer_tuples(length, least_abs = 0):
 
 
 # Obscure stuff --------------------------------------------------------------
-def write_matrix_as_csv(filename, matrix):
-    mat_file = file(filename, "w")
-    h,w = matrix.shape
-    for row in range(0, h):
-        for column in range(0, w):
-            mat_file.write("%f," % matrix[ row, column ])
-    mat_file.write("\n")
-
-
-
-
 def enumerate_basic_directions(dimensions):
     coordinate_list = [[0], [1], [-1]]
     return reduce(cartesian_product_sum, [coordinate_list] * dimensions)[1:]
