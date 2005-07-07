@@ -134,13 +134,13 @@ class LexIterator:
             self.raise_parse_error("%s expected, %s found instead" % \
                                    (what_expected, str(self.next_tag())))
 
-    def expect(self, tag):
-        if not self.is_next(tag):
-            self.expected(str(tag))
-        self.advance()
-
     def expect_not_end(self):
         if self.is_at_end():
             self.raise_parse_error("unexpected end of input")
+
+    def expect(self, tag):
+        self.expect_not_end()
+        if not self.is_next(tag):
+            self.expected(str(tag))
 
 
