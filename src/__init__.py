@@ -137,67 +137,6 @@ def negate_tuple(t1):
 
 
 
-class SparseVector(DictionaryWithDefault):
-    def __init__(self):
-        DictionaryWithDefault.__init__(self, lambda x: 0.)
-
-    def add_to(self, other, factor = 1.):
-        for key in self:
-            other[key] += factor * self[key]
-
-    def add_to_matrix_column(self, matrix, column, factor = 1.):
-        for key in self:
-            matrix[key, column] += factor * self[key]
-
-    def add_to_matrix_row(self, matrix, row, factor = 1.):
-        for key in self:
-            matrix[row, key] += factor * self[key]
-
-    def conjugate(self):
-        result = SparseVector()
-        for key in self:
-            result[key] = (self[key]+0j).conjugate()
-        return result
-
-    def __radd__(self, other):
-        result = other.copy()
-        for key in self:
-            result[key] += self[key]
-        return result
-
-    def __add__(self, other):
-        result = other.copy()
-        for key in self:
-            result[key] += self[key]
-        return result
-
-    def __rsub__(self, other):
-        result = other.copy()
-        for key in self:
-            result[key] -= self[key]
-        return result
-
-    def __sub__(self, other):
-        result = other.copy()
-        for key in self:
-            result[key] = self[key] - result[key]
-        return result
-
-    def __mul__(self, other):
-        result = SparseVector()
-        for key in self:
-            result[key] = other * self[key]
-        return result
-
-    def __rmul__(self, other):
-        result = SparseVector()
-        for key in self:
-            result[key] = other * self[key]
-        return result
-
-
-
-
 def write_1d_gnuplot_graph(f, a, b, steps=100, fname=",,f.data", progress = False):
     h = float(b - a)/steps
     gnuplot_file = file(fname, "w")
