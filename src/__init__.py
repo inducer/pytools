@@ -173,6 +173,20 @@ def write_1d_gnuplot_graphs(f, a, b, steps=100, fnames=None, progress=False):
 
 
 
+def write_2d_gnuplot_graph(f, (x0, y0), (x1, y1), (xsteps, ysteps)=(100, 100), fname=",,f.data"):
+    hx = float(x1 - x0)/xsteps
+    hy = float(y1 - y0)/ysteps
+    gnuplot_file = file(fname, "w")
+
+    for ny in range(ysteps):
+        for nx in range(xsteps):
+            x = x0 + hx * nx
+            y = y0 + hy * ny
+            gnuplot_file.write("%g\t%g\t%g\n" % (x, y, f(x, y)))
+
+        gnuplot_file.write("\n")
+
+
 def write_gnuplot_graph(f, a, b, steps = 100, fname = ",,f.data", progress = False):
     h = float(b - a)/steps
     gnuplot_file = file(fname, "w")
