@@ -432,7 +432,9 @@ def product(list):
 
 
 
-def argmin(list, f = lambda x: x):
+def argmin_f(list, f = lambda x: x):
+    # deprecated -- the function has become unnecessary because of
+    # generator expressions
     current_min_index = -1
     current_min = f(list[0])
 
@@ -446,12 +448,43 @@ def argmin(list, f = lambda x: x):
 
 
 
-def argmax(list, f = lambda x: x):
+def argmax_f(list, f = lambda x: x):
+    # deprecated -- the function has become unnecessary because of
+    # generator expressions
     current_max_index = -1
     current_max = f(list[0])
 
     for idx, item in enumerate(list[1:]):
         value = f(item)
+        if value > current_max:
+            current_max_index = idx
+            current_max = value
+    return current_max_index+1
+
+
+
+
+def argmin(list):
+    current_min_index = -1
+    it = list.__iter__()
+    current_min = it.next()
+
+    for idx, item in enumerate(it):
+        value = item
+        if value < current_min:
+            current_min_index = idx
+            current_min = value
+    return current_min_index+1
+
+
+
+
+def argmax(list):
+    it = list.__iter__()
+    current_max = it.next()
+
+    for idx, item in enumerate(it):
+        value = item
         if value > current_max:
             current_max_index = idx
             current_max = value
