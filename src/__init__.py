@@ -29,12 +29,12 @@ class FunctionValueCache(object):
         self.Function = function
         self.ResultMap = {}
 
-    def __call__(self, arg):
+    def __call__(self, *args):
         try:
-            return self.ResultMap[arg]
+            return self.ResultMap[args]
         except KeyError:
-            result = self.Function(arg)
-            self.ResultMap[arg] = result
+            result = self.Function(*args)
+            self.ResultMap[args] = result
             return result
 
     
