@@ -1,4 +1,8 @@
-import math, sys, operator, types
+import math
+import sys
+import operator
+import types
+from pytools.decorator import decorator
 
 
 
@@ -24,20 +28,33 @@ class Reference(object):
 
 
 
-class FunctionValueCache(object):
-    def __init__(self, function):
-        self.Function = function
-        self.ResultMap = {}
 
-    def __call__(self, *args):
-        try:
-            return self.ResultMap[args]
-        except KeyError:
-            result = self.Function(*args)
-            self.ResultMap[args] = result
-            return result
+def getattr_(obj, name, default_thunk):
+    "Similar to .setdefault in dictionaries."
+    try:
+        return getattr(obj, name)
+    except AttributeError:
+        default = default_thunk()
+        setattr(obj, name, default)
+        return default
 
-    
+@decorator
+def memoize(func, *args):
+    # by Michele Simionato
+    # http://www.phyast.pitt.edu/~micheles/python/
+
+    dic = getattr_(func, "memoize_dic", dict)
+
+    # memoize_dic is created at the first call
+    if args in dic:
+        return dic[args]
+    else:
+        result = func(*args)
+        dic[args] = result
+        return result
+FunctionValueCache = memoize
+
+
 
 
 class DictionaryWithDefault(object):
@@ -369,6 +386,10 @@ def flatten(list):
 
 
 def sum_over(function, arguments):
+    raise RuntimeError, "Horribly inefficient routine called."
+
+    # wherever this is used, it should be replaced by sum() and a generator
+    # expression.
     result = 0
     for i in arguments:
         result += function(i)
