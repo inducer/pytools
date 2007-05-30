@@ -29,7 +29,7 @@ class Reference(object):
 
 
 
-def getattr_(obj, name, default_thunk):
+def _getattr_(obj, name, default_thunk):
     "Similar to .setdefault in dictionaries."
     try:
         return getattr(obj, name)
@@ -43,7 +43,7 @@ def memoize(func, *args):
     # by Michele Simionato
     # http://www.phyast.pitt.edu/~micheles/python/
 
-    dic = getattr_(func, "memoize_dic", dict)
+    dic = _getattr_(func, "memoize_dic", dict)
 
     # memoize_dic is created at the first call
     if args in dic:
@@ -229,149 +229,6 @@ def write_gnuplot_graph(f, a, b, steps = 100, fname = ",,f.data", progress = Fal
         if progress:
             sys.stdout.write("\n")
 
-
-
-
-class DictionaryOfArithmeticTypes(dict):
-    """Allows arithmetic operations on dictionaries
-    which propagate to its elements.
-    """
-
-    def _get_empty_self(self):
-        return DictionaryOfArithmeticTypes()
-
-    def assert_same_keys(self, other):
-        for key in self:
-            assert key in other
-        for key in other:
-            assert key in self
-
-    def unary_operator(self, operator):
-        result = self._get_empty_self()
-        for key in self:
-            result[key] = operator(self[key])
-        return result
-
-    def binary_operator(self, other, operator):
-        try:
-            self.assert_same_keys(other)
-            result = self._get_empty_self()
-            for key in self:
-                result[key] = operator(self[key], other[key])
-            return result
-        except TypeError:
-            result = self._get_empty_self()
-            for key in self:
-                result[key] = operator(self[key], other)
-            return result
-
-    def reverse_binary_operator(self, other, operator):
-        try:
-            self.assert_same_keys(other)
-            result = self._get_empty_self()
-            for key in self:
-                result[key] = operator(other[key], self[key])
-            return result
-        except TypeError:
-            result = self._get_empty_self()
-            for key in self:
-                result[key] = operator(other, self[key])
-            return result
-
-    def __neg__(self): return self.unary_operator(operator.neg)
-    def __pos__(self): return self.unary_operator(operator.pos)
-    def __abs__(self): return self.unary_operator(operator.abs)
-    def __invert__(self): return self.unary_operator(operator.invert)
-
-    def __add__(self, other): return self.binary_operator(other, operator.add)
-    def __sub__(self, other): return self.binary_operator(other, operator.sub)
-    def __mul__(self, other): return self.binary_operator(other, operator.mul)
-    def __div__(self, other): return self.binary_operator(other, operator.div)
-    def __mod__(self, other): return self.binary_operator(other, operator.mod)
-    def __pow__(self, other): return self.binary_operator(other, operator.pow)
-    def __lshift__(self, other): return self.binary_operator(other, operator.lshift)
-    def __rshift__(self, other): return self.binary_operator(other, operator.rshift)
-    def __and__(self, other): return self.binary_operator(other, operator.and_)
-    def __or__(self, other): return self.binary_operator(other, operator.or_)
-    def __xor__(self, other): return self.binary_operator(other, operator.xor)
-
-    def __radd__(self, other): return self.reverse_binary_operator(other, operator.add)
-    def __rsub__(self, other): return self.reverse_binary_operator(other, operator.sub)
-    def __rmul__(self, other): return self.reverse_binary_operator(other, operator.mul)
-    def __rdiv__(self, other): return self.reverse_binary_operator(other, operator.div)
-    def __rmod__(self, other): return self.reverse_binary_operator(other, operator.mod)
-    def __rpow__(self, other): return self.reverse_binary_operator(other, operator.pow)
-    def __rlshift__(self, other): return self.reverse_binary_operator(other, operator.lshift)
-    def __rrshift__(self, other): return self.reverse_binary_operator(other, operator.rshift)
-    def __rand__(self, other): return self.reverse_binary_operator(other, operator.and_)
-    def __ror__(self, other): return self.reverse_binary_operator(other, operator.or_)
-    def __rxor__(self, other): return self.reverse_binary_operator(other, operator.xor)
-
-    def __iadd__(self, other): 
-        self.assert_same_keys(other)
-        for key in self: 
-            self[key] += other[key]
-        return self
-
-    def __isub__(self, other): 
-        self.assert_same_keys(other)
-        for key in self: 
-            self[key] -= other[key]
-        return self
-
-    def __imul__(self, other): 
-        self.assert_same_keys(other)
-        for key in self: 
-            self[key] *= other[key]
-        return self
-
-    def __idiv__(self, other): 
-        self.assert_same_keys(other)
-        for key in self: 
-            self[key] /= other[key]
-        return self
-
-    def __imod__(self, other): 
-        self.assert_same_keys(other)
-        for key in self: 
-            self[key] %= other[key]
-        return self
-
-    def __ipow__(self, other): 
-        self.assert_same_keys(other)
-        for key in self: 
-            self[key] **= other[key]
-        return self
-
-    def __ilshift__(self, other): 
-        self.assert_same_keys(other)
-        for key in self: 
-            self[key] <<= other[key]
-        return self
-
-    def __irshift__(self, other): 
-        self.assert_same_keys(other)
-        for key in self: 
-            self[key] >>= other[key]
-        return self
-
-    def __iand__(self, other): 
-        self.assert_same_keys(other)
-        for key in self: 
-            self[key] &= other[key]
-        return self
-
-    def __ior__(self, other): 
-        self.assert_same_keys(other)
-        for key in self: 
-            self[key] |= other[key]
-        return self
-
-    def __ixor__(self, other): 
-        self.assert_same_keys(other)
-        for key in self: 
-            self[key] ^= other[key]
-        return self
 
 
 

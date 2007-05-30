@@ -1,3 +1,7 @@
+# Python decorator module
+# by Michele Simionato
+# http://www.phyast.pitt.edu/~micheles/python/
+
 ## The basic trick is to generate the source code for the decorated function
 ## with the right signature and to evaluate it.
 ## Uncomment the statement 'print >> sys.stderr, func_src'  in _decorate
