@@ -1,4 +1,5 @@
 from decorator import decorator
+import operator
 
 
 
@@ -10,21 +11,21 @@ class ArithmeticList(list):
         assert len(self) == len(other)
 
     def unary_operator(self, operator):
-        return ListOfArithmeticTypes(operator(v) for v in self)
+        return ArithmeticList(operator(v) for v in self)
 
     def binary_operator(self, other, operator):
-        if not isinstance(other, ListOfArithmeticTypes):
-            return ListOfArithmeticTypes(operator(v, other) for v in self)
+        if not isinstance(other, ArithmeticList):
+            return ArithmeticList(operator(v, other) for v in self)
 
         self.assert_same_length(other)
-        return ListOfArithmeticTypes(operator(v, w) for v, w in zip(self, other))
+        return ArithmeticList(operator(v, w) for v, w in zip(self, other))
 
     def reverse_binary_operator(self, other, operator):
-        if not isinstance(other, ListOfArithmeticTypes):
-            return ListOfArithmeticTypes(operator(other, v) for v in self)
+        if not isinstance(other, ArithmeticList):
+            return ArithmeticList(operator(other, v) for v in self)
 
         self.assert_same_length(other)
-        return ListOfArithmeticTypes(operator(w, v) for v, w in zip(self, other))
+        return ArithmeticList(operator(w, v) for v, w in zip(self, other))
 
     def __neg__(self): return self.unary_operator(operator.neg)
     def __pos__(self): return self.unary_operator(operator.pos)
@@ -122,20 +123,20 @@ class ArithmeticList(list):
         return self
 
     def __getslice__(self, i, j):
-        return ListOfArithmeticTypes(list.__getslice__(self, i, j))
+        return ArithmeticList(list.__getslice__(self, i, j))
 
     def __str__(self):
-        return "ListOfArithmeticTypes(%s)" % list.__str__(self)
+        return "ArithmeticList(%s)" % list.__str__(self)
 
     def __repr__(self):
-        return "ListOfArithmeticTypes(%s)" % list.__repr__(self)
+        return "ArithmeticList(%s)" % list.__repr__(self)
 
 
 
 
 def concat_fields(*fields):
     if not fields:
-        return ListOfArithmeticTypes()
+        return ArithmeticList()
     result = fields[0][:]
     for f in fields[1:]:
         result.extend(f)
@@ -150,7 +151,7 @@ def work_with_arithmetic_containers(f, *args, **kwargs):
     """This decorator allows simple elementwise functions to automatically
     accept containers of arithmetic types, by acting on each element.
 
-    At present, it only works for ListOfArithmeticTypes.
+    At present, it only works for ArithmeticList.
     """
 
     class SimpleArg:
@@ -179,21 +180,21 @@ def work_with_arithmetic_containers(f, *args, **kwargs):
     formal_kwargs = {}
 
     for arg in args:
-        if isinstance(arg, ListOfArithmeticTypes):
+        if isinstance(arg, ArithmeticList):
             formal_args.append(ListArg(len(lists)))
             lists.append(arg)
         else:
             formal_args.append(SimpleArg(len(formal_args)))
 
     for name, arg in kwargs.iteritems():
-        if isinstance(arg, ListOfArithmeticTypes):
+        if isinstance(arg, ArithmeticList):
             formal_kwargs[name] = ListArg(len(lists))
             lists.append(arg)
         else:
             formal_kwargs[name] = SimpleKwArg(name)
 
     if lists:
-        return ListOfArithmeticTypes(
+        return ArithmeticList(
                 f(
                     *list(formal_arg.eval(tp) for formal_arg in formal_args), 
                     **dict((name, formal_arg.eval(tp)) 
@@ -211,7 +212,7 @@ class ArithmeticDictionary(dict):
     arithmetic operations."""
 
     def _get_empty_self(self):
-        return DictionaryOfArithmeticTypes()
+        return ArithmeticDictionary()
 
     def assert_same_keys(self, other):
         for key in self:
