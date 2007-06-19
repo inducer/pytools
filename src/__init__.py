@@ -440,6 +440,23 @@ def generate_all_integer_tuples_below(n, length, least_abs = 0):
 def generate_all_integer_tuples(length, least_abs = 0):
     return _pos_and_neg_adaptor(generate_all_positive_integer_tuples(
         length, least_abs))
+
+
+
+def generate_permutations(original):
+    """Generate all permutations of the list `original'.
+
+    Nicked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/252178
+    """
+    if len(original) <=1:
+        yield original
+    else:
+        for perm in generate_permutations(original[1:]):
+            for i in range(len(perm)+1):
+                #nb str[0:1] works in both string and list contexts
+                yield perm[:i] + original[0:1] + perm[i:]
+
+
             
 
 
