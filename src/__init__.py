@@ -461,6 +461,30 @@ def generate_permutations(original):
 
 
 
+class Table:
+    """An ASCII table generator."""
+    def __init__(self):
+        self.Rows = []
+
+    def add_row(self, row):
+        self.Rows.append([str(i) for i in row])
+
+    def __str__(self):
+        columns = len(self.Rows[0])
+        col_widths = [max(len(row[i]) for row in self.Rows)
+                      for i in range(columns)]
+
+        lines = [
+            "|".join([cell.ljust(col_width)
+                      for cell, col_width in zip(row, col_widths)])
+            for row in self.Rows]
+        lines[1:1] = ["+".join("-"*col_width
+                              for col_width in col_widths)]
+        return "\n".join(lines)
+
+
+
+
 # Obscure stuff --------------------------------------------------------------
 def enumerate_basic_directions(dimensions):
     coordinate_list = [[0], [1], [-1]]
