@@ -16,6 +16,13 @@ def delta(x,y):
 
 
 
+def factorial(n):
+    from operator import mul
+    return reduce(mul, (i for i in xrange(1,n+1)), 1)
+
+
+
+
 # Data structures ------------------------------------------------------------
 class Reference(object):
     def __init__( self, value ):
@@ -37,6 +44,9 @@ def _getattr_(obj, name, default_thunk):
         default = default_thunk()
         setattr(obj, name, default)
         return default
+
+
+
 
 @decorator
 def memoize(func, *args):
@@ -404,7 +414,14 @@ def reverse_dictionary(the_dict):
 
 
 
-def generate_positive_integer_tuples_below(n, length, least = 0):
+def wandering_element(length, wanderer=1, landscape=0):
+    for i in range(length):
+        yield i*(landscape,) + (wanderer,) + (length-1-i)*(landscape,)
+
+
+
+
+def generate_positive_integer_tuples_below(n, length, least=0):
     assert length >= 0
     if length == 0:
         yield []
@@ -413,7 +430,21 @@ def generate_positive_integer_tuples_below(n, length, least = 0):
             for base in generate_positive_integer_tuples_below(n, length-1, least):
                 yield [i] + base
 
-def generate_all_positive_integer_tuples(length, least = 0):
+def generate_non_negative_integer_tuples_summing_to_at_most(n, length):
+    """Enumerate all non-negative integer tuples summing to at most n,
+    exhausting the search space by varying the first entry fastest,
+    and the last entry the slowest.
+    """
+    assert length >= 0
+    if length == 0:
+        yield ()
+    else:
+        for i in range(n+1):
+            for remainder in generate_non_negative_integer_tuples_summing_to_at_most(
+                    n-i, length-1):
+                yield remainder + (i,)
+
+def generate_all_positive_integer_tuples(length, least=0):
     assert length >= 0
     current_max = least
     while True:
@@ -433,13 +464,14 @@ def _pos_and_neg_adaptor(tuple_iter):
                     this_result[nonzero_indices[index]] *= -1
             yield tuple(this_result)
 
-def generate_all_integer_tuples_below(n, length, least_abs = 0):
+def generate_all_integer_tuples_below(n, length, least_abs=0):
     return _pos_and_neg_adaptor(generate_positive_integer_tuples_below(
         n, length, least_abs))
 
-def generate_all_integer_tuples(length, least_abs = 0):
+def generate_all_integer_tuples(length, least_abs=0):
     return _pos_and_neg_adaptor(generate_all_positive_integer_tuples(
         length, least_abs))
+
 
 
 
