@@ -18,6 +18,7 @@ def delta(x,y):
 
 def factorial(n):
     from operator import mul
+    assert n == int(n)
     return reduce(mul, (i for i in xrange(1,n+1)), 1)
 
 
@@ -421,16 +422,37 @@ def wandering_element(length, wanderer=1, landscape=0):
 
 
 
-def generate_positive_integer_tuples_below(n, length, least=0):
+def generate_nonnegative_integer_tuples_below(n, length, least=0):
     assert length >= 0
     if length == 0:
-        yield []
+        yield ()
     else:
         for i in range(least, n):
-            for base in generate_positive_integer_tuples_below(n, length-1, least):
-                yield [i] + base
+            for base in generate_nonnegative_integer_tuples_below(n, length-1, least):
+                yield (i,) + base
 
-def generate_non_negative_integer_tuples_summing_to_at_most(n, length):
+def generate_decreasing_nonnegative_tuples_summing_to(n, length, min=0, max=None):
+    sig = (n,length,max)
+    if length == 0:
+        yield ()
+    elif length == 1:
+        if n <= max:
+            #print "MX", n, max
+            yield (n,)
+        else:
+            return
+    else:
+        if max is None or n < max:
+            max = n
+
+        for i in range(min, max+1):
+            #print "SIG", sig, i
+            for remainder in generate_decreasing_nonnegative_tuples_summing_to(
+                    n-i, length-1, min, i):
+                yield (i,) + remainder
+
+
+def generate_nonnegative_integer_tuples_summing_to_at_most(n, length):
     """Enumerate all non-negative integer tuples summing to at most n,
     exhausting the search space by varying the first entry fastest,
     and the last entry the slowest.
@@ -440,24 +462,28 @@ def generate_non_negative_integer_tuples_summing_to_at_most(n, length):
         yield ()
     else:
         for i in range(n+1):
-            for remainder in generate_non_negative_integer_tuples_summing_to_at_most(
+            for remainder in generate_nonnegative_integer_tuples_summing_to_at_most(
                     n-i, length-1):
                 yield remainder + (i,)
 
-def generate_all_positive_integer_tuples(length, least=0):
+def generate_all_nonnegative_integer_tuples(length, least=0):
     assert length >= 0
     current_max = least
     while True:
         for max_pos in range(length):
-            for prebase in generate_positive_integer_tuples_below(current_max, max_pos, least):
-                for postbase in generate_positive_integer_tuples_below(current_max+1, length-max_pos-1, least):
+            for prebase in generate_nonnegative_integer_tuples_below(current_max, max_pos, least):
+                for postbase in generate_nonnegative_integer_tuples_below(current_max+1, length-max_pos-1, least):
                     yield prebase + [current_max] + postbase
         current_max += 1
+
+ # backwards compatibility
+generate_positive_integer_tuples_below = generate_nonnegative_integer_tuples_below
+generate_all_positive_integer_tuples = generate_all_nonnegative_integer_tuples
 
 def _pos_and_neg_adaptor(tuple_iter):
     for tup in tuple_iter:
         nonzero_indices = [i for i in range(len(tup)) if tup[i] != 0]
-        for do_neg_tup in generate_positive_integer_tuples_below(2, len(nonzero_indices)):
+        for do_neg_tup in generate_nonnegative_integer_tuples_below(2, len(nonzero_indices)):
             this_result = list(tup)
             for index, do_neg in enumerate(do_neg_tup):
                 if do_neg:
@@ -465,12 +491,13 @@ def _pos_and_neg_adaptor(tuple_iter):
             yield tuple(this_result)
 
 def generate_all_integer_tuples_below(n, length, least_abs=0):
-    return _pos_and_neg_adaptor(generate_positive_integer_tuples_below(
+    return _pos_and_neg_adaptor(generate_nonnegative_integer_tuples_below(
         n, length, least_abs))
 
 def generate_all_integer_tuples(length, least_abs=0):
-    return _pos_and_neg_adaptor(generate_all_positive_integer_tuples(
+    return _pos_and_neg_adaptor(generate_all_nonnegative_integer_tuples(
         length, least_abs))
+
 
 
 
@@ -490,6 +517,20 @@ def generate_permutations(original):
 
 
             
+
+
+
+def generate_unique_permutations(original):
+    """Generate all unique permutations of the list `original'.
+    """
+
+    had_those = set()
+
+    for perm in generate_permutations(original):
+        if perm not in had_those:
+            had_those.add(perm)
+            yield perm
+
 
 
 
@@ -521,6 +562,8 @@ class Table:
 def enumerate_basic_directions(dimensions):
     coordinate_list = [[0], [1], [-1]]
     return reduce(cartesian_product_sum, [coordinate_list] * dimensions)[1:]
+
+
 
 
 
