@@ -376,6 +376,7 @@ def argmin(list):
     current_min_index = -1
     it = list.__iter__()
     current_min = it.next()
+    current_min_index = -1
 
     for idx, item in enumerate(it):
         value = item
@@ -390,6 +391,7 @@ def argmin(list):
 def argmax(list):
     it = list.__iter__()
     current_max = it.next()
+    current_max_index = -1
 
     for idx, item in enumerate(it):
         value = item
