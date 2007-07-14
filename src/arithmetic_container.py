@@ -126,7 +126,7 @@ class ArithmeticList(list):
         return ArithmeticList(list.__getslice__(self, i, j))
 
     def __str__(self):
-        return "ArithmeticList(%s)" % list.__str__(self)
+        return "ArithmeticList(%s)" % list.__repr__(self)
 
     def __repr__(self):
         return "ArithmeticList(%s)" % list.__repr__(self)
@@ -134,14 +134,17 @@ class ArithmeticList(list):
 
 
 
-def concat_fields(*fields):
+def concatenate_fields(*fields):
     if not fields:
         return ArithmeticList()
     result = fields[0][:]
     for f in fields[1:]:
         result.extend(f)
 
-    return result
+    if not isinstance(result, ArithmeticList):
+        return ArithmeticList(result)
+    else:
+        return result
 
 
 

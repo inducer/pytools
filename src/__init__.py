@@ -243,6 +243,25 @@ def write_gnuplot_graph(f, a, b, steps = 100, fname = ",,f.data", progress = Fal
 
 
 
+# syntactical sugar -----------------------------------------------------------
+class InfixOperator:
+    """Pseudo-infix operators that allow syntax of the kind `op1 <<operator>> op2'.
+    
+    Following a recipe from
+    http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/384122
+    """
+    def __init__(self, function):
+        self.function = function
+    def __rlshift__(self, other):
+        return InfixOperator(lambda x: self.function(other, x))
+    def __rshift__(self, other):
+        return self.function(other)
+    def call(self, a, b):
+        return self.function(a, b)
+
+
+
+
 # Generic utilities ----------------------------------------------------------
 def flatten(list):
     result = []
