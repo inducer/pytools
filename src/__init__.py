@@ -264,10 +264,14 @@ class InfixOperator:
 
 # Generic utilities ----------------------------------------------------------
 def flatten(list):
-    result = []
-    for i in list:
-        result += i
-    return result
+    """For an iterable of sub-iterables, generate each member of each 
+    sub-iterable in turn, i.e. a flattened version of that super-iterable.
+
+    Example: Turn [[a,b,c],[d,e,f]] into [a,b,c,d,e,f].
+    """
+    for sublist in list:
+        for j in sublist:
+            yield j
 
 
 
