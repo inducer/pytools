@@ -591,4 +591,9 @@ def enumerate_basic_directions(dimensions):
 
 
 
+# file system related ---------------------------------------------------------
+def assert_not_a_file(name):
+    import os
+    if os.access(name, os.F_OK):
+        raise IOError, "file `%s' already exists" % name
 
