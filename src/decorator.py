@@ -81,6 +81,10 @@ def update_wrapper(wrapper, wrapped, create=False):
 
 # the real meat is here
 def _decorator(caller, func):
+    if not (inspect.ismethod(func) or inspect.isfunction(func)):
+        # skip all the fanciness, just do what works
+        return lambda *args, **kwargs: caller(func, *args, **kwargs)
+
     infodict = getinfo(func)
     argnames = infodict['argnames']
     assert not ('_call_' in argnames or '_func_' in argnames), \
