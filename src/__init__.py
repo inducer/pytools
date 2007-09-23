@@ -379,7 +379,10 @@ def argmax_f(list, f = lambda x: x):
 def argmin(list):
     current_min_index = -1
     it = list.__iter__()
-    current_min = it.next()
+    try:
+        current_min = it.next()
+    except StopIteration:
+        raise ValueError, "argmin of empty iterable"
     current_min_index = -1
 
     for idx, item in enumerate(it):
@@ -394,7 +397,10 @@ def argmin(list):
 
 def argmax(list):
     it = list.__iter__()
-    current_max = it.next()
+    try:
+        current_max = it.next()
+    except StopIteration:
+        raise ValueError, "argmax of empty iterable"
     current_max_index = -1
 
     for idx, item in enumerate(it):
