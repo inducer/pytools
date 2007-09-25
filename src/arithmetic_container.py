@@ -134,17 +134,14 @@ class ArithmeticList(list):
 
 
 
-def concatenate_fields(*fields):
-    if not fields:
-        return ArithmeticList()
-    result = fields[0][:]
-    for f in fields[1:]:
-        result.extend(f)
-
-    if not isinstance(result, ArithmeticList):
-        return ArithmeticList(result)
-    else:
-        return result
+def join_fields(*fields):
+    result = ArithmeticList()
+    for f in fields:
+        if isinstance(f, list):
+            result.extend(f)
+        else:
+            result.append(f)
+    return result
 
 
 
