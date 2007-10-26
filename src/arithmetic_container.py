@@ -131,6 +131,16 @@ class ArithmeticList(list):
     def __repr__(self):
         return "ArithmeticList(%s)" % list.__repr__(self)
 
+    def plus(self, other):
+        """Return a copy of self extended by the entries from the iterable
+        C{other}.
+        
+        Makes up for the loss of the C{+} operator (which is now arithmetic).
+        """
+        result = ArithmeticList(self)
+        result.extend(other)
+        return result
+
 
 
 
