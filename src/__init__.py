@@ -309,10 +309,15 @@ def average(sequence):
 
 
 
-def all_equal(sequence):
-    item = sequence[0]
-    for i in sequence[1:]:
-        if i != item:
+def all_equal(iterable):
+    it = iterable.__iter__()
+    try:
+        value = it.next()
+    except StopIteration:
+        return True # empty sequence
+
+    for i in it:
+        if i != value:
             return False
     return True
 
