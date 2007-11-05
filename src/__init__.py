@@ -155,6 +155,15 @@ class DependentDictionary(object):
 
 
 
+def len_iterable(iterable):
+    result = 0
+    for i in iterable:
+        result += 1
+    return result
+
+
+
+
 def add_tuples(t1, t2):
     return tuple([t1v + t2v for t1v, t2v in zip(t1, t2)])
 
