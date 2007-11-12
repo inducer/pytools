@@ -1,3 +1,4 @@
+from __future__ import division
 import math
 import sys
 import operator
@@ -313,8 +314,24 @@ def linear_combination(coefficients, vectors):
 
 
 
-def average(sequence):
-    return general_sum(sequence)/float(len(sequence))
+def average(iterable):
+    """Return the average of the values in iterable.
+
+    iterable may not be empty.
+    """
+    it = iterable.__iter__()
+    
+    try:
+        sum = it.next()
+        count = 1
+    except StopIteration:
+        raise ValueError, "empty average"
+
+    for value in it:
+        sum += value
+        count += 1
+
+    return sum/count
 
 
 
