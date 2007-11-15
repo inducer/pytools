@@ -1,3 +1,4 @@
+from __future__ import division
 import time
 import pytools
 
@@ -45,6 +46,26 @@ class Job:
             return not self.Name in HIDDEN_JOBS
         else:
             return self.Name in VISIBLE_JOBS
+
+
+
+
+class EtaEstimator:
+    def __init__(self, total_steps):
+        self.stopwatch = StopWatch().start()
+        self.total_steps = total_steps
+        assert total_steps > 0
+
+    def estimate(self, done):
+        fraction_done = done/self.total_steps
+        time_spent = self.stopwatch.elapsed()
+        if fraction_done > 1e-5:
+            return time_spent/fraction_done-time_spent
+        else:
+            return None
+
+
+
 
 def print_job_summary():
     for key in JOB_TIMES:
