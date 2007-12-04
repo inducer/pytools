@@ -445,10 +445,19 @@ def argmax(list):
 
 
 def cartesian_product(list1, list2):
-    result = []
     for i in list1:
         for j in list2:
-            result.append((i,j))
+            yield (i,j)
+
+
+
+
+
+def distinct_pairs(list1, list2):
+    for i, xi in enumerate(list1):
+        for j, yj in enumerate(list2):
+            if i != j:
+                yield (xi, yj)
 
 
 
@@ -457,11 +466,9 @@ def cartesian_product_sum(list1, list2):
     """This routine returns a list of sums of each element of
     list1 with each element of list2. Also works with lists.
     """
-    result = []
     for i in list1:
         for j in list2:
-            result.append(i+j)
-    return result
+            yield i+j
 
 
 
