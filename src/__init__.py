@@ -175,6 +175,27 @@ def negate_tuple(t1):
 
 
 
+def shift(vec, dist):
+    """Return a copy of C{vec} shifted by C{dist}. 
+
+    @postcondition: C{shift(a, i)[j] == a[(i+j) % len(a)]}
+    """
+
+    result = vec[:]
+
+    N = len(vec)
+    dist = dist % N
+
+    # modulo only returns positive distances!
+    if dist > 0:
+        result[dist:] = vec[:N-dist]
+        result[:dist] = vec[N-dist:]
+
+    return result
+
+
+
+
 def write_1d_gnuplot_graph(f, a, b, steps=100, fname=",,f.data", progress = False):
     h = float(b - a)/steps
     gnuplot_file = file(fname, "w")
