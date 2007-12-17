@@ -26,6 +26,41 @@ def factorial(n):
 
 
 # Data structures ------------------------------------------------------------
+class Record(object):
+    def __init__(self, valuedict, exclude=["self"]):
+        try:
+            fields = self.__class__.fields
+        except AttributeError:
+            self.__class__.fields = fields = set()
+
+        for key, value in valuedict.iteritems():
+            if not key in exclude:
+                fields.add(key)
+                setattr(self, key, value)
+
+    def copy(self, **kwargs):
+        for f in self.__class__.fields:
+            if f not in kwargs:
+                kwargs[f] = getattr(self, f)
+        return self.__class__(**kwargs)
+
+    def __getstate__(self):
+        return dict(
+                (key, getattr(self, key))
+                for key in self.__class__.fields)
+
+    def __setstate__(self, valuedict):
+        try:
+            fields = self.__class__.fields
+        except AttributeError:
+            self.__class__.fields = fields = set()
+
+        for key, value in valuedict.iteritems():
+            fields.add(key)
+            setattr(self, key, value)
+
+
+
 class Reference(object):
     def __init__( self, value ):
         self.V = value
