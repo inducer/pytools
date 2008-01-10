@@ -1,0 +1,102 @@
+#! /usr/bin/python
+
+def main():
+    from pytools.log import LogManager
+    import sys
+    from optparse import OptionParser
+
+    description = """Operate on data gathered during code runs.
+FILE is a log saved from a code run. COMMANDS may be one of the
+following: "list" to list the available variables,
+"plot expr_x,expr_y" to plot a graph,
+"datafile outfile expr_x,expr_y" to write out a data file."""
+    parser = OptionParser(usage="%prog FILE COMMANDS FILE COMMANDS...",
+            description=description)
+
+    parser.add_option("--units-x", 
+            help="No description on the X axis",
+            action="store_true")
+    parser.add_option("--units-y", 
+            help="No description on the Y axis",
+            action="store_true")
+    parser.add_option("--legend-expr", 
+            help="Generate a legend from the expression",
+            action="store_true")
+    parser.add_option("--legend-descr", 
+            help="Generate a legend from the description",
+            action="store_true")
+    parser.add_option("--title", 
+            help="Set the title of a plot",
+            default="Log evaluation")
+    options, args = parser.parse_args()
+
+    if len(args) < 1:
+        parser.print_help()
+        sys.exit(1)
+
+    logmgr = LogManager()
+
+    did_plot = False
+
+    while args:
+        if args[0] == "list":
+            args.pop(0)
+            items = list(logmgr.quantity_buffers.iteritems())
+            items.sort(lambda a,b: cmp(a[0], b[0]))
+
+            col0_len = max(len(k) for k, v in items) + 1
+
+            for key, qbuf in items:
+                print "%s\t%s" % (key.ljust(col0_len), qbuf.quantity.description)
+        elif args[0] == "plot":
+            args.pop(0)
+
+            expr_x, expr_y = args[0].split(",")
+            args.pop(0)
+
+            from pylab import xlabel, ylabel, plot
+            (data_x, descr_x, unit_x), (data_y, descr_y, unit_y) = \
+                    logmgr.get_plot_data(expr_x, expr_y)
+
+            if options.units_x:
+                xlabel(unit_x)
+            else:
+                xlabel("%s [%s]" % (descr_x, unit_x))
+            if options.units_y:
+                ylabel(unit_y)
+            else:
+                ylabel("%s [%s]" % (descr_y, unit_y))
+
+            kwargs = {}
+
+            if options.legend_expr:
+                kwargs["label"] = expr_y
+            if options.legend_descr:
+                kwargs["label"] = descr_y
+
+            plot(data_x, data_y, hold=True, **kwargs)
+
+            did_plot = True
+        elif args[0] == "datafile":
+            args.pop(0)
+
+            expr_x, expr_y = args[0].split(",")
+            args.pop(0)
+
+            logmgr.write_datafile(args[0], expr_x, expr_y)
+            args.pop(0)
+        else:
+            # not a known command, interpret as file name
+            logmgr.load(args[0])
+            args.pop(0)
+
+    if did_plot:
+        from pylab import show, title, legend
+        if options.legend_expr or options.legend_descr:
+            legend()
+
+        title(options.title)
+        show()
+
+if __name__ == "__main__":
+    main()
