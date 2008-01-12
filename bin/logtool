@@ -7,7 +7,8 @@ def main():
 
     description = """Operate on data gathered during code runs.
 FILE is a log saved from a code run. COMMANDS may be one of the
-following: "list" to list the available variables,
+following:
+"list" to list the available variables,
 "plot expr_x,expr_y" to plot a graph,
 "datafile outfile expr_x,expr_y" to write out a data file."""
     parser = OptionParser(usage="%prog FILE COMMANDS FILE COMMANDS...",
@@ -41,6 +42,9 @@ following: "list" to list the available variables,
     while args:
         if args[0] == "list":
             args.pop(0)
+            print "Time series"
+            print "-----------"
+
             items = list(logmgr.quantity_buffers.iteritems())
             items.sort(lambda a,b: cmp(a[0], b[0]))
 
@@ -48,6 +52,16 @@ following: "list" to list the available variables,
 
             for key, qbuf in items:
                 print "%s\t%s" % (key.ljust(col0_len), qbuf.quantity.description)
+
+            print "Constants"
+            print "---------"
+            items = list(logmgr.variables.iteritems())
+            items.sort(lambda a,b: cmp(a[0], b[0]))
+
+            col0_len = max(len(k) for k, v in items) + 1
+
+            for key, value in items:
+                print "%s\t%s" % (key.ljust(col0_len), str(value))
         elif args[0] == "plot":
             args.pop(0)
 

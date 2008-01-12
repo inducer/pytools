@@ -13,20 +13,6 @@ class LogQuantity:
     def __call__(self):
         raise NotImplementedError
 
-class PushLogQuantity(LogQuantity):
-    def __init__(self, name, unit=None, description=None):
-        LogQuantity.__init__(self, name, unit, description)
-        self.value = None
-
-    def set(self, value):
-        if self.value is None:
-            self.value = value
-        else:
-            raise RuntimeError, "Push quantities may only be set once per cycle"
-
-    def __call__(self):
-        return self.value
-
 class CallableLogQuantityAdapter(LogQuantity):
     def __init__(self, callable, name, unit=None, description=None):
         self.callable = callable
@@ -83,15 +69,36 @@ def _join_by_first_of_tuple(list_of_iterables):
 
 
 class LogManager:
-    def __init__(self):
+    def __init__(self, filename=None):
         self.quantity_buffers = {}
         self.tick_count = 0
+        self.filename = filename
+
+        self.variables = {}
+
+        if filename is not None:
+            from os import access, R_OK
+            if access(self.filename, R_OK):
+                raise IOError, "cowardly refusing to overwrite '%s'" % self.filename
+
+        from time import time
+        self.last_checkpoint = time()
+
+    def set_variable(self, name, value):
+        self.variables[name] = value
 
     def tick(self):
         for qbuf in self.quantity_buffers.itervalues():
             if self.tick_count % qbuf.interval == 0:
                 qbuf.buffer.append((self.tick_count, qbuf.quantity()))
         self.tick_count += 1
+
+        if self.filename is not None:
+            from time import time
+            now = time()
+            if now - self.last_checkpoint > 10:
+                self.save()
+                self.last_checkpoint = now
 
     def add_quantity(self, quantity, interval=1):
         """Add an object derived from L{LogQuantity} to this manager."""
@@ -117,10 +124,16 @@ class LogManager:
                             for name in deps))
             if description is None:
                 description = expression
+
+            def make_eval_context(seq):
+                ctx = dict(seq)
+                ctx.update(self.variables)
+                return ctx
+
             return (description,
                     unit,
                     [(key, evaluate(parsed,
-                        dict((name, value) 
+                        make_eval_context((name, value) 
                             for name, value in zip(deps, values))
                         ))
 
@@ -165,7 +178,14 @@ class LogManager:
 
         return zipped_dubs
 
-    def save(self, filename):
+    def save(self, filename=None):
+        if filename is not None:
+            from os import access, R_OK
+            if access(filename, R_OK):
+                raise IOError, "cowardly refusing to overwrite '%s'" % filename
+        else:
+            filename = self.filename
+
         save_buffers = dict(
                 (name, _QuantityBuffer(
                     LogQuantity(
@@ -178,11 +198,12 @@ class LogManager:
                 for name, qbuf in self.quantity_buffers.iteritems())
 
         from cPickle import dump, HIGHEST_PROTOCOL
-        dump(save_buffers, open(filename, "w"), protocol=HIGHEST_PROTOCOL)
+        dump((save_buffers, self.variables), 
+                open(filename, "w"), protocol=HIGHEST_PROTOCOL)
 
     def load(self, filename):
         from cPickle import load
-        self.quantity_buffers = load(open(filename))
+        self.quantity_buffers, self.variables = load(open(filename))
 
     def get_plot_data(self, expr_x, expr_y):
         """Generate plot-ready data.
@@ -341,10 +362,31 @@ class SimulationTime(LogQuantity):
 
 
 
+class Timestep(LogQuantity):
+    def __init__(self, dt, name="dt"):
+        LogQuantity.__init__(self, name, "s", "Simulation Timestep")
+        self.dt = dt
+
+    def set_dt(self, dt):
+        self.dt = dt
+
+    def __call__(self):
+        return self.dt
+
+
+
+def set_dt(mgr, dt):
+    mgr.quantity_buffers["dt"].quantity.set_dt(dt)
+    mgr.quantity_buffers["t_sim"].quantity.set_dt(dt)
+
+
+
+
 def add_general_quantities(mgr, dt):
     mgr.add_quantity(TimestepDuration())
     mgr.add_quantity(WallTime())
     mgr.add_quantity(SimulationTime(dt))
+    mgr.add_quantity(Timestep(dt))
     mgr.add_quantity(TimestepCounter())
 
 
