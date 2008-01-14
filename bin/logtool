@@ -45,14 +45,15 @@ following:
             print "Time series"
             print "-----------"
 
-            items = list(logmgr.quantity_buffers.iteritems())
+            items = list(logmgr.quantity_data.iteritems())
             items.sort(lambda a,b: cmp(a[0], b[0]))
 
             col0_len = max(len(k) for k, v in items) + 1
 
-            for key, qbuf in items:
-                print "%s\t%s" % (key.ljust(col0_len), qbuf.quantity.description)
+            for key, qdat in items:
+                print "%s\t%s" % (key.ljust(col0_len), qdat.quantity.description)
 
+            print
             print "Constants"
             print "---------"
             items = list(logmgr.variables.iteritems())
