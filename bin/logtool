@@ -10,7 +10,9 @@ FILE is a log saved from a code run. COMMANDS may be one of the
 following:
 "list" to list the available variables,
 "plot expr_x,expr_y" to plot a graph,
-"datafile outfile expr_x,expr_y" to write out a data file."""
+"datafile outfile expr_x,expr_y" to write out a data file.
+"table variable" to print the full data table for a time series variable.
+"""
     parser = OptionParser(usage="%prog FILE COMMANDS FILE COMMANDS...",
             description=description)
 
@@ -40,8 +42,8 @@ following:
     did_plot = False
 
     while args:
-        if args[0] == "list":
-            args.pop(0)
+        cmd = args.pop(0)
+        if cmd == "list":
             print "Time series"
             print "-----------"
 
@@ -63,11 +65,8 @@ following:
 
             for key, value in items:
                 print "%s\t%s" % (key.ljust(col0_len), str(value))
-        elif args[0] == "plot":
-            args.pop(0)
-
-            expr_x, expr_y = args[0].split(",")
-            args.pop(0)
+        elif cmd == "plot":
+            expr_x, expr_y = args.pop(0).split(",")
 
             from pylab import xlabel, ylabel, plot
             (data_x, descr_x, unit_x), (data_y, descr_y, unit_y) = \
@@ -92,18 +91,15 @@ following:
             plot(data_x, data_y, hold=True, **kwargs)
 
             did_plot = True
-        elif args[0] == "datafile":
-            args.pop(0)
+        elif cmd == "datafile":
+            expr_x, expr_y = args.pop(0).split(",")
 
-            expr_x, expr_y = args[0].split(",")
-            args.pop(0)
-
-            logmgr.write_datafile(args[0], expr_x, expr_y)
-            args.pop(0)
+            logmgr.write_datafile(args.pop(0), expr_x, expr_y)
+        elif cmd == "table":
+            print logmgr.quantity_data[args.pop(0)].table
         else:
             # not a known command, interpret as file name
-            logmgr.load(args[0])
-            args.pop(0)
+            logmgr.load(cmd)
 
     if did_plot:
         from pylab import show, title, legend

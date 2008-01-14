@@ -20,6 +20,9 @@ class DataTable:
         if len(self.column_indices) != len(self.column_names):
             raise RuntimeError, "non-unique column names encountered"
 
+    def __bool__(self):
+        return bool(self.data)
+
     def __len__(self):
         return len(self.data)
 
@@ -28,10 +31,13 @@ class DataTable:
 
     def __str__(self):
         """Return a pretty-printed version of the table."""
-        col_widths = [
-                max(len(self.column_names[i]), 
-                    max(len(str(row[i])) for row in self.data))
-                for i in range(len(self.column_names))]
+
+        def col_width(i):
+            width = len(self.column_names[i])
+            if self:
+                width = max(width, max(len(str(row[i])) for row in self.data))
+            return width
+        col_widths = [col_width(i) for i in range(len(self.column_names))]
 
         def format_row(row):
             return "|".join([str(cell).ljust(col_width)
