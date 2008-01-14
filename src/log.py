@@ -508,5 +508,5 @@ def add_run_info(mgr):
     mgr.set_variable("cmdline", " ".join(sys.argv))
     from socket import gethostname
     mgr.set_variable("machine", gethostname())
-    from time import gmtime, strftime
-    mgr.set_variable("date", strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()))
+    from time import localtime, strftime
+    mgr.set_variable("date", strftime("%a, %d %b %Y %H:%M:%S %Z", localtime()))
