@@ -27,13 +27,16 @@ def factorial(n):
 
 # Data structures ------------------------------------------------------------
 class Record(object):
-    def __init__(self, valuedict, exclude=["self"]):
+    def __init__(self, valuedict=None, exclude=["self"], **kwargs):
         try:
             fields = self.__class__.fields
         except AttributeError:
             self.__class__.fields = fields = set()
 
-        for key, value in valuedict.iteritems():
+        if valuedict is not None:
+            kwargs.update(valuedict)
+
+        for key, value in kwargs.iteritems():
             if not key in exclude:
                 fields.add(key)
                 setattr(self, key, value)
