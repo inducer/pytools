@@ -8,7 +8,7 @@ def main():
     description = """Operate on data gathered during code runs.
 FILE is a log saved from a code run. COMMANDS may be one of the
 following:
-"list" to list the available variables,
+"list" to list the available time-series and constants,
 "plot expr_x,expr_y" to plot a graph,
 "datafile outfile expr_x,expr_y" to write out a data file.
 "table variable" to print the full data table for a time series variable.
@@ -44,10 +44,18 @@ following:
     logmgr = LogManager()
 
     did_plot = False
+    did_load = False
+
+    def check_no_file():
+        if not did_load:
+            from warnings import warn
+            warn("No file loaded -- is this what you want?")
 
     while args:
         cmd = args.pop(0)
         if cmd == "list":
+            check_no_file()
+
             print "Time series"
             print "-----------"
 
@@ -62,7 +70,7 @@ following:
             print
             print "Constants"
             print "---------"
-            items = list(logmgr.variables.iteritems())
+            items = list(logmgr.constants.iteritems())
             items.sort(lambda a,b: cmp(a[0], b[0]))
 
             col0_len = max(len(k) for k, v in items) + 1
@@ -70,6 +78,8 @@ following:
             for key, value in items:
                 print "%s\t%s" % (key.ljust(col0_len), str(value))
         elif cmd == "plot":
+            check_no_file()
+
             expr_x, expr_y = args.pop(0).split(",")
 
             from pylab import xlabel, ylabel, plot
@@ -96,14 +106,23 @@ following:
 
             did_plot = True
         elif cmd == "datafile":
+            check_no_file()
+
             expr_x, expr_y = args.pop(0).split(",")
 
             logmgr.write_datafile(args.pop(0), expr_x, expr_y)
         elif cmd == "table":
+            check_no_file()
+
+            if not did_load:
+                from warnings import warn
+                warn("No file loaded -- is this what you want?")
+
             print logmgr.quantity_data[args.pop(0)].table
         else:
             # not a known command, interpret as file name
             logmgr.load(cmd)
+            did_load = True
 
     if did_plot:
         from pylab import show, title, legend, axis
