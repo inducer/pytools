@@ -31,6 +31,21 @@ class LogQuantity:
 
 
 
+class SimulationLogQuantity(LogQuantity):
+    """A source of loggable scalars that needs to know the simulation timestep."""
+
+    def __init__(self, dt, name, unit=None, description=None):
+        LogQuantity.__init__(self, name, unit, description)
+
+        self.dt = dt
+
+    def set_dt(self, dt):
+        self.dt = dt
+    
+
+
+
+
 class CallableLogQuantityAdapter(LogQuantity):
     """Adapt a 0-ary callable as a L{LogQuantity}."""
     def __init__(self, callable, name, unit=None, description=None):
@@ -639,16 +654,12 @@ def add_general_quantities(mgr):
 
 
 
-class SimulationTime(LogQuantity):
+class SimulationTime(SimulationLogQuantity):
     """Record (monotonically increasing) simulation time."""
 
     def __init__(self, dt, name="t_sim", start=0):
-        LogQuantity.__init__(self, name, "s", "Simulation Time")
-        self.dt = dt
+        SimulationLogQuantity.__init__(self, dt, name, "s", "Simulation Time")
         self.t = 0
-
-    def set_dt(self, dt):
-        self.dt = dt
 
     def __call__(self):
         result = self.t
@@ -658,15 +669,11 @@ class SimulationTime(LogQuantity):
 
 
 
-class Timestep(LogQuantity):
+class Timestep(SimulationLogQuantity):
     """Record the magnitude of the simulated time step."""
 
     def __init__(self, dt, name="dt"):
-        LogQuantity.__init__(self, name, "s", "Simulation Timestep")
-        self.dt = dt
-
-    def set_dt(self, dt):
-        self.dt = dt
+        SimulationLogQuantity.__init__(self, dt, name, "s", "Simulation Timestep")
 
     def __call__(self):
         return self.dt
@@ -676,8 +683,9 @@ class Timestep(LogQuantity):
 def set_dt(mgr, dt):
     """Set the simulation timestep on L{LogManager} C{mgr} to C{dt}."""
 
-    mgr.quantity_data["dt"].quantity.set_dt(dt)
-    mgr.quantity_data["t_sim"].quantity.set_dt(dt)
+    for qdat in mgr.quantity_data.itervalues():
+        if isinstance(qdat.quantity, SimulationLogQuantity):
+            qdat.quantity.set_dt(dt)
 
 
 
