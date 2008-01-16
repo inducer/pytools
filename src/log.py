@@ -6,8 +6,14 @@ from __future__ import division
 # timing function -------------------------------------------------------------
 def time():
     """Return elapsed CPU time, as a float, in seconds."""
-    from resource import getrusage, RUSAGE_SELF
-    return getrusage(RUSAGE_SELF).ru_utime
+    import os
+    time_opt = os.environ.get("PYTOOLS_LOG_TIME")
+    if time_opt == "wall":
+        from time import time
+        return time()
+    else:
+        from resource import getrusage, RUSAGE_SELF
+        return getrusage(RUSAGE_SELF).ru_utime
 
 
 
