@@ -25,6 +25,15 @@ def factorial(n):
 
 
 
+def norm_2(iterable):
+    return sum(i**2 for i in iterable)**0.5
+
+def norm_p(iterable):
+    return sum(i**p for i in iterable)**(1/p)
+
+
+
+
 # Data structures ------------------------------------------------------------
 class Record(object):
     def __init__(self, valuedict=None, exclude=["self"], **kwargs):
