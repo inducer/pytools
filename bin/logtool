@@ -87,7 +87,6 @@ following:
             expr_x, expr_y = args.pop(0).split(",")
 
             from pylab import xlabel, ylabel, plot
-            print options.start_step, options.end_step
             (data_x, descr_x, unit_x), (data_y, descr_y, unit_y) = \
                     logmgr.get_plot_data(expr_x, expr_y,
                             options.start_step, options.end_step)
