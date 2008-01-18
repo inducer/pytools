@@ -289,7 +289,7 @@ class LogManager:
             from pymbolic import substitute, parse
 
             unit = substitute(parsed,
-                    dict((dd.expr, parse(dd.quantity.unit)) for dd in dep_data)
+                    dict((dd.varname, parse(dd.quantity.unit)) for dd in dep_data)
                     )
 
         if description is None:
@@ -383,14 +383,20 @@ class LogManager:
         from cPickle import load
         self.quantity_data, self.constants, self.is_parallel = load(open(filename))
 
-    def get_plot_data(self, expr_x, expr_y):
+    def get_plot_data(self, expr_x, expr_y, min_step=None, max_step=None):
         """Generate plot-ready data.
 
         @return: C{(data_x, descr_x, unit_x), (data_y, descr_y, unit_y)}
         """
         (descr_x, descr_y), (unit_x, unit_y), data = \
                 self.get_joint_dataset([expr_x, expr_y])
-        _, stepless_data = zip(*data)
+        if min_step is not None:
+            data = [(step, tup) for step, tup in data if min_step <= step]
+        if max_step is not None:
+            data = [(step, tup) for step, tup in data if step <= max_step]
+
+        stepless_data = [tup for step, tup in data]
+
         data_x, data_y = zip(*stepless_data)
         return (data_x, descr_x, unit_x), \
                (data_y, descr_y, unit_y)
