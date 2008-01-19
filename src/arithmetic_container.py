@@ -1,3 +1,4 @@
+from __future__ import division
 from decorator import decorator
 import operator
 
@@ -36,6 +37,8 @@ class ArithmeticList(list):
     def __sub__(self, other): return self.binary_operator(other, operator.sub)
     def __mul__(self, other): return self.binary_operator(other, operator.mul)
     def __div__(self, other): return self.binary_operator(other, operator.div)
+    def __truediv__(self, other): return self.binary_operator(other, operator.truediv)
+    def __floordiv__(self, other): return self.binary_operator(other, operator.floordiv)
     def __mod__(self, other): return self.binary_operator(other, operator.mod)
     def __pow__(self, other): return self.binary_operator(other, operator.pow)
     def __lshift__(self, other): return self.binary_operator(other, operator.lshift)
@@ -48,6 +51,8 @@ class ArithmeticList(list):
     def __rsub__(self, other): return self.reverse_binary_operator(other, operator.sub)
     def __rmul__(self, other): return self.reverse_binary_operator(other, operator.mul)
     def __rdiv__(self, other): return self.reverse_binary_operator(other, operator.div)
+    def __rtruediv__(self, other): return self.reverse_binary_operator(other, operator.truediv)
+    def __rfloordiv__(self, other): return self.reverse_binary_operator(other, operator.floordiv)
     def __rmod__(self, other): return self.reverse_binary_operator(other, operator.mod)
     def __rpow__(self, other): return self.reverse_binary_operator(other, operator.pow)
     def __rlshift__(self, other): return self.reverse_binary_operator(other, operator.lshift)
@@ -75,9 +80,22 @@ class ArithmeticList(list):
         return self
 
     def __idiv__(self, other): 
+        from operator import div
+        self.assert_same_length(other)
+        for i in range(len(self)): 
+            self[i] = div(self[i], other[i])
+        return self
+
+    def __itruediv__(self, other): 
         self.assert_same_length(other)
         for i in range(len(self)): 
             self[i] /= other[i]
+        return self
+
+    def __ifloordiv__(self, other): 
+        self.assert_same_length(other)
+        for i in range(len(self)): 
+            self[i] //= other[i]
         return self
 
     def __imod__(self, other): 
