@@ -69,7 +69,7 @@ following:
             col0_len = max(len(k) for k, v in items) + 1
 
             for key, qdat in items:
-                print "%s\t%s" % (key.ljust(col0_len), qdat.quantity.description)
+                print "%s\t%s" % (key.ljust(col0_len), qdat.description)
 
             print
             print "Constants"

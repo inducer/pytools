@@ -19,7 +19,7 @@ def time():
 
 
 # abstract logging interface --------------------------------------------------
-class LogQuantity:
+class LogQuantity(object):
     """A source of loggable scalars."""
     def __init__(self, name, unit=None, description=None):
         self.name = name
@@ -37,16 +37,40 @@ class LogQuantity:
 
 
 
-class SimulationLogQuantity(LogQuantity):
-    """A source of loggable scalars that needs to know the simulation timestep."""
+class MultiLogQuantity(object):
+    """A source of multiple loggable scalars."""
+    def __init__(self, names, units=None, descriptions=None):
+        self.names = names
+        self.units = units
+        self.descriptions = descriptions
+    
+    @property
+    def default_aggregators(self): return [None] * len(self.names)
 
-    def __init__(self, dt, name, unit=None, description=None):
-        LogQuantity.__init__(self, name, unit, description)
+    def __call__(self):
+        """Return an iterable of the current values of the diagnostic represented 
+        by this L{MultiLogQuantity}."""
+        raise NotImplementedError
 
+
+
+
+class DtConsumer(object):
+    def __init__(self, dt):
         self.dt = dt
 
     def set_dt(self, dt):
         self.dt = dt
+
+
+
+
+class SimulationLogQuantity(LogQuantity, DtConsumer):
+    """A source of loggable scalars that needs to know the simulation timestep."""
+
+    def __init__(self, dt, name, unit=None, description=None):
+        LogQuantity.__init__(self, name, unit, description)
+        DtConsumer.__init__(self, dt)
     
 
 
@@ -65,12 +89,19 @@ class CallableLogQuantityAdapter(LogQuantity):
 
 
 # manager functionality -------------------------------------------------------
-class _QuantityData:
-    def __init__(self, quantity, interval=1, table=None, default_aggregator=None):
+class _GatherDescriptor(object):
+    def __init__(self, quantity, interval):
         self.quantity = quantity
         self.interval = interval
 
-        self.default_aggregator = default_aggregator or quantity.default_aggregator
+
+
+
+class _QuantityData(object):
+    def __init__(self, unit, description, default_aggregator, table=None):
+        self.unit = unit
+        self.description = description
+        self.default_aggregator = default_aggregator
 
         if table is None:
             from pytools.datatable import DataTable
@@ -118,7 +149,7 @@ def _join_by_first_of_tuple(list_of_iterables):
 
 
 
-class LogManager:
+class LogManager(object):
     """A parallel-capable diagnostic time-series logging facility.
 
     A C{LogManager} logs any number of named time series of floats to 
@@ -140,6 +171,7 @@ class LogManager:
           synchronized to the head node, which then writes them out to disk.
         """
         self.quantity_data = {}
+        self.gather_descriptors = []
         self.tick_count = 0
         self.filename = filename
 
@@ -199,9 +231,16 @@ class LogManager:
         """
         start_time = time()
 
-        for qbuf in self.quantity_data.itervalues():
-            if self.tick_count % qbuf.interval == 0:
-                qbuf.table.insert_row((self.tick_count, self.rank, qbuf.quantity()))
+        for gd in self.gather_descriptors:
+            if self.tick_count % gd.interval == 0:
+                q_value = gd.quantity()
+                if isinstance(gd.quantity, MultiLogQuantity):
+                    for name, value in zip(gd.quantity.names, q_value):
+                        self.quantity_data[name].table.insert_row(
+                                (self.tick_count, self.rank, value))
+                else:
+                    self.quantity_data[gd.quantity.name].table.insert_row(
+                                (self.tick_count, self.rank, q_value))
         self.tick_count += 1
 
         end_time = time()
@@ -258,7 +297,19 @@ class LogManager:
 
     def add_quantity(self, quantity, interval=1):
         """Add an object derived from L{LogQuantity} to this manager."""
-        self.quantity_data[quantity.name] = _QuantityData(quantity, interval)
+        self.gather_descriptors.append(_GatherDescriptor(quantity, interval))
+        if isinstance(quantity, MultiLogQuantity):
+            for name, unit, description, def_agg in zip(
+                    quantity.names,
+                    quantity.units,
+                    quantity.descriptions,
+                    quantity.default_aggregators):
+                self.quantity_data[name] = _QuantityData(
+                        unit, description, def_agg)
+        else:
+            self.quantity_data[quantity.name] = _QuantityData(
+                        quantity.unit, quantity.description, 
+                        quantity.default_aggregator)
 
     def get_expr_dataset(self, expression, description=None, unit=None):
         """Prepare a time-series dataset for a given expression.
@@ -289,7 +340,7 @@ class LogManager:
             from pymbolic import substitute, parse
 
             unit = substitute(parsed,
-                    dict((dd.varname, parse(dd.quantity.unit)) for dd in dep_data)
+                    dict((dd.varname, parse(dd.qdat.unit)) for dd in dep_data)
                     )
 
         if description is None:
@@ -358,21 +409,8 @@ class LogManager:
         else:
             filename = self.filename
 
-        save_buffers = dict(
-                (name, _QuantityData(
-                    LogQuantity(
-                        qdat.quantity.name,
-                        qdat.quantity.unit,
-                        qdat.quantity.description,
-                        ),
-                    qdat.interval,
-                    qdat.table,
-                    qdat.default_aggregator,
-                    ))
-                for name, qdat in self.quantity_data.iteritems())
-
         from cPickle import dump, HIGHEST_PROTOCOL
-        dump((save_buffers, self.constants, self.is_parallel), 
+        dump((self.quantity_data, self.constants, self.is_parallel), 
                 open(filename, "w"), protocol=HIGHEST_PROTOCOL)
 
     def load(self, filename):
@@ -500,11 +538,10 @@ class LogManager:
                 from pymbolic import evaluate
                 agg_func = Nth(evaluate(dep.index))
 
-            quantity = self.quantity_data[name].quantity
+            qdat = self.quantity_data[name]
 
             from pytools import Record
-            this_dep_data = Record(name=name, quantity=quantity, 
-                    agg_func=agg_func,
+            this_dep_data = Record(name=name, qdat=qdat, agg_func=agg_func,
                     varname="logvar%d" % dep_idx, expr=dep)
             dep_data.append(this_dep_data)
 
@@ -696,7 +733,7 @@ def set_dt(mgr, dt):
     """Set the simulation timestep on L{LogManager} C{mgr} to C{dt}."""
 
     for qdat in mgr.quantity_data.itervalues():
-        if isinstance(qdat.quantity, SimulationLogQuantity):
+        if isinstance(qdat.quantity, DtConsumer):
             qdat.quantity.set_dt(dt)
 
 
