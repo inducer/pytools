@@ -692,6 +692,27 @@ class CPUTime(LogQuantity):
 
 
 
+class ETA(LogQuantity):
+    """Records an estimate of how long the computation will still take."""
+    def __init__(self, total_steps, name="t_eta"):
+        LogQuantity.__init__(self, name, "s", "Estimated remaining duration")
+
+        self.steps = 0
+        self.total_steps = total_steps
+        self.start = time()
+
+    def __call__(self):
+        fraction_done = self.steps/self.total_steps
+        self.steps += 1
+        time_spent = time()-self.start
+        if fraction_done > 1e-9:
+            return time_spent/fraction_done-time_spent
+        else:
+            return 0
+
+
+
+
 def add_general_quantities(mgr):
     """Add generally applicable L{LogQuantity} objects to C{mgr}."""
 
