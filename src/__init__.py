@@ -25,10 +25,16 @@ def factorial(n):
 
 
 
-def norm_2(iterable):
-    return sum(i**2 for i in iterable)**0.5
+def norm_1(iterable):
+    return sum(abs(x) for x in iterable)
 
-def norm_p(iterable):
+def norm_2(iterable):
+    return sum(x**2 for x in iterable)**0.5
+
+def norm_inf(iterable):
+    return max(abs(x) for x in iterable)
+
+def norm_p(iterable, p):
     return sum(i**p for i in iterable)**(1/p)
 
 
