@@ -7,13 +7,15 @@ from __future__ import division
 def time():
     """Return elapsed CPU time, as a float, in seconds."""
     import os
-    time_opt = os.environ.get("PYTOOLS_LOG_TIME")
+    time_opt = os.environ.get("PYTOOLS_LOG_TIME") or "wall"
     if time_opt == "wall":
         from time import time
         return time()
-    else:
+    elif time_opt == "rusage":
         from resource import getrusage, RUSAGE_SELF
         return getrusage(RUSAGE_SELF).ru_utime
+    else:
+        raise RuntimeError, "invalid timing method '%s'" % time_opt
 
 
 
