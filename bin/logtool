@@ -26,6 +26,9 @@ following:
     parser.add_option("--units-y", 
             help="Show only units, not descriptions on the Y axis",
             action="store_true")
+    parser.add_option("--grid", 
+            help="Show a grid",
+            action="store_true")
     parser.add_option("--legend-expr", 
             help="Generate a legend from the expression",
             action="store_true")
@@ -130,16 +133,34 @@ following:
             did_load = True
 
     if did_plot:
-        from pylab import show, title, legend, axis
+        from pylab import show, title, legend, axis, grid
         if options.legend_expr or options.legend_descr:
             legend()
 
+        def float_or_none(str):
+            if str == "*":
+                return None
+            else:
+                return float(str)
+
         xmin, xmax, ymin, ymax = axis()
         if options.scale_x:
-            xmin, xmax = [float(x) for x in options.scale_x.split(",")]
+            xmin_new, xmax_new = [float_or_none(x) for x in options.scale_x.split(",")]
+            if xmin_new is not None:
+                xmin = xmin_new
+            if xmax_new is not None:
+                xmax = xmax_new
         if options.scale_y:
-            ymin, ymax = [float(x) for x in options.scale_y.split(",")]
+            ymin_new, ymax_new = [float_or_none(x) for x in options.scale_y.split(",")]
+            if ymin_new is not None:
+                ymin = ymin_new
+            if ymax_new is not None:
+                ymax = ymax_new
+
         axis((xmin, xmax, ymin, ymax))
+
+        if options.grid:
+            grid()
 
         title(options.title)
         show()
