@@ -346,6 +346,15 @@ class InfixOperator:
 
 
 
+def monkeypatch_method(cls):
+    def decorator(func):
+        setattr(cls, func.__name__, func)
+        return func
+    return decorator
+
+
+
+
 # Generic utilities ----------------------------------------------------------
 def flatten(list):
     """For an iterable of sub-iterables, generate each member of each 
