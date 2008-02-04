@@ -235,6 +235,14 @@ def work_with_arithmetic_containers(f, *args, **kwargs):
 
 
 
+def outer_product(al1, al2):
+    return ArithmeticListMatrix(
+            [[al1i*al2i for al2i in al2] for al1i in al1]
+            )
+
+
+
+
 class ArithmeticListMatrix:
     """A matrix type that operates on L{ArithmeticLists}."""
     def __init__(self, matrix):
