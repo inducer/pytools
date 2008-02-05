@@ -129,7 +129,11 @@ following:
             print logmgr.quantity_data[args.pop(0)].table
         else:
             # not a known command, interpret as file name
-            logmgr = LogManager(cmd)
+            from os import access, R_OK
+            if access(cmd, R_OK):
+                logmgr = LogManager(cmd)
+            else:
+                raise IOError, "file '%s' not found" % cmd
 
     if did_plot:
         from pylab import show, title, legend, axis, grid
