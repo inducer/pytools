@@ -48,15 +48,13 @@ following:
         parser.print_help()
         sys.exit(1)
 
-    logmgr = LogManager()
+    logmgr = None
 
     did_plot = False
-    did_load = False
 
     def check_no_file():
-        if not did_load:
-            from warnings import warn
-            warn("No file loaded -- is this what you want?")
+        if logmgr is None:
+            raise RuntimeError, "no file loaded"
 
     while args:
         cmd = args.pop(0)
@@ -69,7 +67,10 @@ following:
             items = list(logmgr.quantity_data.iteritems())
             items.sort(lambda a,b: cmp(a[0], b[0]))
 
-            col0_len = max(len(k) for k, v in items) + 1
+            if items:
+                col0_len = max(len(k) for k, v in items) + 1
+            else:
+                col0_len = 0
 
             for key, qdat in items:
                 print "%s\t%s" % (key.ljust(col0_len), qdat.description)
@@ -80,7 +81,10 @@ following:
             items = list(logmgr.constants.iteritems())
             items.sort(lambda a,b: cmp(a[0], b[0]))
 
-            col0_len = max(len(k) for k, v in items) + 1
+            if items:
+                col0_len = max(len(k) for k, v in items) + 1
+            else:
+                col0_len = 0
 
             for key, value in items:
                 print "%s\t%s" % (key.ljust(col0_len), str(value))
@@ -122,15 +126,10 @@ following:
         elif cmd == "table":
             check_no_file()
 
-            if not did_load:
-                from warnings import warn
-                warn("No file loaded -- is this what you want?")
-
             print logmgr.quantity_data[args.pop(0)].table
         else:
             # not a known command, interpret as file name
-            logmgr.load(cmd)
-            did_load = True
+            logmgr = LogManager(cmd)
 
     if did_plot:
         from pylab import show, title, legend, axis, grid
