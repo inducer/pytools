@@ -232,6 +232,8 @@ class LogManager(object):
         for name, value in self.db_conn.execute("select name, value from constants"):
             self.constants[name] = loads(value)
 
+        self.is_parallel = self.constants["is_parallel"]
+
         for name, unit, description, def_agg in self.db_conn.execute(
                 "select name, unit, description, default_aggregator from quantities"):
             qdat = self.quantity_data[name] = _QuantityData(
