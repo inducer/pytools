@@ -204,7 +204,7 @@ class LogManager(object):
         import sqlite3
 
         if filename is not None:
-            self.db_conn = sqlite3.connect(filename)
+            self.db_conn = sqlite3.connect(filename, timeout=30)
             try:
                 self.db_conn.execute("select * from quantities;")
                 self._load()
