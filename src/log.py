@@ -617,7 +617,7 @@ class LogManager(object):
             else:
                 return 0
 
-        data_block = dict((name, get_last_value(self.get_table(qname)))
+        data_block = dict((qname, get_last_value(self.get_table(qname)))
                 for qname in self.quantity_data.iterkeys())
 
         if self.mpi_comm is not None:
