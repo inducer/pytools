@@ -12,6 +12,7 @@ following:
 "plot expr_x,expr_y" to plot a graph,
 "datafile outfile expr_x,expr_y" to write out a data file.
 "table variable" to print the full data table for a time series variable.
+"prefix string" to set the legend prefix for all following plot commands.
 """
     parser = OptionParser(usage="%prog FILE COMMANDS FILE COMMANDS...",
             description=description)
@@ -51,6 +52,8 @@ following:
     logmgr = None
 
     did_plot = False
+
+    legend_prefix = ""
 
     def check_no_file():
         if logmgr is None:
@@ -110,9 +113,9 @@ following:
             kwargs = {}
 
             if options.legend_expr:
-                kwargs["label"] = expr_y
+                kwargs["label"] = legend_prefix+expr_y
             if options.legend_descr:
-                kwargs["label"] = descr_y
+                kwargs["label"] = legend_prefix+descr_y
 
             plot(data_x, data_y, hold=True, **kwargs)
 
@@ -123,6 +126,8 @@ following:
             expr_x, expr_y = args.pop(0).split(",")
 
             logmgr.write_datafile(args.pop(0), expr_x, expr_y)
+        elif cmd == "prefix":
+            legend_prefix = args.pop(0)
         elif cmd == "table":
             check_no_file()
 
