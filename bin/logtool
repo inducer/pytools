@@ -131,7 +131,7 @@ following:
         elif cmd == "table":
             check_no_file()
 
-            print logmgr.quantity_data[args.pop(0)].table
+            print logmgr.get_table(args.pop(0))
         else:
             # not a known command, interpret as file name
             from os import access, R_OK
