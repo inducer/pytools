@@ -330,10 +330,10 @@ class LogManager(object):
 
             # figure out next sync tick, broadcast to peers
             ticks_per_10_sec = 10*self.tick_count/max(1, end_time-self.start_time)
-            next_sync_tick = self.tick_count + int(max(10, ticks_per_10_sec))
+            self.next_sync_tick = self.tick_count + int(max(50, ticks_per_10_sec))
             if self.mpi_comm is not None:
                 from boost.mpi import broadcast
-                self.next_sync_tick = broadcast(self.mpi_comm, next_sync_tick, self.head_rank)
+                self.next_sync_tick = broadcast(self.mpi_comm, self.next_sync_tick, self.head_rank)
 
         self.t_log = time() - start_time
 
