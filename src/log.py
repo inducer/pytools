@@ -185,11 +185,11 @@ class LogManager(object):
 
         if mpi_comm is None:
             self.rank = 0
-            self.last_checkpoint = self.start_time
         else:
             self.rank = mpi_comm.rank
-            self.next_sync_tick = 10
             self.head_rank = 0
+
+        self.next_sync_tick = 10
 
         # watch stuff
         self.watches = []
@@ -318,20 +318,22 @@ class LogManager(object):
         if self.tick_count == self.next_watch_tick:
             self._watch_tick()
 
-        # synchronize logs with parallel peers, if necessary
-        if self.mpi_comm is not None:
-            # parallel-case : sync, then checkpoint
-            if self.tick_count == self.next_sync_tick:
+        if self.tick_count == self.next_sync_tick:
+            # sync every few seconds:
+            if self.mpi_comm is not None:
+                # first, from parallel peers
                 self.synchronize_logs()
 
-                # figure out next sync tick, broadcast to peers
-                ticks_per_20_sec = 20*self.tick_count/max(1, end_time-self.start_time)
-                next_sync_tick = self.tick_count + int(max(10, ticks_per_20_sec))
+            if self.db_conn is not None:
+                # then, to disk
+                self.db_conn.commit()
+
+            # figure out next sync tick, broadcast to peers
+            ticks_per_10_sec = 10*self.tick_count/max(1, end_time-self.start_time)
+            next_sync_tick = self.tick_count + int(max(10, ticks_per_10_sec))
+            if self.mpi_comm is not None:
                 from boost.mpi import broadcast
                 self.next_sync_tick = broadcast(self.mpi_comm, next_sync_tick, self.head_rank)
-
-        if self.db_conn is not None:
-            self.db_conn.commit()
 
         self.t_log = time() - start_time
 
@@ -354,9 +356,6 @@ class LogManager(object):
                         for row in rows:
                             self.db_conn.execute("insert into ? values (?,?,?)",
                                     (name,) + row)
-                        
-            if self.db_conn is not None:
-                self.db_conn.commit()
         else:
             # send non-head data away
             gather(self.mpi_comm, 
