@@ -320,13 +320,7 @@ class LogManager(object):
 
         if self.tick_count == self.next_sync_tick:
             # sync every few seconds:
-            if self.mpi_comm is not None:
-                # first, from parallel peers
-                self.synchronize_logs()
-
-            if self.db_conn is not None:
-                # then, to disk
-                self.db_conn.commit()
+            self.save()
 
             # figure out next sync tick, broadcast to peers
             ticks_per_10_sec = 10*self.tick_count/max(1, end_time-self.start_time)
@@ -339,6 +333,10 @@ class LogManager(object):
 
     def save(self):
         self.synchronize_logs()
+
+        if self.db_conn is not None:
+            # then, to disk
+            self.db_conn.commit()
 
     def synchronize_logs(self):
         """Transfer data from client ranks to the head rank.
@@ -632,11 +630,12 @@ class LogManager(object):
                 for name, value in data_block.iteritems():
                     values.setdefault(name, []).append(value)
 
-            print " | ".join(
-                    "%s=%g" % (watch.expr, watch.compiled(
-                       *[dd.agg_func(values[dd.name]) for dd in watch.dep_data]))
-                    for watch in self.watches
-                    )
+            if self.watches:
+                print " | ".join(
+                        "%s=%g" % (watch.expr, watch.compiled(
+                           *[dd.agg_func(values[dd.name]) for dd in watch.dep_data]))
+                        for watch in self.watches
+                        )
 
         ticks_per_sec = self.tick_count/max(1, time()-self.start_time)
         self.next_watch_tick = self.tick_count + int(max(1, ticks_per_sec))

@@ -466,8 +466,9 @@ def partition(criterion, list):
 
 
 
-def product(list):
-    return reduce(lambda x,y: x*y, list, 1)
+def product(iterable):
+    from operator import mul
+    return reduce(mul, iterable, 1)
 
 
 
