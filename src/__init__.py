@@ -209,15 +209,6 @@ class DependentDictionary(object):
 
 
 
-def len_iterable(iterable):
-    result = 0
-    for i in iterable:
-        result += 1
-    return result
-
-
-
-
 def add_tuples(t1, t2):
     return tuple([t1v + t2v for t1v, t2v in zip(t1, t2)])
 
@@ -249,6 +240,7 @@ def shift(vec, dist):
 
 
 
+# plotting --------------------------------------------------------------------
 def write_1d_gnuplot_graph(f, a, b, steps=100, fname=",,f.data", progress = False):
     h = float(b - a)/steps
     gnuplot_file = file(fname, "w")
@@ -370,6 +362,12 @@ def monkeypatch_class(name, bases, namespace):
 
 
 # Generic utilities ----------------------------------------------------------
+def len_iterable(iterable):
+    return sum(1 for i in iterable)
+
+
+
+
 def flatten(list):
     """For an iterable of sub-iterables, generate each member of each 
     sub-iterable in turn, i.e. a flattened version of that super-iterable.
@@ -379,19 +377,6 @@ def flatten(list):
     for sublist in list:
         for j in sublist:
             yield j
-
-
-
-
-def sum_over(function, arguments):
-    raise RuntimeError, "Horribly inefficient routine called."
-
-    # wherever this is used, it should be replaced by sum() and a generator
-    # expression.
-    result = 0
-    for i in arguments:
-        result += function(i)
-    return result
 
 
 
@@ -429,6 +414,7 @@ def average(iterable):
         count += 1
 
     return sum/count
+
 
 
 
@@ -725,7 +711,60 @@ class Table:
 
 
 
-# Obscure stuff --------------------------------------------------------------
+
+# command line interfaces -----------------------------------------------------
+def gather_parameters_from_user(variables, constants={}, doc={},):
+    import sys
+
+    def show_usage():
+        print "usage: %s <FILE-OR-STATEMENTS>" % sys.argv[0]
+        print
+        print "FILE-OR-STATEMENTS may either be Python statements of the form"
+        print "'variable1 = value1; variable2 = value2' or the name of a file"
+        print "containing such statements. Any valid Python code may be used"
+        print "on the command line or in a command file. If new variables are"
+        print "used, they must start with 'user_'."
+        print
+        print "The following variables are recognized:"
+        for v in sorted(variables):
+            print "  %s = %s" % (v, variables[v])
+            if v in doc:
+                print "    %s" % doc[v]
+
+        print
+        print "The following constants are supplied:"
+        for c in sorted(constants):
+            print "  %s = %s" % (c, constants[c])
+            if c in doc:
+                print "    %s" % doc[c]
+
+        sys.exit(2)
+
+    if len(sys.argv) != 2 or sys.argv[1] in ["-h", "-help", "--help"]:
+        show_usage()
+
+    execenv = variables.copy()
+    execenv.update(constants)
+
+    import os
+    if os.access(sys.argv[1], os.F_OK):
+        exec open(sys.argv[1], "r") in execenv
+    else:
+        exec sys.argv[1] in execenv
+
+    # check if the user set invalid keys 
+    for added_key in set(execenv.keys()) - set(variables.keys()) - set(constants.keys()):
+        if not (added_key.startswith("user_") or added_key == "__builtins__"):
+            raise ValueError( 
+                    "invalid setup key: '%s' "
+                    "(user variables must start with 'user_')" % added_key)
+
+    return dict((key, execenv[key]) for key in variables)
+
+
+
+
+# obscure stuff --------------------------------------------------------------
 def enumerate_basic_directions(dimensions):
     coordinate_list = [[0], [1], [-1]]
     return reduce(cartesian_product_sum, [coordinate_list] * dimensions)[1:]
