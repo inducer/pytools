@@ -759,7 +759,7 @@ def gather_parameters_from_user(variables, constants={}, doc={},):
                     "invalid setup key: '%s' "
                     "(user variables must start with 'user_')" % added_key)
 
-    return dict((key, execenv[key]) for key in variables)
+    return Record(dict((key, execenv[key]) for key in variables))
 
 
 
