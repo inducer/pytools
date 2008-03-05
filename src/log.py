@@ -33,7 +33,7 @@ class LogQuantity(object):
 
     def __call__(self):
         """Return the current value of the diagnostic represented by this 
-        L{LogQuantity}."""
+        L{LogQuantity} or None if no value is available."""
         raise NotImplementedError
 
 
@@ -196,9 +196,9 @@ class LogManager(object):
         self.next_watch_tick = 1
 
         # database binding
-        import sqlite3
-
         if filename is not None:
+            import sqlite3
+
             self.db_conn = sqlite3.connect(filename, timeout=30)
             try:
                 self.db_conn.execute("select * from quantities;")
@@ -296,6 +296,9 @@ class LogManager(object):
         start_time = time()
 
         def insert_datapoint(name, value):
+            if value is None:
+                return
+
             self.get_table(name).insert_row(
                 (self.tick_count, self.rank, value))
             if self.db_conn is not None:
