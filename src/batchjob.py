@@ -77,6 +77,7 @@ class PBSJob(BatchJob):
         from subprocess import Popen
         args = [
             "-N", self.moniker,
+            "-d", self.subdir,
             ]
 
         from os import getenv
