@@ -433,6 +433,21 @@ def all_equal(iterable):
 
 
 
+def all_roughly_equal(iterable, threshold):
+    it = iterable.__iter__()
+    try:
+        value = it.next()
+    except StopIteration:
+        return True # empty sequence
+
+    for i in it:
+        if abs(i - value) > threshold:
+            return False
+    return True
+
+
+
+
 def decorate(function, list):
     return map(lambda x: (x, function(x)), list)
 
