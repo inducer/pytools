@@ -728,11 +728,14 @@ class Table:
 
 
 # command line interfaces -----------------------------------------------------
-def gather_parameters_from_user(variables, constants={}, doc={},):
-    import sys
+class CPyUserInterface(object):
+    def __init__(self, variables, constants={}, doc={}):
+        self.variables = variables
+        self.constants = constants
+        self.doc = doc
 
-    def show_usage():
-        print "usage: %s <FILE-OR-STATEMENTS>" % sys.argv[0]
+    def show_usage(self, progname):
+        print "usage: %s <FILE-OR-STATEMENTS>" % progname
         print
         print "FILE-OR-STATEMENTS may either be Python statements of the form"
         print "'variable1 = value1; variable2 = value2' or the name of a file"
@@ -741,40 +744,57 @@ def gather_parameters_from_user(variables, constants={}, doc={},):
         print "used, they must start with 'user_'."
         print
         print "The following variables are recognized:"
-        for v in sorted(variables):
-            print "  %s = %s" % (v, variables[v])
-            if v in doc:
-                print "    %s" % doc[v]
+        for v in sorted(self.variables):
+            print "  %s = %s" % (v, self.variables[v])
+            if v in self.doc:
+                print "    %s" % self.doc[v]
 
         print
         print "The following constants are supplied:"
-        for c in sorted(constants):
-            print "  %s = %s" % (c, constants[c])
-            if c in doc:
-                print "    %s" % doc[c]
+        for c in sorted(self.constants):
+            print "  %s = %s" % (c, self.constants[c])
+            if c in self.doc:
+                print "    %s" % self.doc[c]
 
-        sys.exit(2)
+    def gather(self, argv=None):
+        import sys
 
-    if len(sys.argv) != 2 or sys.argv[1] in ["-h", "-help", "--help"]:
-        show_usage()
+        if argv is None:
+            argv = sys.argv
 
-    execenv = variables.copy()
-    execenv.update(constants)
+        if len(argv) != 2 or (
+                ("-h" in argv) or 
+                ("help" in argv) or 
+                ("-help" in argv) or
+                ("--help" in argv)):
+            self.show_usage(argv[0])
+            sys.exit(2)
 
-    import os
-    if os.access(sys.argv[1], os.F_OK):
-        exec open(sys.argv[1], "r") in execenv
-    else:
-        exec sys.argv[1] in execenv
+        execenv = self.variables.copy()
+        execenv.update(self.constants)
 
-    # check if the user set invalid keys 
-    for added_key in set(execenv.keys()) - set(variables.keys()) - set(constants.keys()):
-        if not (added_key.startswith("user_") or added_key == "__builtins__"):
-            raise ValueError( 
-                    "invalid setup key: '%s' "
-                    "(user variables must start with 'user_')" % added_key)
+        import os
+        if os.access(argv[1], os.F_OK):
+            exec open(argv[1], "r") in execenv
+        else:
+            exec argv[1] in execenv
 
-    return Record(dict((key, execenv[key]) for key in variables))
+        # check if the user set invalid keys 
+        for added_key in (
+                set(execenv.keys()) 
+                - set(self.variables.keys()) 
+                - set(self.constants.keys())):
+            if not (added_key.startswith("user_") or added_key == "__builtins__"):
+                raise ValueError( 
+                        "invalid setup key: '%s' "
+                        "(user variables must start with 'user_')" % added_key)
+
+        result = Record(dict((key, execenv[key]) for key in self.variables))
+        self.validate(result)
+        return result
+
+    def validate(self, setup):
+        pass
 
 
 
