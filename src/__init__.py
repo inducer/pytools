@@ -762,7 +762,7 @@ class CPyUserInterface(object):
         if argv is None:
             argv = sys.argv
 
-        if len(argv) != 2 or (
+        if len(argv) == 1 or (
                 ("-h" in argv) or 
                 ("help" in argv) or 
                 ("-help" in argv) or
@@ -774,10 +774,11 @@ class CPyUserInterface(object):
         execenv.update(self.constants)
 
         import os
-        if os.access(argv[1], os.F_OK):
-            exec open(argv[1], "r") in execenv
-        else:
-            exec argv[1] in execenv
+        for arg in argv[1:]:
+            if os.access(arg, os.F_OK):
+                exec open(arg, "r") in execenv
+            else:
+                exec arg in execenv
 
         # check if the user set invalid keys 
         for added_key in (
