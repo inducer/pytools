@@ -21,6 +21,8 @@ following:
             help="Set the scale of the X axis")
     parser.add_option("--scale-y", metavar="YMIN,YMAX",
             help="Set the scale of the Y axis")
+    parser.add_option("--skip", metavar="N", type="int",
+            help="Only use every N'th data point", default=1)
     parser.add_option("--units-x", 
             help="Show only units, not descriptions on the X axis",
             action="store_true")
@@ -59,7 +61,7 @@ following:
     styles = [
             Record(dashes=dashes, color=color)
             for dashes, color in cartesian_product(
-                [(), (2, 2), (6, 2), (1,1) ],
+                [(), (12, 2), (4, 2),  (2,2) ],
                 ["blue", "green", "red", "magenta", "cyan"],
                 )]
 
@@ -126,7 +128,9 @@ following:
                 kwargs["label"] = legend_prefix+descr_y
 
             style = styles.pop(0)
-            plot(data_x, data_y, dashes=style.dashes, color=style.color, 
+            plot(data_x[::options.skip], 
+                    data_y[::options.skip], 
+                    dashes=style.dashes, color=style.color, 
                     hold=True,  **kwargs)
 
             did_plot = True
@@ -154,7 +158,8 @@ following:
         from pylab import show, title, legend, axis, grid
         if options.legend_expr or options.legend_descr:
             from matplotlib.font_manager import FontProperties
-            legend(pad=0.04, prop=FontProperties(size=7), loc="best")
+            legend(pad=0.04, prop=FontProperties(size=8), loc="best",
+                    labelsep=0)
 
         def float_or_none(str):
             if str == "*":
