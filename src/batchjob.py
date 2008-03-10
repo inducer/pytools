@@ -77,6 +77,7 @@ class PBSJob(BatchJob):
         from subprocess import Popen
         args = [
             "-N", self.moniker,
+            "-d", self.subdir,
             ]
 
         from os import getenv
@@ -92,6 +93,16 @@ class PBSJob(BatchJob):
             raise RuntimeError("Process submission of %s failed" % self.moniker)
 
 
+
+
+def guess_job_class():
+    from subprocess import Popen, PIPE, STDOUT
+    qstat_helplines = Popen(["qstat", "--help"], 
+            stdout=PIPE, stderr=STDOUT).communicate()[0].split("\n")
+    if qstat_helplines[0].startswith("GE"):
+        return GridEngineJob
+    else:
+        return PBSJob
 
 
 class ConstructorPlaceholder:
