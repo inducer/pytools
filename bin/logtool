@@ -55,6 +55,14 @@ following:
 
     legend_prefix = ""
 
+    from pytools import cartesian_product, Record
+    styles = [
+            Record(dashes=dashes, color=color)
+            for dashes, color in cartesian_product(
+                [(), (2, 2), (6, 2), (1,1) ],
+                ["blue", "green", "red", "magenta", "cyan"],
+                )]
+
     def check_no_file():
         if logmgr is None:
             raise RuntimeError, "no file loaded"
@@ -117,7 +125,9 @@ following:
             if options.legend_descr:
                 kwargs["label"] = legend_prefix+descr_y
 
-            plot(data_x, data_y, hold=True, **kwargs)
+            style = styles.pop(0)
+            plot(data_x, data_y, dashes=style.dashes, color=style.color, 
+                    hold=True,  **kwargs)
 
             did_plot = True
         elif cmd == "datafile":
@@ -143,7 +153,8 @@ following:
     if did_plot:
         from pylab import show, title, legend, axis, grid
         if options.legend_expr or options.legend_descr:
-            legend()
+            from matplotlib.font_manager import FontProperties
+            legend(pad=0.04, prop=FontProperties(size=7), loc="best")
 
         def float_or_none(str):
             if str == "*":
