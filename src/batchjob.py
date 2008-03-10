@@ -95,6 +95,16 @@ class PBSJob(BatchJob):
 
 
 
+def guess_job_class():
+    from subprocess import Popen, PIPE, STDOUT
+    qstat_helplines = Popen(["qstat", "--help"], 
+            stdout=PIPE, stderr=STDOUT).communicate()[0].split("\n")
+    if qstat_helplines[0].startswith("GE"):
+        return GridEngineJob
+    else:
+        return PBSJob
+
+
 class ConstructorPlaceholder:
     def __init__(self, classname, *args, **kwargs):
         self.classname = classname
