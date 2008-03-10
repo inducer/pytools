@@ -20,11 +20,17 @@ class BatchJob(object):
         import os
         import os.path
 
-        self.moniker = moniker
+        timestamp = datetime.now().strftime("%Y-%m-%d-%H%M")
+        self.moniker = (
+                moniker
+                .replace("-$DATE", "")
+                .replace("$DATE-", "")
+                .replace("$DATE", "")
+                .replace("/", "-"))
         self.subdir = os.path.join(
                 os.getcwd(),
-                "%s-%s" % (moniker, datetime.now().strftime("%Y-%m-%d-%H%M%S")))
-        os.mkdir(self.subdir)
+                moniker.replace("$DATE", timestamp))
+        os.makedirs(self.subdir)
 
         with open("%s/run.sh" % self.subdir, "w") as runscript:
             import sys
