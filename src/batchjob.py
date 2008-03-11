@@ -14,13 +14,21 @@ def _cp(src, dest):
 
 
 
+def get_timestamp():
+    from datetime import datetime
+    return datetime.now().strftime("%Y-%m-%d-%H%M%S")
+
+
+
+
 class BatchJob(object):
-    def __init__(self, moniker, main_file, aux_files=[]):
-        from datetime import datetime
+    def __init__(self, moniker, main_file, aux_files=[], timestamp=None):
         import os
         import os.path
 
-        timestamp = datetime.now().strftime("%Y-%m-%d-%H%M")
+        if timestamp is None:
+            timestamp = get_timestamp()
+
         self.moniker = (
                 moniker
                 .replace("-$DATE", "")
@@ -30,6 +38,7 @@ class BatchJob(object):
         self.subdir = os.path.join(
                 os.getcwd(),
                 moniker.replace("$DATE", timestamp))
+
         os.makedirs(self.subdir)
 
         with open("%s/run.sh" % self.subdir, "w") as runscript:

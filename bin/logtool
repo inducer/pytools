@@ -150,7 +150,7 @@ following:
             # not a known command, interpret as file name
             from os import access, R_OK
             if access(cmd, R_OK):
-                logmgr = LogManager(cmd)
+                logmgr = LogManager(cmd, "r")
             else:
                 raise IOError, "file '%s' not found" % cmd
 

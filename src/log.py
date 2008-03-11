@@ -159,14 +159,21 @@ class LogManager(object):
     data in a saved log.
     """
 
-    def __init__(self, filename, mpi_comm=None):
+    def __init__(self, filename, mode, mpi_comm=None):
         """Initialize this log manager instance.
 
         @arg filename: If given, the filename to which this log is bound.
           If this database exists, the current state is loaded from it.
+        @arg mode: One of "w", "r" for write, read. "w" assumes that the 
+          database is initially empty.
         @arg mpi_comm: A C{boost.mpi} communicator. If given, logs are periodically
           synchronized to the head node, which then writes them out to disk.
         """
+
+        assert isinstance(mode, basestring), "mode must be a string"
+        mode = mode[0]
+        assert mode in ["w", "r"], "invalid mode"
+
         self.quantity_data = {}
         self.quantity_table = {}
         self.gather_descriptors = []
@@ -202,8 +209,13 @@ class LogManager(object):
             self.db_conn = sqlite3.connect(filename, timeout=30)
             try:
                 self.db_conn.execute("select * from quantities;")
+                if mode == "w":
+                    raise RuntimeError, "Log database '%s' already exists" % filename
                 self._load()
             except sqlite3.OperationalError:
+                if mode == "r":
+                    raise RuntimeError, "Log database '%s' not found" % filename
+
                 # initialize new database
                 self.db_conn.execute("""
                   create table quantities (
