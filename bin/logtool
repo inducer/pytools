@@ -13,6 +13,7 @@ following:
 "datafile outfile expr_x,expr_y" to write out a data file.
 "table variable" to print the full data table for a time series variable.
 "prefix string" to set the legend prefix for all following plot commands.
+"warnings" to list the warnings that were issued during the logged run.
 """
     parser = OptionParser(usage="%prog FILE COMMANDS FILE COMMANDS...",
             description=description)
@@ -134,6 +135,10 @@ following:
                     hold=True,  **kwargs)
 
             did_plot = True
+        elif cmd == "warnings":
+            check_no_file()
+            print logmgr.get_warnings()
+
         elif cmd == "datafile":
             check_no_file()
 
