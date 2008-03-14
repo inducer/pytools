@@ -14,6 +14,8 @@ following:
 "table variable" to print the full data table for a time series variable.
 "prefix string" to set the legend prefix for all following plot commands.
 "warnings" to list the warnings that were issued during the logged run.
+"saveplot filename" to save the current plot to a file.
+"print" to print the current plot using "lp".
 """
     parser = OptionParser(usage="%prog FILE COMMANDS FILE COMMANDS...",
             description=description)
@@ -55,6 +57,8 @@ following:
     logmgr = None
 
     did_plot = False
+    saveplot_filename = None
+    print_plot = False
 
     legend_prefix = ""
 
@@ -151,6 +155,10 @@ following:
             check_no_file()
 
             print logmgr.get_table(args.pop(0))
+        elif cmd == "saveplot":
+            saveplot_filename = args.pop(0)
+        elif cmd == "print":
+            print_plot = True
         else:
             # not a known command, interpret as file name
             from os import access, R_OK
@@ -160,7 +168,7 @@ following:
                 raise IOError, "file '%s' not found" % cmd
 
     if did_plot:
-        from pylab import show, title, legend, axis, grid
+        from pylab import show, title, legend, axis, grid, savefig
         if options.legend_expr or options.legend_descr:
             from matplotlib.font_manager import FontProperties
             legend(pad=0.04, prop=FontProperties(size=8), loc="best",
@@ -192,7 +200,24 @@ following:
             grid()
 
         title(options.title)
-        show()
+
+        if print_plot:
+            from tempfile import gettempprefix, gettempdir
+            import os.path
+            tmpname = os.path.join(gettempdir(), gettempprefix()+"logtoolprint.ps")
+            savefig(tmpname, orientation="landscape", papertype="letter")
+
+            from os import system, unlink
+            system("lp %s" % tmpname)
+
+            unlink(tmpname)
+
+        if saveplot_filename:
+            savefig(saveplot_filename)
+
+        if not print_plot and not saveplot_filename:
+            show()
+
 
 if __name__ == "__main__":
     main()
