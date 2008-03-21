@@ -5,7 +5,7 @@ import operator
 
 
 
-class ArithmeticList(list):
+class PythonArithmeticList(list):
     """A list with elementwise arithmetic operations."""
 
     def assert_same_length(self, other):
@@ -162,10 +162,19 @@ class ArithmeticList(list):
 
 
 
+# use fast native implementation, if available
+try:
+    from pylinear.array import ArithmeticList
+except ImportError:
+    ArithmeticList = PythonArithmeticList
+
+
+
+
 def join_fields(*fields):
     result = ArithmeticList()
     for f in fields:
-        if isinstance(f, list):
+        if isinstance(f, (ArithmeticList, list)):
             result.extend(f)
         else:
             result.append(f)
