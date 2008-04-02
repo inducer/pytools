@@ -205,7 +205,7 @@ class LogManager(object):
         self.next_watch_tick = 1
 
         # database binding
-        if filename is not None:
+        if filename is not None and self.rank == self.head_rank:
             import sqlite3
 
             self.db_conn = sqlite3.connect(filename, timeout=30)
@@ -421,8 +421,8 @@ class LogManager(object):
                     self.get_table(name).insert_rows(rows)
                     if self.db_conn is not None:
                         for row in rows:
-                            self.db_conn.execute("insert into ? values (?,?,?)",
-                                    (name,) + row)
+                            self.db_conn.execute(
+                                    "insert into %s values (?,?,?)" % name, row)
         else:
             # send non-head data away
             gather(self.mpi_comm, 
