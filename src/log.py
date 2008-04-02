@@ -772,6 +772,23 @@ class EventCounter(LogQuantity):
 
 
 
+
+def time_and_count_function(f, timer, counter, increment=1):
+    def inner_f(*args, **kwargs):
+        counter.add(increment)
+        timer.start()
+        try:
+            return f(*args, **kwargs)
+        finally:
+            timer.stop()
+
+    return inner_f
+
+
+
+
+
+
 class TimestepCounter(LogQuantity):
     """Counts the number of times L{LogManager.tick} is called."""
 

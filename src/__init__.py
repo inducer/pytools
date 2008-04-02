@@ -37,6 +37,13 @@ def norm_inf(iterable):
 def norm_p(iterable, p):
     return sum(i**p for i in iterable)**(1/p)
 
+class Norm(object):
+    def __init__(self, p):
+        self.p = p
+
+    def __call__(self, iterable):
+        return sum(i**self.p for i in iterable)**(1/self.p)
+
 
 
 
@@ -590,6 +597,20 @@ def wandering_element(length, wanderer=1, landscape=0):
 
 
 
+def indices_in_shape(shape):
+    if len(shape) == 0:
+        yield ()
+    elif len(shape) == 1:
+        for i in xrange(0, shape[0]):
+            yield (i,)
+    else:
+        remainder = shape[1:]
+        for i in xrange(0, shape[0]):
+            yield (i,)+indices_in_shape(remainder)
+
+
+
+
 def generate_nonnegative_integer_tuples_below(n, length, least=0):
     assert length >= 0
     if length == 0:
@@ -804,6 +825,25 @@ class CPyUserInterface(object):
 def enumerate_basic_directions(dimensions):
     coordinate_list = [[0], [1], [-1]]
     return reduce(cartesian_product_sum, [coordinate_list] * dimensions)[1:]
+
+
+
+
+def typedump(val):
+    try:
+        len(val)
+    except TypeError:
+        return val.__class__.__name__
+    else:
+        l = len(val)
+        if len(val) > 5:
+            return "%s(%s,...)" % (
+                    val.__class__.__name__,
+                    ",".join(typedump(x) for x in val[:5]))
+        else:
+            return "%s(%s)" % (
+                    val.__class__.__name__,
+                    ",".join(typedump(x) for x in val[:5]))
 
 
 
