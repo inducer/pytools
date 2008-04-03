@@ -417,7 +417,7 @@ def average(iterable):
         raise ValueError, "empty average"
 
     for value in it:
-        sum += value
+        sum = sum + value
         count += 1
 
     return sum/count
