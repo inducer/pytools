@@ -559,7 +559,12 @@ class LogManager(object):
 
         stepless_data = [tup for step, tup in data]
 
-        data_x, data_y = zip(*stepless_data)
+        if stepless_data:
+            data_x, data_y = zip(*stepless_data)
+        else:
+            data_x = []
+            data_y = []
+
         return (data_x, descr_x, unit_x), \
                (data_y, descr_y, unit_y)
 
