@@ -513,9 +513,9 @@ def argmax_f(list, f = lambda x: x):
 
 
 
-def argmin(list):
+def argmin(iterable):
     current_min_index = -1
-    it = list.__iter__()
+    it = iter(iterable)
     try:
         current_min = it.next()
     except StopIteration:
@@ -532,8 +532,8 @@ def argmin(list):
 
 
 
-def argmax(list):
-    it = list.__iter__()
+def argmax(iterable):
+    it = iter(iterable)
     try:
         current_max = it.next()
     except StopIteration:
@@ -611,14 +611,30 @@ def indices_in_shape(shape):
 
 
 
-def generate_nonnegative_integer_tuples_below(n, length, least=0):
-    assert length >= 0
-    if length == 0:
-        yield ()
+def generate_nonnegative_integer_tuples_below(n, length=None, least=0):
+    """n may be a sequence, in which case length must be None."""
+    if length is None:
+        if len(n) == 0:
+            yield ()
+            return
+
+        my_n = n[0]
+        n = n[1:]
+        next_length = None
     else:
-        for i in range(least, n):
-            for base in generate_nonnegative_integer_tuples_below(n, length-1, least):
-                yield (i,) + base
+        my_n = n
+
+        assert length >= 0
+        if length == 0:
+            yield ()
+            return 
+
+        next_length = length-1
+
+    for i in range(least, my_n):
+        my_part = (i,)
+        for base in generate_nonnegative_integer_tuples_below(n, next_length, least):
+            yield my_part + base
 
 def generate_decreasing_nonnegative_tuples_summing_to(n, length, min=0, max=None):
     sig = (n,length,max)
