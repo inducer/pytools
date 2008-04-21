@@ -24,12 +24,27 @@ setup(name="pytools",
       * Batch job submission, `pytools.batchjob`.
       * A lexer, `pytools.lex`.
       """,
+      classifiers=[
+        'Development Status :: 4 - Beta',
+        'Intended Audience :: Developers',
+        'Intended Audience :: Other Audience',
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: MIT License',
+        'Natural Language :: English',
+        'Programming Language :: Python',
+        'Topic :: Scientific/Engineering',
+        'Topic :: Scientific/Engineering :: Information Analysis',
+        'Topic :: Scientific/Engineering :: Mathematics',
+        'Topic :: Scientific/Engineering :: Visualization',
+        'Topic :: Software Development :: Libraries',
+        'Topic :: Utilities',
+        ],
 
       author=u"Andreas Kloeckner",
       url="http://pypi.python.org/pypi/pytools",
       scripts=["bin/logtool"],
       author_email="inform@tiker.net",
-      license = "BSD, like Python",
+      license = "MIT",
       packages=["pytools"],
       package_dir={"pytools": "src"}
      )
