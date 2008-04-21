@@ -1,19 +1,35 @@
 #!/usr/bin/env python
 # -*- coding: latin1 -*-
 
-from distutils.core import setup,Extension
-import glob
-import os
-import os.path
+import ez_setup
+
+ez_setup.use_setuptools()
+
+from setuptools import setup
 
 setup(name="pytools",
-      version="0.10",
+      version="1",
       description="A collection of tools for Python",
+      long_description="""
+      Pytools is a big bag of things that are "missing" from the Python standard
+      library. This is mainly a dependency of my other software packages, and is
+      probably of little interest to you unless you use those. If you're curious
+      nonetheless, here's what's on offer:
+
+      * A ton of small tool functions such as `len_iterable`, `argmin`, 
+        tuple generation, permutation generation, ASCII table pretty printing,
+        GvR's mokeypatch_xxx() hack, the elusive `flatten`, and much more.
+      * Michele Simionato's decorator module
+      * A time-series logging module, `pytools.log`.
+      * Batch job submission, `pytools.batchjob`.
+      * A lexer, `pytools.lex`.
+      """,
+
       author=u"Andreas Kloeckner",
+      url="http://pypi.python.org/pypi/pytools",
       scripts=["bin/logtool"],
       author_email="inform@tiker.net",
       license = "BSD, like Python",
-      url="http://news.tiker.net/software/pytools",
       packages=["pytools"],
       package_dir={"pytools": "src"}
      )
