@@ -1,15 +1,17 @@
-from __future__ import with_statement
-
-
-
-
 def _cp(src, dest):
     from pytools import assert_not_a_file
     assert_not_a_file(dest)
 
-    with open(src, "rb") as inf:
-        with open(dest, "wb") as outf:
+    inf = open(src, "rb")
+    try:
+        outf = open(dest, "wb")
+        try:
             outf.write(inf.read())
+        finally:
+            outf.close()
+    finally:
+        inf.close()
+
 
 
 
@@ -41,10 +43,11 @@ class BatchJob(object):
 
         os.makedirs(self.subdir)
 
-        with open("%s/run.sh" % self.subdir, "w") as runscript:
-            import sys
-            runscript.write("%s %s setup.cpy" 
-                    % (sys.executable, main_file))
+        runscript = open("%s/run.sh" % self.subdir, "w")
+        import sys
+        runscript.write("%s %s setup.cpy" 
+                % (sys.executable, main_file))
+        runscript.close()
 
         _cp(main_file, os.path.join(self.subdir, main_file))
         for aux_file in aux_files:
@@ -52,8 +55,9 @@ class BatchJob(object):
 
     def write_setup(self, lines):
         import os.path
-        with open(os.path.join(self.subdir, "setup.cpy"), "w") as setup:
-            setup.write("\n".join(lines))
+        setup = open(os.path.join(self.subdir, "setup.cpy"), "w")
+        setup.write("\n".join(lines))
+        setup.close()
 
 
 
