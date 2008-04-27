@@ -254,3 +254,10 @@ class DataTable:
     def column_data(self, column):
         col_index = self.column_indices[column]
         return [row[col_index] for row in self.data]
+
+    def write_csv(self, filelike, **kwargs):
+        from csv import writer
+        csvwriter = writer(filelike, **kwargs)
+        csvwriter.writerow(self.column_names)
+        csvwriter.writerows(self.data)
+

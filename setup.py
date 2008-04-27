@@ -42,7 +42,7 @@ setup(name="pytools",
 
       author=u"Andreas Kloeckner",
       url="http://pypi.python.org/pypi/pytools",
-      scripts=["bin/logtool"],
+      scripts=["bin/logtool", "bin/runalyzer-gather", "bin/runalyzer"],
       author_email="inform@tiker.net",
       license = "MIT",
       packages=["pytools"],

@@ -290,6 +290,10 @@ class LogManager(object):
             qdat = self.quantity_data[name] = _QuantityData(
                     unit, description, loads(def_agg))
 
+    def close(self):
+        if self.db_conn is not None:
+            self.db_conn.close()
+
     def get_table(self, q_name):
         if q_name not in self.quantity_data:
             raise KeyError, "invalid quantity name '%s'" % q_name

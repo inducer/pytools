@@ -1,0 +1,245 @@
+#! /usr/bin/env python
+
+
+
+
+import code
+
+
+
+
+try:
+    import readline
+    import rlcompleter
+    HAVE_READLINE = True
+except ImportError:
+    HAVE_READLINE = False
+
+
+
+
+from pytools import cartesian_product, Record
+PLOT_STYLES = [
+        Record(dashes=dashes, color=color)
+        for dashes, color in cartesian_product(
+            [(), (12, 2), (4, 2),  (2,2), (2,8) ],
+            ["blue", "green", "red", "magenta", "cyan"],
+            )]
+
+
+
+
+class RunalyzerConsole(code.InteractiveConsole):
+    def __init__(self, db):
+        self.db = db
+        symbols = {
+                "__name__": "__console__",
+                "__doc__": None,
+                "db": db,
+                "magic_sql": self.magic_sql,
+                "q": self.magic_sql,
+                "plot_cursor": self.plot_cursor,
+                }
+        code.InteractiveConsole.__init__(self, symbols)
+
+        try:
+            import pylab
+            import matplotlib
+            self.runsource("from pylab import *")
+
+        except ImportError:
+            pass
+
+        if HAVE_READLINE:
+            import os
+            import atexit
+
+            histfile = os.path.join(os.environ["HOME"], ".runalyzerhist")
+            if os.access(histfile, os.R_OK):
+                readline.read_history_file(histfile)
+            atexit.register(readline.write_history_file, histfile)
+            readline.parse_and_bind("tab: complete")
+
+        self.last_push_result = False
+
+    def push(self, cmdline):
+        if cmdline.startswith("."):
+            try:
+                self.execute_magic(cmdline)
+            except:
+                import traceback
+                traceback.print_exc()
+        else:
+            self.last_push_result = code.InteractiveConsole.push(self, cmdline)
+
+        return self.last_push_result
+
+    def q(self, qry):
+        return self.db.execute(self.magic_sql(qry))
+
+    def magic_sql(self, qry):
+        up_qry = qry.upper()
+        if up_qry.find("FROM") != -1:
+            return qry
+
+        magic_columns = set()
+
+        def replace_magic_column(match):
+            qty_name = match.group(1)
+            magic_columns.add(qty_name)
+            return "%s.value as %s" % (qty_name, qty_name)
+
+        import re
+        magic_column_re = re.compile(r"%([a-zA-Z][A-Za-z0-9_]*)")
+        qry = magic_column_re.sub(replace_magic_column, qry)
+
+        other_clauses = ["UNION",  "INTERSECT", "EXCEPT", "WHERE", "GROUP",
+                "HAVING", "ORDER", "LIMIT", ";"]
+        first_clause = len(qry)
+        up_qry = qry.upper()
+        for clause in other_clauses:
+            clause_idx = up_qry.find(clause)
+            if clause_idx != -1 and clause_idx < first_clause:
+                first_clause = clause_idx
+
+        from_clause = "from runs "
+        last_tbl = None
+        for tbl in magic_columns:
+            if last_tbl is not None:
+                addendum = " and %s.step = %s.step" % (last_tbl, tbl)
+            else:
+                addendum = ""
+
+            from_clause += " inner join %s on (%s.run_id = runs.id%s) " % (
+                    tbl, tbl, addendum)
+            last_tbl = tbl
+        
+        new_qry = qry[:first_clause]+from_clause+qry[first_clause:]
+        return new_qry
+
+    def plot_cursor(self, cursor, **kwargs):
+        from pylab import plot, show, legend
+
+        if len(cursor.description) == 2:
+            if not kwargs:
+                style = PLOT_STYLES[0]
+                kwargs["dashes"] = style.dashes
+                kwargs["color"] = style.color
+
+            x, y = zip(*list(cursor))
+            plot(x, y, hold=True, **kwargs)
+            show()
+        elif len(cursor.description) > 2:
+            def do_plot():
+                style = PLOT_STYLES[style_idx[0] % len(PLOT_STYLES)]
+                kwargs["dashes"] = style.dashes
+                kwargs["color"] = style.color
+                kwargs["label"] = " ".join("%s:%s" % (column[0], value)
+                        for column, value in zip(cursor.description[2:], last_rest))
+                plot(x, y, hold=True, **kwargs)
+                style_idx[0] += 1
+                del x[:]
+                del y[:]
+
+            style_idx = [0]
+            x = []
+            y = []
+            last_rest = None
+            for row in cursor:
+                row_tuple = tuple(row)
+                row_rest = row_tuple[2:]
+
+                if last_rest is None:
+                    last_rest = row_rest
+
+                if row_rest != last_rest:
+                    do_plot()
+                    last_rest = row_rest
+
+                x.append(row_tuple[0])
+                y.append(row_tuple[1])
+            if x:
+                do_plot()
+
+            from matplotlib.font_manager import FontProperties
+            legend(pad=0.04, prop=FontProperties(size=8), loc="best",
+                    labelsep=0)
+            show()
+        else:
+            raise ValueError, "invalid number of columns"
+
+    def execute_magic(self, cmdline):
+        cmd_end = cmdline.find(" ")
+        if cmd_end == -1:
+            cmd = cmdline[1:]
+            args = ""
+        else:
+            cmd = cmdline[1:cmd_end]
+            args = cmdline[cmd_end+1:]
+
+        if cmd == "help":
+            print "Help for runalyzer magic commands:"
+            print " .help        show this help message"
+            print " .q SQL       execute MagicSQL query"
+            print " .runprops    show a list of run properties"
+            print " .quantities  show a list of time-dependent quantites"
+            print
+            print "PLOTTING:"
+            print " .plot SQL    plot results of MagicSQL query"
+        elif cmd == "q":
+            cursor = self.db.execute(self.magic_sql(args))
+            from pytools import Table
+            tbl = Table()
+            tbl.add_row([column[0] for column in cursor.description])
+            for row in cursor:
+                tbl.add_row(row)
+            print tbl
+
+        elif cmd == "runprops":
+            cursor = self.db.execute("select * from runs")
+            for column in cursor.description:
+                print column[0]
+        elif cmd == "quantities":
+            # FIXME replace with qty table
+            cursor = self.db.execute("select type, name from sqlite_master")
+            for row in cursor:
+                tp = row[0].lower()
+                tblname = row[1].lower()
+                if tp == "table" and not (
+                        tblname.startswith("sqlite_") or tblname == "runs"):
+                    print tblname
+        elif cmd == "title":
+            from pylab import title
+            title(args)
+        elif cmd == "plot":
+            self.plot_cursor(self.db.execute(self.magic_sql(args)))
+        else:
+            print "invalid magic command"
+
+
+
+
+def main():
+    import sys
+    from optparse import OptionParser
+
+    parser = OptionParser(usage="%prog DBFILE")
+    options, args = parser.parse_args()
+
+    if len(args) != 1:
+        parser.print_help()
+        sys.exit(1)
+
+    import sqlite3
+    db = sqlite3.connect(args[0])
+
+    cons = RunalyzerConsole(db)
+    cons.interact("Runalyzer running on Python %s\n"
+            "Copyright (c) Andreas Kloeckner 2008\n" 
+            "Run .help to see help for magic commands" % sys.version)
+
+
+
+
+if __name__ == "__main__":
+    main()

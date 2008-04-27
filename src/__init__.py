@@ -864,6 +864,54 @@ def typedump(val):
 
 
 
+class ProgressBar:
+    def __init__(self, descr, total, initial=0, length=40):
+        import time
+        self.Description = descr
+        self.Total = total
+        self.Done = initial
+        self.Length = length
+        self.LastSquares = -1
+        self.StartTime = time.time()
+        self.LastUpdate = self.StartTime
+
+    def draw(self):
+        import time
+
+        now = time.time()
+        squares = int(self.Done/self.Total*self.Length)
+        if squares != self.LastSquares or now-self.LastUpdate > 0.5:
+            elapsed = now-self.StartTime
+            if self.Done:
+                time_per_step = elapsed/self.Done
+                total_time = self.Total * time_per_step
+                eta_str = "%6.1fs" % max(0, total_time-elapsed)
+            else:
+                eta_str = "?"
+
+            import sys
+            sys.stderr.write("%-20s [%s] ETA %s\r" % (
+                self.Description,
+                squares*"#"+(self.Length-squares)*" ",
+                eta_str))
+        self.LastSquares = squares
+        self.LastUpdate = now
+
+    def progress(self, steps=1):
+        self.set_progress(self.Done + steps)
+
+    def set_progress(self, done):
+        self.Done = done
+        self.draw()
+
+    def finished(self):
+        import sys
+        self.set_progress(self.Total)
+        sys.stderr.write("\n")
+
+
+
+
 # file system related ---------------------------------------------------------
 def assert_not_a_file(name):
     import os
