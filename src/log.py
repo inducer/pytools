@@ -922,5 +922,6 @@ def add_run_info(mgr):
     mgr.set_constant("cmdline", " ".join(sys.argv))
     from socket import gethostname
     mgr.set_constant("machine", gethostname())
-    from time import localtime, strftime
+    from time import localtime, strftime, time
     mgr.set_constant("date", strftime("%a, %d %b %Y %H:%M:%S %Z", localtime()))
+    mgr.set_constant("unixtime", time())
