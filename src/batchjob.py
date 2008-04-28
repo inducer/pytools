@@ -37,25 +37,26 @@ class BatchJob(object):
                 .replace("$DATE-", "")
                 .replace("$DATE", "")
                 .replace("/", "-"))
-        self.subdir = os.path.join(
+        self.subdir = moniker.replace("$DATE", timestamp)
+        self.path = os.path.join(
                 os.getcwd(),
-                moniker.replace("$DATE", timestamp))
+                self.subdir)
 
-        os.makedirs(self.subdir)
+        os.makedirs(self.path)
 
-        runscript = open("%s/run.sh" % self.subdir, "w")
+        runscript = open("%s/run.sh" % self.path, "w")
         import sys
         runscript.write("%s %s setup.cpy" 
                 % (sys.executable, main_file))
         runscript.close()
 
-        _cp(main_file, os.path.join(self.subdir, main_file))
+        _cp(main_file, os.path.join(self.path, main_file))
         for aux_file in aux_files:
-            _cp(aux_file, os.path.join(self.subdir, aux_file))
+            _cp(aux_file, os.path.join(self.path, aux_file))
 
     def write_setup(self, lines):
         import os.path
-        setup = open(os.path.join(self.subdir, "setup.cpy"), "w")
+        setup = open(os.path.join(self.path, "setup.cpy"), "w")
         setup.write("\n".join(lines))
         setup.close()
 
@@ -84,7 +85,7 @@ class GridEngineJob(BatchJob):
 
             args += ["-v", "%s=%s" % (var, value)]
 
-        subproc = Popen(["qsub"] + args + ["run.sh"], cwd=self.subdir)
+        subproc = Popen(["qsub"] + args + ["run.sh"], cwd=self.path)
         if subproc.wait() != 0:
             raise RuntimeError("Process submission of %s failed" % self.moniker)
 
@@ -96,7 +97,7 @@ class PBSJob(BatchJob):
         from subprocess import Popen
         args = [
             "-N", self.moniker,
-            "-d", self.subdir,
+            "-d", self.path,
             ]
 
         from os import getenv
@@ -107,7 +108,7 @@ class PBSJob(BatchJob):
 
             args += ["-v", "%s=%s" % (var, value)]
 
-        subproc = Popen(["qsub"] + args + ["run.sh"], cwd=self.subdir)
+        subproc = Popen(["qsub"] + args + ["run.sh"], cwd=self.path)
         if subproc.wait() != 0:
             raise RuntimeError("Process submission of %s failed" % self.moniker)
 
@@ -140,7 +141,8 @@ class ConstructorPlaceholder:
         return "%s(%s)" % (self.classname,
                 ",".join(
                     [str(arg) for arg in self.args]
-                    + ["%s=%s" % (kw, val) for kw, val in self.kwargs.iteritems()]
+                    + ["%s=%s" % (kw, repr(val)) for kw, val in self.kwargs.iteritems()]
                     )
                 )
+    __repr__ = __str__
 
