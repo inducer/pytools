@@ -159,7 +159,7 @@ class LogManager(object):
     data in a saved log.
     """
 
-    def __init__(self, filename, mode, mpi_comm=None, capture_warnings=True):
+    def __init__(self, filename=None, mode="r", mpi_comm=None, capture_warnings=True):
         """Initialize this log manager instance.
 
         @arg filename: If given, the filename to which this log is bound.
