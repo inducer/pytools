@@ -918,3 +918,17 @@ def assert_not_a_file(name):
     if os.access(name, os.F_OK):
         raise IOError, "file `%s' already exists" % name
 
+
+
+
+# randomness ------------------------------------------------------------------
+def uniform_on_unit_sphere(dim):
+    from random import gauss
+
+    # cf.
+    # http://www-alg.ist.hokudai.ac.jp/~jan/randsphere.pdf
+    # Algorith due to Knuth
+
+    pt = numpy.array([gauss(0,1) for i in range(dim)])
+    n2 = la.norm(pt)
+    return pt/n2
