@@ -38,7 +38,8 @@ class RunalyzerConsole(code.InteractiveConsole):
                 "db": db,
                 "magic_sql": self.magic_sql,
                 "q": self.magic_sql,
-                "plot_cursor": self.plot_cursor,
+                "dbplot": self.plot_cursor,
+                "dbprint": self.print_cursor,
                 }
         code.InteractiveConsole.__init__(self, symbols)
 
@@ -79,7 +80,7 @@ class RunalyzerConsole(code.InteractiveConsole):
 
     def magic_sql(self, qry):
         up_qry = qry.upper()
-        if up_qry.find("FROM") != -1:
+        if "FROM" in up_qry and not "$$" in up_qry:
             return qry
 
         magic_columns = set()
@@ -87,20 +88,14 @@ class RunalyzerConsole(code.InteractiveConsole):
         def replace_magic_column(match):
             qty_name = match.group(1)
             magic_columns.add(qty_name)
-            return "%s.value as %s" % (qty_name, qty_name)
+            return "%s.value" % qty_name
 
         import re
-        magic_column_re = re.compile(r"%([a-zA-Z][A-Za-z0-9_]*)")
+        magic_column_re = re.compile(r"\$([a-zA-Z][A-Za-z0-9_]*)")
         qry = magic_column_re.sub(replace_magic_column, qry)
 
         other_clauses = ["UNION",  "INTERSECT", "EXCEPT", "WHERE", "GROUP",
                 "HAVING", "ORDER", "LIMIT", ";"]
-        first_clause = len(qry)
-        up_qry = qry.upper()
-        for clause in other_clauses:
-            clause_idx = up_qry.find(clause)
-            if clause_idx != -1 and clause_idx < first_clause:
-                first_clause = clause_idx
 
         from_clause = "from runs "
         last_tbl = None
@@ -114,8 +109,16 @@ class RunalyzerConsole(code.InteractiveConsole):
                     tbl, tbl, addendum)
             last_tbl = tbl
         
-        new_qry = qry[:first_clause]+from_clause+qry[first_clause:]
-        return new_qry
+        if "$$" in qry:
+            return qry.replace("$$"," %s " % from_clause)
+        else:
+            first_clause = len(qry)
+            up_qry = qry.upper()
+            for clause in other_clauses:
+                clause_idx = up_qry.find(clause)
+                if clause_idx != -1 and clause_idx < first_clause:
+                    first_clause = clause_idx
+            return qry[:first_clause]+from_clause+qry[first_clause:]
 
     def plot_cursor(self, cursor, **kwargs):
         from pylab import plot, show, legend
@@ -167,6 +170,14 @@ class RunalyzerConsole(code.InteractiveConsole):
             show()
         else:
             raise ValueError, "invalid number of columns"
+        
+    def print_cursor(self, cursor):
+        from pytools import Table
+        tbl = Table()
+        tbl.add_row([column[0] for column in cursor.description])
+        for row in cursor:
+            tbl.add_row(row)
+        print tbl
 
     def execute_magic(self, cmdline):
         cmd_end = cmdline.find(" ")
@@ -187,27 +198,16 @@ class RunalyzerConsole(code.InteractiveConsole):
             print "PLOTTING:"
             print " .plot SQL    plot results of MagicSQL query"
         elif cmd == "q":
-            cursor = self.db.execute(self.magic_sql(args))
-            from pytools import Table
-            tbl = Table()
-            tbl.add_row([column[0] for column in cursor.description])
-            for row in cursor:
-                tbl.add_row(row)
-            print tbl
+            self.print_cursor(self.q(args))
 
         elif cmd == "runprops":
             cursor = self.db.execute("select * from runs")
-            for column in cursor.description:
-                print column[0]
+            columns = [column[0] for column in cursor.description]
+            columns.sort()
+            for col in columns:
+                print col
         elif cmd == "quantities":
-            # FIXME replace with qty table
-            cursor = self.db.execute("select type, name from sqlite_master")
-            for row in cursor:
-                tp = row[0].lower()
-                tblname = row[1].lower()
-                if tp == "table" and not (
-                        tblname.startswith("sqlite_") or tblname == "runs"):
-                    print tblname
+            self.print_cursor(self.q("select * from quantities order by name"))
         elif cmd == "title":
             from pylab import title
             title(args)
@@ -219,6 +219,69 @@ class RunalyzerConsole(code.InteractiveConsole):
 
 
 
+# custom aggregates -----------------------------------------------------------
+class Variance:
+    def __init__(self):
+        self.sum = 0
+        self.square_sum = 0
+        self.count = 0
+
+    def step(self, value):
+        self.sum += value
+        self.square_sum += value**2
+        self.count += 1
+
+    def finalize(self):
+        if self.count == 0:
+            return None
+        else:
+            mean = self.sum/self.count
+            return self.square_sum/self.count - mean**2
+
+class StdDeviation:
+    def __init__(self):
+        self.sum = 0
+        self.square_sum = 0
+        self.count = 0
+
+    def step(self, value):
+        self.sum += value
+        self.square_sum += value**2
+        self.count += 1
+
+    def finalize(self):
+        if self.count == 0:
+            return None
+        else:
+            mean = self.sum/self.count
+            from math import sqrt
+            return sqrt(self.square_sum/self.count - mean**2)
+
+class Norm1:
+    def __init__(self):
+        self.abs_sum = 0
+
+    def step(self, value):
+        self.abs_sum += abs(value)
+
+    def finalize(self):
+        return self.abs_sum
+
+class Norm2:
+    def __init__(self):
+        self.square_sum = 0
+
+    def step(self, value):
+        self.square_sum += value**2
+
+    def finalize(self):
+        from math import sqrt
+        return sqrt(self.square_sum)
+
+
+
+
+# main program ----------------------------------------------------------------
 def main():
     import sys
     from optparse import OptionParser
@@ -232,6 +295,10 @@ def main():
 
     import sqlite3
     db = sqlite3.connect(args[0])
+    db.create_aggregate("stddev", 1, StdDeviation)
+    db.create_aggregate("var", 1, Variance)
+    db.create_aggregate("norm1", 1, Norm1)
+    db.create_aggregate("norm2", 1, Norm2)
 
     cons = RunalyzerConsole(db)
     cons.interact("Runalyzer running on Python %s\n"
