@@ -247,6 +247,22 @@ def shift(vec, dist):
 
 
 
+def one(iterable):
+    it = iter(iterable)
+    try:
+        v = it.next()
+    except StopIteration:
+        raise ValueError, "empty iterable passed to 'one()'"
+
+    try:
+        v2 = it.next()
+        raise ValueError, "iterable with more than one entry passed to 'one()'"
+    except StopIteration:
+        return v
+
+
+
+
 # plotting --------------------------------------------------------------------
 def write_1d_gnuplot_graph(f, a, b, steps=100, fname=",,f.data", progress = False):
     h = float(b - a)/steps
@@ -778,7 +794,7 @@ class CPyUserInterface(object):
         print "'variable1 = value1; variable2 = value2' or the name of a file"
         print "containing such statements. Any valid Python code may be used"
         print "on the command line or in a command file. If new variables are"
-        print "used, they must start with 'user_'."
+        print "used, they must start with 'user_' or just '_'."
         print
         print "The following variables are recognized:"
         for v in sorted(self.variables):
@@ -822,10 +838,10 @@ class CPyUserInterface(object):
                 set(execenv.keys()) 
                 - set(self.variables.keys()) 
                 - set(self.constants.keys())):
-            if not (added_key.startswith("user_") or added_key == "__builtins__"):
+            if not (added_key.startswith("user_") or added_key.startswith("_")):
                 raise ValueError( 
                         "invalid setup key: '%s' "
-                        "(user variables must start with 'user_')" % added_key)
+                        "(user variables must start with 'user_' or '_')" % added_key)
 
         result = Record(dict((key, execenv[key]) for key in self.variables))
         self.validate(result)
