@@ -98,7 +98,7 @@ class Reference(object):
 
 
 
-def _getattr_(obj, name, default_thunk):
+def _attrsetdefault(obj, name, default_thunk):
     "Similar to .setdefault in dictionaries."
     try:
         return getattr(obj, name)
@@ -115,9 +115,8 @@ def memoize(func, *args):
     # by Michele Simionato
     # http://www.phyast.pitt.edu/~micheles/python/
 
-    dic = _getattr_(func, "memoize_dic", dict)
+    dic = _attrsetdefault(func, "_memoize_dic", dict)
 
-    # memoize_dic is created at the first call
     if args in dic:
         return dic[args]
     else:
@@ -129,6 +128,21 @@ FunctionValueCache = memoize
 
 
 
+@decorator
+def memoize_method(method, instance, *args):
+    dic = _attrsetdefault(instance, "_memoize_dic_"+method.__name__, dict)
+
+    try:
+        return dic[args]
+    except KeyError:
+        result = method(instance, *args)
+        dic[args] = result
+        return result
+
+
+
+
+FunctionValueCache = memoize
 class DictionaryWithDefault(object):
     def __init__(self, default_value_generator, start = {}):
         self._Dictionary = dict(start)
@@ -530,38 +544,45 @@ def argmax_f(list, f = lambda x: x):
 
 
 def argmin(iterable):
-    current_min_index = -1
-    it = iter(iterable)
-    try:
-        current_min = it.next()
-    except StopIteration:
-        raise ValueError, "argmin of empty iterable"
-    current_min_index = -1
-
-    for idx, item in enumerate(it):
-        value = item
-        if value < current_min:
-            current_min_index = idx
-            current_min = value
-    return current_min_index+1
+    return argmin2(enumerate(iterable))
 
 
 
 
 def argmax(iterable):
+    return argmax2(enumerate(iterable))
+
+
+
+
+def argmin2(iterable):
     it = iter(iterable)
     try:
-        current_max = it.next()
+        current_argmin, current_min = it.next()
+    except StopIteration:
+        raise ValueError, "argmin of empty iterable"
+
+    for arg, item in it:
+        if item < current_min:
+            current_argmin = arg
+            current_min = item
+    return current_argmin
+
+
+
+
+def argmax2(iterable):
+    it = iter(iterable)
+    try:
+        current_argmax, current_max = it.next()
     except StopIteration:
         raise ValueError, "argmax of empty iterable"
-    current_max_index = -1
 
-    for idx, item in enumerate(it):
-        value = item
-        if value > current_max:
-            current_max_index = idx
-            current_max = value
-    return current_max_index+1
+    for arg, item in it:
+        if item > current_max:
+            current_argmax = arg
+            current_max = item
+    return current_argmax
 
 
 
