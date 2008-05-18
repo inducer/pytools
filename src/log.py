@@ -372,8 +372,12 @@ class LogManager(object):
             self.get_table(name).insert_row(
                 (self.tick_count, self.rank, value))
             if self.db_conn is not None:
-                self.db_conn.execute("insert into %s values (?,?,?)" % name,
-                        (self.tick_count, self.rank, value))
+                try:
+                    self.db_conn.execute("insert into %s values (?,?,?)" % name,
+                            (self.tick_count, self.rank, value))
+                except:
+                    print "while adding datapoint for '%s':" % name
+                    raise
 
         for gd in self.gather_descriptors:
             if self.tick_count % gd.interval == 0:
