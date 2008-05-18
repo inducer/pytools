@@ -277,6 +277,22 @@ def one(iterable):
 
 
 
+def single_valued(iterable):
+    it = iter(iterable)
+    try:
+        first_item = it.next()
+    except StopIteration:
+        raise ValueError, "empty iterable passed to 'single_valued()'"
+
+    for other_item in it:
+        if other_item != first_item:
+            raise ValueError, "non-single-valued iterable passed to 'single_valued()'"
+        
+    return first_item
+
+
+
+
 # plotting --------------------------------------------------------------------
 def write_1d_gnuplot_graph(f, a, b, steps=100, fname=",,f.data", progress = False):
     h = float(b - a)/steps
@@ -776,6 +792,56 @@ def generate_unique_permutations(original):
 
 
 
+def get_read_from_map_from_permutation(original, permuted):
+    """With a permutation given by C{original} and C{permuted},
+    generate a list C{rfm} of indices such that
+    C{permuted[i] == original[rfm[i]]}.
+
+    Requires that the permutation can be inferred from
+    C{original} and C{permuted}.
+
+    >>> for p1 in generate_permutations(range(5)):
+    ...     for p2 in generate_permutations(range(5)):
+    ...         rfm = get_read_from_map_from_permutation(p1, p2)
+    ...         p2a = [p1[rfm[i]] for i in range(len(p1))]
+    ...         assert p2 == p2a
+    """
+    assert len(original) == len(permuted)
+    where_in_original = dict(
+            (original[i], i) for i in xrange(len(original)))
+    assert len(where_in_original) == len(original)
+    return list(where_in_original[pi] for pi in permuted)
+
+
+
+
+def get_write_to_map_from_permutation(original, permuted):
+    """With a permutation given by C{original} and C{permuted},
+    generate a list C{wtm} of indices such that
+    C{permuted[wtm[i]] == original[i]}.
+
+    Requires that the permutation can be inferred from
+    C{original} and C{permuted}.
+
+    >>> for p1 in generate_permutations(range(5)):
+    ...     for p2 in generate_permutations(range(5)):
+    ...         wtm = get_write_to_map_from_permutation(p1, p2)
+    ...         p2a = [0] * len(p2)
+    ...         for i, oi in enumerate(p1):
+    ...             p2a[wtm[i]] = oi
+    ...         assert p2 == p2a
+    """
+    assert len(original) == len(permuted)
+
+    where_in_permuted = dict(
+            (permuted[i], i) for i in xrange(len(permuted)))
+
+    assert len(where_in_permuted) == len(permuted)
+    return list(where_in_permuted[oi] for oi in original)
+
+
+
+
 class Table:
     """An ASCII table generator."""
     def __init__(self):
@@ -954,3 +1020,12 @@ def assert_not_a_file(name):
     import os
     if os.access(name, os.F_OK):
         raise IOError, "file `%s' already exists" % name
+    
+
+def _test():
+    import doctest
+    doctest.testmod()
+
+if __name__ == "__main__":
+    _test()
+
