@@ -293,6 +293,20 @@ def single_valued(iterable):
 
 
 
+def hash_combine(*args):
+    seed = 0
+    from sys import maxint
+    mask = sys.maxint >> 6
+
+    for v in args:
+        # copied from boost
+        seed ^= hash(v) + 0x9e3779b9 + ((seed & mask) << 6) + (seed >> 2)
+
+    return seed
+
+
+
+
 # plotting --------------------------------------------------------------------
 def write_1d_gnuplot_graph(f, a, b, steps=100, fname=",,f.data", progress = False):
     h = float(b - a)/steps
