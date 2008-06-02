@@ -824,7 +824,7 @@ def get_read_from_map_from_permutation(original, permuted):
     where_in_original = dict(
             (original[i], i) for i in xrange(len(original)))
     assert len(where_in_original) == len(original)
-    return list(where_in_original[pi] for pi in permuted)
+    return tuple(where_in_original[pi] for pi in permuted)
 
 
 
@@ -851,7 +851,7 @@ def get_write_to_map_from_permutation(original, permuted):
             (permuted[i], i) for i in xrange(len(permuted)))
 
     assert len(where_in_permuted) == len(permuted)
-    return list(where_in_permuted[oi] for oi in original)
+    return tuple(where_in_permuted[oi] for oi in original)
 
 
 
