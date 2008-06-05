@@ -745,6 +745,9 @@ class IntervalTimer(LogQuantity):
         self.elapsed += time() - self.start_time
         del self.start_time
 
+    def add_time(self, t):
+        self.elapsed += t
+
     def __call__(self):
         result = self.elapsed
         self.elapsed = 0
