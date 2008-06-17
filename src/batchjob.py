@@ -33,10 +33,11 @@ class BatchJob(object):
 
         self.moniker = (
                 moniker
+                .replace("/", "-")
                 .replace("-$DATE", "")
                 .replace("$DATE-", "")
                 .replace("$DATE", "")
-                .replace("/", "-"))
+                )
         self.subdir = moniker.replace("$DATE", timestamp)
         self.path = os.path.join(
                 os.getcwd(),
