@@ -485,6 +485,33 @@ def average(iterable):
 
 
 
+def variance(iterable, entire_pop):
+    # http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+    n = 0
+    mean = 0
+    m2 = 0
+
+    for x in iterable:
+        n += 1
+        delta = x - mean
+        mean += delta/n
+        m2 += delta*(x - mean)
+
+    if entire_pop:
+        return m2/n
+    else:
+        return m2/(n - 1)
+
+
+
+
+def std_deviation(iterable, finite_pop):
+    from math import sqrt
+    return sqrt(variance(iterable, finite_pop))
+
+
+
+
 def all_equal(iterable):
     it = iterable.__iter__()
     try:
