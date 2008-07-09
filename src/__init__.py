@@ -485,22 +485,46 @@ def average(iterable):
 
 
 
+class VarianceAggregator:
+    """Online variance calculator.
+    See http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+    Adheres to pysqlite's aggregate interface.
+    """
+    def __init__(self, entire_pop):
+        self.n = 0
+        self.mean = 0
+        self.m2 = 0
+
+        self.entire_pop = entire_pop
+
+    def step(self, x):
+        self.n += 1
+        delta = x - self.mean
+        self.mean += delta/self.n
+        self.m2 += delta*(x - self.mean)
+
+    def finalize(self):
+        if self.entire_pop:
+            if self.n == 0:
+                return None
+            else:
+                return self.m2/self.n
+        else:
+            if self.n <= 1:
+                return None
+            else:
+                return self.m2/(self.n - 1)
+
+
+
+
 def variance(iterable, entire_pop):
-    # http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
-    n = 0
-    mean = 0
-    m2 = 0
+    v_comp = VarianceAggregator(entire_pop)
 
     for x in iterable:
-        n += 1
-        delta = x - mean
-        mean += delta/n
-        m2 += delta*(x - mean)
+        v_comp.step(x)
 
-    if entire_pop:
-        return m2/n
-    else:
-        return m2/(n - 1)
+    return v_comp.finalize()
 
 
 
