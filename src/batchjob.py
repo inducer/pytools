@@ -71,7 +71,8 @@ class INHERIT(object):
 
 
 class GridEngineJob(BatchJob):
-    def submit(self, env={"LD_LIBRARY_PATH": INHERIT, "PYTHONPATH": INHERIT}):
+    def submit(self, env={"LD_LIBRARY_PATH": INHERIT, "PYTHONPATH": INHERIT},
+            extra_args=[]):
         from subprocess import Popen
         args = [
             "-N", self.moniker,
@@ -86,6 +87,8 @@ class GridEngineJob(BatchJob):
 
             args += ["-v", "%s=%s" % (var, value)]
 
+        args.extend(extra_args)
+
         subproc = Popen(["qsub"] + args + ["run.sh"], cwd=self.path)
         if subproc.wait() != 0:
             raise RuntimeError("Process submission of %s failed" % self.moniker)
@@ -94,7 +97,8 @@ class GridEngineJob(BatchJob):
 
 
 class PBSJob(BatchJob):
-    def submit(self, env={"LD_LIBRARY_PATH": INHERIT, "PYTHONPATH": INHERIT}):
+    def submit(self, env={"LD_LIBRARY_PATH": INHERIT, "PYTHONPATH": INHERIT},
+            extra_args=[]):
         from subprocess import Popen
         args = [
             "-N", self.moniker,
@@ -108,6 +112,8 @@ class PBSJob(BatchJob):
                 value = getenv(var)
 
             args += ["-v", "%s=%s" % (var, value)]
+
+        args.extend(extra_args)
 
         subproc = Popen(["qsub"] + args + ["run.sh"], cwd=self.path)
         if subproc.wait() != 0:
