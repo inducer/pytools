@@ -29,51 +29,10 @@ PLOT_STYLES = [
 
 
 
-class RunalyzerConsole(code.InteractiveConsole):
-    def __init__(self, db):
+class RunDB(object):
+    def __init__(self, db, interactive):
         self.db = db
-        symbols = {
-                "__name__": "__console__",
-                "__doc__": None,
-                "db": db,
-                "magic_sql": self.magic_sql,
-                "q": self.q,
-                "dbplot": self.plot_cursor,
-                "dbprint": self.print_cursor,
-                }
-        code.InteractiveConsole.__init__(self, symbols)
-
-        try:
-            import pylab
-            import matplotlib
-            self.runsource("from pylab import *")
-
-        except ImportError:
-            pass
-
-        if HAVE_READLINE:
-            import os
-            import atexit
-
-            histfile = os.path.join(os.environ["HOME"], ".runalyzerhist")
-            if os.access(histfile, os.R_OK):
-                readline.read_history_file(histfile)
-            atexit.register(readline.write_history_file, histfile)
-            readline.parse_and_bind("tab: complete")
-
-        self.last_push_result = False
-
-    def push(self, cmdline):
-        if cmdline.startswith("."):
-            try:
-                self.execute_magic(cmdline)
-            except:
-                import traceback
-                traceback.print_exc()
-        else:
-            self.last_push_result = code.InteractiveConsole.push(self, cmdline)
-
-        return self.last_push_result
+        self.interactive = interactive
 
     def q(self, qry):
         return self.db.execute(self.magic_sql(qry))
@@ -128,6 +87,7 @@ class RunalyzerConsole(code.InteractiveConsole):
     def plot_cursor(self, cursor, **kwargs):
         from pylab import plot, show, legend
 
+
         if len(cursor.description) == 2:
             if not kwargs:
                 style = PLOT_STYLES[0]
@@ -136,8 +96,12 @@ class RunalyzerConsole(code.InteractiveConsole):
 
             x, y = zip(*list(cursor))
             plot(x, y, hold=True, **kwargs)
-            show()
+            if self.interactive:
+                show()
         elif len(cursor.description) > 2:
+            small_legend = kwargs.setdefault("small_legend", True)
+            del kwargs["small_legend"]
+
             def do_plot():
                 style = PLOT_STYLES[style_idx[0] % len(PLOT_STYLES)]
                 kwargs["dashes"] = style.dashes
@@ -169,10 +133,12 @@ class RunalyzerConsole(code.InteractiveConsole):
             if x:
                 do_plot()
 
-            from matplotlib.font_manager import FontProperties
-            legend(pad=0.04, prop=FontProperties(size=8), loc="best",
-                    labelsep=0)
-            show()
+            if small_legend:
+                from matplotlib.font_manager import FontProperties
+                legend(pad=0.04, prop=FontProperties(size=8), loc="best",
+                        labelsep=0)
+            if self.interactive:
+                show()
         else:
             raise ValueError, "invalid number of columns"
         
@@ -183,6 +149,56 @@ class RunalyzerConsole(code.InteractiveConsole):
         for row in cursor:
             tbl.add_row(row)
         print tbl
+
+
+
+
+class RunalyzerConsole(code.InteractiveConsole,RunDB):
+    def __init__(self, db):
+        RunDB.__init__(self, db, interactive=True)
+
+        symbols = {
+                "__name__": "__console__",
+                "__doc__": None,
+                "db": db,
+                "magic_sql": self.magic_sql,
+                "q": self.q,
+                "dbplot": self.plot_cursor,
+                "dbprint": self.print_cursor,
+                }
+        code.InteractiveConsole.__init__(self, symbols)
+
+        try:
+            import pylab
+            import matplotlib
+            self.runsource("from pylab import *")
+        except ImportError:
+            pass
+
+        if HAVE_READLINE:
+            import os
+            import atexit
+
+            histfile = os.path.join(os.environ["HOME"], ".runalyzerhist")
+            if os.access(histfile, os.R_OK):
+                readline.read_history_file(histfile)
+            atexit.register(readline.write_history_file, histfile)
+            readline.parse_and_bind("tab: complete")
+
+        self.last_push_result = False
+
+    def push(self, cmdline):
+        if cmdline.startswith("."):
+            try:
+                self.execute_magic(cmdline)
+            except:
+                import traceback
+                traceback.print_exc()
+        else:
+            self.last_push_result = code.InteractiveConsole.push(self, cmdline)
+
+        return self.last_push_result
+
 
     def execute_magic(self, cmdline):
         cmd_end = cmdline.find(" ")
@@ -287,10 +303,10 @@ def main():
     import sys
     from optparse import OptionParser
 
-    parser = OptionParser(usage="%prog DBFILE")
+    parser = OptionParser(usage="%prog DBFILE [SCRIPT]")
     options, args = parser.parse_args()
 
-    if len(args) != 1:
+    if len(args) not in [1, 2]:
         parser.print_help()
         sys.exit(1)
 
@@ -301,10 +317,15 @@ def main():
     db.create_aggregate("norm1", 1, Norm1)
     db.create_aggregate("norm2", 1, Norm2)
 
-    cons = RunalyzerConsole(db)
-    cons.interact("Runalyzer running on Python %s\n"
-            "Copyright (c) Andreas Kloeckner 2008\n" 
-            "Run .help to see help for magic commands" % sys.version)
+    if len(args) == 2:
+        db = RunDB(db, interactive=False)
+        symbols = {"db": db}
+        execfile(args[1], symbols)
+    else:
+        cons = RunalyzerConsole(db)
+        cons.interact("Runalyzer running on Python %s\n"
+                "Copyright (c) Andreas Kloeckner 2008\n" 
+                "Run .help to see help for magic commands" % sys.version)
 
 
 
