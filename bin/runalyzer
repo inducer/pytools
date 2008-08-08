@@ -295,6 +295,9 @@ class Norm2:
         from math import sqrt
         return sqrt(self.square_sum)
 
+def my_sprintf(format, arg):
+    return format % arg
+
 
 
 
@@ -316,6 +319,8 @@ def main():
     db.create_aggregate("var", 1, Variance)
     db.create_aggregate("norm1", 1, Norm1)
     db.create_aggregate("norm2", 1, Norm2)
+
+    db.create_function("sprintf", 2, my_sprintf)
 
     if len(args) == 2:
         db = RunDB(db, interactive=False)
