@@ -210,7 +210,7 @@ class LogManager(object):
                 import sqlite3 as sqlite
             except ImportError:
                 try:
-                    import pysqlite2 as sqlite
+                    from pysqlite2 import dbapi2 as sqlite
                 except ImportError:
                     raise ImportError, "could not find a usable version of sqlite."
 
