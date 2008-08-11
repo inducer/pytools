@@ -294,15 +294,7 @@ def single_valued(iterable):
 
 
 def hash_combine(*args):
-    seed = 0
-    from sys import maxint
-    mask = sys.maxint >> 6
-
-    for v in args:
-        # copied from boost
-        seed ^= hash(v) + 0x9e3779b9 + ((seed & mask) << 6) + (seed >> 2)
-
-    return seed
+    return 0x3e3779b9 ^ hash(args)
 
 
 
