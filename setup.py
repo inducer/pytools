@@ -8,7 +8,7 @@ ez_setup.use_setuptools()
 from setuptools import setup
 
 setup(name="pytools",
-      version="4",
+      version="5",
       description="A collection of tools for Python",
       long_description="""
       Pytools is a big bag of things that are "missing" from the Python standard
