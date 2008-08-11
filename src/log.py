@@ -206,16 +206,22 @@ class LogManager(object):
 
         # database binding
         if filename is not None and self.rank == self.head_rank:
-            import sqlite3
+            try:
+                import sqlite3 as sqlite
+            except ImportError:
+                try:
+                    import pysqlite2 as sqlite
+                except ImportError:
+                    raise ImportError, "could not find a usable version of sqlite."
 
-            self.db_conn = sqlite3.connect(filename, timeout=30)
+            self.db_conn = sqlite.connect(filename, timeout=30)
             self.mode = mode
             try:
                 self.db_conn.execute("select * from quantities;")
                 if mode == "w":
                     raise RuntimeError, "Log database '%s' already exists" % filename
                 self._load()
-            except sqlite3.OperationalError:
+            except sqlite.OperationalError:
                 if mode == "r":
                     raise RuntimeError, "Log database '%s' not found" % filename
 
