@@ -78,6 +78,24 @@ class SimulationLogQuantity(LogQuantity, DtConsumer):
 
 
 
+class PushLogQuantity(LogQuantity):
+    def __init__(self, name, unit=None, description=None):
+        LogQuantity.__init__(self, name, unit, description)
+        self.value = None
+
+    def push_value(self, value):
+        if self.value is not None:
+            raise RuntimeError, "can't push two values per cycle"
+        self.value = value
+
+    def __call__(self):
+        v = self.value
+        self.value = None
+        return v
+
+        
+
+
 class CallableLogQuantityAdapter(LogQuantity):
     """Adapt a 0-ary callable as a L{LogQuantity}."""
     def __init__(self, callable, name, unit=None, description=None):
