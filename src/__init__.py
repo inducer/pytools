@@ -49,7 +49,13 @@ class Norm(object):
 
 # Data structures ------------------------------------------------------------
 class Record(object):
+    """An aggregate of named sub-variables. Assumes that each record sub-type
+    will be individually derived from this class.
+    """
+
     def __init__(self, valuedict=None, exclude=["self"], **kwargs):
+        assert self.__class__ is not Record
+
         try:
             fields = self.__class__.fields
         except AttributeError:
@@ -83,6 +89,13 @@ class Record(object):
         for key, value in valuedict.iteritems():
             fields.add(key)
             setattr(self, key, value)
+
+    def __repr__(self):
+        return "%s(%s)" % (
+                self.__class__.__name__,
+                ", ".join("%s=%s" % (fld, getattr(self, fld))
+                    for fld in self.__class__.fields))
+
 
 
 

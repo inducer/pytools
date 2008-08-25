@@ -350,6 +350,7 @@ class LogManager(object):
         """Add quantities that are printed after every time step."""
 
         from pytools import Record
+        class WatchInfo(Record): pass
 
         for watch in watches:
             parsed = self._parse_expr(watch)
@@ -358,7 +359,7 @@ class LogManager(object):
             from pymbolic import compile
             compiled = compile(parsed, [dd.varname for dd in dep_data])
 
-            watch_info = Record(expr=watch, parsed=parsed, dep_data=dep_data,
+            watch_info = WatchInfo(expr=watch, parsed=parsed, dep_data=dep_data,
                     compiled=compiled)
 
             self.watches.append(watch_info)
@@ -702,7 +703,9 @@ class LogManager(object):
             qdat = self.quantity_data[name]
 
             from pytools import Record
-            this_dep_data = Record(name=name, qdat=qdat, agg_func=agg_func,
+            class DependencyData(Record): pass
+
+            this_dep_data = DependencyData(name=name, qdat=qdat, agg_func=agg_func,
                     varname="logvar%d" % dep_idx, expr=dep)
             dep_data.append(this_dep_data)
 
