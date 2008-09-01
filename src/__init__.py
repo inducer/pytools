@@ -297,9 +297,12 @@ def single_valued(iterable):
     except StopIteration:
         raise ValueError, "empty iterable passed to 'single_valued()'"
 
-    for other_item in it:
-        if other_item != first_item:
-            raise ValueError, "non-single-valued iterable passed to 'single_valued()'"
+    def others_same():
+        for other_item in it:
+            if other_item != first_item:
+                raise ValueError, "non-single-valued iterable passed to 'single_valued()'"
+        return True
+    assert others_same()
         
     return first_item
 
