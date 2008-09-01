@@ -281,11 +281,15 @@ def one(iterable):
     except StopIteration:
         raise ValueError, "empty iterable passed to 'one()'"
 
-    try:
-        v2 = it.next()
-        raise ValueError, "iterable with more than one entry passed to 'one()'"
-    except StopIteration:
-        return v
+    def no_more():
+        try:
+            v2 = it.next()
+            raise ValueError, "iterable with more than one entry passed to 'one()'"
+        except StopIteration:
+            pass
+    assert no_more()
+
+    return v
 
 
 
