@@ -739,10 +739,17 @@ class LogManager(object):
                 for name, value in data_block.iteritems():
                     values.setdefault(name, []).append(value)
 
+            def compute_watch_str(watch):
+                try:
+                    return "%s=%g" % (watch.expr, watch.compiled(
+                        *[dd.agg_func(values[dd.name]) 
+                            for dd in watch.dep_data]))
+                except ZeroDivisionError:
+                    return "%s:div0" % watch.expr
+
             if self.watches:
                 print " | ".join(
-                        "%s=%g" % (watch.expr, watch.compiled(
-                           *[dd.agg_func(values[dd.name]) for dd in watch.dep_data]))
+                        compute_watch_str(watch)
                         for watch in self.watches
                         )
 
