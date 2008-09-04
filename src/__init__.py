@@ -110,31 +110,22 @@ class Reference(object):
 
 
 
-
-def _attrsetdefault(obj, name, default_thunk):
-    "Similar to .setdefault in dictionaries."
-    try:
-        return getattr(obj, name)
-    except AttributeError:
-        default = default_thunk()
-        setattr(obj, name, default)
-        return default
-
-
-
-
 @decorator
 def memoize(func, *args):
     # by Michele Simionato
     # http://www.phyast.pitt.edu/~micheles/python/
 
-    dic = _attrsetdefault(func, "_memoize_dic", dict)
+    try:
+        return func._memoize_dic[args]
+    except AttributeError:
+        # _memoize_dic doesn't exist yet.
 
-    if args in dic:
-        return dic[args]
-    else:
         result = func(*args)
-        dic[args] = result
+        func._memoize_dic = {args: result}
+        return result
+    except KeyError:
+        result = func(*args)
+        func._memoize_dic[args] = result
         return result
 FunctionValueCache = memoize
 
@@ -143,13 +134,16 @@ FunctionValueCache = memoize
 
 @decorator
 def memoize_method(method, instance, *args):
-    dic = _attrsetdefault(instance, "_memoize_dic_"+method.__name__, dict)
-
+    dicname = "_memoize_dic_"+method.__name__
     try:
-        return dic[args]
+        return getattr(instance, dicname)[args]
+    except AttributeError:
+        result = method(instance, *args)
+        setattr(instance, dicname, {args: result})
+        return result
     except KeyError:
         result = method(instance, *args)
-        dic[args] = result
+        getattr(instance,dicname)[args] = result
         return result
 
 
