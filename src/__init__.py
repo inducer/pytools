@@ -280,7 +280,8 @@ def one(iterable):
             v2 = it.next()
             raise ValueError, "iterable with more than one entry passed to 'one()'"
         except StopIteration:
-            pass
+            return True
+
     assert no_more()
 
     return v
