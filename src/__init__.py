@@ -308,12 +308,6 @@ def single_valued(iterable):
 
 
 
-def hash_combine(*args):
-    return 0x3e3779b9 ^ hash(args)
-
-
-
-
 # plotting --------------------------------------------------------------------
 def write_1d_gnuplot_graph(f, a, b, steps=100, fname=",,f.data", progress = False):
     h = float(b - a)/steps
