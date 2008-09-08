@@ -6,8 +6,16 @@
 class DiskDict(object):
     """Provides a disk-backed dictionary. Unlike L{shelve}, this class allows
     arbitrary values for keys, at a slight performance penalty.
+
+    Note that this is a dangerous game: The C{hash()} of many objects changes
+    between runs. In particular, C{hash(None)} changes between runs.
+    C{str}, C{unicode}, C{int}, C{tuple} and C{long} seem to be constant
+    for a given Python executable, but they may change for a new version.
+
+    So don't use this class for data that you absolutely *have* to be able
+    to retrieve. It's fine for caches and the like, though.
     """
-    def __init__(self, name, version_base=None, dep_modules=[]):
+    def __init__(self, name, version_base=(), dep_modules=[]):
         import os
         dbfilename = os.path.join(os.environ["HOME"], ".%s.pytools-dict" % name)
 
