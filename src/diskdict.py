@@ -1,21 +1,16 @@
-try:
-    import sqlite3 as sqlite
-except ImportError:
-    try:
-        from pysqlite2 import dbapi2 as sqlite
-    except ImportError:
-        raise ImportError, "could not find a usable version of sqlite."
+# see end of file for sqlite import
 
 
 
 
-class DiskDict:
+class DiskDict(object):
     """Provides a disk-backed dictionary. Unlike L{shelve}, this class allows
     arbitrary values for keys, at a slight performance penalty.
     """
     def __init__(self, name, version_base=None, dep_modules=[]):
         import os
         dbfilename = os.path.join(os.environ["HOME"], ".%s.pytools-dict" % name)
+
         self.db_conn = sqlite.connect(dbfilename, timeout=30)
 
         try:
@@ -56,8 +51,8 @@ class DiskDict:
                     "select key_pickle, version_pickle, result_pickle from data"
                     " where key_hash = ? and version_hash = ?",
                     (hash(key), self.version_hash)):
-                if loads(key_pickle) == key and loads(version_pickle) == self.version:
-                    result = loads(result_pickle) 
+                if loads(str(key_pickle)) == key and loads(str(version_pickle)) == self.version:
+                    result = loads(str(result_pickle)) 
                     self.cache[key] = result
                     return result
 
@@ -85,8 +80,21 @@ class DiskDict:
         self.db_conn.execute("insert into data"
                 " (key_hash, key_pickle, version_hash, version_pickle, result_pickle)"
                 " values (?,?,?,?,?)",
-                (hash(key), dumps(key), 
+                (hash(key), sqlite.Binary(dumps(key)), 
                     self.version_hash, self.version_pickle,
-                    dumps(value)))
+                    sqlite.Binary(dumps(value))))
         self.db_conn.commit()
 
+
+
+
+try:
+    import sqlite3 as sqlite
+except ImportError:
+    try:
+        from pysqlite2 import dbapi2 as sqlite
+    except ImportError:
+        import warnings
+        warnings.warn("DiskDict will memory-only: "
+                "a usable version of sqlite was not found.")
+        DiskDict = dict
