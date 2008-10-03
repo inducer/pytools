@@ -19,8 +19,14 @@ except ImportError:
 
 
 from pytools import cartesian_product, Record
+class PlotStyle(Record):
+    pass
+
+
+
+
 PLOT_STYLES = [
-        Record(dashes=dashes, color=color)
+        PlotStyle(dashes=dashes, color=color)
         for dashes, color in cartesian_product(
             [(), (12, 2), (4, 2),  (2,2), (2,8) ],
             ["blue", "green", "red", "magenta", "cyan"],
@@ -35,58 +41,13 @@ class RunDB(object):
         self.interactive = interactive
 
     def q(self, qry):
-        return self.db.execute(self.magic_sql(qry))
+        return self.db.execute(self.mangle_sql(qry))
 
-    def magic_sql(self, qry):
-        up_qry = qry.upper()
-        if "FROM" in up_qry and not "$$" in up_qry:
-            return qry
-
-        magic_columns = set()
-
-        def replace_magic_column(match):
-            qty_name = match.group(1)
-            magic_columns.add(qty_name)
-            return "%s.value" % qty_name
-
-        import re
-        magic_column_re = re.compile(r"\$([a-zA-Z][A-Za-z0-9_]*)")
-        qry = magic_column_re.sub(replace_magic_column, qry)
-
-        other_clauses = ["UNION",  "INTERSECT", "EXCEPT", "WHERE", "GROUP",
-                "HAVING", "ORDER", "LIMIT", ";"]
-
-        from_clause = "from runs "
-        last_tbl = None
-        for tbl in magic_columns:
-            if last_tbl is not None:
-                addendum = " and %s.step = %s.step" % (last_tbl, tbl)
-            else:
-                addendum = ""
-
-            from_clause += " inner join %s on (%s.run_id = runs.id%s) " % (
-                    tbl, tbl, addendum)
-            last_tbl = tbl
-        
-        if "$$" in qry:
-            return qry.replace("$$"," %s " % from_clause)
-        else:
-            first_clause_idx = len(qry)+1
-            up_qry = qry.upper()
-            for clause in other_clauses:
-                clause_match = re.search(r"\b%s\b" % clause, up_qry)
-                if clause_match is not None and clause_match.start() < first_clause_idx:
-                    first_clause_idx = clause_match.start()
-            if first_clause_idx > len(qry):
-                from_clause = " "+from_clause
-            return (
-                    qry[:first_clause_idx]
-                    +from_clause
-                    +qry[first_clause_idx:])
+    def mangle_sql(self, qry):
+        return qry
 
     def plot_cursor(self, cursor, **kwargs):
         from pylab import plot, show, legend
-
 
         if len(cursor.description) == 2:
             if not kwargs:
@@ -153,18 +114,68 @@ class RunDB(object):
 
 
 
-class RunalyzerConsole(code.InteractiveConsole,RunDB):
-    def __init__(self, db):
-        RunDB.__init__(self, db, interactive=True)
+class MagicRunDB(object):
+    def mangle_sql(self, qry):
+        up_qry = qry.upper()
+        if "FROM" in up_qry and not "$$" in up_qry:
+            return qry
 
+        magic_columns = set()
+
+        def replace_magic_column(match):
+            qty_name = match.group(1)
+            magic_columns.add(qty_name)
+            return "%s.value" % qty_name
+
+        import re
+        magic_column_re = re.compile(r"\$([a-zA-Z][A-Za-z0-9_]*)")
+        qry = magic_column_re.sub(replace_magic_column, qry)
+
+        other_clauses = ["UNION",  "INTERSECT", "EXCEPT", "WHERE", "GROUP",
+                "HAVING", "ORDER", "LIMIT", ";"]
+
+        from_clause = "from runs "
+        last_tbl = None
+        for tbl in magic_columns:
+            if last_tbl is not None:
+                addendum = " and %s.step = %s.step" % (last_tbl, tbl)
+            else:
+                addendum = ""
+
+            from_clause += " inner join %s on (%s.run_id = runs.id%s) " % (
+                    tbl, tbl, addendum)
+            last_tbl = tbl
+        
+        if "$$" in qry:
+            return qry.replace("$$"," %s " % from_clause)
+        else:
+            first_clause_idx = len(qry)+1
+            up_qry = qry.upper()
+            for clause in other_clauses:
+                clause_match = re.search(r"\b%s\b" % clause, up_qry)
+                if clause_match is not None and clause_match.start() < first_clause_idx:
+                    first_clause_idx = clause_match.start()
+            if first_clause_idx > len(qry):
+                from_clause = " "+from_clause
+            return (
+                    qry[:first_clause_idx]
+                    +from_clause
+                    +qry[first_clause_idx:])
+
+
+
+
+class RunalyzerConsole(code.InteractiveConsole):
+    def __init__(self, db):
+        self.db = db
         symbols = {
                 "__name__": "__console__",
                 "__doc__": None,
                 "db": db,
-                "magic_sql": self.magic_sql,
-                "q": self.q,
-                "dbplot": self.plot_cursor,
-                "dbprint": self.print_cursor,
+                "mangle_sql": db.mangle_sql,
+                "q": db.q,
+                "dbplot": db.plot_cursor,
+                "dbprint": db.print_cursor,
                 }
         code.InteractiveConsole.__init__(self, symbols)
 
@@ -213,17 +224,17 @@ class RunalyzerConsole(code.InteractiveConsole,RunDB):
             print """
 Commands:
  .help        show this help message
- .q SQL       execute MagicSQL query
+ .q SQL       execute a (potentially mangled) query
  .runprops    show a list of run properties
  .quantities  show a list of time-dependent quantites
 
 Plotting:
- .plot SQL    plot results of MagicSQL query
+ .plot SQL    plot results of (potentially mangled) query
               result sets can be (x,y) or (x,y,descr1,descr2,...),
               in which case a new plot will be started for each
               tuple (descr1, descr2, ...)
 
-MagicSQL:
+SQL mangling, if requested ("MagicSQL"):
     select $quantity where pred(feature)
 
 Custom SQLite aggregates:
@@ -231,13 +242,13 @@ Custom SQLite aggregates:
 
 Available Python functions:
     db: the SQLite database
-    magic_sql(query_str): get MagicSQL query for query_str
-    q(query_str): get db cursor for MagicSQL query_str
+    mangle_sql(query_str): mangle the SQL query string query_str
+    q(query_str): get db cursor for mangled query_str
     dbplot(cursor): same as plot, but for cus
     dbprint(cursor): print result of cursor
 """
         elif cmd == "q":
-            self.print_cursor(self.q(args))
+            self.db.print_cursor(self.db.q(args))
 
         elif cmd == "runprops":
             cursor = self.db.execute("select * from runs")
@@ -246,12 +257,13 @@ Available Python functions:
             for col in columns:
                 print col
         elif cmd == "quantities":
-            self.print_cursor(self.q("select * from quantities order by name"))
+            self.db.print_cursor(self.db.q("select * from quantities order by name"))
         elif cmd == "title":
             from pylab import title
             title(args)
         elif cmd == "plot":
-            self.plot_cursor(self.db.execute(self.magic_sql(args)))
+            self.db.plot_cursor(self.db.db.execute(
+                self.db.mangle_sql(args)))
         else:
             print "invalid magic command"
 
@@ -307,6 +319,8 @@ def main():
     from optparse import OptionParser
 
     parser = OptionParser(usage="%prog DBFILE [SCRIPT]")
+    parser.add_option("-m", "--mangle",
+            help="whether to try and mangle SQL queries")
     options, args = parser.parse_args()
 
     if len(args) not in [1, 2]:
@@ -322,11 +336,18 @@ def main():
 
     db.create_function("sprintf", 2, my_sprintf)
 
+    if options.mangle:
+        db_wrap_class = MagicRunDB
+    else:
+        db_wrap_class = RunDB
+
+
     if len(args) == 2:
-        db = RunDB(db, interactive=False)
+        db = db_wrap_class(db, interactive=False)
         symbols = {"db": db}
         execfile(args[1], symbols)
     else:
+        db = db_wrap_class(db, interactive=False)
         cons = RunalyzerConsole(db)
         cons.interact("Runalyzer running on Python %s\n"
                 "Copyright (c) Andreas Kloeckner 2008\n" 
