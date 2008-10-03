@@ -46,30 +46,35 @@ class RunDB(object):
     def mangle_sql(self, qry):
         return qry
 
-    def plot_cursor(self, cursor, **kwargs):
+    def plot_cursor(self, cursor, *args, **kwargs):
         from pylab import plot, show, legend
 
+        auto_style = kwargs.pop("auto_style", True)
+
         if len(cursor.description) == 2:
-            if not kwargs:
+            if auto_style:
                 style = PLOT_STYLES[0]
                 kwargs["dashes"] = style.dashes
                 kwargs["color"] = style.color
 
             x, y = zip(*list(cursor))
-            plot(x, y, hold=True, **kwargs)
+            plot(x, y, *args, **kwargs)
             if self.interactive:
                 show()
         elif len(cursor.description) > 2:
-            small_legend = kwargs.setdefault("small_legend", True)
-            del kwargs["small_legend"]
+            small_legend = kwargs.pop("small_legend", True)
 
             def do_plot():
+                my_kwargs = kwargs.copy()
                 style = PLOT_STYLES[style_idx[0] % len(PLOT_STYLES)]
-                kwargs["dashes"] = style.dashes
-                kwargs["color"] = style.color
-                kwargs["label"] = " ".join("%s:%s" % (column[0], value)
-                        for column, value in zip(cursor.description[2:], last_rest))
-                plot(x, y, hold=True, **kwargs)
+                if auto_style:
+                    my_kwargs.setdefault("dashes", style.dashes)
+                    my_kwargs.setdefault("color", style.color)
+
+                my_kwargs.setdefault("label",
+                        " ".join("%s:%s" % (column[0], value)
+                            for column, value in zip(cursor.description[2:], last_rest)))
+                plot(x, y, hold=True, *args, **my_kwargs)
                 style_idx[0] += 1
                 del x[:]
                 del y[:]
@@ -347,7 +352,7 @@ def main():
         symbols = {"db": db}
         execfile(args[1], symbols)
     else:
-        db = db_wrap_class(db, interactive=False)
+        db = db_wrap_class(db, interactive=True)
         cons = RunalyzerConsole(db)
         cons.interact("Runalyzer running on Python %s\n"
                 "Copyright (c) Andreas Kloeckner 2008\n" 
