@@ -353,13 +353,19 @@ class LogManager(object):
         class WatchInfo(Record): pass
 
         for watch in watches:
-            parsed = self._parse_expr(watch)
+            if isinstance(watch, tuple):
+                display, expr = watch
+            else:
+                display = watch
+                expr = watch
+
+            parsed = self._parse_expr(expr)
             parsed, dep_data = self._get_expr_dep_data(parsed)
 
             from pymbolic import compile
             compiled = compile(parsed, [dd.varname for dd in dep_data])
 
-            watch_info = WatchInfo(expr=watch, parsed=parsed, dep_data=dep_data,
+            watch_info = WatchInfo(display=display, parsed=parsed, dep_data=dep_data,
                     compiled=compiled)
 
             self.watches.append(watch_info)
@@ -538,12 +544,15 @@ class LogManager(object):
         from pymbolic import compile
         compiled = compile(parsed, [dd.varname for dd in dep_data])
 
-        return (description,
-                unit,
-                [(key, compiled(*values))
-                    for key, values in _join_by_first_of_tuple(
-                        dd.table for dd in dep_data)
-                    ])
+        data = []
+
+        for key, values in _join_by_first_of_tuple(dd.table for dd in dep_data):
+            try:
+                data.append((key, compiled(*values)))
+            except ZeroDivisionError:
+                pass
+
+        return (description, unit, data)
 
     def get_joint_dataset(self, expressions):
         """Return a joint data set for a list of expressions.
@@ -741,11 +750,11 @@ class LogManager(object):
 
             def compute_watch_str(watch):
                 try:
-                    return "%s=%g" % (watch.expr, watch.compiled(
+                    return "%s=%g" % (watch.display, watch.compiled(
                         *[dd.agg_func(values[dd.name]) 
                             for dd in watch.dep_data]))
                 except ZeroDivisionError:
-                    return "%s:div0" % watch.expr
+                    return "%s:div0" % watch.display
 
             if self.watches:
                 print " | ".join(
