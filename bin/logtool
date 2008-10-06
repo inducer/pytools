@@ -63,8 +63,11 @@ following:
     legend_prefix = ""
 
     from pytools import cartesian_product, Record
+    class PlotStyle(Record):
+        pass
+
     styles = [
-            Record(dashes=dashes, color=color)
+            PlotStyle(dashes=dashes, color=color)
             for dashes, color in cartesian_product(
                 [(), (12, 2), (4, 2),  (2,2), (2,8) ],
                 ["blue", "green", "red", "magenta", "cyan"],
