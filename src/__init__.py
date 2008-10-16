@@ -935,6 +935,9 @@ class Table:
 
 # command line interfaces -----------------------------------------------------
 class CPyUserInterface(object):
+    class Parameters(Record):
+        pass
+
     def __init__(self, variables, constants={}, doc={}):
         self.variables = variables
         self.constants = constants
@@ -996,7 +999,7 @@ class CPyUserInterface(object):
                         "invalid setup key: '%s' "
                         "(user variables must start with 'user_' or '_')" % added_key)
 
-        result = Record(dict((key, execenv[key]) for key in self.variables))
+        result = self.Parameters(dict((key, execenv[key]) for key in self.variables))
         self.validate(result)
         return result
 
