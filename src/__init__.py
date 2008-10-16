@@ -1023,15 +1023,18 @@ def typedump(val):
     except TypeError:
         return val.__class__.__name__
     else:
-        l = len(val)
-        if len(val) > 5:
-            return "%s(%s,...)" % (
-                    val.__class__.__name__,
-                    ",".join(typedump(x) for x in val[:5]))
-        else:
-            return "%s(%s)" % (
-                    val.__class__.__name__,
-                    ",".join(typedump(x) for x in val[:5]))
+        try:
+            l = len(val)
+            if len(val) > 5:
+                return "%s(%s,...)" % (
+                        val.__class__.__name__,
+                        ",".join(typedump(x) for x in val[:5]))
+            else:
+                return "%s(%s)" % (
+                        val.__class__.__name__,
+                        ",".join(typedump(x) for x in val[:5]))
+        except TypeError:
+            return val.__class__.__name__
 
 
 
