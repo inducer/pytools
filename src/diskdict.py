@@ -50,6 +50,22 @@ class DiskDict(object):
 
         self.cache = {}
 
+    def __contains__(self, key):
+        if key in self.cache:
+            return True
+        else:
+            from cPickle import loads
+            for key_pickle, version_pickle, result_pickle in self.db_conn.execute(
+                    "select key_pickle, version_pickle, result_pickle from data"
+                    " where key_hash = ? and version_hash = ?",
+                    (hash(key), self.version_hash)):
+                if loads(str(key_pickle)) == key and loads(str(version_pickle)) == self.version:
+                    result = loads(str(result_pickle)) 
+                    self.cache[key] = result
+                    return True
+
+            return False
+
     def __getitem__(self, key):
         try:
             return self.cache[key]
