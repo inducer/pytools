@@ -9,7 +9,7 @@ def main():
     from optparse import OptionParser
 
     parser = OptionParser(usage="%prog DBFILE [SCRIPT]")
-    parser.add_option("-m", "--mangle",
+    parser.add_option("-m", "--mangle", action="store_true",
             help="whether to try and mangle SQL queries")
     options, args = parser.parse_args()
 
