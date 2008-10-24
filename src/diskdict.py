@@ -15,15 +15,7 @@ class DiskDict(object):
     So don't use this class for data that you absolutely *have* to be able
     to retrieve. It's fine for caches and the like, though.
     """
-    def __init__(self, name, version_base=(), dep_modules=[]):
-        import os
-        try:
-            home = os.environ["HOME"]
-        except KeyError:
-            home = os.environ["HOMEPATH"]
-
-        dbfilename = os.path.join(home, ".%s.pytools-dict" % name)
-
+    def __init__(self, dbfilename, version_base=(), dep_modules=[]):
         self.db_conn = sqlite.connect(dbfilename, timeout=30)
 
         try:
