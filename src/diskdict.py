@@ -17,7 +17,12 @@ class DiskDict(object):
     """
     def __init__(self, name, version_base=(), dep_modules=[]):
         import os
-        dbfilename = os.path.join(os.environ["HOME"], ".%s.pytools-dict" % name)
+        try:
+            home = os.environ["HOME"]
+        except KeyError:
+            home = os.environ["HOMEPATH"]
+
+        dbfilename = os.path.join(home, ".%s.pytools-dict" % name)
 
         self.db_conn = sqlite.connect(dbfilename, timeout=30)
 

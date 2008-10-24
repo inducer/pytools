@@ -119,7 +119,7 @@ class RunDB(object):
 
 
 
-class MagicRunDB(object):
+class MagicRunDB(RunDB):
     def mangle_sql(self, qry):
         up_qry = qry.upper()
         if "FROM" in up_qry and not "$$" in up_qry:
