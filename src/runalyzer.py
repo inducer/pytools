@@ -46,6 +46,15 @@ class RunDB(object):
     def mangle_sql(self, qry):
         return qry
 
+    def scatter_cursor(self, cursor, *args, **kwargs):
+        from pylab import scatter, show
+
+        data_args = tuple(zip(*list(cursor)))
+        scatter(*(data_args + args), **kwargs)
+
+        if self.interactive:
+            show()
+        
     def plot_cursor(self, cursor, *args, **kwargs):
         from pylab import plot, show, legend
 
@@ -59,8 +68,6 @@ class RunDB(object):
 
             x, y = zip(*list(cursor))
             plot(x, y, *args, **kwargs)
-            if self.interactive:
-                show()
         elif len(cursor.description) > 2:
             small_legend = kwargs.pop("small_legend", True)
 
@@ -103,10 +110,11 @@ class RunDB(object):
                 from matplotlib.font_manager import FontProperties
                 legend(pad=0.04, prop=FontProperties(size=8), loc="best",
                         labelsep=0)
-            if self.interactive:
-                show()
         else:
             raise ValueError, "invalid number of columns"
+
+        if self.interactive:
+            show()
         
     def print_cursor(self, cursor):
         from pytools import Table
@@ -234,10 +242,13 @@ Commands:
  .quantities  show a list of time-dependent quantites
 
 Plotting:
- .plot SQL    plot results of (potentially mangled) query
+ .plot SQL    plot results of (potentially mangled) query.
               result sets can be (x,y) or (x,y,descr1,descr2,...),
               in which case a new plot will be started for each
               tuple (descr1, descr2, ...)
+ .scatter SQL make scatterplot results of (potentially mangled) query.
+              result sets can have between two and four columns
+              for (x,y,size,color).
 
 SQL mangling, if requested ("MagicSQL"):
     select $quantity where pred(feature)
@@ -250,6 +261,7 @@ Available Python symbols:
     mangle_sql(query_str): mangle the SQL query string query_str
     q(query_str): get db cursor for mangled query_str
     dbplot(cursor): plot result of cursor
+    dbscatter(cursor): make scatterplot result of cursor
     dbprint(cursor): print result of cursor
 """
         elif cmd == "q":
@@ -268,6 +280,9 @@ Available Python symbols:
             title(args)
         elif cmd == "plot":
             self.db.plot_cursor(self.db.db.execute(
+                self.db.mangle_sql(args)))
+        elif cmd == "scatter":
+            self.db.scatter_cursor(self.db.db.execute(
                 self.db.mangle_sql(args)))
         else:
             print "invalid magic command"
