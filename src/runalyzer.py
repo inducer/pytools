@@ -188,6 +188,7 @@ class RunalyzerConsole(code.InteractiveConsole):
                 "mangle_sql": db.mangle_sql,
                 "q": db.q,
                 "dbplot": db.plot_cursor,
+                "dbscatter": db.scatter_cursor,
                 "dbprint": db.print_cursor,
                 }
         code.InteractiveConsole.__init__(self, symbols)
