@@ -269,7 +269,7 @@ Available Python symbols:
             self.db.print_cursor(self.db.q(args))
 
         elif cmd == "runprops":
-            cursor = self.db.execute("select * from runs")
+            cursor = self.db.db.execute("select * from runs")
             columns = [column[0] for column in cursor.description]
             columns.sort()
             for col in columns:
