@@ -929,6 +929,16 @@ class Table:
                               for col_width in col_widths)]
         return "\n".join(lines)
 
+    def latex(self, skip_lines=0, hline_after=[]):
+        lines = []
+        for row_nr, row in list(enumerate(self.Rows))[skip_lines:]:
+            lines.append(" & ".join(row)+r" \\")
+            if row_nr in hline_after:
+                lines.append(r"\hline")
+
+        return "\n".join(lines)
+
+
 
 
 
