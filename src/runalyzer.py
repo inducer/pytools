@@ -116,13 +116,16 @@ class RunDB(object):
         if self.interactive:
             show()
         
-    def print_cursor(self, cursor):
+    def table_from_cursor(self, cursor):
         from pytools import Table
         tbl = Table()
         tbl.add_row([column[0] for column in cursor.description])
         for row in cursor:
             tbl.add_row(row)
-        print tbl
+        return tbl
+
+    def print_cursor(self, cursor):
+        print self.table_from_cursor(cursor)
 
 
 
