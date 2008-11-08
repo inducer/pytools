@@ -40,8 +40,8 @@ class RunDB(object):
         self.db = db
         self.interactive = interactive
 
-    def q(self, qry):
-        return self.db.execute(self.mangle_sql(qry))
+    def q(self, qry, *extra_args):
+        return self.db.execute(self.mangle_sql(qry), *extra_args)
 
     def mangle_sql(self, qry):
         return qry
@@ -71,6 +71,11 @@ class RunDB(object):
         elif len(cursor.description) > 2:
             small_legend = kwargs.pop("small_legend", True)
 
+            def format_label(kv_pairs):
+                return " ".join("%s:%s" % (column[0], value)
+                            for column, value in kv_pairs)
+            format_label = kwargs.pop("format_label", format_label)
+
             def do_plot():
                 my_kwargs = kwargs.copy()
                 style = PLOT_STYLES[style_idx[0] % len(PLOT_STYLES)]
@@ -79,8 +84,10 @@ class RunDB(object):
                     my_kwargs.setdefault("color", style.color)
 
                 my_kwargs.setdefault("label",
-                        " ".join("%s:%s" % (column[0], value)
-                            for column, value in zip(cursor.description[2:], last_rest)))
+                        format_label(zip(
+                            (col[0] for col in cursor.description[2:]), 
+                            last_rest)))
+
                 plot(x, y, hold=True, *args, **my_kwargs)
                 style_idx[0] += 1
                 del x[:]
