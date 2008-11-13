@@ -725,7 +725,8 @@ def indices_in_shape(shape):
     else:
         remainder = shape[1:]
         for i in xrange(0, shape[0]):
-            yield (i,)+indices_in_shape(remainder)
+            for rest in indices_in_shape(remainder):
+                yield (i,)+rest
 
 
 
