@@ -272,10 +272,6 @@ class LogManager(object):
         if capture_warnings:
             self.capture_warnings(True)
 
-    def close(self):
-        if self.db_conn is not None:
-            self.db_conn.close()
-
     def capture_warnings(self, enable=True):
         import warnings
         if enable:
