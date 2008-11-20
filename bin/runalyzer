@@ -17,6 +17,8 @@ def main():
         parser.print_help()
         sys.exit(1)
 
+    sys.path.append(".")
+
     from pytools.runalyzer import make_wrapped_db
 
     if len(args) == 2:
