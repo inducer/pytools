@@ -832,9 +832,10 @@ class EventCounter(LogQuantity):
 
 
 
-def time_and_count_function(f, timer, counter, increment=1):
+def time_and_count_function(f, timer, counter=None, increment=1):
     def inner_f(*args, **kwargs):
-        counter.add(increment)
+        if counter is not None:
+            counter.add(increment)
         timer.start()
         try:
             return f(*args, **kwargs)
