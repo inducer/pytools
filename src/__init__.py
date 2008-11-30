@@ -53,6 +53,8 @@ class Record(object):
     will be individually derived from this class.
     """
 
+    __slots__ = []
+
     def __init__(self, valuedict=None, exclude=["self"], **kwargs):
         assert self.__class__ is not Record
 
