@@ -660,9 +660,9 @@ class LogManager(object):
         return parsed
 
     def _get_expr_dep_data(self, parsed):
-        from pymbolic import get_dependencies
+        from pymbolic.mapper.dependency import DependencyMapper
 
-        deps = get_dependencies(parsed)
+        deps = DependencyMapper()(parsed)
 
         # gather information on aggregation expressions
         dep_data = []
