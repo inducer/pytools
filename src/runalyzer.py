@@ -72,7 +72,7 @@ class RunDB(object):
             small_legend = kwargs.pop("small_legend", True)
 
             def format_label(kv_pairs):
-                return " ".join("%s:%s" % (column[0], value)
+                return " ".join("%s:%s" % (column, value)
                             for column, value in kv_pairs)
             format_label = kwargs.pop("format_label", format_label)
 
