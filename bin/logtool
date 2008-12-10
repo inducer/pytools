@@ -157,7 +157,22 @@ following:
         elif cmd == "table":
             check_no_file()
 
-            print logmgr.get_table(args.pop(0))
+            descrs, units, data = logmgr.get_joint_dataset(args.pop(0).split(","))
+            if options.start_step is not None:
+                data = [(step, tup) for step, tup in data 
+                        if options.start_step <= step]
+            if options.end_step is not None:
+                data = [(step, tup) for step, tup in data 
+                        if step <= options.end_step]
+
+            from pytools import Table
+            tbl = Table()
+            tbl.add_row(["step"]+["%s [%s]" % (d, u) for d,u in zip(descrs, units)])
+
+            for row in data:
+                tbl.add_row([row[0]]+row[1])
+
+            print tbl
         elif cmd == "saveplot":
             saveplot_filename = args.pop(0)
         elif cmd == "print":
