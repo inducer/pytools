@@ -273,6 +273,8 @@ class LogManager(object):
             self.capture_warnings(True)
 
     def capture_warnings(self, enable=True):
+        # FIXME warning capture on multiple processors
+
         import warnings
         if enable:
             if self.old_showwarning is None:
@@ -291,9 +293,9 @@ class LogManager(object):
     def _showwarning(self, message, category, filename, lineno):
         self.old_showwarning(message, category, filename, lineno)
 
-        if (self.schema_version >= 1 
-                and self.mode == "w" 
-                and self.db_conn is not None):
+        if (self.db_conn is not None 
+                and self.schema_version >= 1 
+                and self.mode == "w"):
             self.db_conn.execute("insert into warnings values (?,?,?,?,?)",
                     (self.tick_count, message.message, str(category), filename, lineno))
 
