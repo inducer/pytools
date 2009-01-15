@@ -95,8 +95,14 @@ class Record(object):
     def __repr__(self):
         return "%s(%s)" % (
                 self.__class__.__name__,
-                ", ".join("%s=%s" % (fld, getattr(self, fld))
+                ", ".join("%s=%r" % (fld, getattr(self, fld))
                     for fld in self.__class__.fields))
+
+    def __eq__(self, other):
+        return self.__getstate__() == other.__getstate__()
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 
