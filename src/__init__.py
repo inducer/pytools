@@ -1056,22 +1056,31 @@ def enumerate_basic_directions(dimensions):
 
 
 
-def typedump(val):
+def typedump(val, max_seq=5, special_handlers={}):
+    try:
+        hdlr = special_handlers[type(val)]
+    except KeyError:
+        pass
+    else:
+        return hdlr(val)
+
     try:
         len(val)
     except TypeError:
-        return val.__class__.__name__
+        return type(val).__name__
     else:
         try:
             l = len(val)
-            if len(val) > 5:
+            if len(val) > max_seq:
                 return "%s(%s,...)" % (
-                        val.__class__.__name__,
-                        ",".join(typedump(x) for x in val[:5]))
+                        type(val).__name__,
+                        ",".join(typedump(x, max_seq, special_handlers) 
+                            for x in val[:max_seq]))
             else:
                 return "%s(%s)" % (
-                        val.__class__.__name__,
-                        ",".join(typedump(x) for x in val[:5]))
+                        type(val).__name__,
+                        ",".join(typedump(x, max_seq, special_handlers) 
+                            for x in val))
         except TypeError:
             return val.__class__.__name__
 
@@ -1139,4 +1148,3 @@ def _test():
 
 if __name__ == "__main__":
     _test()
-
