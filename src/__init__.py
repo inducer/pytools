@@ -575,6 +575,26 @@ def all_roughly_equal(iterable, threshold):
 
 
 
+def common_prefix(iterable, empty=None):
+    it = iter(iterable)
+    try:
+        pfx = it.next()
+    except StopIteration:
+        return  empty
+
+    for v in it:
+        for j in range(len(pfx)):
+            if pfx[j] != v[j]:
+                pfx = pfx[:j]
+                if j == 0:
+                    return pfx
+                break
+
+    return pfx
+
+
+
+
 def decorate(function, list):
     return map(lambda x: (x, function(x)), list)
 
