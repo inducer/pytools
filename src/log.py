@@ -184,7 +184,7 @@ class LogManager(object):
           If this database exists, the current state is loaded from it.
         @arg mode: One of "w", "r" for write, read. "w" assumes that the 
           database is initially empty.
-        @arg mpi_comm: A C{boost.mpi} communicator. If given, logs are periodically
+        @arg mpi_comm: An C{boostmpi} communicator. If given, logs are periodically
           synchronized to the head node, which then writes them out to disk.
         @arg capture_warnings: Tap the Python warnings facility and save warnings
           to the log file.
@@ -436,7 +436,7 @@ class LogManager(object):
             ticks_per_10_sec = 10*self.tick_count/max(1, end_time-self.start_time)
             self.next_sync_tick = self.tick_count + int(max(50, ticks_per_10_sec))
             if self.mpi_comm is not None:
-                from boost.mpi import broadcast
+                from boostmpi import broadcast
                 self.next_sync_tick = broadcast(self.mpi_comm, self.next_sync_tick, self.head_rank)
 
         self.t_log = time() - start_time
@@ -455,7 +455,7 @@ class LogManager(object):
         if self.mpi_comm is None:
             return
 
-        from boost.mpi import gather
+        from boostmpi import gather
         if self.mpi_comm.rank == self.head_rank:
             for rank_data in gather(self.mpi_comm, None, self.head_rank)[1:]:
                 for name, rows in rank_data:
@@ -738,7 +738,7 @@ class LogManager(object):
                 for qname in self.quantity_data.iterkeys())
 
         if self.mpi_comm is not None:
-            from boost.mpi import broadcast, gather
+            from boostmpi import broadcast, gather
 
             gathered_data = gather(self.mpi_comm, data_block, self.head_rank)
         else:
