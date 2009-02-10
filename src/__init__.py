@@ -971,25 +971,33 @@ class Table:
 
 
 
-def string_histogram(iterable, min_value=None, max_value=None, bin_count=20, width=75,
-        use_unicode=True):
-    if min_value is None or max_value is None:
-        iterable = list(iterable)
-        min_value = min(iterable)
-        max_value = max(iterable)
+def string_histogram(iterable, min_value=None, max_value=None, bin_count=20, width=70,
+        bin_starts=None, use_unicode=True):
+    if bin_starts is None:
+        if min_value is None or max_value is None:
+            iterable = list(iterable)
+            min_value = min(iterable)
+            max_value = max(iterable)
 
-    bin_width = (max_value - min_value)/bin_count
-    bins = [0 for i in range(bin_count)]
+        bin_width = (max_value - min_value)/bin_count
+        bin_starts = [min_value+bin_width*i for i in range(bin_count)]
 
-    from math import floor, ceil
+    bins = [0 for i in range(len(bin_starts))]
+
+    from bisect import bisect
     for value in iterable:
-        bin_nr = int(floor((value-min_value)/bin_width))
-        if 0 <= bin_nr < bin_count:
-            bins[bin_nr] += 1
-        else:
+        if max_value is not None and value > max_value or value < bin_starts[0]:
             from warnings import warn
             warn("string_histogram: out-of-bounds value ignored")
+        else:
+            bin_nr = bisect(bin_starts, value)-1
+            try:
+                bins[bin_nr] += 1
+            except:
+                print value, bin_nr, bin_starts
+                raise
 
+    from math import floor, ceil
     if use_unicode:
         def format_bar(cnt):
             scaled = cnt*width/max_count
@@ -1005,12 +1013,12 @@ def string_histogram(iterable, min_value=None, max_value=None, bin_count=20, wid
 
     max_count = max(bins)
     total_count = sum(bins)
-    return "\n".join("%9g (%9d:%3.0f %%) : %s" % (
-        min_value+bin_nr*bin_width, 
+    return "\n".join("%9g |%9d | %3.0f %% | %s" % (
+        bin_start,
         bin_value,
         bin_value/total_count*100,
         format_bar(bin_value))
-        for bin_nr, bin_value in enumerate(bins))
+        for bin_start, bin_value in zip(bin_starts, bins))
 
             
         
