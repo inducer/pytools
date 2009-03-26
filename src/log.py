@@ -290,8 +290,8 @@ class LogManager(object):
                 warnings.showwarning = self.old_showwarning
                 self.old_showwarning = None
 
-    def _showwarning(self, message, category, filename, lineno):
-        self.old_showwarning(message, category, filename, lineno)
+    def _showwarning(self, message, category, filename, line):
+        self.old_showwarning(message, category, filename, line)
 
         if (self.db_conn is not None 
                 and self.schema_version >= 1 
