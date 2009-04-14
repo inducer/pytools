@@ -297,7 +297,7 @@ class LogManager(object):
                 and self.schema_version >= 1 
                 and self.mode == "w"):
             self.db_conn.execute("insert into warnings values (?,?,?,?,?)",
-                    (self.tick_count, message.message, str(category), filename, lineno))
+                    (self.tick_count, message.message, str(category), filename, line))
 
     def _load(self):
         if self.mpi_comm and self.mpi_comm.rank != self.head_rank:

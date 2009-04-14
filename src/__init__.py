@@ -1141,46 +1141,61 @@ def typedump(val, max_seq=5, special_handlers={}):
 class ProgressBar:
     def __init__(self, descr, total, initial=0, length=40):
         import time
-        self.Description = descr
-        self.Total = total
-        self.Done = initial
-        self.Length = length
-        self.LastSquares = -1
-        self.StartTime = time.time()
-        self.LastUpdate = self.StartTime
+        self.description = descr
+        self.total = total
+        self.done = initial
+        self.length = length
+        self.last_squares = -1
+        self.start_time = time.time()
+        self.last_update_time = self.start_time
+
+        self.speed_meas_start_time = self.start_time
+        self.speed_meas_start_done = initial
+
+        self.time_per_step = None
 
     def draw(self):
         import time
 
         now = time.time()
-        squares = int(self.Done/self.Total*self.Length)
-        if squares != self.LastSquares or now-self.LastUpdate > 0.5:
-            elapsed = now-self.StartTime
-            if self.Done:
-                time_per_step = elapsed/self.Done
-                total_time = self.Total * time_per_step
-                eta_str = "%6.1fs" % max(0, total_time-elapsed)
+        squares = int(self.done/self.total*self.length)
+        if squares != self.last_squares or now-self.last_update_time > 0.5:
+            if (self.done != self.speed_meas_start_done
+                    and now-self.speed_meas_start_time > 3):
+                new_time_per_step = (now-self.speed_meas_start_time) \
+                        / (self.done-self.speed_meas_start_done)
+                if self.time_per_step is not None:
+                    self.time_per_step = (new_time_per_step + self.time_per_step)/2
+                else:
+                    self.time_per_step = new_time_per_step
+
+                self.speed_meas_start_time = now
+                self.speed_meas_start_done = self.done
+
+            if self.time_per_step is not None:
+                eta_str = "%6.1fs" % max(0, (self.total-self.done) * self.time_per_step)
             else:
                 eta_str = "?"
 
             import sys
             sys.stderr.write("%-20s [%s] ETA %s\r" % (
-                self.Description,
-                squares*"#"+(self.Length-squares)*" ",
+                self.description,
+                squares*"#"+(self.length-squares)*" ",
                 eta_str))
-        self.LastSquares = squares
-        self.LastUpdate = now
+
+            self.last_squares = squares
+            self.last_update_time = now
 
     def progress(self, steps=1):
-        self.set_progress(self.Done + steps)
+        self.set_progress(self.done + steps)
 
     def set_progress(self, done):
-        self.Done = done
+        self.done = done
         self.draw()
 
     def finished(self):
         import sys
-        self.set_progress(self.Total)
+        self.set_progress(self.total)
         sys.stderr.write("\n")
 
 
