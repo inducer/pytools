@@ -35,7 +35,15 @@ def _send_packet(sock, data):
 
 def _recv_packet(sock):
     from struct import calcsize, unpack
-    size, = unpack("I", sock.recv(calcsize("I")))
+    size_bytes_size = calcsize("I")
+    size_bytes = sock.recv(size_bytes_size)
+
+    if len(size_bytes) < size_bytes_size:
+        from warnings import warn
+        warn("Prefork server exiting upon apparent death of parent")
+        raise SystemExit
+
+    size, = unpack("I", size_bytes)
 
     packet = ""
     while len(packet) < size:
