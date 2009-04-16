@@ -275,12 +275,21 @@ class LogManager(object):
     def capture_warnings(self, enable=True):
         # FIXME warning capture on multiple processors
 
+        def _showwarning(message, category, filename, lineno, file=None, line=None):
+            self.old_showwarning(message, category, filename, lineno, file, line)
+
+            if (self.db_conn is not None 
+                    and self.schema_version >= 1 
+                    and self.mode == "w"):
+                self.db_conn.execute("insert into warnings values (?,?,?,?,?)",
+                        (self.tick_count, str(message), str(category), filename, lineno))
+
         import warnings
         if enable:
             if self.old_showwarning is None:
                 pass
                 self.old_showwarning = warnings.showwarning
-                warnings.showwarning = self._showwarning
+                warnings.showwarning = _showwarning
             else:
                 raise RuntimeError, "Warnings capture was enabled twice"
         else:
@@ -289,15 +298,6 @@ class LogManager(object):
             else:
                 warnings.showwarning = self.old_showwarning
                 self.old_showwarning = None
-
-    def _showwarning(self, message, category, filename, line):
-        self.old_showwarning(message, category, filename, line)
-
-        if (self.db_conn is not None 
-                and self.schema_version >= 1 
-                and self.mode == "w"):
-            self.db_conn.execute("insert into warnings values (?,?,?,?,?)",
-                    (self.tick_count, message.message, str(category), filename, line))
 
     def _load(self):
         if self.mpi_comm and self.mpi_comm.rank != self.head_rank:
