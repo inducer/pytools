@@ -146,6 +146,24 @@ class FeatureGatherer:
 
 
 
+def make_name_map(map_str):
+    import re
+    result = {}
+
+    if not map_str:
+        return result
+
+    map_re = re.compile(r"^([a-z_A-Z0-9]+)=([a-z_A-Z0-9]+)$")
+    for fmap_entry in map_str.split(","):
+        match = map_re.match(fmap_entry)
+        assert match is not None
+        result[match.group(1)] = match.group(2)
+
+    return result
+
+
+
+
 def main():
     import sys
     from optparse import OptionParser
@@ -162,6 +180,9 @@ def main():
     parser.add_option("-m", "--feature-map", default=None,
             help="Specify a feature name map.",
             metavar="F1=FNAME1,F2=FNAME2")
+    parser.add_option("-q", "--quantity-map", default=None,
+            help="Specify a quantity name map.",
+            metavar="Q1=QNAME1,Q2=QNAME2")
     options, args = parser.parse_args()
 
     if len(args) < 2:
@@ -175,15 +196,8 @@ def main():
     fg = FeatureGatherer(options.dir_features, options.file_features)
     features = fg.gather_feature_types(infiles)
 
-    fmap = {}
-    if options.feature_map:
-        import re
-
-        featmap_re = re.compile(r"^([a-z_A-Z0-9]+)=([a-z_A-Z0-9]+)$")
-        for fmap_entry in options.feature_map.split(","):
-            match = featmap_re.match(fmap_entry)
-            assert match is not None
-            fmap[match.group(1)] = match.group(2)
+    fmap = make_name_map(options.feature_map)
+    qmap = make_name_map(options.quantity_map)
 
     if options.show_features:
         for feat_name, feat_type in features.iteritems():
@@ -227,13 +241,15 @@ def main():
         from pytools.log import LogManager
         logmgr = LogManager(dbname, "r")
         for qname, qdat in logmgr.quantity_data.iteritems():
-            if not qname in created_tables:
-                created_tables.add(qname)
+            tgt_qname = qmap.get(qname, qname)
+
+            if not tgt_qname in created_tables:
+                created_tables.add(tgt_qname)
                 db_conn.execute("create table %s ("
-                  "run_id integer, step integer, rank integer, value real)" % qname)
+                  "run_id integer, step integer, rank integer, value real)" % tgt_qname)
                   
                 db_conn.execute("create index %s_main on %s (run_id,step,rank)" % (
-                    qname, qname))
+                    tgt_qname, tgt_qname))
 
                 agg = qdat.default_aggregator
                 try:
@@ -245,11 +261,11 @@ def main():
                 db_conn.execute("insert into quantities "
                         "(name,unit,description,rank_aggregator)"
                         "values (?,?,?,?)",
-                        (qname, qdat.unit, qdat.description, agg))
+                        (tgt_qname, qdat.unit, qdat.description, agg))
 
             cursor = logmgr.db_conn.execute("select %s,step,rank,value from %s" % (
                 run_id, qname))
-            db_conn.executemany("insert into %s values (?,?,?,?)" % qname,
+            db_conn.executemany("insert into %s values (?,?,?,?)" % tgt_qname,
                     cursor)
         logmgr.close()
     pb.finished()
