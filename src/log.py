@@ -276,7 +276,11 @@ class LogManager(object):
         # FIXME warning capture on multiple processors
 
         def _showwarning(message, category, filename, lineno, file=None, line=None):
-            self.old_showwarning(message, category, filename, lineno, file, line)
+            try:
+                self.old_showwarning(message, category, filename, lineno, file, line)
+            except TypeError:
+                # cater to Python 2.5 and earlier
+                self.old_showwarning(message, category, filename, lineno)
 
             if (self.db_conn is not None 
                     and self.schema_version >= 1 
