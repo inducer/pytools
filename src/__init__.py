@@ -621,6 +621,25 @@ def product(iterable):
 
 
 
+try:
+    all = __builtins__.all
+    any = __builtins__.any
+except AttributeError:
+    def all(iterable):
+        for i in iterable:
+            if not i:
+                return False
+        return True
+
+    def any(iterable):
+        for i in iterable:
+            if i:
+                return True
+        return False
+
+
+
+
 def argmin_f(list, f = lambda x: x):
     # deprecated -- the function has become unnecessary because of
     # generator expressions
