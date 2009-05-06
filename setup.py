@@ -46,6 +46,5 @@ setup(name="pytools",
       author_email="inform@tiker.net",
       license = "MIT",
       packages=["pytools"],
-      package_dir={"pytools": "src"},
       zip_safe=False,
      )
