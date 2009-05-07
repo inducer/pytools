@@ -297,7 +297,7 @@ def one(iterable):
 
 
 
-def single_valued(iterable):
+def single_valued(iterable, equality_pred=operator.eq):
     it = iter(iterable)
     try:
         first_item = it.next()
@@ -306,7 +306,7 @@ def single_valued(iterable):
 
     def others_same():
         for other_item in it:
-            if other_item != first_item:
+            if not equality_pred(other_item, first_item):
                 raise ValueError, "non-single-valued iterable passed to 'single_valued()'"
         return True
     assert others_same()
