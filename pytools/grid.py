@@ -1,7 +1,6 @@
 import pytools
-
+import math
 import pylinear.array as num
-import pylinear.linear_algebra as la
 
 
 
@@ -70,7 +69,7 @@ class Grid(object):
             neighbors = new_neighbors
         weights = []
         for neighbor in neighbors:
-            weight = product([1-abs(a-b) for a,b in zip(float_coords, neighbor)])
+            weight = pytools.product([1-abs(a-b) for a,b in zip(float_coords, neighbor)])
             if abs(weight) >= 1e-5:
                 weights.append((weight, tuple(neighbor)))
         return weights

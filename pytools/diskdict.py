@@ -84,8 +84,8 @@ class DiskDict(object):
             del self.cache[key]
 
         from cPickle import loads
-        for item_id, arg_pickle, version_pickle in self.db_conn.execute(
-                "select key_pickle, version_pickle, result_pickle from data"
+        for item_id, key_pickle, version_pickle in self.db_conn.execute(
+                "select id, key_pickle, version_pickle from data"
                 " where key_hash = ? and version_hash = ?",
                 (hash(key), self.version_hash)):
             if loads(key_pickle) == key and loads(version_pickle) == self.version:

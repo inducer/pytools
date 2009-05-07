@@ -580,7 +580,7 @@ class LogManager(object):
                 dub = self.get_expr_dataset(expr)
             else:
                 expr_descr, expr_unit, expr_str = expr
-                dub = get_expr_dataset(
+                dub = self.get_expr_dataset(
                         expr_str,
                         description=expr_descr,
                         unit=expr_unit)
@@ -630,6 +630,7 @@ class LogManager(object):
 
         gp.xlabel("%s [%s]" % (descr_x, unit_x))
         gp.ylabel("%s [%s]" % (descr_y, unit_y))
+        from gnuplot_py import Data
         gp.plot(Data(data_x, data_y, **kwargs))
 
     def write_datafile(self, filename, expr_x, expr_y):
@@ -637,8 +638,7 @@ class LogManager(object):
                 expr_x, expr_y)
 
         outf = open(filename, "w")
-        outf.write("# %s [%s] vs. %s [%s]" % 
-                (descr_x, unit_x, descr_y, unit_y))
+        outf.write("# %s vs. %s" % (label_x, label_y))
         for dx, dy in zip(data_x, data_y):
             outf.write("%s\t%s\n" % (repr(dx), repr(dy)))
         outf.close()

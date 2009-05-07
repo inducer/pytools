@@ -1,5 +1,4 @@
 from __future__ import division
-import math
 import sys
 import operator
 import types

@@ -9,7 +9,7 @@
 
 __all__ = ["decorator", "update_wrapper", "getinfo"]
 
-import inspect, sys
+import inspect
     
 def getinfo(func):
     """

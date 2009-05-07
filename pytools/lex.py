@@ -2,7 +2,7 @@ import re
 
 class RuleError:
     def __init__(self, rule):
-        self.Rule = s
+        self.Rule = rule
 
     def __str__(self):
         return repr(self.Rule)
