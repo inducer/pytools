@@ -780,21 +780,49 @@ class LogManager(object):
 
 
 # actual data loggers ---------------------------------------------------------
+class _SubTimer:
+    def __init__(self, itimer):
+        self.itimer = itimer
+        self.elapsed = 0
+
+    def start(self):
+        self.start_time = time()
+        return self
+
+    def stop(self):
+        self.elapsed += time() - self.start_time
+        del self.start_time
+        return self
+
+    def submit(self):
+        self.itimer.add_time(self.elapsed)
+        del self.elapsed
+
 class IntervalTimer(LogQuantity):
-    """Records the elapsed time between L{start} and L{stop} calls."""
+    """Records elapsed times."""
     def __init__(self, name="interval", description=None):
         LogQuantity.__init__(self, name, "s", description)
 
         self.elapsed = 0
 
     def start(self):
+        from warnings import warn
+        warn("IntervalTimer.start() is deprecated. Use start_sub_timer() instead.", 
+                DeprecationWarning, stacklevel=2)
         self.start_time = time()
 
     def stop(self):
         self.elapsed += time() - self.start_time
         del self.start_time
 
+    def get_sub_timer(self):
+        return _SubTimer(self)
+
+    def start_sub_timer(self):
+        return _SubTimer(self).start()
+
     def add_time(self, t):
+        self.start_time = time()
         self.elapsed += t
 
     def __call__(self):
@@ -842,11 +870,11 @@ def time_and_count_function(f, timer, counter=None, increment=1):
     def inner_f(*args, **kwargs):
         if counter is not None:
             counter.add(increment)
-        timer.start()
+        sub_timer = timer.start_sub_timer()
         try:
             return f(*args, **kwargs)
         finally:
-            timer.stop()
+            sub_timer.stop().submit()
 
     return inner_f
 
