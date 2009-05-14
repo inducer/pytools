@@ -102,7 +102,7 @@ class FeatureGatherer:
 
                 self.dir_to_features[line[:colon_idx]] = features
 
-    def get_db_features(self, dbname):
+    def get_db_features(self, dbname, logmgr):
         from os.path import dirname
         dn = dirname(dbname)
 
@@ -112,36 +112,55 @@ class FeatureGatherer:
             features.extend(parse_dir_feature(feat, i)
                     for i, feat in enumerate(dn.split("-")))
 
-        from pytools.log import LogManager
-        logmgr = LogManager(dbname, "r")
         for name, value in logmgr.constants.iteritems():
             features.append((name,) + sql_type_and_value(value))
-        logmgr.close()
 
         return features
 
-    def gather_feature_types(self, dbnames, progress=True):
-        features = {}
 
-        from pytools import ProgressBar
+
+
+def scan(fg, dbnames, progress=True):
+    features = {}
+    dbname_to_run_id = {}
+    uid_to_run_id = {}
+    next_run_id = 1
+
+    from pytools import ProgressBar
+    if progress:
+        pb = ProgressBar("Scanning...", len(dbnames))
+
+    for dbname in dbnames:
+        from pytools.log import LogManager
+        logmgr = LogManager(dbname, "r")
+
+        unique_run_id = logmgr.constants.get("unique_run_id")
+        run_id = uid_to_run_id.get(unique_run_id)
+
+        if run_id is None:
+            run_id = next_run_id
+            next_run_id += 1
+
+            if unique_run_id is not None:
+                uid_to_run_id[unique_run_id] = run_id
+
+        dbname_to_run_id[dbname] = run_id
+
         if progress:
-            pb = ProgressBar("Scanning...", len(dbnames))
+            pb.progress()
 
-        for dbname in dbnames:
-            if progress:
-                pb.progress()
-            for fname, ftype, fvalue in self.get_db_features(dbname):
-                if fname in features:
-                    features[fname] = larger_sql_type(ftype, features[fname])
-                else:
-                    if ftype is None:
-                        ftype = "text"
-                    features[fname] = ftype
+        for fname, ftype, fvalue in fg.get_db_features(dbname, logmgr):
+            if fname in features:
+                features[fname] = larger_sql_type(ftype, features[fname])
+            else:
+                if ftype is None:
+                    ftype = "text"
+                features[fname] = ftype
 
-        if progress:
-            pb.finished()
+    if progress:
+        pb.finished()
 
-        return features
+    return features, dbname_to_run_id
 
 
 
@@ -164,50 +183,76 @@ def make_name_map(map_str):
 
 
 
-def main():
-    import sys
-    from optparse import OptionParser
+def transfer_data_table(db_conn, tbl_name, data_table):
+    db_conn.executemany("insert into %s (%s) values (%s)" %
+            (tbl_name, 
+                ", ".join(data_table.column_names),
+                ", ".join("?" * len(data_table.column_names))),
+            data_table.data)
 
-    parser = OptionParser(usage="%prog OUTDB DBFILES ...")
-    parser.add_option("-s", "--show-features", action="store_true",
-            help="Only print the features found and quit")
-    parser.add_option("-d", "--dir-features", action="store_true",
-            help="Extract features from directory names")
-    parser.add_option("-f", "--file-features", default=None,
-            metavar="FILENAME",
-            help="Read additional features from file, with lines like: "
-            "'dirname: key=value, key=value'")
-    parser.add_option("-m", "--feature-map", default=None,
-            help="Specify a feature name map.",
-            metavar="F1=FNAME1,F2=FNAME2")
-    parser.add_option("-q", "--quantity-map", default=None,
-            help="Specify a quantity name map.",
-            metavar="Q1=QNAME1,Q2=QNAME2")
-    options, args = parser.parse_args()
+    
 
-    if len(args) < 2:
-        parser.print_help()
-        sys.exit(1)
 
-    outfile = args[0]
-    infiles = args[1:]
+def gather_single_file(outfile, infiles):
+    from pytools import ProgressBar
+    pb = ProgressBar("Importing...", len(infiles))
 
-    # list of run features as {name: sql_type}
-    fg = FeatureGatherer(options.dir_features, options.file_features)
-    features = fg.gather_feature_types(infiles)
+    import sqlite3
+    db_conn = sqlite3.connect(outfile)
 
-    fmap = make_name_map(options.feature_map)
-    qmap = make_name_map(options.quantity_map)
+    from pytools.log import _set_up_schema
+    _set_up_schema(db_conn)
 
-    if options.show_features:
-        for feat_name, feat_type in features.iteritems():
-            print fmap.get(feat_name, feat_name), feat_type
-        sys.exit(0)
+    from pickle import dumps
+
+    seen_constants = set()
+    seen_quantities = set()
+
+    for dbname in infiles:
+        pb.progress()
+        
+        from pytools.log import LogManager
+        logmgr = LogManager(dbname, "r")
+
+        # transfer warnings
+        transfer_data_table(db_conn, "warnings", logmgr.get_warnings())
+
+        # transfer constants
+        for key, val in logmgr.constants.iteritems():
+            if key not in seen_constants:
+                db_conn.execute("insert into constants values (?,?)",
+                        (key, buffer(dumps(val))))
+                seen_constants.add(key)
+
+        for qname, qdata in logmgr.quantity_data.iteritems():
+            db_conn.execute("""insert into quantities values (?,?,?,?)""", (
+                  qname, qdata.unit, qdata.description,
+                  buffer(dumps(qdata.default_aggregator))))
+
+            if qname not in seen_quantities:
+                db_conn.execute("""create table %s 
+                  (step integer, rank integer, value real)""" % qname)
+                seen_quantities.add(qname)
+
+            transfer_data_table(db_conn, qname, logmgr.get_table(qname))
+
+    pb.finished()
+
+    db_conn.commit()
+    db_conn.close()
+
+
+
+
+def gather_multi_file(outfile, infiles, fmap, qmap, fg, features,
+        dbname_to_run_id):
+    from pytools import ProgressBar
+    pb = ProgressBar("Importing...", len(infiles))
 
     import sqlite3
     db_conn = sqlite3.connect(outfile)
     run_columns = [
-            "id integer primary key autoincrement",
+            "id integer primary key",
             "dirname text"] + ["%s %s" % (fmap.get(fname, fname), ftype)
                     for fname, ftype in features.iteritems()]
     db_conn.execute("create table runs (%s)" % ",".join(run_columns))
@@ -223,23 +268,28 @@ def main():
 
     created_tables = set()
 
-    from pytools import ProgressBar
-    pb = ProgressBar("Importing...", len(infiles))
-
     from os.path import dirname
+
+    uid_to_run_id = {}
+    written_run_ids = set()
 
     for dbname in infiles:
         pb.progress()
         
-        dbfeatures = fg.get_db_features(dbname)
-        qry = "insert into runs (%s) values (%s)" % (
-            ",".join(["dirname"]+[fmap.get(f[0], f[0]) for f in dbfeatures]), 
-            ",".join("?" * (len(dbfeatures)+1)))
-        rows = db_conn.execute(qry, [dirname(dbname)]+[f[2] for f in dbfeatures])
-        run_id = rows.lastrowid
+        run_id = dbname_to_run_id[dbname]
 
         from pytools.log import LogManager
         logmgr = LogManager(dbname, "r")
+
+        if run_id not in written_run_ids:
+            dbfeatures = fg.get_db_features(dbname, logmgr)
+            qry = "insert into runs (%s) values (%s)" % (
+                ",".join(["id", "dirname"]+[fmap.get(f[0], f[0]) for f in dbfeatures]), 
+                ",".join("?" * (len(dbfeatures)+2)))
+            rows = db_conn.execute(qry, [run_id, dirname(dbname)]+[f[2] for f in dbfeatures])
+
+            written_run_ids.add(run_id)
+
         for qname, qdat in logmgr.quantity_data.iteritems():
             tgt_qname = qmap.get(qname, qname)
 
@@ -271,6 +321,63 @@ def main():
     pb.finished()
 
     db_conn.commit()
+    db_conn.close()
+
+
+
+
+def main():
+    import sys
+    from optparse import OptionParser
+
+    parser = OptionParser(usage="%prog OUTDB DBFILES ...")
+    parser.add_option("-1", "--single", action="store_true",
+            help="Gather single-run instead of multi-run file")
+    parser.add_option("-s", "--show-features", action="store_true",
+            help="Only print the features found and quit")
+    parser.add_option("-d", "--dir-features", action="store_true",
+            help="Extract features from directory names")
+    parser.add_option("-f", "--file-features", default=None,
+            metavar="FILENAME",
+            help="Read additional features from file, with lines like: "
+            "'dirname: key=value, key=value'")
+    parser.add_option("-m", "--feature-map", default=None,
+            help="Specify a feature name map.",
+            metavar="F1=FNAME1,F2=FNAME2")
+    parser.add_option("-q", "--quantity-map", default=None,
+            help="Specify a quantity name map.",
+            metavar="Q1=QNAME1,Q2=QNAME2")
+    options, args = parser.parse_args()
+
+    if len(args) < 2:
+        parser.print_help()
+        sys.exit(1)
+
+    outfile = args[0]
+    infiles = args[1:]
+
+    # list of run features as {name: sql_type}
+    fg = FeatureGatherer(options.dir_features, options.file_features)
+    features, dbname_to_run_id = scan(fg, infiles)
+
+    fmap = make_name_map(options.feature_map)
+    qmap = make_name_map(options.quantity_map)
+
+    if options.show_features:
+        for feat_name, feat_type in features.iteritems():
+            print fmap.get(feat_name, feat_name), feat_type
+        sys.exit(0)
+
+    if options.single:
+        if len(set(dbname_to_run_id.values())) > 1:
+            raise ValueError(
+                    "data seems to come from more than one run--"
+                    "can't write single-run file")
+        gather_single_file(outfile, infiles)
+    else:
+        gather_multi_file(outfile, infiles, fmap, qmap, fg, features,
+                dbname_to_run_id)
+
 
 
 

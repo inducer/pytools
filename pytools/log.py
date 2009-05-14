@@ -163,6 +163,58 @@ def _join_by_first_of_tuple(list_of_iterables):
 
 
 
+def _get_unique_id():
+    try:
+        from uiid import uuid1
+    except ImportError:
+        try:
+            import hashlib
+            checksum = hashlib.md5()
+        except ImportError:
+            # for Python << 2.5
+            import md5
+            checksum = md5.new()
+
+        from random import Random
+        rng = Random()
+        rng.seed()
+        for i in range(20):
+            checksum.update(str(rng.randrange(1<<30)))
+        return checksum.hexdigest()
+    else:
+        return uuid1().hex
+
+
+
+
+def _set_up_schema(db_conn):
+    # initialize new database
+    db_conn.execute("""
+      create table quantities (
+        name text, 
+        unit text, 
+        description text,
+        default_aggregator blob)""")
+    db_conn.execute("""
+      create table constants (
+        name text, 
+        value blob)""")
+    db_conn.execute("""
+      create table warnings (
+        rank integer,
+        step integer,
+        message text, 
+        category text,
+        filename text,
+        lineno integer
+        )""")
+
+    schema_version = 2
+    return schema_version
+
+
+
+
 class LogManager(object):
     """A parallel-capable diagnostic time-series logging facility.
 
@@ -216,14 +268,12 @@ class LogManager(object):
             self.rank = mpi_comm.rank
             self.head_rank = 0
 
-        self.next_sync_tick = 10
-
         # watch stuff
         self.watches = []
         self.next_watch_tick = 1
 
         # database binding
-        if filename is not None and self.rank == self.head_rank:
+        if filename is not None:
             try:
                 import sqlite3 as sqlite
             except ImportError:
@@ -231,6 +281,9 @@ class LogManager(object):
                     from pysqlite2 import dbapi2 as sqlite
                 except ImportError:
                     raise ImportError, "could not find a usable version of sqlite."
+
+            if self.is_parallel:
+                filename += "-rank%d" % self.rank
 
             self.db_conn = sqlite.connect(filename, timeout=30)
             self.mode = mode
@@ -243,28 +296,19 @@ class LogManager(object):
                 if mode == "r":
                     raise RuntimeError, "Log database '%s' not found" % filename
 
-                # initialize new database
-                self.db_conn.execute("""
-                  create table quantities (
-                    name text, 
-                    unit text, 
-                    description text,
-                    default_aggregator blob)""")
-                self.db_conn.execute("""
-                  create table constants (
-                    name text, 
-                    value blob)""")
-                self.db_conn.execute("""
-                  create table warnings (
-                    step integer,
-                    message text, 
-                    category text,
-                    filename text,
-                    lineno integer
-                    )""")
-                self.set_constant("is_parallel", self.is_parallel)
-                self.schema_version = 1
+                self.schema_version = _set_up_schema(self.db_conn)
                 self.set_constant("schema_version", self.schema_version)
+
+                self.set_constant("is_parallel", self.is_parallel)
+
+                # set globally unique run_id
+                if self.is_parallel:
+                    from boostmpi import broadcast
+                    self.set_constant("unique_run_id", 
+                            broadcast(self.mpi_comm, _get_unique_id(), 
+                                root=self.head_rank))
+                else:
+                    self.set_constant("unique_run_id", _get_unique_id())
         else:
             self.db_conn = None
 
@@ -273,8 +317,6 @@ class LogManager(object):
             self.capture_warnings(True)
 
     def capture_warnings(self, enable=True):
-        # FIXME warning capture on multiple processors
-
         def _showwarning(message, category, filename, lineno, file=None, line=None):
             try:
                 self.old_showwarning(message, category, filename, lineno, file, line)
@@ -285,8 +327,14 @@ class LogManager(object):
             if (self.db_conn is not None 
                     and self.schema_version >= 1 
                     and self.mode == "w"):
-                self.db_conn.execute("insert into warnings values (?,?,?,?,?)",
-                        (self.tick_count, str(message), str(category), filename, lineno))
+                if self.schema_version >= 2:
+                    self.db_conn.execute("insert into warnings values (?,?,?,?,?,?)",
+                            (self.rank, self.tick_count, str(message), str(category), 
+                                filename, lineno))
+                else:
+                    self.db_conn.execute("insert into warnings values (?,?,?,?,?)",
+                            (self.tick_count, str(message), str(category), 
+                                filename, lineno))
 
         import warnings
         if enable:
@@ -342,12 +390,16 @@ class LogManager(object):
             return result
 
     def get_warnings(self):
-        from pytools.datatable import DataTable
-        result = DataTable(["step", "message", "category", "filename", "lineno"])
+        columns = ["step", "message", "category", "filename", "lineno"]
+        if self.db_conn is not None and self.schema_version >= 2:
+            columns.insert(0, "rank")
 
-        if self.schema_version >= 1 and self.db_conn is not None:
+        from pytools.datatable import DataTable
+        result = DataTable(columns)
+
+        if self.db_conn is not None:
             for row in self.db_conn.execute(
-                    "select step, message, category, filename, lineno from warnings"):
+                    "select %s from warnings" % (", ".join(columns))):
                 result.insert_row(row)
 
         return result
@@ -432,52 +484,12 @@ class LogManager(object):
         if self.tick_count == self.next_watch_tick:
             self._watch_tick()
 
-        if self.tick_count == self.next_sync_tick:
-            # sync every few seconds:
-            self.save()
-
-            # figure out next sync tick, broadcast to peers
-            ticks_per_10_sec = 10*self.tick_count/max(1, end_time-self.start_time)
-            self.next_sync_tick = self.tick_count + int(max(50, ticks_per_10_sec))
-            if self.mpi_comm is not None:
-                from boostmpi import broadcast
-                self.next_sync_tick = broadcast(self.mpi_comm, self.next_sync_tick, self.head_rank)
-
         self.t_log = time() - start_time
 
     def save(self):
-        self.synchronize_logs()
-
         if self.db_conn is not None:
             # then, to disk
             self.db_conn.commit()
-
-    def synchronize_logs(self):
-        """Transfer data from client ranks to the head rank.
-        
-        Must be called on all ranks simultaneously."""
-        if self.mpi_comm is None:
-            return
-
-        from boostmpi import gather
-        if self.mpi_comm.rank == self.head_rank:
-            for rank_data in gather(self.mpi_comm, None, self.head_rank)[1:]:
-                for name, rows in rank_data:
-                    self.get_table(name).insert_rows(rows)
-                    if self.db_conn is not None:
-                        for row in rows:
-                            self.db_conn.execute(
-                                    "insert into %s values (?,?,?)" % name, row)
-        else:
-            # send non-head data away
-            gather(self.mpi_comm, 
-                    [(name, self.get_table(name).data)
-                        for name, qdat in self.quantity_data.iteritems()], 
-                self.head_rank)
-
-            # and erase it
-            for qname in self.quantity_data.iterkeys():
-                self.get_table(qname).clear()
 
     def add_quantity(self, quantity, interval=1):
         """Add an object derived from L{LogQuantity} to this manager."""
