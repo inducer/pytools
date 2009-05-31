@@ -73,7 +73,10 @@ class Record(object):
     def copy(self, **kwargs):
         for f in self.__class__.fields:
             if f not in kwargs:
-                kwargs[f] = getattr(self, f)
+                try:
+                    kwargs[f] = getattr(self, f)
+                except AttributeError:
+                    pass
         return self.__class__(**kwargs)
 
     def __getstate__(self):
