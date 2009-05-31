@@ -253,6 +253,8 @@ class LogManager(object):
 
         self.constants = {}
 
+        self.last_save_time = time()
+
         # self-timing
         self.start_time = time()
         self.t_log = 0
@@ -485,6 +487,9 @@ class LogManager(object):
                     insert_datapoint(gd.quantity.name, q_value)
         self.tick_count += 1
 
+        if start_time > self.last_save_time + 15:
+            self.save()
+
         end_time = time()
 
         # print watches
@@ -496,6 +501,8 @@ class LogManager(object):
     def save(self):
         if self.db_conn is not None:
             self.db_conn.commit()
+
+        self.last_save_time = time()
 
     def add_quantity(self, quantity, interval=1):
         """Add an object derived from L{LogQuantity} to this manager."""
