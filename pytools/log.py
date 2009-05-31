@@ -370,6 +370,8 @@ class LogManager(object):
                     unit, description, loads(def_agg))
 
     def close(self):
+        self.save()
+
         if self.db_conn is not None:
             self.db_conn.close()
 
@@ -493,7 +495,6 @@ class LogManager(object):
 
     def save(self):
         if self.db_conn is not None:
-            # then, to disk
             self.db_conn.commit()
 
     def add_quantity(self, quantity, interval=1):
