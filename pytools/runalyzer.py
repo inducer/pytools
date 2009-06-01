@@ -147,11 +147,18 @@ class MagicRunDB(RunDB):
 
         def replace_magic_column(match):
             qty_name = match.group(1)
-            magic_columns.add(qty_name)
-            return "%s.value" % qty_name
+            rank_aggregator = match.group(2)
+
+            if rank_aggregator is not None:
+                rank_aggregator = rank_aggregator[1:]
+                magic_columns.add((qty_name, rank_aggregator))
+                return "%s_%s.value" % (rank_aggregator, qty_name)
+            else:
+                magic_columns.add((qty_name, None))
+                return "%s.value" % qty_name
 
         import re
-        magic_column_re = re.compile(r"\$([a-zA-Z][A-Za-z0-9_]*)")
+        magic_column_re = re.compile(r"\$([a-zA-Z][A-Za-z0-9_]*)(\.[a-z]*)?")
         qry = magic_column_re.sub(replace_magic_column, qry)
 
         other_clauses = ["UNION",  "INTERSECT", "EXCEPT", "WHERE", "GROUP",
@@ -159,15 +166,25 @@ class MagicRunDB(RunDB):
 
         from_clause = "from runs "
         last_tbl = None
-        for tbl in magic_columns:
+        for tbl, rank_aggregator in magic_columns:
+            if rank_aggregator is not None:
+                full_tbl = "%s_%s" % (rank_aggregator, tbl)
+                full_tbl_src = (
+                        "(select run_id, step, %s(value) as value "
+                        "from %s group by run_id,step) as %s" % (
+                            rank_aggregator, tbl, full_tbl))
+            else:
+                full_tbl = tbl
+                full_tbl_src = tbl
+
             if last_tbl is not None:
-                addendum = " and %s.step = %s.step" % (last_tbl, tbl)
+                addendum = " and %s.step = %s.step" % (last_tbl, full_tbl)
             else:
                 addendum = ""
 
             from_clause += " inner join %s on (%s.run_id = runs.id%s) " % (
-                    tbl, tbl, addendum)
-            last_tbl = tbl
+                    full_tbl_src, full_tbl, addendum)
+            last_tbl = full_tbl
         
         if "$$" in qry:
             return qry.replace("$$"," %s " % from_clause)
