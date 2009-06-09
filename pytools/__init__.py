@@ -616,6 +616,19 @@ def partition(criterion, list):
 
 
 
+def partition2(iterable):
+    part_true = []
+    part_false = []
+    for pred, i in iterable:
+        if pred:
+            part_true.append(i)
+        else:
+            part_false.append(i)
+    return part_true, part_false
+
+
+
+
 def product(iterable):
     from operator import mul
     return reduce(mul, iterable, 1)
