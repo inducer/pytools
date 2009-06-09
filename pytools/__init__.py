@@ -82,7 +82,8 @@ class Record(object):
     def __getstate__(self):
         return dict(
                 (key, getattr(self, key))
-                for key in self.__class__.fields)
+                for key in self.__class__.fields
+                if hasattr(self, key))
 
     def __setstate__(self, valuedict):
         try:
@@ -101,7 +102,8 @@ class Record(object):
                     for fld in self.__class__.fields))
 
     def __eq__(self, other):
-        return self.__getstate__() == other.__getstate__()
+        return (self.__class__ == other.__class__
+                and self.__getstate__() == other.__getstate__())
 
     def __ne__(self, other):
         return not self.__eq__(other)
