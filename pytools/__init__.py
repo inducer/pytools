@@ -99,7 +99,8 @@ class Record(object):
         return "%s(%s)" % (
                 self.__class__.__name__,
                 ", ".join("%s=%r" % (fld, getattr(self, fld))
-                    for fld in self.__class__.fields))
+                    for fld in self.__class__.fields
+                    if hasattr(self, fld)))
 
     def __eq__(self, other):
         return (self.__class__ == other.__class__
