@@ -1,6 +1,6 @@
 """OpenMPI, once intialized, prohibits forking. This helper module
-allows the forking of *one* helper child process before OpenMPI 
-initializaton that can do the forking for the fork-challenged 
+allows the forking of *one* helper child process before OpenMPI
+initializaton that can do the forking for the fork-challenged
 parent process.
 
 Since none of this is MPI-specific, it got parked in pytools.
@@ -29,18 +29,19 @@ def _send_packet(sock, data):
     from cPickle import dumps
 
     packet = dumps(data)
-    
+
     sock.sendall(pack("I", len(packet)))
     sock.sendall(packet)
 
-def _recv_packet(sock):
+def _recv_packet(sock, who="Process", partner="other end"):
     from struct import calcsize, unpack
     size_bytes_size = calcsize("I")
     size_bytes = sock.recv(size_bytes_size)
 
     if len(size_bytes) < size_bytes_size:
         from warnings import warn
-        warn("Prefork server exiting upon apparent death of parent")
+        warn("%s exiting upon apparent death of %"
+                % (who, partner))
         raise SystemExit
 
     size, = unpack("I", size_bytes)
@@ -73,7 +74,8 @@ def _fork_server(sock):
 
     try:
         while not quitflag[0]:
-            func_name, args, kwargs = _recv_packet(sock)
+            func_name, args, kwargs = _recv_packet(sock, 
+                    who="Prefork server", partner="parent")
 
             try:
                 result = funcs[func_name](*args, **kwargs)
@@ -98,8 +100,9 @@ class IndirectForker:
 
     def _remote_invoke(self, name, *args, **kwargs):
         _send_packet(self.socket, (name, args, kwargs))
-        status, result = _recv_packet(self.socket)
-        
+        status, result = _recv_packet(self.socket, 
+                who="Prefork client", partner="prefork server")
+
         if status == "exception":
             raise result
         elif status == "ok":
@@ -121,7 +124,7 @@ class IndirectForker:
 
 def enable_prefork():
     if isinstance(forker[0], IndirectForker):
-        return 
+        return
 
     from socket import socketpair
     s_parent, s_child = socketpair()
