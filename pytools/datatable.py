@@ -1,3 +1,9 @@
+from pytools import Record
+class Row(Record):
+    pass
+
+
+
 class DataTable:
     """An in-memory relational database table."""
 
@@ -94,8 +100,7 @@ class DataTable:
         if len(filtered) > 1:
             raise RuntimeError, "more than one matching entry for get()"
 
-        from pytools import Record
-        return Record(dict(zip(self.column_names, filtered.data[0])))
+        return Row(dict(zip(self.column_names, filtered.data[0])))
 
     def clear(self):
         del self.data[:]
