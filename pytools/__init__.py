@@ -1251,3 +1251,48 @@ def _test():
 
 if __name__ == "__main__":
     _test()
+
+
+
+
+# numpy dtype mangling --------------------------------------------------------
+def common_dtype(dtypes):
+    return argmax2((dtype, dtype.num) for dtype in dtypes)
+
+
+
+
+
+def to_uncomplex_dtype(dtype):
+    import numpy
+    if dtype == numpy.complex64:
+        return numpy.float32
+    elif dtype == numpy.complex128:
+        return numpy.float64
+    if dtype == numpy.float32:
+        return numpy.float32
+    elif dtype == numpy.float64:
+        return numpy.float64
+    else:
+        raise TypeError("unrecgonized dtype '%s'" % dtype)
+
+
+
+
+def match_precision(dtype, dtype_to_match):
+    import numpy
+
+    tgt_is_double = dtype_to_match in [
+            numpy.float64, numpy.complex128]
+
+    dtype_is_complex = complex in dtype.type.__mro__
+    if dtype_is_complex:
+        if tgt_is_double:
+            return numpy.dtype(numpy.complex128)
+        else:
+            return numpy.dtype(numpy.complex64)
+    else:
+        if tgt_is_double:
+            return numpy.dtype(numpy.float64)
+        else:
+            return numpy.dtype(numpy.float32)
