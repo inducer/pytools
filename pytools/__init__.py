@@ -1256,8 +1256,16 @@ if __name__ == "__main__":
 
 
 # numpy dtype mangling --------------------------------------------------------
-def common_dtype(dtypes):
-    return argmax2((dtype, dtype.num) for dtype in dtypes)
+def common_dtype(dtypes, default=None):
+    dtypes = list(dtypes)
+    if dtypes:
+        return argmax2((dtype, dtype.num) for dtype in dtypes)
+    else:
+        if default is not None:
+            return default
+        else:
+            raise ValueError(
+                    "cannot find common dtype of empty dtype list")
 
 
 
