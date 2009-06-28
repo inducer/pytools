@@ -372,10 +372,14 @@ class LogManager(object):
                     unit, description, loads(def_agg))
 
     def close(self):
+        if self.old_showwarning is not None:
+            self.capture_warnings(False)
+
         self.save()
 
         if self.db_conn is not None:
             self.db_conn.close()
+
 
     def get_table(self, q_name):
         if q_name not in self.quantity_data:
