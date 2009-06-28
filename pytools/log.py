@@ -476,7 +476,7 @@ class LogManager(object):
             if self.db_conn is not None:
                 try:
                     self.db_conn.execute("insert into %s values (?,?,?)" % name,
-                            (self.tick_count, self.rank, value))
+                            (self.tick_count, self.rank, float(value)))
                 except:
                     print "while adding datapoint for '%s':" % name
                     raise
