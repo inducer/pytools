@@ -1293,7 +1293,7 @@ def match_precision(dtype, dtype_to_match):
     tgt_is_double = dtype_to_match in [
             numpy.float64, numpy.complex128]
 
-    dtype_is_complex = complex in dtype.type.__mro__
+    dtype_is_complex = dtype.kind == "c"
     if dtype_is_complex:
         if tgt_is_double:
             return numpy.dtype(numpy.complex128)
