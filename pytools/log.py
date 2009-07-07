@@ -315,6 +315,11 @@ class LogManager(object):
         else:
             self.db_conn = None
 
+        if self.is_parallel:
+            self.set_constant("rank_count", self.mpi_comm.size)
+        else:
+            self.set_constant("rank_count", 1)
+
         self.old_showwarning = None
         if capture_warnings:
             self.capture_warnings(True)
