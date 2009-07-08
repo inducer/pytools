@@ -354,7 +354,13 @@ def main():
         sys.exit(1)
 
     outfile = args[0]
-    infiles = args[1:]
+    from os.path import exists
+    infiles = [fn for fn in args[1:] if exists(fn)]
+    not_found_files =  [fn for fn in args[1:] if not exists(fn)]
+    if not_found_files:
+        print "Warning: The follwing files were not found and are being ignored:"
+        for fn in not_found_files:
+            print "  ", fn
 
     # list of run features as {name: sql_type}
     fg = FeatureGatherer(options.dir_features, options.file_features)
