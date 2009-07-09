@@ -734,6 +734,13 @@ def argmax2(iterable):
 
 
 
+def set_sum(set_iterable):
+    from operator import or_
+    return reduce(or_, set_iterable, set())
+
+
+
+
 def cartesian_product(list1, list2):
     for i in list1:
         for j in list2:
