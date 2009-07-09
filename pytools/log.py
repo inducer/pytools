@@ -292,10 +292,8 @@ class LogManager(object):
             self.mode = mode
             try:
                 self.db_conn.execute("select * from quantities;")
-                if mode == "w":
-                    raise RuntimeError, "Log database '%s' already exists" % filename
-                self._load()
             except sqlite.OperationalError:
+                # we're building a new database
                 if mode == "r":
                     raise RuntimeError, "Log database '%s' not found" % filename
 
@@ -312,13 +310,19 @@ class LogManager(object):
                                 root=self.head_rank))
                 else:
                     self.set_constant("unique_run_id", _get_unique_id())
+
+                if self.is_parallel:
+                    self.set_constant("rank_count", self.mpi_comm.size)
+                else:
+                    self.set_constant("rank_count", 1)
+            else:
+                # we've opened an existing database
+                if mode == "w":
+                    raise RuntimeError, "Log database '%s' already exists" % filename
+                self._load()
         else:
             self.db_conn = None
 
-        if self.is_parallel:
-            self.set_constant("rank_count", self.mpi_comm.size)
-        else:
-            self.set_constant("rank_count", 1)
 
         self.old_showwarning = None
         if capture_warnings:
