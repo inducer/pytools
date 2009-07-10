@@ -132,7 +132,11 @@ def scan(fg, dbnames, progress=True):
 
     for dbname in dbnames:
         from pytools.log import LogManager
-        logmgr = LogManager(dbname, "r")
+        try:
+            logmgr = LogManager(dbname, "r")
+        except:
+            print "Trouble with file '%s'" % dbname
+            raise
 
         unique_run_id = logmgr.constants.get("unique_run_id")
         run_id = uid_to_run_id.get(unique_run_id)
