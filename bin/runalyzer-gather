@@ -157,6 +157,8 @@ def scan(fg, dbnames, progress=True):
                     ftype = "text"
                 features[fname] = ftype
 
+        logmgr.close()
+
     if progress:
         pb.finished()
 
@@ -235,6 +237,8 @@ def gather_single_file(outfile, infiles):
                 seen_quantities.add(qname)
 
             transfer_data_table(db_conn, qname, logmgr.get_table(qname))
+
+        logmgr.close()
 
     pb.finished()
 
