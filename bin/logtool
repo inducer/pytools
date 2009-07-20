@@ -13,6 +13,7 @@ following:
 "datafile outfile expr_x,expr_y" to write out a data file.
 "table variable" to print the full data table for a time series variable.
 "prefix string" to set the legend prefix for all following plot commands.
+"next_legend string" to set the legend string for the next plot command.
 "warnings" to list the warnings that were issued during the logged run.
 "saveplot filename" to save the current plot to a file.
 "print" to print the current plot using "lp".
@@ -44,6 +45,9 @@ following:
     parser.add_option("--title", 
             help="Set the title of a plot",
             default="Log evaluation")
+    parser.add_option("--small-legend", action="store_true")
+    parser.add_option("--label-x", help="Set the label on the X axis")
+    parser.add_option("--label-y", help="Set the label on the Y axis")
     parser.add_option("--start-step", metavar="STEP", type="int",
             help="Start the plot at this timestep number")
     parser.add_option("--end-step",  metavar="STEP", type="int",
@@ -77,6 +81,8 @@ following:
         if logmgr is None:
             raise RuntimeError, "no file loaded"
 
+    next_legend = None
+    
     while args:
         cmd = args.pop(0)
         if cmd == "list":
@@ -119,21 +125,31 @@ following:
                     logmgr.get_plot_data(expr_x, expr_y,
                             options.start_step, options.end_step)
 
-            if options.units_x:
-                xlabel(unit_x)
+            if options.label_x:
+                xlabel(options.label_x)
             else:
-                xlabel("%s [%s]" % (descr_x, unit_x))
-            if options.units_y:
-                ylabel(unit_y)
+                if options.units_x:
+                    xlabel(unit_x)
+                else:
+                    xlabel("%s [%s]" % (descr_x, unit_x))
+
+            if options.label_y:
+                ylabel(options.label_y)
             else:
-                ylabel("%s [%s]" % (descr_y, unit_y))
+                if options.units_y:
+                    ylabel(unit_y)
+                else:
+                    ylabel("%s [%s]" % (descr_y, unit_y))
 
             kwargs = {}
 
-            if options.legend_expr:
-                kwargs["label"] = legend_prefix+expr_y
-            if options.legend_descr:
-                kwargs["label"] = legend_prefix+descr_y
+            if next_legend:
+                kwargs["label"] = next_legend
+            else:
+                if options.legend_expr:
+                    kwargs["label"] = legend_prefix+expr_y
+                if options.legend_descr:
+                    kwargs["label"] = legend_prefix+descr_y
 
             style = styles.pop(0)
             plot(data_x[::options.skip], 
@@ -142,6 +158,7 @@ following:
                     hold=True,  **kwargs)
 
             did_plot = True
+            next_legend = None
         elif cmd == "warnings":
             check_no_file()
             print logmgr.get_warnings()
@@ -154,6 +171,8 @@ following:
             logmgr.write_datafile(args.pop(0), expr_x, expr_y)
         elif cmd == "prefix":
             legend_prefix = args.pop(0)
+        elif cmd == "next_legend":
+            next_legend = args.pop(0)
         elif cmd == "table":
             check_no_file()
 
@@ -188,9 +207,12 @@ following:
     if did_plot:
         from pylab import show, title, legend, axis, grid, savefig
         if options.legend_expr or options.legend_descr:
-            from matplotlib.font_manager import FontProperties
-            legend(borderpad=0.04, prop=FontProperties(size=8), loc="best",
-                    labelspacing=0)
+            if options.small_legend:
+                from matplotlib.font_manager import FontProperties
+                legend(borderpad=0.04, prop=FontProperties(size=8), loc="best",
+                        labelspacing=0)
+            else:
+                legend(loc="best")
 
         def float_or_none(str):
             if str == "*":
