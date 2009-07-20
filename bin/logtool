@@ -189,8 +189,8 @@ following:
         from pylab import show, title, legend, axis, grid, savefig
         if options.legend_expr or options.legend_descr:
             from matplotlib.font_manager import FontProperties
-            legend(pad=0.04, prop=FontProperties(size=8), loc="best",
-                    labelsep=0)
+            legend(borderpad=0.04, prop=FontProperties(size=8), loc="best",
+                    labelspacing=0)
 
         def float_or_none(str):
             if str == "*":
