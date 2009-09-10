@@ -261,7 +261,9 @@ def gather_multi_file(outfile, infiles, fmap, qmap, fg, features,
     db_conn = sqlite3.connect(outfile)
     run_columns = [
             "id integer primary key",
-            "dirname text"] + ["%s %s" % (fmap.get(fname, fname), ftype)
+            "dirname text",
+            "filename text",
+            ] + ["%s %s" % (fmap.get(fname, fname), ftype)
                     for fname, ftype in features.iteritems()]
     db_conn.execute("create table runs (%s)" % ",".join(run_columns))
     db_conn.execute("create index runs_id on runs (id)")
@@ -276,7 +278,7 @@ def gather_multi_file(outfile, infiles, fmap, qmap, fg, features,
 
     created_tables = set()
 
-    from os.path import dirname
+    from os.path import dirname, basename
 
     uid_to_run_id = {}
     written_run_ids = set()
@@ -292,9 +294,12 @@ def gather_multi_file(outfile, infiles, fmap, qmap, fg, features,
         if run_id not in written_run_ids:
             dbfeatures = fg.get_db_features(dbname, logmgr)
             qry = "insert into runs (%s) values (%s)" % (
-                ",".join(["id", "dirname"]+[fmap.get(f[0], f[0]) for f in dbfeatures]), 
-                ",".join("?" * (len(dbfeatures)+2)))
-            rows = db_conn.execute(qry, [run_id, dirname(dbname)]+[f[2] for f in dbfeatures])
+                ",".join(["id", "dirname", "filename"]
+                    + [fmap.get(f[0], f[0]) for f in dbfeatures]), 
+                ",".join("?" * (len(dbfeatures)+3)))
+            rows = db_conn.execute(qry, 
+                    [run_id, dirname(dbname), basename(dbname)]
+                    + [f[2] for f in dbfeatures])
 
             written_run_ids.add(run_id)
 
