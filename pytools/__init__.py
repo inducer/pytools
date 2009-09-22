@@ -1262,6 +1262,18 @@ if __name__ == "__main__":
 
 
 
+def add_python_path_relative_to_script(rel_path):
+    import sys
+    from os.path import dirname, join, abspath
+
+    script_name = sys.argv[0]
+    rel_script_dir = dirname(script_name)
+
+    sys.path.append(abspath(join(rel_script_dir, rel_path)))
+
+
+
+
 # numpy dtype mangling --------------------------------------------------------
 def common_dtype(dtypes, default=None):
     dtypes = list(dtypes)
