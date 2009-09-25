@@ -474,7 +474,7 @@ class LogManager(object):
         May also checkpoint data to disk, and/or synchronize data points 
         to the head rank.
         """
-        start_time = time()
+        tick_start_time = time()
 
         def insert_datapoint(name, value):
             if value is None:
@@ -500,7 +500,12 @@ class LogManager(object):
                     insert_datapoint(gd.quantity.name, q_value)
         self.tick_count += 1
 
-        if start_time > self.last_save_time + 15:
+        if tick_start_time - self.start_time > 15*60:
+            save_interval = 15*60
+        else:
+            save_interval = 15
+
+        if tick_start_time > self.last_save_time + save_interval:
             self.save()
 
         end_time = time()
@@ -509,7 +514,7 @@ class LogManager(object):
         if self.tick_count == self.next_watch_tick:
             self._watch_tick()
 
-        self.t_log = time() - start_time
+        self.t_log = time() - tick_start_time
 
     def save(self):
         if self.db_conn is not None:
@@ -960,6 +965,7 @@ class TimestepDuration(LogQuantity):
         result = now - self.last_start
         self.last_start = now
         return result
+
 
 
 
