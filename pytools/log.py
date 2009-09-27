@@ -518,7 +518,12 @@ class LogManager(object):
 
     def save(self):
         if self.db_conn is not None:
-            self.db_conn.commit()
+            from sqlite3 import OperationalError
+            try:
+                self.db_conn.commit()
+            except OperationalError, e:
+                from warnings import warn
+                warn("encountered sqlite error during commit: %s" % e)
 
         self.last_save_time = time()
 

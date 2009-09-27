@@ -51,9 +51,10 @@ class BatchJob(object):
                 % (sys.executable, main_file))
         runscript.close()
 
-        _cp(main_file, os.path.join(self.path, main_file))
+        from os.path import basename
+        _cp(main_file, os.path.join(self.path, basename(main_file)))
         for aux_file in aux_files:
-            _cp(aux_file, os.path.join(self.path, aux_file))
+            _cp(aux_file, os.path.join(self.path, basename(aux_file)))
 
     def write_setup(self, lines):
         import os.path
@@ -130,6 +131,8 @@ def guess_job_class():
         return GridEngineJob
     else:
         return PBSJob
+
+
 
 
 class ConstructorPlaceholder:
