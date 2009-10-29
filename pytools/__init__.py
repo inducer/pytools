@@ -1064,8 +1064,8 @@ def string_histogram(iterable, min_value=None, max_value=None, bin_count=20, wid
         format_bar(bin_value))
         for bin_start, bin_value in zip(bin_starts, bins))
 
-            
-        
+
+
 
 # command line interfaces -----------------------------------------------------
 class CPyUserInterface(object):
@@ -1144,6 +1144,21 @@ class CPyUserInterface(object):
 
 
 # obscure stuff --------------------------------------------------------------
+class DeprecatedFunctionWrapper:
+    def __init__(self, f):
+        self.f = f
+
+    def __call__(self, *args, **kwargs):
+        from warnings import warn
+        warn("This function is deprecated. Use %s.%s instead." % (
+            self.f.__module__, self.f.__name__),
+            DeprecationWarning, stacklevel=1)
+
+        return self.f(*args, **kwargs)
+
+
+
+
 def enumerate_basic_directions(dimensions):
     coordinate_list = [[0], [1], [-1]]
     return reduce(cartesian_product_sum, [coordinate_list] * dimensions)[1:]
