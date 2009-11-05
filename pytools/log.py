@@ -232,13 +232,13 @@ class LogManager(object):
     def __init__(self, filename=None, mode="r", mpi_comm=None, capture_warnings=True):
         """Initialize this log manager instance.
 
-        @arg filename: If given, the filename to which this log is bound.
+        :param filename: If given, the filename to which this log is bound.
           If this database exists, the current state is loaded from it.
-        @arg mode: One of "w", "r" for write, read. "w" assumes that the
+        :param mode: One of "w", "r" for write, read. "w" assumes that the
           database is initially empty.
-        @arg mpi_comm: An C{boostmpi} communicator. If given, logs are periodically
+        :arg mpi_comm: An C{mpi4py} communicator. If given, logs are periodically
           synchronized to the head node, which then writes them out to disk.
-        @arg capture_warnings: Tap the Python warnings facility and save warnings
+        :param capture_warnings: Tap the Python warnings facility and save warnings
           to the log file.
         """
 
@@ -306,15 +306,13 @@ class LogManager(object):
 
             # set globally unique run_id
             if self.is_parallel:
-                from boostmpi import broadcast
                 self.set_constant("unique_run_id",
-                        broadcast(self.mpi_comm, _get_unique_id(),
-                            root=self.head_rank))
+                        self.mpi_comm.bcast(_get_unique_id(), root=self.head_rank))
             else:
                 self.set_constant("unique_run_id", _get_unique_id())
 
             if self.is_parallel:
-                self.set_constant("rank_count", self.mpi_comm.size)
+                self.set_constant("rank_count", self.mpi_comm.Get_size())
             else:
                 self.set_constant("rank_count", 1)
         else:
@@ -780,9 +778,7 @@ class LogManager(object):
                 for qname in self.quantity_data.iterkeys())
 
         if self.mpi_comm is not None and self.have_nonlocal_watches:
-            from boostmpi import broadcast, gather
-
-            gathered_data = gather(self.mpi_comm, data_block, self.head_rank)
+            gathered_data = self.mpi_comm.gather(data_block, self.head_rank)
         else:
             gathered_data = [data_block]
 
@@ -808,7 +804,7 @@ class LogManager(object):
         self.next_watch_tick = self.tick_count + int(max(1, ticks_per_sec))
 
         if self.mpi_comm is not None and self.have_nonlocal_watches:
-            self.next_watch_tick = broadcast(self.mpi_comm,
+            self.next_watch_tick = self.mpi_comm.bcast(
                     self.next_watch_tick, self.head_rank)
 
 
