@@ -1144,7 +1144,7 @@ class CPyUserInterface(object):
 
 
 # obscure stuff --------------------------------------------------------------
-class DeprecatedFunctionWrapper:
+class MovedFunctionDeprecationWrapper:
     def __init__(self, f):
         self.f = f
 

@@ -1022,15 +1022,20 @@ class Timestep(SimulationLogQuantity):
 def set_dt(mgr, dt):
     """Set the simulation timestep on L{LogManager} C{mgr} to C{dt}."""
 
-    for qdat in mgr.quantity_data.itervalues():
-        if isinstance(qdat.quantity, DtConsumer):
-            qdat.quantity.set_dt(dt)
+    for gd in mgr.gather_descriptors:
+        if isinstance(gd.quantity, DtConsumer):
+            gd.quantity.set_dt(dt)
 
 
 
 
-def add_simulation_quantities(mgr, dt):
+def add_simulation_quantities(mgr, dt=None):
     """Add L{LogQuantity} objects relating to simulation time."""
+    if dt is not None:
+        from warnings import warn
+        warn("Specifying ahead of time is a deprecated practice. "
+                "Use pytools.log.set_dt() instead.")
+
     mgr.add_quantity(SimulationTime(dt))
     mgr.add_quantity(Timestep(dt))
 
