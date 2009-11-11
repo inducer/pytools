@@ -815,11 +815,8 @@ class LogManager(object):
 class _SubTimer:
     def __init__(self, itimer):
         self.itimer = itimer
-        self.elapsed = 0
-
-    def start(self):
         self.start_time = time()
-        return self
+        self.elapsed = 0
 
     def stop(self):
         self.elapsed += time() - self.start_time
@@ -832,26 +829,12 @@ class _SubTimer:
 
 class IntervalTimer(LogQuantity):
     """Records elapsed times."""
-    def __init__(self, name="interval", description=None):
+    def __init__(self, name, description=None):
         LogQuantity.__init__(self, name, "s", description)
-
         self.elapsed = 0
 
-    def start(self):
-        from warnings import warn
-        warn("IntervalTimer.start() is deprecated. Use start_sub_timer() instead.",
-                DeprecationWarning, stacklevel=2)
-        self.start_time = time()
-
-    def stop(self):
-        self.elapsed += time() - self.start_time
-        del self.start_time
-
-    def get_sub_timer(self):
-        return _SubTimer(self)
-
     def start_sub_timer(self):
-        return _SubTimer(self).start()
+        return _SubTimer(self)
 
     def add_time(self, t):
         self.start_time = time()
