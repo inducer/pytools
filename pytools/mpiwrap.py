@@ -9,3 +9,10 @@ from mpi4py.MPI import *
 
 if Is_initialized():
     raise RuntimeError("MPI already initialized before MPI wrapper import")
+
+def InitWithAutoFinalize(*args, **kwargs):
+    result = Init(*args, **kwargs)
+    import atexit
+    atexit.register(Finalize)
+    return result
+
