@@ -282,6 +282,9 @@ def shift(vec, dist):
 
 
 def one(iterable):
+    """Return the first entry of *iterable*. Assert that *iterable* has only
+    that one entry.
+    """
     it = iter(iterable)
     try:
         v = it.next()
@@ -303,6 +306,9 @@ def one(iterable):
 
 
 def single_valued(iterable, equality_pred=operator.eq):
+    """Return the first entry of *iterable*; Assert that other entries 
+    are the same with the first entry of *iterable*.
+    """
     it = iter(iterable)
     try:
         first_item = it.next()
@@ -312,7 +318,7 @@ def single_valued(iterable, equality_pred=operator.eq):
     def others_same():
         for other_item in it:
             if not equality_pred(other_item, first_item):
-                raise ValueError, "non-single-valued iterable passed to 'single_valued()'"
+                return False
         return True
     assert others_same()
         
