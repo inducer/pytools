@@ -10,16 +10,30 @@ Since none of this is MPI-specific, it got parked in pytools.
 
 
 
+class ExecError(OSError):
+    pass
+
+
+
+
 class DirectForker:
     @staticmethod
     def call(cmdline, cwd=None):
         from subprocess import call
-        return call(cmdline, cwd=cwd)
+        try:
+            return call(cmdline, cwd=cwd)
+        except OSError, e:
+            raise ExecError("error invoking '%s': %s"
+                    % ( " ".join(cmdline), e))
 
     @staticmethod
     def call_capture_stdout(cmdline, cwd=None):
         from subprocess import Popen, PIPE
-        return Popen(cmdline, cwd=cwd, stdout=PIPE).communicate()[0]
+        try:
+            return Popen(cmdline, cwd=cwd, stdout=PIPE).communicate()[0]
+        except OSError, e:
+            raise ExecError("error invoking '%s': %s"
+                    % ( " ".join(cmdline), e))
 
 
 
