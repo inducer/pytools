@@ -3,6 +3,23 @@ import numpy
 
 
 
+def gen_len(expr):
+    from pytools.obj_array import is_obj_array
+    if is_obj_array(expr):
+        return len(expr)
+    else:
+        return 1
+
+def gen_slice(expr, slice):
+    result = expr[slice]
+    if len(result) == 1:
+        return result[0]
+    else:
+        return result
+
+
+
+
 def is_obj_array(val):
     try:
         return isinstance(val, numpy.ndarray) and val.dtype == object
