@@ -113,12 +113,16 @@ class Record(object):
 
 
 class Reference(object):
-    def __init__( self, value ):
-        self.V = value
-    def get( self ):
-        return self.V
-    def set( self, value ):
-        self.V = value
+    def __init__(self, value):
+        self.value = value
+
+    def get(self):
+        from warnings import warn
+        warn("Reference.get() is deprecated -- use ref.value instead")
+        return self.value
+
+    def set(self, value):
+        self.value = value
 
 
 
