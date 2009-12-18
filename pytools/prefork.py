@@ -35,6 +35,19 @@ class DirectForker:
             raise ExecError("error invoking '%s': %s"
                     % ( " ".join(cmdline), e))
 
+    @staticmethod
+    def call_capture_output(cmdline, cwd=None):
+        """
+        :returns: a tuple (return code, stdout_data, stderr_data).
+        """
+        from subprocess import Popen, PIPE
+        try:
+            popen = Popen(cmdline, cwd=cwd, stdout=PIPE, stderr=PIPE)
+            stdout_data, stderr_data = popen.communicate()
+            return popen.returncode, stdout_data, stderr_data
+        except OSError, e:
+            raise ExecError("error invoking '%s': %s"
+                    % ( " ".join(cmdline), e))
 
 
 
@@ -84,6 +97,7 @@ def _fork_server(sock):
     "quit": quit,
     "call": DirectForker.call,
     "call_capture_stdout": DirectForker.call_capture_stdout,
+    "call_capture_output": DirectForker.call_capture_output,
     }
 
     try:
@@ -133,6 +147,9 @@ class IndirectForker:
     def call_capture_stdout(self, cmdline, cwd=None):
         return self._remote_invoke("call_capture_stdout", cmdline, cwd)
 
+    def call_capture_output(self, cmdline, cwd=None):
+        return self._remote_invoke("call_capture_output", cmdline, cwd)
+
 
 
 
@@ -166,4 +183,10 @@ def call(cmdline, cwd=None):
     return forker[0].call(cmdline, cwd)
 
 def call_capture_stdout(cmdline, cwd=None):
+    from warnings import warn
+    warn("call_capture_stdout is deprecated: use call_capture_output instead",
+            stacklevel=2)
     return forker[0].call_capture_stdout(cmdline, cwd)
+
+def call_capture_output(cmdline, cwd=None):
+    return forker[0].call_capture_output(cmdline, cwd)
