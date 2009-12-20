@@ -1162,7 +1162,7 @@ class MovedFunctionDeprecationWrapper:
         from warnings import warn
         warn("This function is deprecated. Use %s.%s instead." % (
             self.f.__module__, self.f.__name__),
-            DeprecationWarning, stacklevel=1)
+            DeprecationWarning, stacklevel=2)
 
         return self.f(*args, **kwargs)
 
