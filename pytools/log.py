@@ -39,6 +39,14 @@ class LogQuantity(object):
 
 
 
+class PostLogQuantity(LogQuantity):
+    """A source of loggable scalars."""
+
+    def prepare_for_tick(self):
+        pass
+
+
+
 class MultiLogQuantity(object):
     """A source of multiple loggable scalars."""
     def __init__(self, names, units=None, descriptions=None):
@@ -57,6 +65,12 @@ class MultiLogQuantity(object):
 
 
 
+class MultiPostLogQuantity(MultiLogQuantity, PostLogQuantity):
+    pass
+
+
+
+
 class DtConsumer(object):
     def __init__(self, dt):
         self.dt = dt
@@ -67,11 +81,11 @@ class DtConsumer(object):
 
 
 
-class SimulationLogQuantity(LogQuantity, DtConsumer):
+class SimulationLogQuantity(PostLogQuantity, DtConsumer):
     """A source of loggable scalars that needs to know the simulation timestep."""
 
     def __init__(self, dt, name, unit=None, description=None):
-        LogQuantity.__init__(self, name, unit, description)
+        PostLogQuantity.__init__(self, name, unit, description)
         DtConsumer.__init__(self, dt)
 
 
@@ -217,16 +231,36 @@ def _set_up_schema(db_conn):
 
 class LogManager(object):
     """A parallel-capable diagnostic time-series logging facility.
+    It is meant to log data from a computation, with certain log 
+    quantities available before a cycle, and certain other ones 
+    afterwards. A timeline of invocations looks as follows::
 
-    A C{LogManager} logs any number of named time series of floats to
+        tick_before()
+        compute...
+        tick_after()
+
+        tick_before()
+        compute...
+        tick_after()
+
+        ...
+
+    In a time-dependent simulation, each group of :meth:`tick_before`
+    :meth:`tick_after` calls captures data for a single time state,
+    namely that in which the data may have been *before* the "compute"
+    step. However, some data (such as the length of the timestep taken
+    in a time-adpative method) may only be available *after* the completion
+    of the "compute..." stage, which is why :meth:`tick_after` exists.
+
+    A :class:`LogManager` logs any number of named time series of floats to
     a file. Non-time-series data, in the form of constants, is also
     supported and saved.
 
     If MPI parallelism is used, the "head rank" below always refers to
     rank 0.
 
-    A command line tool called C{logtool} is available for looking at the
-    data in a saved log.
+    Command line tools called :command:`runalyzer` and :command:`logtool`
+    (deprecated) are available for looking at the data in a saved log.
     """
 
     def __init__(self, filename=None, mode="r", mpi_comm=None, capture_warnings=True):
@@ -248,7 +282,8 @@ class LogManager(object):
 
         self.quantity_data = {}
         self.last_values = {}
-        self.gather_descriptors = []
+        self.before_gather_descriptors = []
+        self.after_gather_descriptors = []
         self.tick_count = 0
 
         self.constants = {}
@@ -455,39 +490,72 @@ class LogManager(object):
 
         self.db_conn.commit()
 
+    def _insert_datapoint(self, name, value):
+        if value is None:
+            return
+
+        self.last_values[name] = value
+
+        try:
+            self.db_conn.execute("insert into %s values (?,?,?)" % name,
+                    (self.tick_count, self.rank, float(value)))
+        except:
+            print "while adding datapoint for '%s':" % name
+            raise
+
+    def _gather_for_descriptor(self, gd):
+        if self.tick_count % gd.interval == 0:
+            q_value = gd.quantity()
+            if isinstance(gd.quantity, MultiLogQuantity):
+                for name, value in zip(gd.quantity.names, q_value):
+                    self._insert_datapoint(name, value)
+            else:
+                self._insert_datapoint(gd.quantity.name, q_value)
+
     def tick(self):
         """Record data points from each added L{LogQuantity}.
 
         May also checkpoint data to disk, and/or synchronize data points
         to the head rank.
         """
+        from warnings import warn
+        warn("LogManager.tick() is deprecated. Use LogManager.tick_{before,after}().",
+                DeprecationWarning)
+
+        self.tick_before()
+        self.tick_after()
+
+    def tick_before(self):
+        """Record data points from each added :class:`LogQuantity` that 
+        is not an instance of :class:`PostLogQuantity`. Also, invoke
+        :meth:`PostLogQuantity.prepare_for_tick` on :class:`PostLogQuantity`
+        instances.
+        """
         tick_start_time = time()
 
-        def insert_datapoint(name, value):
-            if value is None:
-                return
+        for gd in self.before_gather_descriptors:
+            self._gather_for_descriptor(gd)
 
-            self.last_values[name] = value
+        for gd in self.after_gather_descriptors:
+            gd.quantity.prepare_for_tick()
 
-            try:
-                self.db_conn.execute("insert into %s values (?,?,?)" % name,
-                        (self.tick_count, self.rank, float(value)))
-            except:
-                print "while adding datapoint for '%s':" % name
-                raise
+        self.t_log = time() - tick_start_time
 
-        for gd in self.gather_descriptors:
-            if self.tick_count % gd.interval == 0:
-                q_value = gd.quantity()
-                if isinstance(gd.quantity, MultiLogQuantity):
-                    for name, value in zip(gd.quantity.names, q_value):
-                        insert_datapoint(name, value)
-                else:
-                    insert_datapoint(gd.quantity.name, q_value)
+    def tick_after(self):
+        """Record data points from each added :class:`LogQuantity` that 
+        is an instance of :class:`PostLogQuantity`.
+
+        May also checkpoint data to disk.
+        """
+        tick_start_time = time()
+
+        for gd in self.after_gather_descriptors:
+            self._gather_for_descriptor(gd)
+
         self.tick_count += 1
 
         if tick_start_time - self.start_time > 15*60:
-            save_interval = 15*60
+            save_interval = 5*60
         else:
             save_interval = 15
 
@@ -500,7 +568,7 @@ class LogManager(object):
         if self.tick_count == self.next_watch_tick:
             self._watch_tick()
 
-        self.t_log = time() - tick_start_time
+        self.t_log += time() - tick_start_time
 
     def save(self):
         from sqlite3 import OperationalError
@@ -528,7 +596,16 @@ class LogManager(object):
 
             self.db_conn.commit()
 
-        self.gather_descriptors.append(_GatherDescriptor(quantity, interval))
+        gd = _GatherDescriptor(quantity, interval)
+        if isinstance(quantity, PostLogQuantity):
+            self.after_gather_descriptors.append(gd)
+        else:
+            if isinstance(quantity, DtConsumer):
+                raise RuntimeError("Log quantity '%s' wants to be gathered during "
+                        "tick_before(), but is a DtConsumer. dt is only available "
+                        "in tick_after()." % type(quantity))
+
+            self.before_gather_descriptors.append(gd)
 
         if isinstance(quantity, MultiLogQuantity):
             for name, unit, description, def_agg in zip(
@@ -683,8 +760,6 @@ class LogManager(object):
 
         xlabel("%s [%s]" % (descr_x, unit_x))
         ylabel("%s [%s]" % (descr_y, unit_y))
-        xlabel(label_x)
-        ylabel(label_y)
         plot(data_x, data_y)
 
     # private functionality ---------------------------------------------------
@@ -829,6 +904,9 @@ class _SubTimer:
 
 class IntervalTimer(LogQuantity):
     """Records elapsed times."""
+
+    gather_time = False
+
     def __init__(self, name, description=None):
         LogQuantity.__init__(self, name, "s", description)
         self.elapsed = 0
@@ -849,7 +927,11 @@ class IntervalTimer(LogQuantity):
 
 
 class LogUpdateDuration(LogQuantity):
-    """Records how long the last L{LogManager.tick} invocation took."""
+    """Records how long the last :meth:`LogManager.tick` invocation took."""
+
+    # FIXME this is off by one tick
+    gather_time = "before"
+
     def __init__(self, mgr, name="t_log"):
         LogQuantity.__init__(self, name, "s", "Time spent updating the log")
         self.log_manager = mgr
@@ -859,11 +941,11 @@ class LogUpdateDuration(LogQuantity):
 
 
 
-class EventCounter(LogQuantity):
+class EventCounter(PostLogQuantity):
     """Counts events signaled by L{add}."""
 
     def __init__(self, name="interval", description=None):
-        LogQuantity.__init__(self, name, "1", description)
+        PostLogQuantity.__init__(self, name, "1", description)
         self.events = 0
 
     def add(self, n=1):
@@ -872,9 +954,11 @@ class EventCounter(LogQuantity):
     def transfer(self, counter):
         self.events += counter.pop()
 
+    def prepare_for_tick(self):
+        self.events = 0
+
     def __call__(self):
         result = self.events
-        self.events = 0
         return result
 
 
@@ -901,6 +985,8 @@ def time_and_count_function(f, timer, counter=None, increment=1):
 class TimestepCounter(LogQuantity):
     """Counts the number of times L{LogManager.tick} is called."""
 
+    gather_time = "before"
+
     def __init__(self, name="step"):
         LogQuantity.__init__(self, name, "1", "Timesteps")
         self.steps = 0
@@ -913,18 +999,22 @@ class TimestepCounter(LogQuantity):
 
 
 
-class TimestepDuration(LogQuantity):
-    """Records the CPU time between invocations of L{LogManager.tick}."""
+class TimestepDuration(PostLogQuantity):
+    """Records the CPU time between invocations of 
+    :meth:`LogManager.tick_before` and 
+    :meth:`LogManager.tick_after`.
+    """
 
     def __init__(self, name="t_step"):
-        LogQuantity.__init__(self, name, "s", "Time step duration")
+        PostLogQuantity.__init__(self, name, "s", "Time step duration")
 
+    def prepare_for_tick(self):
         self.last_start = time()
 
     def __call__(self):
         now = time()
         result = now - self.last_start
-        self.last_start = now
+        del self.last_start
         return result
 
 
@@ -994,8 +1084,8 @@ class SimulationTime(SimulationLogQuantity):
 class Timestep(SimulationLogQuantity):
     """Record the magnitude of the simulated time step."""
 
-    def __init__(self, dt, name="dt"):
-        SimulationLogQuantity.__init__(self, dt, name, "s", "Simulation Timestep")
+    def __init__(self, dt, name="dt", unit="s"):
+        SimulationLogQuantity.__init__(self, dt, name, unit, "Simulation Timestep")
 
     def __call__(self):
         return self.dt
@@ -1005,7 +1095,7 @@ class Timestep(SimulationLogQuantity):
 def set_dt(mgr, dt):
     """Set the simulation timestep on L{LogManager} C{mgr} to C{dt}."""
 
-    for gd in mgr.gather_descriptors:
+    for gd in mgr.after_gather_descriptors:
         if isinstance(gd.quantity, DtConsumer):
             gd.quantity.set_dt(dt)
 
