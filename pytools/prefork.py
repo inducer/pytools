@@ -36,7 +36,7 @@ class DirectForker:
                     % ( " ".join(cmdline), e))
 
     @staticmethod
-    def call_capture_output(cmdline, cwd=None):
+    def call_capture_output(cmdline, cwd=None, error_on_nonzero=True):
         """
         :returns: a tuple (return code, stdout_data, stderr_data).
         """
@@ -44,6 +44,9 @@ class DirectForker:
         try:
             popen = Popen(cmdline, cwd=cwd, stdout=PIPE, stderr=PIPE)
             stdout_data, stderr_data = popen.communicate()
+            if error_on_nonzero and popen.returncode:
+                raise ExecError("status %d invoking '%s': %s"
+                        % (popen.returncode, " ".join(cmdline), stderr_data))
             return popen.returncode, stdout_data, stderr_data
         except OSError, e:
             raise ExecError("error invoking '%s': %s"
@@ -147,8 +150,9 @@ class IndirectForker:
     def call_capture_stdout(self, cmdline, cwd=None):
         return self._remote_invoke("call_capture_stdout", cmdline, cwd)
 
-    def call_capture_output(self, cmdline, cwd=None):
-        return self._remote_invoke("call_capture_output", cmdline, cwd)
+    def call_capture_output(self, cmdline, cwd=None, error_on_nonzero=True):
+        return self._remote_invoke("call_capture_output", cmdline, cwd, 
+                error_on_nonzero)
 
 
 
@@ -188,5 +192,5 @@ def call_capture_stdout(cmdline, cwd=None):
             stacklevel=2)
     return forker[0].call_capture_stdout(cmdline, cwd)
 
-def call_capture_output(cmdline, cwd=None):
+def call_capture_output(cmdline, cwd=None, error_on_nonzero=True):
     return forker[0].call_capture_output(cmdline, cwd)
