@@ -51,11 +51,18 @@ class MultiLogQuantity(object):
     """A source of multiple loggable scalars."""
     def __init__(self, names, units=None, descriptions=None):
         self.names = names
+
+        if units is None:
+            units = len(names) * [None]
         self.units = units
+
+        if descriptions is None:
+            descriptions = len(names) * [None]
         self.descriptions = descriptions
 
     @property
-    def default_aggregators(self): return [None] * len(self.names)
+    def default_aggregators(self):
+        return [None] * len(self.names)
 
     def __call__(self):
         """Return an iterable of the current values of the diagnostic represented
