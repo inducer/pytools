@@ -655,9 +655,13 @@ class LogManager(object):
         if unit is None:
             from pymbolic import substitute, parse
 
-            unit = substitute(parsed,
-                    dict((dd.varname, parse(dd.qdat.unit)) for dd in dep_data)
-                    )
+            unit_dict = dict((dd.varname, dd.qdat.unit) for dd in dep_data)
+            from pytools import all
+            if all(v is not None for v in unit_dict.itervalues()):
+                unit_dict = dict((k, parse(v)) for k, v in unit_dict.iteritems())
+                unit = substitute(parsed, unit_dict)
+            else:
+                unit = None
 
         if description is None:
             description = expression
@@ -789,7 +793,7 @@ class LogManager(object):
 
         from pymbolic.mapper.dependency import DependencyMapper
 
-        deps = DependencyMapper()(parsed)
+        deps = DependencyMapper(include_calls=False)(parsed)
 
         # gather information on aggregation expressions
         dep_data = []
@@ -799,6 +803,10 @@ class LogManager(object):
 
             if isinstance(dep, Variable):
                 name = dep.name
+
+                if name == "math":
+                    continue
+
                 agg_func = self.quantity_data[name].default_aggregator
                 if agg_func is None:
                     if self.is_parallel:
