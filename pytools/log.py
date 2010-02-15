@@ -31,9 +31,16 @@ class LogQuantity(object):
     @property
     def default_aggregator(self): return None
 
+    def tick(self):
+        """Perform updates required at every :class:`LogManager` tick."""
+        pass
+
     def __call__(self):
         """Return the current value of the diagnostic represented by this
-        L{LogQuantity} or None if no value is available."""
+        L{LogQuantity} or None if no value is available.
+
+        This is only called if the invocation interval calls for it.
+        """
         raise NotImplementedError
 
 
@@ -84,6 +91,17 @@ class DtConsumer(object):
 
     def set_dt(self, dt):
         self.dt = dt
+
+
+
+
+class TimeTracker(DtConsumer):
+    def __init__(self, dt):
+        DtConsumer.__init__(self, dt)
+        self.t = 0
+
+    def tick(self):
+        self.t += self.dt
 
 
 
@@ -244,6 +262,7 @@ class LogManager(object):
 
         tick_before()
         compute...
+        tick()
         tick_after()
 
         tick_before()
@@ -556,6 +575,11 @@ class LogManager(object):
         """
         tick_start_time = time()
 
+        for gd_lst in [self.before_gather_descriptors,
+                self.after_gather_descriptors]:
+            for gd in gd_lst:
+                gd.quantity.tick()
+
         for gd in self.after_gather_descriptors:
             self._gather_for_descriptor(gd)
 
@@ -607,11 +631,6 @@ class LogManager(object):
         if isinstance(quantity, PostLogQuantity):
             self.after_gather_descriptors.append(gd)
         else:
-            if isinstance(quantity, DtConsumer):
-                raise RuntimeError("Log quantity '%s' wants to be gathered during "
-                        "tick_before(), but is a DtConsumer. dt is only available "
-                        "in tick_after()." % type(quantity))
-
             self.before_gather_descriptors.append(gd)
 
         if isinstance(quantity, MultiLogQuantity):
@@ -1081,17 +1100,15 @@ def add_general_quantities(mgr):
 
 
 
-class SimulationTime(SimulationLogQuantity):
+class SimulationTime(TimeTracker, LogQuantity):
     """Record (monotonically increasing) simulation time."""
 
     def __init__(self, dt, name="t_sim", start=0):
-        SimulationLogQuantity.__init__(self, dt, name, "s", "Simulation Time")
-        self.t = 0
+        LogQuantity.__init__(self, name, "s", "Simulation Time")
+        TimeTracker.__init__(self, dt)
 
     def __call__(self):
-        result = self.t
-        self.t += self.dt
-        return result
+        return self.t
 
 
 
@@ -1110,9 +1127,11 @@ class Timestep(SimulationLogQuantity):
 def set_dt(mgr, dt):
     """Set the simulation timestep on L{LogManager} C{mgr} to C{dt}."""
 
-    for gd in mgr.after_gather_descriptors:
-        if isinstance(gd.quantity, DtConsumer):
-            gd.quantity.set_dt(dt)
+    for gd_lst in [mgr.before_gather_descriptors,
+            mgr.after_gather_descriptors]:
+        for gd in gd_lst:
+            if isinstance(gd.quantity, DtConsumer):
+                gd.quantity.set_dt(dt)
 
 
 
