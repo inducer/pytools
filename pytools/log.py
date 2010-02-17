@@ -71,9 +71,16 @@ class MultiLogQuantity(object):
     def default_aggregators(self):
         return [None] * len(self.names)
 
+    def tick(self):
+        """Perform updates required at every :class:`LogManager` tick."""
+        pass
+
     def __call__(self):
         """Return an iterable of the current values of the diagnostic represented
-        by this L{MultiLogQuantity}."""
+        by this L{MultiLogQuantity}.
+
+        This is only called if the invocation interval calls for it.
+        """
         raise NotImplementedError
 
 
