@@ -371,6 +371,9 @@ def make_wrapped_db(filename, interactive, mangle):
     db.create_aggregate("norm2", 1, Norm2)
 
     db.create_function("sprintf", 2, my_sprintf)
+    from math import sqrt, pow
+    db.create_function("sqrt", 1, sqrt)
+    db.create_function("pow", 2, pow)
 
     if mangle:
         db_wrap_class = MagicRunDB
