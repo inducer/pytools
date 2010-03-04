@@ -47,7 +47,7 @@ class RunDB(object):
         return qry
 
     def scatter_cursor(self, cursor, *args, **kwargs):
-        from pylab import scatter, show
+        from matplitlib.pyplot import scatter, show
 
         data_args = tuple(zip(*list(cursor)))
         scatter(*(data_args + args), **kwargs)
@@ -56,7 +56,7 @@ class RunDB(object):
             show()
         
     def plot_cursor(self, cursor, *args, **kwargs):
-        from pylab import plot, show, legend
+        from matplitlib.pyplot import plot, show, legend
 
         auto_style = kwargs.pop("auto_style", True)
 
@@ -221,10 +221,17 @@ class RunalyzerConsole(code.InteractiveConsole):
         code.InteractiveConsole.__init__(self, symbols)
 
         try:
-            import pylab
-            import matplotlib
-            self.runsource("from pylab import *")
+            import numpy
+            self.runsource("from numpy import *")
         except ImportError:
+            pass
+
+        try:
+            import matplotlib.pyplot
+            self.runsource("from matplotlib.pyplot import *")
+        except ImportError:
+            pass
+        except RuntimeError:
             pass
 
         if HAVE_READLINE:
