@@ -1147,7 +1147,7 @@ def add_simulation_quantities(mgr, dt=None):
     """Add L{LogQuantity} objects relating to simulation time."""
     if dt is not None:
         from warnings import warn
-        warn("Specifying ahead of time is a deprecated practice. "
+        warn("Specifying dt ahead of time is a deprecated practice. "
                 "Use pytools.log.set_dt() instead.")
 
     mgr.add_quantity(SimulationTime(dt))
