@@ -51,8 +51,9 @@ class BatchJob(object):
                 % (sys.executable, main_file))
         runscript.close()
 
+        from os.path import basename
+
         if not main_file.startswith("-m "):
-            from os.path import basename
             _cp(main_file, os.path.join(self.path, basename(main_file)))
 
         for aux_file in aux_files:
