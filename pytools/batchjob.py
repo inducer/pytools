@@ -76,7 +76,7 @@ class INHERIT(object):
 
 class GridEngineJob(BatchJob):
     def submit(self, env={"LD_LIBRARY_PATH": INHERIT, "PYTHONPATH": INHERIT},
-            extra_args=[]):
+            memory_megs=None, extra_args=[]):
         from subprocess import Popen
         args = [
             "-N", self.moniker,
@@ -91,6 +91,9 @@ class GridEngineJob(BatchJob):
 
             args += ["-v", "%s=%s" % (var, value)]
 
+        if memory_megs is not None:
+            args.extend(["-l", "mem=%d" % memory_megs])
+
         args.extend(extra_args)
 
         subproc = Popen(["qsub"] + args + ["run.sh"], cwd=self.path)
@@ -102,12 +105,15 @@ class GridEngineJob(BatchJob):
 
 class PBSJob(BatchJob):
     def submit(self, env={"LD_LIBRARY_PATH": INHERIT, "PYTHONPATH": INHERIT},
-            extra_args=[]):
+            memory_megs=None, extra_args=[]):
         from subprocess import Popen
         args = [
             "-N", self.moniker,
             "-d", self.path,
             ]
+
+        if memory_megs is not None:
+            args.extend(["-l", "pmem=%dmb" % memory_megs])
 
         from os import getenv
 
