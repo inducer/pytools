@@ -1405,8 +1405,6 @@ class SpatialBinaryTreeBucket:
     """This class represents one bucket in a spatial binary tree.
     It automatically decides whether it needs to create more subdivisions
     beneath itself or not.
-
-    element = tuple of (element_group,idx) where idx is location of element located in group
     """
 
     def __init__(self, bottom_left, top_right):
@@ -1417,32 +1415,36 @@ class SpatialBinaryTreeBucket:
 
         # As long as buckets is None, there are no subdivisions
         self.buckets = None
+        # An elements is (element,bbox), where element can be any tuple of characteristics 
+        # you might need, and bbox is the bounding box which completely contains the element.
         self.elements = []
 
-    def insert(self, element, bbox):
+    def insert(self, element, bbox): #element can be any object you wish to fill the tree with
         (dimensions,) = self.bottom_left.shape
         if self.buckets is None:
             # No subdivisions yet.
-            if len(self.elements) > 8 * 2**dimensions: #was 8*2**dimension
+            if len(self.elements) > 8 * 2**dimensions:
                 # Too many elements. Need to subdivide.
                 self.all_buckets = []
                 self.buckets = make_buckets(self.bottom_left, self.top_right,
                                             self.all_buckets)
 
+                # Move all elements from the full bucket into the new finer ones
                 for el, el_bbox in self.elements:
                     self.insert_into_subdivision(el, el_bbox)
 
-                # Free up some memory
+                # Free up some memory. This bucket has empty 'elements'.
                 del self.elements
 
                 self.insert_into_subdivision(element, bbox)
             else:
                 # Simple:
                 self.elements.append((element, bbox))
-        else:
+        else: # Go find which sudivision to place element
             self.insert_into_subdivision(element, bbox)
 
     def insert_into_subdivision(self, element, bbox):
+        # A bbox may intersect multiple buckets, it will be placed in the first occurance
         for bucket in self.all_buckets:
             if do_boxes_intersect((bucket.bottom_left, bucket.top_right), bbox):
                 bucket.insert(element, bbox)
