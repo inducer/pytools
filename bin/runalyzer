@@ -19,12 +19,11 @@ def main():
 
     sys.path.append(".")
 
-    from pytools.runalyzer import make_wrapped_db
+    from pytools.runalyzer import make_wrapped_db, make_runalyzer_symbols
 
     if len(args) == 2:
         db = make_wrapped_db(args[0], mangle=options.mangle, interactive=False)
-        symbols = {"db": db}
-        execfile(args[1], symbols)
+        execfile(args[1], make_runalyzer_symbols(db))
     else:
         db = make_wrapped_db(args[0], mangle=options.mangle, interactive=True)
         from pytools.runalyzer import RunalyzerConsole

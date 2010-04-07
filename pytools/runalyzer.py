@@ -47,16 +47,16 @@ class RunDB(object):
         return qry
 
     def scatter_cursor(self, cursor, *args, **kwargs):
-        from matplitlib.pyplot import scatter, show
+        from matplotlib.pyplot import scatter, show
 
         data_args = tuple(zip(*list(cursor)))
         scatter(*(data_args + args), **kwargs)
 
         if self.interactive:
             show()
-        
+
     def plot_cursor(self, cursor, *args, **kwargs):
-        from matplitlib.pyplot import plot, show, legend
+        from matplotlib.pyplot import plot, show, legend
 
         auto_style = kwargs.pop("auto_style", True)
 
@@ -76,7 +76,7 @@ class RunDB(object):
                             for column, value in kv_pairs)
             format_label = kwargs.pop("format_label", format_label)
 
-            def do_plot():
+            def do_plot(x, y, row_rest):
                 my_kwargs = kwargs.copy()
                 style = PLOT_STYLES[style_idx[0] % len(PLOT_STYLES)]
                 if auto_style:
@@ -85,33 +85,15 @@ class RunDB(object):
 
                 my_kwargs.setdefault("label",
                         format_label(zip(
-                            (col[0] for col in cursor.description[2:]), 
-                            last_rest)))
+                            (col[0] for col in cursor.description[2:]),
+                            row_rest)))
 
                 plot(x, y, hold=True, *args, **my_kwargs)
                 style_idx[0] += 1
-                del x[:]
-                del y[:]
 
             style_idx = [0]
-            x = []
-            y = []
-            last_rest = None
-            for row in cursor:
-                row_tuple = tuple(row)
-                row_rest = row_tuple[2:]
-
-                if last_rest is None:
-                    last_rest = row_rest
-
-                if row_rest != last_rest:
-                    do_plot()
-                    last_rest = row_rest
-
-                x.append(row_tuple[0])
-                y.append(row_tuple[1])
-            if x:
-                do_plot()
+            for x, y, rest in split_cursor(cursor):
+                do_plot(x, y, row_rest)
 
             if small_legend:
                 from matplotlib.font_manager import FontProperties
@@ -122,7 +104,7 @@ class RunDB(object):
 
         if self.interactive:
             show()
-        
+
     def table_from_cursor(self, cursor):
         from pytools import Table
         tbl = Table()
@@ -133,6 +115,32 @@ class RunDB(object):
 
     def print_cursor(self, cursor):
         print self.table_from_cursor(cursor)
+
+
+
+
+def split_cursor(cursor):
+    x = []
+    y = []
+    last_rest = None
+    for row in cursor:
+        row_tuple = tuple(row)
+        row_rest = row_tuple[2:]
+
+        if last_rest is None:
+            last_rest = row_rest
+
+        if row_rest != last_rest:
+            yield x, y, last_rest
+            del x[:]
+            del y[:]
+
+            last_rest = row_rest
+
+        x.append(row_tuple[0])
+        y.append(row_tuple[1])
+    if x:
+        yield x, y, last_rest
 
 
 
@@ -185,7 +193,7 @@ class MagicRunDB(RunDB):
             from_clause += " inner join %s on (%s.run_id = runs.id%s) " % (
                     full_tbl_src, full_tbl, addendum)
             last_tbl = full_tbl
-        
+
         if "$$" in qry:
             return qry.replace("$$"," %s " % from_clause)
         else:
@@ -205,20 +213,27 @@ class MagicRunDB(RunDB):
 
 
 
+def make_runalyzer_symbols(db):
+    return {
+            "__name__": "__console__",
+            "__doc__": None,
+            "db": db,
+            "mangle_sql": db.mangle_sql,
+            "q": db.q,
+            "dbplot": db.plot_cursor,
+            "dbscatter": db.scatter_cursor,
+            "dbprint": db.print_cursor,
+            "split_cursor": split_cursor,
+            }
+
+
+
+
 class RunalyzerConsole(code.InteractiveConsole):
     def __init__(self, db):
         self.db = db
-        symbols = {
-                "__name__": "__console__",
-                "__doc__": None,
-                "db": db,
-                "mangle_sql": db.mangle_sql,
-                "q": db.q,
-                "dbplot": db.plot_cursor,
-                "dbscatter": db.scatter_cursor,
-                "dbprint": db.print_cursor,
-                }
-        code.InteractiveConsole.__init__(self, symbols)
+        code.InteractiveConsole.__init__(self, 
+                make_runalyzer_symbols(db))
 
         try:
             import numpy
@@ -298,6 +313,7 @@ Available Python symbols:
     dbplot(cursor): plot result of cursor
     dbscatter(cursor): make scatterplot result of cursor
     dbprint(cursor): print result of cursor
+    split_cursor(cursor): x,y,data gather that .plot uses internally
 """
         elif cmd == "q":
             self.db.print_cursor(self.db.q(args))
