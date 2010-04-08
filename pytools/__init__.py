@@ -1409,17 +1409,20 @@ class SpatialBinaryTreeBucket:
 
     def __init__(self, bottom_left, top_right):
 
+        # elements is (element,bbox), where element is an object which contains data needed to 
+        # access and perform necessary operations in the subdomain of interest.
+        # bbox is the bounding box which completely contains the element.
+        self.elements = []
+
         self.bottom_left = bottom_left
         self.top_right = top_right
         self.center = (bottom_left + top_right) / 2
 
         # As long as buckets is None, there are no subdivisions
         self.buckets = None
-        # An elements is (element,bbox), where element can be any tuple of characteristics 
-        # you might need, and bbox is the bounding box which completely contains the element.
         self.elements = []
 
-    def insert(self, element, bbox): #element can be any object you wish to fill the tree with
+    def insert(self, element, bbox):
         (dimensions,) = self.bottom_left.shape
         if self.buckets is None:
             # No subdivisions yet.
@@ -1444,7 +1447,7 @@ class SpatialBinaryTreeBucket:
             self.insert_into_subdivision(element, bbox)
 
     def insert_into_subdivision(self, element, bbox):
-        # A bbox may intersect multiple buckets, it will be placed in the first occurance
+        # A bbox may intersect multiple buckets, it will be placed in the first occurrence
         for bucket in self.all_buckets:
             if do_boxes_intersect((bucket.bottom_left, bucket.top_right), bbox):
                 bucket.insert(element, bbox)
@@ -1476,10 +1479,6 @@ class SpatialBinaryTreeBucket:
         if self.buckets:
             for i in self.all_buckets:
                 i.visualize(file)
-
-
-
-
 
 
 
