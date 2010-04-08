@@ -2,6 +2,9 @@
 # by Andreas Klockner
 
 
+from __future__ import division
+
+
 def do_boxes_intersect((bl1,tr1), (bl2,tr2)):
     (dimension,) = bl1.shape
     for i in range(0, dimension):
@@ -84,7 +87,7 @@ class SpatialBinaryTreeBucket:
                 for el, el_bbox in self.elements:
                     self.insert_into_subdivision(el, el_bbox)
 
-                # Free up some memory. This bucket has empty 'elements'.
+                # Free up some memory. Elements are now stored in the subdivision, so we don't need them here any more.
                 del self.elements
 
                 self.insert_into_subdivision(element, bbox)
@@ -95,7 +98,7 @@ class SpatialBinaryTreeBucket:
             self.insert_into_subdivision(element, bbox)
 
     def insert_into_subdivision(self, element, bbox):
-        # A bbox may intersect multiple buckets, it will be placed in the first occurrence
+        # If a bbox intersects multiple buckets, it will be placed in all intersecting buckets
         for bucket in self.all_buckets:
             if do_boxes_intersect((bucket.bottom_left, bucket.top_right), bbox):
                 bucket.insert(element, bbox)
