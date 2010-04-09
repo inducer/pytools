@@ -1331,3 +1331,20 @@ def to_uncomplex_dtype(dtype):
 
 
 
+def match_precision(dtype, dtype_to_match):
+    import numpy
+
+    tgt_is_double = dtype_to_match in [
+            numpy.float64, numpy.complex128]
+
+    dtype_is_complex = dtype.kind == "c"
+    if dtype_is_complex:
+        if tgt_is_double:
+            return numpy.dtype(numpy.complex128)
+        else:
+            return numpy.dtype(numpy.complex64)
+    else:
+        if tgt_is_double:
+            return numpy.dtype(numpy.float64)
+        else:
+            return numpy.dtype(numpy.float32)
