@@ -105,16 +105,8 @@ class RunDB(object):
         if self.interactive:
             show()
 
-    def table_from_cursor(self, cursor):
-        from pytools import Table
-        tbl = Table()
-        tbl.add_row([column[0] for column in cursor.description])
-        for row in cursor:
-            tbl.add_row(row)
-        return tbl
-
     def print_cursor(self, cursor):
-        print self.table_from_cursor(cursor)
+        print table_from_cursor(cursor)
 
 
 
@@ -141,6 +133,17 @@ def split_cursor(cursor):
         y.append(row_tuple[1])
     if x:
         yield x, y, last_rest
+
+
+
+
+def table_from_cursor(cursor):
+    from pytools import Table
+    tbl = Table()
+    tbl.add_row([column[0] for column in cursor.description])
+    for row in cursor:
+        tbl.add_row(row)
+    return tbl
 
 
 
@@ -224,6 +227,7 @@ def make_runalyzer_symbols(db):
             "dbscatter": db.scatter_cursor,
             "dbprint": db.print_cursor,
             "split_cursor": split_cursor,
+            "table_from_cursor": table_from_cursor,
             }
 
 
@@ -314,6 +318,7 @@ Available Python symbols:
     dbscatter(cursor): make scatterplot result of cursor
     dbprint(cursor): print result of cursor
     split_cursor(cursor): x,y,data gather that .plot uses internally
+    table_from_cursor(cursor)
 """
         elif cmd == "q":
             self.db.print_cursor(self.db.q(args))
