@@ -951,7 +951,7 @@ class _SubTimer:
         self.itimer.add_time(self.elapsed)
         del self.elapsed
 
-class IntervalTimer(LogQuantity):
+class IntervalTimer(PostLogQuantity):
     """Records elapsed times."""
 
     def __init__(self, name, description=None):
