@@ -193,4 +193,4 @@ def call_capture_stdout(cmdline, cwd=None):
     return forker[0].call_capture_stdout(cmdline, cwd)
 
 def call_capture_output(cmdline, cwd=None, error_on_nonzero=True):
-    return forker[0].call_capture_output(cmdline, cwd)
+    return forker[0].call_capture_output(cmdline, cwd, error_on_nonzero)
