@@ -39,12 +39,30 @@ class RunDB(object):
     def __init__(self, db, interactive):
         self.db = db
         self.interactive = interactive
+        self.rank_agg_tables = set()
 
     def q(self, qry, *extra_args):
         return self.db.execute(self.mangle_sql(qry), *extra_args)
 
     def mangle_sql(self, qry):
         return qry
+
+    def get_rank_agg_table(self, qty, rank_aggregator):
+        tbl_name = "rankagg_%s_%s" % (rank_aggregator, qty)
+
+        if (qty, rank_aggregator) in self.rank_agg_tables:
+            return tbl_name
+
+        print "INFO: building temporary rank aggregation table %s" % tbl_name
+
+        self.db.execute("create temporary table %s as "
+                "select run_id, step, %s(value) as value "
+                "from %s group by run_id,step" % (
+                    tbl_name, rank_aggregator, qty))
+        self.db.execute("create index %s_run_step on %s (run_id,step)"
+                % (tbl_name, tbl_name))
+        self.rank_agg_tables.add((qty, rank_aggregator))
+        return tbl_name
 
     def scatter_cursor(self, cursor, *args, **kwargs):
         from matplotlib.pyplot import scatter, show
@@ -180,38 +198,58 @@ class MagicRunDB(RunDB):
         for tbl, rank_aggregator in magic_columns:
             if rank_aggregator is not None:
                 full_tbl = "%s_%s" % (rank_aggregator, tbl)
-                full_tbl_src = (
-                        "(select run_id, step, %s(value) as value "
-                        "from %s group by run_id,step) as %s" % (
-                            rank_aggregator, tbl, full_tbl))
+                full_tbl_src = "%s as %s" % (
+                        self.get_rank_agg_table(tbl, rank_aggregator),
+                        full_tbl)
+
+                if last_tbl is not None:
+                    addendum = " and %s.step = %s.step" % (last_tbl, full_tbl)
+                else:
+                    addendum = ""
             else:
                 full_tbl = tbl
                 full_tbl_src = tbl
 
-            if last_tbl is not None:
-                addendum = " and %s.step = %s.step" % (last_tbl, full_tbl)
-            else:
-                addendum = ""
+                if last_tbl is not None:
+                    addendum = " and %s.step = %s.step and %s.rank=%s.rank" % (
+                            last_tbl, full_tbl, last_tbl, full_tbl)
+                else:
+                    addendum = ""
 
             from_clause += " inner join %s on (%s.run_id = runs.id%s) " % (
                     full_tbl_src, full_tbl, addendum)
             last_tbl = full_tbl
 
-        if "$$" in qry:
-            return qry.replace("$$"," %s " % from_clause)
-        else:
-            first_clause_idx = len(qry)+1
+        def get_clause_indices(qry):
+            other_clauses = ["UNION",  "INTERSECT", "EXCEPT", "WHERE", "GROUP",
+                    "HAVING", "ORDER", "LIMIT", ";"]
+
+            result = {}
             up_qry = qry.upper()
             for clause in other_clauses:
                 clause_match = re.search(r"\b%s\b" % clause, up_qry)
-                if clause_match is not None and clause_match.start() < first_clause_idx:
-                    first_clause_idx = clause_match.start()
-            if first_clause_idx > len(qry):
-                from_clause = " "+from_clause
-            return (
-                    qry[:first_clause_idx]
-                    +from_clause
-                    +qry[first_clause_idx:])
+                if clause_match is not None:
+                    result[clause] = clause_match.start()
+
+            return result
+
+        # add 'from'
+        if "$$" in qry:
+            qry = qry.replace("$$"," %s " % from_clause)
+        else:
+            clause_indices = get_clause_indices(qry)
+
+            if not clause_indices:
+                qry = qry+" "+from_clause
+            else:
+                first_clause_idx = min(clause_indices.values())
+                qry = (
+                        qry[:first_clause_idx]
+                        +from_clause
+                        +qry[first_clause_idx:])
+
+
+        return qry
 
 
 
