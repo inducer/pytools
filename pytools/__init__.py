@@ -1091,16 +1091,17 @@ def string_histogram(iterable, min_value=None, max_value=None, bin_count=20, wid
 
 # }}}
 
-def word_wrap(text, width):
+def word_wrap(text, width, wrap_using="\n"):
     # http://code.activestate.com/recipes/148061-one-liner-word-wrap-function/
     """
     A word-wrap function that preserves existing line breaks
     and most spaces in the text. Expects that existing line
     breaks are posix newlines (\n).
     """
+    space_or_break = [" ", wrap_using]
     return reduce(lambda line, word, width=width: '%s%s%s' %
             (line,
-                ' \n'[(len(line)-line.rfind('\n')-1
+                space_or_break[(len(line)-line.rfind('\n')-1
                     + len(word.split('\n',1)[0]
                         ) >= width)],
                     word),
