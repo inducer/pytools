@@ -7,6 +7,7 @@ from pytools.decorator import decorator
 
 
 
+# {{{ math --------------------------------------------------------------------
 def delta(x,y):
     if x == y:
         return 1
@@ -43,10 +44,11 @@ class Norm(object):
     def __call__(self, iterable):
         return sum(i**self.p for i in iterable)**(1/self.p)
 
+# }}}
 
+# {{{ data structures ---------------------------------------------------------
 
-
-# Data structures ------------------------------------------------------------
+# {{{ record
 class Record(object):
     """An aggregate of named sub-variables. Assumes that each record sub-type
     will be individually derived from this class.
@@ -109,6 +111,8 @@ class Record(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+# }}}
+
 
 
 
@@ -127,6 +131,147 @@ class Reference(object):
 
 
 
+
+
+# {{{ dictionary with default 
+class DictionaryWithDefault(object):
+    def __init__(self, default_value_generator, start = {}):
+        self._Dictionary = dict(start)
+        self._DefaultGenerator = default_value_generator
+
+    def __getitem__(self, index):
+        try:
+            return self._Dictionary[index]
+        except KeyError:
+            value = self._DefaultGenerator(index)
+            self._Dictionary[index] = value
+            return value
+
+    def __setitem__(self, index, value):
+        self._Dictionary[index] = value
+
+    def __contains__(self, item):
+        return True
+
+    def iterkeys(self):
+        return self._Dictionary.iterkeys()
+
+    def __iter__(self):
+        return self._Dictionary.__iter__()
+
+    def iteritems(self):
+        return self._Dictionary.iteritems()
+
+# }}}
+
+
+
+class FakeList(object):
+    def __init__(self, f, length):
+        self._Length = length
+        self._Function = f
+
+    def __len__(self):
+        return self._Length
+
+    def __getitem__(self, index):
+        try:
+            return [self._Function(i)
+                    for i in range(*index.indices(self._Length))]
+        except AttributeError:
+            return self._Function(index)
+
+
+
+
+# {{{ dependent dictionary ----------------------------------------------------
+class DependentDictionary(object):
+    def __init__(self, f, start = {}):
+        self._Function = f
+        self._Dictionary = start.copy()
+
+    def copy(self):
+        return DependentDictionary(self._Function, self._Dictionary)
+
+    def __contains__(self, key):
+        try:
+            self[key]
+            return True
+        except KeyError:
+            return False
+
+    def __getitem__(self, key):
+        try:
+            return self._Dictionary[key]
+        except KeyError:
+            return self._Function(self._Dictionary, key)
+
+    def __setitem__(self, key, value):
+        self._Dictionary[key] = value
+
+    def genuineKeys(self):
+        return self._Dictionary.keys()
+
+    def iteritems(self):
+        return self._Dictionary.iteritems()
+
+    def iterkeys(self):
+        return self._Dictionary.iterkeys()
+
+    def itervalues(self):
+        return self._Dictionary.itervalues()
+
+# }}}
+
+# }}}
+
+# {{{ assertive accessors -----------------------------------------------------
+def one(iterable):
+    """Return the first entry of *iterable*. Assert that *iterable* has only
+    that one entry.
+    """
+    it = iter(iterable)
+    try:
+        v = it.next()
+    except StopIteration:
+        raise ValueError, "empty iterable passed to 'one()'"
+
+    def no_more():
+        try:
+            v2 = it.next()
+            raise ValueError, "iterable with more than one entry passed to 'one()'"
+        except StopIteration:
+            return True
+
+    assert no_more()
+
+    return v
+
+
+
+
+def single_valued(iterable, equality_pred=operator.eq):
+    """Return the first entry of *iterable*; Assert that other entries
+    are the same with the first entry of *iterable*.
+    """
+    it = iter(iterable)
+    try:
+        first_item = it.next()
+    except StopIteration:
+        raise ValueError, "empty iterable passed to 'single_valued()'"
+
+    def others_same():
+        for other_item in it:
+            if not equality_pred(other_item, first_item):
+                return False
+        return True
+    assert others_same()
+
+    return first_item
+
+# }}}
+
+# {{{ memoization -------------------------------------------------------------
 @decorator
 def memoize(func, *args):
     # by Michele Simionato
@@ -167,171 +312,10 @@ def memoize_method(method, instance, *args):
 
 
 FunctionValueCache = memoize
-class DictionaryWithDefault(object):
-    def __init__(self, default_value_generator, start = {}):
-        self._Dictionary = dict(start)
-        self._DefaultGenerator = default_value_generator
 
-    def __getitem__(self, index):
-        try:
-            return self._Dictionary[index]
-        except KeyError:
-            value = self._DefaultGenerator(index)
-            self._Dictionary[index] = value
-            return value
+# }}}
 
-    def __setitem__(self, index, value):
-        self._Dictionary[index] = value
-
-    def __contains__(self, item):
-        return True
-
-    def iterkeys(self):
-        return self._Dictionary.iterkeys()
-
-    def __iter__(self):
-        return self._Dictionary.__iter__()
-
-    def iteritems(self):
-        return self._Dictionary.iteritems()
-
-
-    
-class FakeList(object):
-    def __init__(self, f, length):
-        self._Length = length
-        self._Function = f
-
-    def __len__(self):
-        return self._Length
-
-    def __getitem__(self, index):
-        try:
-            return [self._Function(i)
-                    for i in range(*index.indices(self._Length))]
-        except AttributeError:
-            return self._Function(index)
-
-
-
-
-class DependentDictionary(object):
-    def __init__(self, f, start = {}):
-        self._Function = f
-        self._Dictionary = start.copy()
-
-    def copy(self):
-        return DependentDictionary(self._Function, self._Dictionary)
-
-    def __contains__(self, key):
-        try:
-            self[key]
-            return True
-        except KeyError:
-            return False
-
-    def __getitem__(self, key):
-        try:
-            return self._Dictionary[key]
-        except KeyError:
-            return self._Function(self._Dictionary, key)
-
-    def __setitem__(self, key, value):
-        self._Dictionary[key] = value
-    
-    def genuineKeys(self):
-        return self._Dictionary.keys()
-
-    def iteritems(self):
-        return self._Dictionary.iteritems()
-
-    def iterkeys(self):
-        return self._Dictionary.iterkeys()
-
-    def itervalues(self):
-        return self._Dictionary.itervalues()
-
-
-
-
-def add_tuples(t1, t2):
-    return tuple([t1v + t2v for t1v, t2v in zip(t1, t2)])
-
-def negate_tuple(t1):
-    return tuple([-t1v for t1v in t1])
-
-
-
-
-
-def shift(vec, dist):
-    """Return a copy of C{vec} shifted by C{dist}. 
-
-    @postcondition: C{shift(a, i)[j] == a[(i+j) % len(a)]}
-    """
-
-    result = vec[:]
-
-    N = len(vec)
-    dist = dist % N
-
-    # modulo only returns positive distances!
-    if dist > 0:
-        result[dist:] = vec[:N-dist]
-        result[:dist] = vec[N-dist:]
-
-    return result
-
-
-
-
-def one(iterable):
-    """Return the first entry of *iterable*. Assert that *iterable* has only
-    that one entry.
-    """
-    it = iter(iterable)
-    try:
-        v = it.next()
-    except StopIteration:
-        raise ValueError, "empty iterable passed to 'one()'"
-
-    def no_more():
-        try:
-            v2 = it.next()
-            raise ValueError, "iterable with more than one entry passed to 'one()'"
-        except StopIteration:
-            return True
-
-    assert no_more()
-
-    return v
-
-
-
-
-def single_valued(iterable, equality_pred=operator.eq):
-    """Return the first entry of *iterable*; Assert that other entries 
-    are the same with the first entry of *iterable*.
-    """
-    it = iter(iterable)
-    try:
-        first_item = it.next()
-    except StopIteration:
-        raise ValueError, "empty iterable passed to 'single_valued()'"
-
-    def others_same():
-        for other_item in it:
-            if not equality_pred(other_item, first_item):
-                return False
-        return True
-    assert others_same()
-        
-    return first_item
-
-
-
-
-# plotting --------------------------------------------------------------------
+# {{{ plotting ----------------------------------------------------------------
 def write_1d_gnuplot_graph(f, a, b, steps=100, fname=",,f.data", progress = False):
     h = float(b - a)/steps
     gnuplot_file = file(fname, "w")
@@ -407,13 +391,12 @@ def write_gnuplot_graph(f, a, b, steps = 100, fname = ",,f.data", progress = Fal
         if progress:
             sys.stdout.write("\n")
 
+# }}}
 
-
-
-# syntactical sugar -----------------------------------------------------------
+# {{{ syntactical sugar -------------------------------------------------------
 class InfixOperator:
     """Pseudo-infix operators that allow syntax of the kind `op1 <<operator>> op2'.
-    
+
     Following a recipe from
     http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/384122
     """
@@ -449,10 +432,39 @@ def monkeypatch_class(name, bases, namespace):
             setattr(base, name, value)
     return base
 
+# }}}
+
+# {{{ generic utilities -------------------------------------------------------
+def add_tuples(t1, t2):
+    return tuple([t1v + t2v for t1v, t2v in zip(t1, t2)])
+
+def negate_tuple(t1):
+    return tuple([-t1v for t1v in t1])
 
 
 
-# Generic utilities ----------------------------------------------------------
+
+
+def shift(vec, dist):
+    """Return a copy of C{vec} shifted by C{dist}.
+
+    @postcondition: C{shift(a, i)[j] == a[(i+j) % len(a)]}
+    """
+
+    result = vec[:]
+
+    N = len(vec)
+    dist = dist % N
+
+    # modulo only returns positive distances!
+    if dist > 0:
+        result[dist:] = vec[:N-dist]
+        result[:dist] = vec[N-dist:]
+
+    return result
+
+
+
 def len_iterable(iterable):
     return sum(1 for i in iterable)
 
@@ -460,7 +472,7 @@ def len_iterable(iterable):
 
 
 def flatten(list):
-    """For an iterable of sub-iterables, generate each member of each 
+    """For an iterable of sub-iterables, generate each member of each
     sub-iterable in turn, i.e. a flattened version of that super-iterable.
 
     Example: Turn [[a,b,c],[d,e,f]] into [a,b,c,d,e,f].
@@ -483,79 +495,6 @@ def linear_combination(coefficients, vectors):
     for c,v in zip(coefficients, vectors)[1:]:
         result += c*v
     return result
-
-
-
-
-def average(iterable):
-    """Return the average of the values in iterable.
-
-    iterable may not be empty.
-    """
-    it = iterable.__iter__()
-    
-    try:
-        sum = it.next()
-        count = 1
-    except StopIteration:
-        raise ValueError, "empty average"
-
-    for value in it:
-        sum = sum + value
-        count += 1
-
-    return sum/count
-
-
-
-
-class VarianceAggregator:
-    """Online variance calculator.
-    See http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
-    Adheres to pysqlite's aggregate interface.
-    """
-    def __init__(self, entire_pop):
-        self.n = 0
-        self.mean = 0
-        self.m2 = 0
-
-        self.entire_pop = entire_pop
-
-    def step(self, x):
-        self.n += 1
-        delta = x - self.mean
-        self.mean += delta/self.n
-        self.m2 += delta*(x - self.mean)
-
-    def finalize(self):
-        if self.entire_pop:
-            if self.n == 0:
-                return None
-            else:
-                return self.m2/self.n
-        else:
-            if self.n <= 1:
-                return None
-            else:
-                return self.m2/(self.n - 1)
-
-
-
-
-def variance(iterable, entire_pop):
-    v_comp = VarianceAggregator(entire_pop)
-
-    for x in iterable:
-        v_comp.step(x)
-
-    return v_comp.finalize()
-
-
-
-
-def std_deviation(iterable, finite_pop):
-    from math import sqrt
-    return sqrt(variance(iterable, finite_pop))
 
 
 
@@ -668,6 +607,23 @@ except AttributeError:
 
 
 
+
+
+def reverse_dictionary(the_dict):
+    result = {}
+    for key, value in the_dict.iteritems():
+        if value in result:
+            raise RuntimeError, "non-reversible mapping"
+        result[value] = key
+    return result
+
+def set_sum(set_iterable):
+    from operator import or_
+    return reduce(or_, set_iterable, set())
+
+# }}}
+
+# {{{ argmin, argmax ----------------------------------------------------------
 def argmin_f(list, f = lambda x: x):
     # deprecated -- the function has become unnecessary because of
     # generator expressions
@@ -741,16 +697,9 @@ def argmax2(iterable):
             current_max = item
     return current_argmax
 
+# }}}
 
-
-
-def set_sum(set_iterable):
-    from operator import or_
-    return reduce(or_, set_iterable, set())
-
-
-
-
+# {{{ cartesian products etc. -------------------------------------------------
 def cartesian_product(list1, list2):
     for i in list1:
         for j in list2:
@@ -777,20 +726,82 @@ def cartesian_product_sum(list1, list2):
         for j in list2:
             yield i+j
 
+# }}}
+
+# {{{ elementary statistics ---------------------------------------------------
+def average(iterable):
+    """Return the average of the values in iterable.
+
+    iterable may not be empty.
+    """
+    it = iterable.__iter__()
+
+    try:
+        sum = it.next()
+        count = 1
+    except StopIteration:
+        raise ValueError, "empty average"
+
+    for value in it:
+        sum = sum + value
+        count += 1
+
+    return sum/count
 
 
 
-def reverse_dictionary(the_dict):
-    result = {}
-    for key, value in the_dict.iteritems():
-        if value in result:
-            raise RuntimeError, "non-reversible mapping"
-        result[value] = key
-    return result
+
+class VarianceAggregator:
+    """Online variance calculator.
+    See http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+    Adheres to pysqlite's aggregate interface.
+    """
+    def __init__(self, entire_pop):
+        self.n = 0
+        self.mean = 0
+        self.m2 = 0
+
+        self.entire_pop = entire_pop
+
+    def step(self, x):
+        self.n += 1
+        delta = x - self.mean
+        self.mean += delta/self.n
+        self.m2 += delta*(x - self.mean)
+
+    def finalize(self):
+        if self.entire_pop:
+            if self.n == 0:
+                return None
+            else:
+                return self.m2/self.n
+        else:
+            if self.n <= 1:
+                return None
+            else:
+                return self.m2/(self.n - 1)
 
 
 
 
+def variance(iterable, entire_pop):
+    v_comp = VarianceAggregator(entire_pop)
+
+    for x in iterable:
+        v_comp.step(x)
+
+    return v_comp.finalize()
+
+
+
+
+def std_deviation(iterable, finite_pop):
+    from math import sqrt
+    return sqrt(variance(iterable, finite_pop))
+
+# }}}
+
+# {{{ permutations, tuples, integer sequences ---------------------------------
 def wandering_element(length, wanderer=1, landscape=0):
     for i in range(length):
         yield i*(landscape,) + (wanderer,) + (length-1-i)*(landscape,)
@@ -829,7 +840,7 @@ def generate_nonnegative_integer_tuples_below(n, length=None, least=0):
         assert length >= 0
         if length == 0:
             yield ()
-            return 
+            return
 
         next_length = length-1
 
@@ -923,7 +934,7 @@ def generate_permutations(original):
                 yield perm[:i] + original[0:1] + perm[i:]
 
 
-            
+
 
 
 
@@ -938,9 +949,13 @@ def generate_unique_permutations(original):
             had_those.add(perm)
             yield perm
 
+def enumerate_basic_directions(dimensions):
+    coordinate_list = [[0], [1], [-1]]
+    return reduce(cartesian_product_sum, [coordinate_list] * dimensions)[1:]
 
+# }}}
 
-
+# {{{ index mangling ----------------------------------------------------------
 def get_read_from_map_from_permutation(original, permuted):
     """With a permutation given by C{original} and C{permuted},
     generate a list C{rfm} of indices such that
@@ -988,9 +1003,10 @@ def get_write_to_map_from_permutation(original, permuted):
     assert len(where_in_permuted) == len(permuted)
     return tuple(where_in_permuted[oi] for oi in original)
 
+# }}}
 
-
-
+# {{{ formatting --------------------------------------------------------------
+# {{{ table formatting --------------------------------------------------------
 class Table:
     """An ASCII table generator."""
     def __init__(self):
@@ -1021,10 +1037,9 @@ class Table:
 
         return "\n".join(lines)
 
+# }}}
 
-
-
-
+# {{{ histogram formatting ----------------------------------------------------
 def string_histogram(iterable, min_value=None, max_value=None, bin_count=20, width=70,
         bin_starts=None, use_unicode=True):
     if bin_starts is None:
@@ -1074,10 +1089,27 @@ def string_histogram(iterable, min_value=None, max_value=None, bin_count=20, wid
         format_bar(bin_value))
         for bin_start, bin_value in zip(bin_starts, bins))
 
+# }}}
 
+def word_wrap(text, width):
+    # http://code.activestate.com/recipes/148061-one-liner-word-wrap-function/
+    """
+    A word-wrap function that preserves existing line breaks
+    and most spaces in the text. Expects that existing line
+    breaks are posix newlines (\n).
+    """
+    return reduce(lambda line, word, width=width: '%s%s%s' %
+            (line,
+                ' \n'[(len(line)-line.rfind('\n')-1
+                    + len(word.split('\n',1)[0]
+                        ) >= width)],
+                    word),
+            text.split(' ')
+            )
 
+# }}}
 
-# command line interfaces -----------------------------------------------------
+# {{{ command line interfaces -------------------------------------------------
 class CPyUserInterface(object):
     class Parameters(Record):
         pass
@@ -1116,8 +1148,8 @@ class CPyUserInterface(object):
             argv = sys.argv
 
         if len(argv) == 1 or (
-                ("-h" in argv) or 
-                ("help" in argv) or 
+                ("-h" in argv) or
+                ("help" in argv) or
                 ("-help" in argv) or
                 ("--help" in argv)):
             self.show_usage(argv[0])
@@ -1133,13 +1165,13 @@ class CPyUserInterface(object):
             else:
                 exec arg in execenv
 
-        # check if the user set invalid keys 
+        # check if the user set invalid keys
         for added_key in (
-                set(execenv.keys()) 
-                - set(self.variables.keys()) 
+                set(execenv.keys())
+                - set(self.variables.keys())
                 - set(self.constants.keys())):
             if not (added_key.startswith("user_") or added_key.startswith("_")):
-                raise ValueError( 
+                raise ValueError(
                         "invalid setup key: '%s' "
                         "(user variables must start with 'user_' or '_')" % added_key)
 
@@ -1150,10 +1182,9 @@ class CPyUserInterface(object):
     def validate(self, setup):
         pass
 
+# }}}
 
-
-
-# obscure stuff --------------------------------------------------------------
+# {{{ code maintenance --------------------------------------------------------
 class MovedFunctionDeprecationWrapper:
     def __init__(self, f):
         self.f = f
@@ -1166,16 +1197,9 @@ class MovedFunctionDeprecationWrapper:
 
         return self.f(*args, **kwargs)
 
+# }}}
 
-
-
-def enumerate_basic_directions(dimensions):
-    coordinate_list = [[0], [1], [-1]]
-    return reduce(cartesian_product_sum, [coordinate_list] * dimensions)[1:]
-
-
-
-
+# {{{ debugging ---------------------------------------------------------------
 def typedump(val, max_seq=5, special_handlers={}):
     try:
         hdlr = special_handlers[type(val)]
@@ -1194,19 +1218,19 @@ def typedump(val, max_seq=5, special_handlers={}):
             if len(val) > max_seq:
                 return "%s(%s,...)" % (
                         type(val).__name__,
-                        ",".join(typedump(x, max_seq, special_handlers) 
+                        ",".join(typedump(x, max_seq, special_handlers)
                             for x in val[:max_seq]))
             else:
                 return "%s(%s)" % (
                         type(val).__name__,
-                        ",".join(typedump(x, max_seq, special_handlers) 
+                        ",".join(typedump(x, max_seq, special_handlers)
                             for x in val))
         except TypeError:
             return val.__class__.__name__
 
+# }}}
 
-
-
+# {{{ progress bars -----------------------------------------------------------
 class ProgressBar:
     def __init__(self, descr, total, initial=0, length=40):
         import time
@@ -1267,15 +1291,14 @@ class ProgressBar:
         self.set_progress(self.total)
         sys.stderr.write("\n")
 
+# }}}
 
-
-
-# file system related ---------------------------------------------------------
+# {{{ file system related -----------------------------------------------------
 def assert_not_a_file(name):
     import os
     if os.access(name, os.F_OK):
         raise IOError, "file `%s' already exists" % name
-    
+
 
 def _test():
     import doctest
@@ -1296,10 +1319,9 @@ def add_python_path_relative_to_script(rel_path):
 
     sys.path.append(abspath(join(rel_script_dir, rel_path)))
 
+# }}}
 
-
-
-# numpy dtype mangling --------------------------------------------------------
+# {{{ numpy dtype mangling ----------------------------------------------------
 def common_dtype(dtypes, default=None):
     dtypes = list(dtypes)
     if dtypes:
@@ -1348,3 +1370,7 @@ def match_precision(dtype, dtype_to_match):
             return numpy.dtype(numpy.float64)
         else:
             return numpy.dtype(numpy.float32)
+
+# }}}
+
+# vim: foldmethod=marker
