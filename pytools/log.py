@@ -61,6 +61,9 @@ class PostLogQuantity(LogQuantity):
 
 class MultiLogQuantity(object):
     """A source of multiple loggable scalars."""
+
+    sort_weight = 0
+
     def __init__(self, names, units=None, descriptions=None):
         self.names = names
 
