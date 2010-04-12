@@ -23,6 +23,9 @@ def time():
 # abstract logging interface --------------------------------------------------
 class LogQuantity(object):
     """A source of loggable scalars."""
+
+    sort_weight = 0
+
     def __init__(self, name, unit=None, description=None):
         self.name = name
         self.unit = unit
@@ -49,6 +52,8 @@ class LogQuantity(object):
 class PostLogQuantity(LogQuantity):
     """A source of loggable scalars."""
 
+    sort_weight = 0
+
     def prepare_for_tick(self):
         pass
 
@@ -56,6 +61,9 @@ class PostLogQuantity(LogQuantity):
 
 class MultiLogQuantity(object):
     """A source of multiple loggable scalars."""
+
+    sort_weight = 0
+
     def __init__(self, names, units=None, descriptions=None):
         self.names = names
 
@@ -636,9 +644,12 @@ class LogManager(object):
 
         gd = _GatherDescriptor(quantity, interval)
         if isinstance(quantity, PostLogQuantity):
-            self.after_gather_descriptors.append(gd)
+            gd_list = self.after_gather_descriptors
         else:
-            self.before_gather_descriptors.append(gd)
+            gd_list = self.before_gather_descriptors
+
+        gd_list.append(gd)
+        gd_list.sort(key=lambda gd: gd.quantity.sort_weight)
 
         if isinstance(quantity, MultiLogQuantity):
             for name, unit, description, def_agg in zip(
@@ -943,10 +954,8 @@ class _SubTimer:
         self.itimer.add_time(self.elapsed)
         del self.elapsed
 
-class IntervalTimer(LogQuantity):
+class IntervalTimer(PostLogQuantity):
     """Records elapsed times."""
-
-    gather_time = False
 
     def __init__(self, name, description=None):
         LogQuantity.__init__(self, name, "s", description)
@@ -971,7 +980,6 @@ class LogUpdateDuration(LogQuantity):
     """Records how long the last :meth:`LogManager.tick` invocation took."""
 
     # FIXME this is off by one tick
-    gather_time = "before"
 
     def __init__(self, mgr, name="t_log"):
         LogQuantity.__init__(self, name, "s", "Time spent updating the log")
@@ -1026,8 +1034,6 @@ def time_and_count_function(f, timer, counter=None, increment=1):
 class TimestepCounter(LogQuantity):
     """Counts the number of times L{LogManager.tick} is called."""
 
-    gather_time = "before"
-
     def __init__(self, name="step"):
         LogQuantity.__init__(self, name, "1", "Timesteps")
         self.steps = 0
@@ -1040,11 +1046,41 @@ class TimestepCounter(LogQuantity):
 
 
 
-class TimestepDuration(PostLogQuantity):
+class StepToStepDuration(PostLogQuantity):
     """Records the CPU time between invocations of 
     :meth:`LogManager.tick_before` and 
     :meth:`LogManager.tick_after`.
     """
+
+    def __init__(self, name="t_2step"):
+        PostLogQuantity.__init__(self, name, "s", "Step-to-step duration")
+        self.last_start_time = None
+        self.last2_start_time = None
+
+    def prepare_for_tick(self):
+        self.last2_start_time = self.last_start_time
+        self.last_start_time = time()
+
+    def __call__(self):
+        if self.last2_start_time is None:
+            return None
+        else:
+            return self.last_start_time - self.last2_start_time
+
+
+
+
+
+class TimestepDuration(PostLogQuantity):
+    """Records the CPU time between the starts of time steps.
+    :meth:`LogManager.tick_before` and 
+    :meth:`LogManager.tick_after`.
+    """
+
+    # We would like to run last, so that if log gathering takes any
+    # significant time, we catch that, too. (CUDA sync-on-time-taking,
+    # I'm looking at you.)
+    sort_weight = 1000
 
     def __init__(self, name="t_step"):
         PostLogQuantity.__init__(self, name, "s", "Time step duration")
@@ -1100,6 +1136,7 @@ def add_general_quantities(mgr):
     """Add generally applicable L{LogQuantity} objects to C{mgr}."""
 
     mgr.add_quantity(TimestepDuration())
+    mgr.add_quantity(StepToStepDuration())
     mgr.add_quantity(CPUTime())
     mgr.add_quantity(LogUpdateDuration(mgr))
     mgr.add_quantity(TimestepCounter())
