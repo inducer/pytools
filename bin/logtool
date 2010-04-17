@@ -120,7 +120,7 @@ following:
 
             expr_x, expr_y = args.pop(0).split(",")
 
-            from pylab import xlabel, ylabel, plot
+            from matplotlib.pyplot import xlabel, ylabel, plot
             (data_x, descr_x, unit_x), (data_y, descr_y, unit_y) = \
                     logmgr.get_plot_data(expr_x, expr_y,
                             options.start_step, options.end_step)
@@ -205,7 +205,7 @@ following:
                 raise IOError, "file '%s' not found" % cmd
 
     if did_plot:
-        from pylab import show, title, legend, axis, grid, savefig
+        from matplotlib.pyplot import show, title, legend, axis, grid, rc, savefig
         if options.legend_expr or options.legend_descr:
             if options.small_legend:
                 from matplotlib.font_manager import FontProperties
@@ -253,6 +253,7 @@ following:
             unlink(tmpname)
 
         if saveplot_filename:
+            rc("path", simplify=False)
             savefig(saveplot_filename)
 
         if not print_plot and not saveplot_filename:

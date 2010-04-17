@@ -1010,27 +1010,27 @@ def get_write_to_map_from_permutation(original, permuted):
 class Table:
     """An ASCII table generator."""
     def __init__(self):
-        self.Rows = []
+        self.rows = []
 
     def add_row(self, row):
-        self.Rows.append([str(i) for i in row])
+        self.rows.append([str(i) for i in row])
 
     def __str__(self):
-        columns = len(self.Rows[0])
-        col_widths = [max(len(row[i]) for row in self.Rows)
+        columns = len(self.rows[0])
+        col_widths = [max(len(row[i]) for row in self.rows)
                       for i in range(columns)]
 
         lines = [
             "|".join([cell.ljust(col_width)
                       for cell, col_width in zip(row, col_widths)])
-            for row in self.Rows]
+            for row in self.rows]
         lines[1:1] = ["+".join("-"*col_width
                               for col_width in col_widths)]
         return "\n".join(lines)
 
     def latex(self, skip_lines=0, hline_after=[]):
         lines = []
-        for row_nr, row in list(enumerate(self.Rows))[skip_lines:]:
+        for row_nr, row in list(enumerate(self.rows))[skip_lines:]:
             lines.append(" & ".join(row)+r" \\")
             if row_nr in hline_after:
                 lines.append(r"\hline")
