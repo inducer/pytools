@@ -1,7 +1,3 @@
-# Python spatial binary tree
-# by Andreas Klockner
-
-
 from __future__ import division
 
 
@@ -59,9 +55,14 @@ class SpatialBinaryTreeBucket:
     """
 
     def __init__(self, bottom_left, top_right):
+        """:param bottom_left: A :mod: 'numpy' array of the minimal coordinates
+        of the box being partitioned.
+        :param top_right: A :mod: 'numpy' array of the maximal coordinates of
+        the box being partitioned."""
 
-        # elements is (element,bbox), where element is an object which contains data needed to 
-        # access and perform necessary operations in the subdomain of interest.
+        # elements is (element,bbox), where element is a list which contains
+        # data needed to access and perform necessary operations in the 
+        # subdomain of interest. 
         # bbox is the bounding box which completely contains the element.
         self.elements = []
 
@@ -74,6 +75,14 @@ class SpatialBinaryTreeBucket:
         self.elements = []
 
     def insert(self, element, bbox):
+
+        def insert_into_subdivision(element, bbox):
+            # If a bbox intersects multiple buckets, it will be placed in 
+            # all intersecting buckets
+            for bucket in self.all_buckets:
+                if do_boxes_intersect((bucket.bottom_left, bucket.top_right), bbox):
+                    bucket.insert(element, bbox)
+
         (dimensions,) = self.bottom_left.shape
         if self.buckets is None:
             # No subdivisions yet.
@@ -85,23 +94,20 @@ class SpatialBinaryTreeBucket:
 
                 # Move all elements from the full bucket into the new finer ones
                 for el, el_bbox in self.elements:
-                    self.insert_into_subdivision(el, el_bbox)
+                    insert_into_subdivision(el, el_bbox)
 
-                # Free up some memory. Elements are now stored in the subdivision, so we don't need them here any more.
+                # Free up some memory. Elements are now stored in the 
+                # subdivision, so we don't need them here any more.
                 del self.elements
 
-                self.insert_into_subdivision(element, bbox)
+                insert_into_subdivision(element, bbox)
             else:
                 # Simple:
                 self.elements.append((element, bbox))
-        else: # Go find which sudivision to place element
-            self.insert_into_subdivision(element, bbox)
+        else: 
+            # Go find which sudivision to place element
+            insert_into_subdivision(element, bbox)
 
-    def insert_into_subdivision(self, element, bbox):
-        # If a bbox intersects multiple buckets, it will be placed in all intersecting buckets
-        for bucket in self.all_buckets:
-            if do_boxes_intersect((bucket.bottom_left, bucket.top_right), bbox):
-                bucket.insert(element, bbox)
 
     def generate_matches(self, point):
         if self.buckets:
