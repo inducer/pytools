@@ -52,6 +52,14 @@ class SpatialBinaryTreeBucket:
     """This class represents one bucket in a spatial binary tree.
     It automatically decides whether it needs to create more subdivisions
     beneath itself or not.
+
+    A few important objects are:
+
+    elements is (element,bbox), where element is a list which contains
+    data needed to access and perform necessary operations in the subdomain
+    of interest. 
+
+    bbox is the bounding box which completely contains the subdomain.
     """
 
     def __init__(self, bottom_left, top_right):
@@ -60,10 +68,6 @@ class SpatialBinaryTreeBucket:
         :param top_right: A :mod: 'numpy' array of the maximal coordinates of
         the box being partitioned."""
 
-        # elements is (element,bbox), where element is a list which contains
-        # data needed to access and perform necessary operations in the 
-        # subdomain of interest. 
-        # bbox is the bounding box which completely contains the element.
         self.elements = []
 
         self.bottom_left = bottom_left
@@ -75,10 +79,11 @@ class SpatialBinaryTreeBucket:
         self.elements = []
 
     def insert(self, element, bbox):
+        """If a bbox intersects multiple buckets, it will be placed in
+        all intersecting buckets.
+        """
 
         def insert_into_subdivision(element, bbox):
-            # If a bbox intersects multiple buckets, it will be placed in 
-            # all intersecting buckets
             for bucket in self.all_buckets:
                 if do_boxes_intersect((bucket.bottom_left, bucket.top_right), bbox):
                     bucket.insert(element, bbox)
