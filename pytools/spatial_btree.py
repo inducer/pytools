@@ -52,14 +52,6 @@ class SpatialBinaryTreeBucket:
     """This class represents one bucket in a spatial binary tree.
     It automatically decides whether it needs to create more subdivisions
     beneath itself or not.
-
-    A few important objects are:
-
-    elements is (element,bbox), where element is a list which contains
-    data needed to access and perform necessary operations in the subdomain
-    of interest. 
-
-    bbox is the bounding box which completely contains the subdomain.
     """
 
     def __init__(self, bottom_left, top_right):
@@ -79,8 +71,13 @@ class SpatialBinaryTreeBucket:
         self.elements = []
 
     def insert(self, element, bbox):
-        """If a bbox intersects multiple buckets, it will be placed in
-        all intersecting buckets.
+        """Insert an element into the spatial tree. 
+	:param element: the element to be stored in the retrieval data structure. 
+	It is treated as opaque and no assumptions are made on it. 
+	:param bbox: A bounding box supplied as a tuple *lower_left, upper_right* 
+	of :mod:`numpy` vectors, such that *(lower_right <= upper_right).all()*. 
+
+	Despite these names, the bounding box (and this entire data structure) may be of any dimension. 
         """
 
         def insert_into_subdivision(element, bbox):
