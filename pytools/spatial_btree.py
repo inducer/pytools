@@ -52,6 +52,10 @@ class SpatialBinaryTreeBucket:
     """This class represents one bucket in a spatial binary tree.
     It automatically decides whether it needs to create more subdivisions
     beneath itself or not.
+
+    :ivar elements: a list of tuples *(element, bbox)* where bbox is again
+      a tuple *(lower_left, upper_right)* of :class:`numpy.ndarray` instances
+      satisfying *(lower_right <= upper_right).all()*.
     """
 
     def __init__(self, bottom_left, top_right):
@@ -71,13 +75,17 @@ class SpatialBinaryTreeBucket:
         self.elements = []
 
     def insert(self, element, bbox):
-        """Insert an element into the spatial tree. 
-	:param element: the element to be stored in the retrieval data structure. 
-	It is treated as opaque and no assumptions are made on it. 
-	:param bbox: A bounding box supplied as a tuple *lower_left, upper_right* 
-	of :mod:`numpy` vectors, such that *(lower_right <= upper_right).all()*. 
+        """Insert an element into the spatial tree.
 
-	Despite these names, the bounding box (and this entire data structure) may be of any dimension. 
+        :param element: the element to be stored in the retrieval data
+        structure.  It is treated as opaque and no assumptions are made on it.
+
+        :param bbox: A bounding box supplied as a tuple *lower_left,
+        upper_right* of :mod:`numpy` vectors, such that *(lower_right <=
+        upper_right).all()*.
+
+        Despite these names, the bounding box (and this entire data structure)
+        may be of any dimension.
         """
 
         def insert_into_subdivision(element, bbox):
@@ -98,7 +106,7 @@ class SpatialBinaryTreeBucket:
                 for el, el_bbox in self.elements:
                     insert_into_subdivision(el, el_bbox)
 
-                # Free up some memory. Elements are now stored in the 
+                # Free up some memory. Elements are now stored in the
                 # subdivision, so we don't need them here any more.
                 del self.elements
 
@@ -106,7 +114,7 @@ class SpatialBinaryTreeBucket:
             else:
                 # Simple:
                 self.elements.append((element, bbox))
-        else: 
+        else:
             # Go find which sudivision to place element
             insert_into_subdivision(element, bbox)
 
