@@ -1,3 +1,5 @@
+"""See pytools.prefork for this module's reason for being."""
+
 import mpi4py.rc
 
 mpi4py.rc.initialize = False
