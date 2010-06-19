@@ -1,8 +1,18 @@
 from __future__ import division
+
 import sys
 import operator
 import types
+
 from pytools.decorator import decorator
+
+try:
+    decorator_module = __import__("decorator", level=0)
+except TypeError:
+    # this must be Python 2.4
+    my_decorator = decorator
+else:
+    my_decorator = decorator_module.decorator
 
 
 
@@ -272,7 +282,7 @@ def single_valued(iterable, equality_pred=operator.eq):
 # }}}
 
 # {{{ memoization -------------------------------------------------------------
-@decorator
+@my_decorator
 def memoize(func, *args):
     # by Michele Simionato
     # http://www.phyast.pitt.edu/~micheles/python/
@@ -294,7 +304,7 @@ FunctionValueCache = memoize
 
 
 
-@decorator
+@my_decorator
 def memoize_method(method, instance, *args):
     dicname = "_memoize_dic_"+method.__name__
     try:

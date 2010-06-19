@@ -123,6 +123,11 @@ def decorator(caller, func=None):
     two arguments. In this casem ``decorator(caller, func)`` is just a
     shortcut for ``decorator(caller)(func)``.
     """
+    from warnings import warn
+    warn("pytools.decorator is deprecated and will be removed in pytools 12. "
+            "Use the 'decorator' module directly instead.",
+            DeprecationWarning, stacklevel=2)
+
     if func is None: # return a decorator function
         return update_wrapper(lambda f : _decorator(caller, f), caller)
     else: # return a decorated function
