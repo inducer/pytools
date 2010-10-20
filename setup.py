@@ -6,6 +6,12 @@ distribute_setup.use_setuptools()
 
 from setuptools import setup
 
+try:
+    from distutils.command.build_py import build_py_2to3 as build_py
+except ImportError:
+    # 2.x
+    from distutils.command.build_py import build_py
+
 setup(name="pytools",
       version="11",
       description="A collection of tools for Python",
@@ -39,10 +45,12 @@ setup(name="pytools",
         'Topic :: Utilities',
         ],
 
-      author=u"Andreas Kloeckner",
+      author="Andreas Kloeckner",
       url="http://pypi.python.org/pypi/pytools",
       scripts=["bin/logtool", "bin/runalyzer-gather", "bin/runalyzer"],
       author_email="inform@tiker.net",
       license = "MIT",
       packages=["pytools"],
-     )
+
+      # 2to3 invocation
+      cmdclass={'build_py': build_py})
