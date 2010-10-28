@@ -1,3 +1,60 @@
+from pytools import memoize
+
+
+
+
+# {{{ debug files -------------------------------------------------------------
+
+def make_unique_filesystem_object(stem, extension="", directory="",
+        creator=None):
+    """
+    :param extension: needs a leading dot.
+    :param directory: must not have a trailing slash.
+    """
+    from os.path import join
+    import os
+
+    if creator is None:
+        def creator(name):
+            return os.fdopen(os.open(name,
+                    os.O_CREAT | os.O_WRONLY | os.O_EXCL, 0444), "w")
+
+    i = 0
+    while True:
+        fname = join(directory, "%s-%d%s" % (stem, i, extension))
+        try:
+            return creator(fname)
+        except OSError, e:
+            i += 1
+
+
+
+
+@memoize
+def get_run_debug_directory():
+    def creator(name):
+        from os import mkdir
+        mkdir(name)
+        return name
+
+    return make_unique_filesystem_object("run-debug", creator=creator)
+
+
+
+
+def open_unique_debug_file(stem, extension=""):
+    """
+    :param extension: needs a leading dot.
+    """
+    return make_unique_filesystem_object(
+            stem, extension, get_run_debug_directory())
+
+# }}}
+
+
+
+
+# {{{ refcount debugging ------------------------------------------------------
 class RefDebugQuit(Exception):
     pass
 
@@ -81,4 +138,6 @@ def refdebug(obj, top_level=True, exclude=[]):
         finally:
             print "<--------------"
 
+# }}}
 
+# vim: foldmethod=marker
