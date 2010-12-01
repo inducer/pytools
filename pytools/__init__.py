@@ -27,6 +27,20 @@ def delta(x,y):
 
 
 
+def levi_civita(tup):
+    """Compute an entry of the Levi-Civita tensor for the indices *tuple*."""
+    if len(tup) == 2:
+        i,j = tup
+        return j-i
+    if len(tup) == 3:
+        i,j,k = tup
+        return (j-i)*(k-i)*(k-j)/2
+    else:
+        raise NotImplementedError
+
+
+
+
 def factorial(n):
     from operator import mul
     assert n == int(n)
