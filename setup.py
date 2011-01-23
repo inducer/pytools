@@ -13,7 +13,7 @@ except ImportError:
     from distutils.command.build_py import build_py
 
 setup(name="pytools",
-      version="11",
+      version="2011.1",
       description="A collection of tools for Python",
       long_description="""
       Pytools is a big bag of things that are "missing" from the Python standard
@@ -47,7 +47,6 @@ setup(name="pytools",
 
       author="Andreas Kloeckner",
       url="http://pypi.python.org/pypi/pytools",
-      scripts=["bin/logtool", "bin/runalyzer-gather", "bin/runalyzer"],
       author_email="inform@tiker.net",
       license = "MIT",
       packages=["pytools"],
