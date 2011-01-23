@@ -44,7 +44,7 @@ class EOCRecorder(object):
                 abscissae[i:i+gliding_mean], errors[i:i+gliding_mean])
         return result
 
-    def pretty_print(self, abscissa_label="N", error_label="Error", gliding_mean=2):
+    def pretty_print(self, abscissa_label="h", error_label="Error", gliding_mean=2):
         from pytools import Table
 
         tbl = Table()
