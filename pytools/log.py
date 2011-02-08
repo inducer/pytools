@@ -304,7 +304,8 @@ class LogManager(object):
     (deprecated) are available for looking at the data in a saved log.
     """
 
-    def __init__(self, filename=None, mode="r", mpi_comm=None, capture_warnings=True):
+    def __init__(self, filename=None, mode="r", mpi_comm=None, capture_warnings=True,
+            commit_interval=90):
         """Initialize this log manager instance.
 
         :param filename: If given, the filename to which this log is bound.
@@ -315,6 +316,8 @@ class LogManager(object):
           synchronized to the head node, which then writes them out to disk.
         :param capture_warnings: Tap the Python warnings facility and save warnings
           to the log file.
+        :param commit_interval: actually perform a commit only every N times a commit
+          is requested.
         """
 
         assert isinstance(mode, basestring), "mode must be a string"
@@ -326,6 +329,9 @@ class LogManager(object):
         self.before_gather_descriptors = []
         self.after_gather_descriptors = []
         self.tick_count = 0
+
+        self.commit_interval = commit_interval
+        self.commit_countdown = commit_interval
 
         self.constants = {}
 
@@ -529,7 +535,7 @@ class LogManager(object):
             self.db_conn.execute("insert into constants values (?,?)",
                     (name, value))
 
-        self.db_conn.commit()
+        self._commit()
 
     def _insert_datapoint(self, name, value):
         if value is None:
@@ -616,6 +622,12 @@ class LogManager(object):
 
         self.t_log += time() - tick_start_time
 
+    def _commit(self):
+        self.commit_countdown -= 1
+        if self.commit_countdown <= 0:
+            self.commit_countdown = self.commit_interval
+            self.db_conn.commit()
+
     def save(self):
         from sqlite3 import OperationalError
         try:
@@ -640,7 +652,7 @@ class LogManager(object):
             self.db_conn.execute("""create table %s
               (step integer, rank integer, value real)""" % name)
 
-            self.db_conn.commit()
+            self._commit()
 
         gd = _GatherDescriptor(quantity, interval)
         if isinstance(quantity, PostLogQuantity):
