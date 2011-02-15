@@ -45,6 +45,10 @@ setup(name="pytools",
         'Topic :: Utilities',
         ],
 
+      install_requires=[
+          "decorator>=3.2.0"
+          ],
+
       author="Andreas Kloeckner",
       url="http://pypi.python.org/pypi/pytools",
       author_email="inform@tiker.net",
