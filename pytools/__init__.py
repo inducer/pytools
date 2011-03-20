@@ -645,6 +645,43 @@ def set_sum(set_iterable):
     from operator import or_
     return reduce(or_, set_iterable, set())
 
+
+
+
+def div_ceil(nr, dr):
+    return (nr + dr -1) // dr
+
+
+
+
+def uniform_interval_splitting(n, granularity, max_intervals):
+    """ Return *(interval_size, num_intervals)* such that::
+
+        num_intervals * interval_size >= n
+
+    and::
+
+        (num_intervals - 1) * interval_size < n
+
+    and *interval_size* is a multiple of *granularity*.
+    """
+    # ported from Thrust -- minor Apache v2 license violation
+
+    grains  = div_ceil(n, granularity)
+
+    # one grain per interval
+    if grains <= max_intervals:
+        return granularity, grains
+
+    grains_per_interval = div_ceil(grains, max_intervals)
+    interval_size = grains_per_interval * granularity
+    num_intervals = div_ceil(n, interval_size)
+
+    return interval_size, num_intervals
+
+
+
+
 # }}}
 
 # {{{ argmin, argmax ----------------------------------------------------------
