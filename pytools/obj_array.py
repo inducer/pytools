@@ -127,8 +127,14 @@ def log_shape(array):
 
 
 
-def with_object_array_or_scalar(f, field):
-    ls = log_shape(field)
+def with_object_array_or_scalar(f, field, obj_array_only=False):
+    if obj_array_only:
+        if isinstance(field, numpy.ndarray) and numpy.dtype == object:
+	    ls = field.shape
+	else:
+	    ls = ()
+    else:
+        ls = log_shape(field)
     if ls != ():
         from pytools import indices_in_shape
         result = numpy.zeros(ls, dtype=object)
