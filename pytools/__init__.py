@@ -1029,6 +1029,68 @@ def get_write_to_map_from_permutation(original, permuted):
 
 # }}}
 
+# {{{ graph algorithms
+
+def a_star(initial_state, goal_state, neighbor_map,
+        estimate_remaining_cost=None,
+        get_step_cost=lambda x, y: 1):
+    """
+    With the default cost and heuristic, this amounts to Dijkstra's algorithm.
+    """
+
+    from heapq import heappop, heappush
+
+    if estimate_remaining_cost is None:
+        def estimate_remaining_cost(x):
+            if x != goal_state:
+                return 1
+            else:
+                return 0
+
+    class AStarNode(object):
+        __slots__ = ["state", "parent", "path_cost"]
+        def __init__(self, state, parent, path_cost):
+            self.state = state
+            self.parent = parent
+            self.path_cost = path_cost
+
+    inf = float("inf")
+    init_remcost = estimate_remaining_cost(initial_state)
+    assert init_remcost != inf
+
+    queue = [(init_remcost, AStarNode(initial_state, parent=None, path_cost=0))]
+    visited_states = set()
+
+    while len(queue):
+        _, top = heappop(queue)
+        visited_states.add(top.state)
+
+        if top.state == goal_state:
+            result = []
+            it = top
+            while it is not None:
+                result.append(it.state)
+                it = it.parent
+            return result[::-1]
+
+        for state in neighbor_map[top.state]:
+            if state in visited_states:
+                continue
+
+            remaining_cost = estimate_remaining_cost(state)
+            if remaining_cost == inf:
+                continue
+            step_cost = get_step_cost(top, state)
+
+            estimated_path_cost = top.path_cost+step_cost+remaining_cost
+            heappush(queue, 
+                (estimated_path_cost, 
+                    AStarNode(state, top, path_cost=top.path_cost + step_cost)))
+
+    raise RuntimeError("no solution")
+
+# }}}
+
 # {{{ formatting --------------------------------------------------------------
 # {{{ table formatting --------------------------------------------------------
 class Table:
