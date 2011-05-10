@@ -162,3 +162,9 @@ def oarray_real(ary):
 
 def oarray_real_copy(ary):
     return with_object_array_or_scalar(lambda x: x.real.copy(), ary)
+
+
+
+
+def oarray_imag_copy(ary):
+    return with_object_array_or_scalar(lambda x: x.imag.copy(), ary)
