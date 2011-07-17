@@ -637,7 +637,8 @@ def reverse_dictionary(the_dict):
     result = {}
     for key, value in the_dict.iteritems():
         if value in result:
-            raise RuntimeError, "non-reversible mapping"
+            raise RuntimeError(
+                    "non-reversible mapping, duplicate key '%s'" % value)
         result[value] = key
     return result
 
