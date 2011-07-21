@@ -1353,6 +1353,37 @@ def typedump(val, max_seq=5, special_handlers={}):
         except TypeError:
             return val.__class__.__name__
 
+
+
+
+def invoke_editor(s, filename="edit.txt", descr="the file"):
+    from tempfile import mkdtemp
+    tempdir = mkdtemp()
+
+    from os.path import join
+    full_name = join(tempdir, filename)
+
+    outf = open(full_name, "w")
+    outf.write(str(s))
+    outf.close()
+
+    import os
+    if "EDITOR" in os.environ:
+        from subprocess import Popen
+        p = Popen([os.environ["EDITOR"], full_name])
+        os.waitpid(p.pid, 0)[1]
+    else:
+        print "(Set the EDITOR environment variable to be " \
+                "dropped directly into an editor next time.)"
+        raw_input("Edit %s at %s now, then hit [Enter]:"
+                % (descr, full_name))
+
+    inf = open(full_name, "r")
+    result = inf.read()
+    inf.close()
+
+    return result
+
 # }}}
 
 # {{{ progress bars -----------------------------------------------------------
