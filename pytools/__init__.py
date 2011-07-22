@@ -650,7 +650,7 @@ def set_sum(set_iterable):
 
 
 def div_ceil(nr, dr):
-    return (nr + dr -1) // dr
+    return -(-nr // dr)
 
 
 
