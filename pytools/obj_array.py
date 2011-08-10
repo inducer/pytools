@@ -129,7 +129,7 @@ def log_shape(array):
 
 def with_object_array_or_scalar(f, field, obj_array_only=False):
     if obj_array_only:
-        if isinstance(field, numpy.ndarray) and numpy.dtype == object:
+        if is_obj_array(field):
             ls = field.shape
         else:
             ls = ()
