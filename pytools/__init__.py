@@ -730,7 +730,7 @@ def argmax(iterable):
 
 
 
-def argmin2(iterable):
+def argmin2(iterable, return_value=False):
     it = iter(iterable)
     try:
         current_argmin, current_min = it.next()
@@ -741,12 +741,16 @@ def argmin2(iterable):
         if item < current_min:
             current_argmin = arg
             current_min = item
-    return current_argmin
+
+    if return_value:
+        return current_argmin, current_min
+    else:
+        return current_argmin
 
 
 
 
-def argmax2(iterable):
+def argmax2(iterable, return_value=False):
     it = iter(iterable)
     try:
         current_argmax, current_max = it.next()
@@ -757,7 +761,11 @@ def argmax2(iterable):
         if item > current_max:
             current_argmax = arg
             current_max = item
-    return current_argmax
+
+    if return_value:
+        return current_argmax, current_max
+    else:
+        return current_argmax
 
 # }}}
 
