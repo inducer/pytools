@@ -30,7 +30,7 @@ class DirectForker:
     def call_capture_stdout(cmdline, cwd=None):
         from subprocess import Popen, PIPE
         try:
-            return Popen(cmdline, cwd=cwd, stdout=PIPE).communicate()[0]
+            return Popen(cmdline, cwd=cwd, stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate()[0]
         except OSError, e:
             raise ExecError("error invoking '%s': %s"
                     % ( " ".join(cmdline), e))
@@ -42,7 +42,7 @@ class DirectForker:
         """
         from subprocess import Popen, PIPE
         try:
-            popen = Popen(cmdline, cwd=cwd, stdout=PIPE, stderr=PIPE)
+            popen = Popen(cmdline, cwd=cwd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
             stdout_data, stderr_data = popen.communicate()
             if error_on_nonzero and popen.returncode:
                 raise ExecError("status %d invoking '%s': %s"
