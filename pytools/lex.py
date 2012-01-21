@@ -33,9 +33,9 @@ class ParseError:
 
 
 class RE:
-    def __init__(self, str):
+    def __init__(self, str, flags=0):
         self.Content = str
-        self.RE = re.compile(str)
+        self.RE = re.compile(str, flags)
 
     def __repr__(self):
         return "RE(%s)" % self.Content
