@@ -683,6 +683,58 @@ def uniform_interval_splitting(n, granularity, max_intervals):
 
 
 
+def find_max_where(predicate, prec=1e-5, initial_guess=1, fail_bound=1e38):
+    """Find the largest value for which a predicate is true,
+    along a half-line. 0 is assumed to be the lower bound."""
+
+    # {{{ establish bracket
+
+    mag = 1
+
+    if predicate(mag):
+        mag *= 2
+        while predicate(mag):
+            mag *= 2
+
+            if mag > fail_bound:
+                raise RuntimeError("predicate appears to be true "
+                        "everywhere, up to %g" % fail_bound)
+
+        lower_true = mag/2
+        upper_false = mag
+    else:
+        mag /= 2
+
+        while predicate(mag):
+            mag /= 2
+
+            if mag < prec:
+                return mag
+
+        lower_true = mag
+        upper_false = mag*2
+
+    # }}}
+
+    # {{{ refine
+
+    # Refine a bracket between *lower_true*, where the predicate is true,
+    # and *upper_false*, where it is false, until *prec* is satisfied.
+
+    assert predicate(lower_true)
+    assert not predicate(upper_false)
+
+    while abs(lower_true-upper_false) > prec:
+        mid = (lower_true+upper_false)/2
+        if predicate(mid):
+            lower_true = mid
+        else:
+            upper_false = mid
+    else:
+        return lower_true
+
+    # }}}
+
 # }}}
 
 # {{{ argmin, argmax ----------------------------------------------------------
@@ -1138,6 +1190,7 @@ def a_star(initial_state, goal_state, neighbor_map,
 # }}}
 
 # {{{ formatting --------------------------------------------------------------
+
 # {{{ table formatting --------------------------------------------------------
 class Table:
     """An ASCII table generator."""
@@ -1243,6 +1296,7 @@ def word_wrap(text, width, wrap_using="\n"):
 # }}}
 
 # {{{ command line interfaces -------------------------------------------------
+
 class CPyUserInterface(object):
     class Parameters(Record):
         pass
@@ -1318,6 +1372,7 @@ class CPyUserInterface(object):
 # }}}
 
 # {{{ code maintenance --------------------------------------------------------
+
 class MovedFunctionDeprecationWrapper:
     def __init__(self, f):
         self.f = f
@@ -1333,6 +1388,7 @@ class MovedFunctionDeprecationWrapper:
 # }}}
 
 # {{{ debugging ---------------------------------------------------------------
+
 def typedump(val, max_seq=5, special_handlers={}):
     try:
         hdlr = special_handlers[type(val)]
@@ -1464,16 +1520,6 @@ def assert_not_a_file(name):
         raise IOError, "file `%s' already exists" % name
 
 
-def _test():
-    import doctest
-    doctest.testmod()
-
-if __name__ == "__main__":
-    _test()
-
-
-
-
 def add_python_path_relative_to_script(rel_path):
     import sys
     from os.path import dirname, join, abspath
@@ -1536,5 +1582,15 @@ def match_precision(dtype, dtype_to_match):
             return numpy.dtype(numpy.float32)
 
 # }}}
+
+
+
+
+def _test():
+    import doctest
+    doctest.testmod()
+
+if __name__ == "__main__":
+    _test()
 
 # vim: foldmethod=marker
