@@ -705,7 +705,7 @@ def find_max_where(predicate, prec=1e-5, initial_guess=1, fail_bound=1e38):
     else:
         mag /= 2
 
-        while predicate(mag):
+        while not predicate(mag):
             mag /= 2
 
             if mag < prec:
