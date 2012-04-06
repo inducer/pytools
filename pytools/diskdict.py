@@ -15,7 +15,8 @@ class DiskDict(object):
     So don't use this class for data that you absolutely *have* to be able
     to retrieve. It's fine for caches and the like, though.
     """
-    def __init__(self, dbfilename, version_base=(), dep_modules=[]):
+    def __init__(self, dbfilename, version_base=(), dep_modules=[],
+            commit_interval=1):
         self.db_conn = sqlite.connect(dbfilename, timeout=30)
 
         try:
@@ -24,11 +25,11 @@ class DiskDict(object):
             self.db_conn.execute("""
                   create table data (
                     id integer primary key autoincrement,
-                    key_hash integer, 
-                    key_pickle blob, 
-                    version_hash integer, 
-                    version_pickle blob, 
-                    when_inserted timestamp default current_timestamp, 
+                    key_hash integer,
+                    key_pickle blob,
+                    version_hash integer,
+                    version_pickle blob,
+                    when_inserted timestamp default current_timestamp,
                     result_pickle blob)""")
 
         def mtime(file):
@@ -47,6 +48,9 @@ class DiskDict(object):
 
         self.cache = {}
 
+        self.commit_interval = commit_interval
+        self.commit_countdown = self.commit_interval
+
     def __contains__(self, key):
         if key in self.cache:
             return True
@@ -57,7 +61,7 @@ class DiskDict(object):
                     " where key_hash = ? and version_hash = ?",
                     (hash(key), self.version_hash)):
                 if loads(str(key_pickle)) == key and loads(str(version_pickle)) == self.version:
-                    result = loads(str(result_pickle)) 
+                    result = loads(str(result_pickle))
                     self.cache[key] = result
                     return True
 
@@ -73,7 +77,7 @@ class DiskDict(object):
                     " where key_hash = ? and version_hash = ?",
                     (hash(key), self.version_hash)):
                 if loads(str(key_pickle)) == key and loads(str(version_pickle)) == self.version:
-                    result = loads(str(result_pickle)) 
+                    result = loads(str(result_pickle))
                     self.cache[key] = result
                     return result
 
@@ -90,8 +94,12 @@ class DiskDict(object):
                 (hash(key), self.version_hash)):
             if loads(key_pickle) == key and loads(version_pickle) == self.version:
                 self.db_conn.execute("delete from data where id = ?", (item_id,))
-        self.db_conn.commit()
-             
+
+        self.commit_countdown -= 1
+        if self.commit_countdown <= 0:
+            self.commit_countdown = self.commit_interval
+            self.db_conn.commit()
+
     def __setitem__(self, key, value):
         del self[key]
 
@@ -101,10 +109,14 @@ class DiskDict(object):
         self.db_conn.execute("insert into data"
                 " (key_hash, key_pickle, version_hash, version_pickle, result_pickle)"
                 " values (?,?,?,?,?)",
-                (hash(key), sqlite.Binary(dumps(key)), 
+                (hash(key), sqlite.Binary(dumps(key)),
                     self.version_hash, self.version_pickle,
                     sqlite.Binary(dumps(value))))
-        self.db_conn.commit()
+
+        self.commit_countdown -= 1
+        if self.commit_countdown <= 0:
+            self.commit_countdown = self.commit_interval
+            self.db_conn.commit()
 
 
 
@@ -116,6 +128,6 @@ except ImportError:
         from pysqlite2 import dbapi2 as sqlite
     except ImportError:
         import warnings
-        warnings.warn("DiskDict will memory-only: "
+        warnings.warn("DiskDict will be memory-only: "
                 "a usable version of sqlite was not found.")
         DiskDict = dict
