@@ -241,6 +241,20 @@ def _get_unique_id():
 
 
 
+def _get_random_suffix(n):
+    characters = (
+            [chr(65+i) for i in range(26)]
+            + [chr(97+i) for i in range(26)]
+            + [chr(48+i) for i in range(10)])
+
+    from random import choice
+    return "".join(choice(characters) for i in xrange(n))
+
+
+
+
+
+
 def _set_up_schema(db_conn):
     # initialize new database
     db_conn.execute("""
@@ -271,8 +285,8 @@ def _set_up_schema(db_conn):
 
 class LogManager(object):
     """A parallel-capable diagnostic time-series logging facility.
-    It is meant to log data from a computation, with certain log 
-    quantities available before a cycle, and certain other ones 
+    It is meant to log data from a computation, with certain log
+    quantities available before a cycle, and certain other ones
     afterwards. A timeline of invocations looks as follows::
 
         tick_before()
@@ -311,7 +325,8 @@ class LogManager(object):
         :param filename: If given, the filename to which this log is bound.
           If this database exists, the current state is loaded from it.
         :param mode: One of "w", "r" for write, read. "w" assumes that the
-          database is initially empty.
+          database is initially empty. May also be "wu" to indicate that
+          a unique filename should be chosen automatically.
         :arg mpi_comm: An C{mpi4py} communicator. If given, logs are periodically
           synchronized to the head node, which then writes them out to disk.
         :param capture_warnings: Tap the Python warnings facility and save warnings
@@ -321,8 +336,7 @@ class LogManager(object):
         """
 
         assert isinstance(mode, basestring), "mode must be a string"
-        mode = mode[0]
-        assert mode in ["w", "r"], "invalid mode"
+        assert mode in ["w", "r", "wu"], "invalid mode"
 
         self.quantity_data = {}
         self.last_values = {}
@@ -372,36 +386,49 @@ class LogManager(object):
             if self.is_parallel:
                 filename += "-rank%d" % self.rank
 
-        self.db_conn = sqlite.connect(filename, timeout=30)
-        self.mode = mode
-        try:
-            self.db_conn.execute("select * from quantities;")
-        except sqlite.OperationalError:
-            # we're building a new database
-            if mode == "r":
-                raise RuntimeError, "Log database '%s' not found" % filename
+        while True:
+            suffix = ""
 
-            self.schema_version = _set_up_schema(self.db_conn)
-            self.set_constant("schema_version", self.schema_version)
+            if mode == "wu":
+                suffix = "-"+_get_random_suffix(6)
 
-            self.set_constant("is_parallel", self.is_parallel)
+            self.db_conn = sqlite.connect(filename+suffix, timeout=30)
+            self.mode = mode
+            try:
+                self.db_conn.execute("select * from quantities;")
+            except sqlite.OperationalError:
+                # we're building a new database
+                if mode == "r":
+                    raise RuntimeError, "Log database '%s' not found" % filename
 
-            # set globally unique run_id
-            if self.is_parallel:
-                self.set_constant("unique_run_id",
-                        self.mpi_comm.bcast(_get_unique_id(), root=self.head_rank))
+                self.schema_version = _set_up_schema(self.db_conn)
+                self.set_constant("schema_version", self.schema_version)
+
+                self.set_constant("is_parallel", self.is_parallel)
+
+                # set globally unique run_id
+                if self.is_parallel:
+                    self.set_constant("unique_run_id",
+                            self.mpi_comm.bcast(_get_unique_id(), root=self.head_rank))
+                else:
+                    self.set_constant("unique_run_id", _get_unique_id())
+
+                if self.is_parallel:
+                    self.set_constant("rank_count", self.mpi_comm.Get_size())
+                else:
+                    self.set_constant("rank_count", 1)
+
             else:
-                self.set_constant("unique_run_id", _get_unique_id())
+                # we've opened an existing database
+                if mode == "w":
+                    raise RuntimeError, "Log database '%s' already exists" % filename
+                elif mode == "wu":
+                    # try again with a new suffix
+                    continue
 
-            if self.is_parallel:
-                self.set_constant("rank_count", self.mpi_comm.Get_size())
-            else:
-                self.set_constant("rank_count", 1)
-        else:
-            # we've opened an existing database
-            if mode == "w":
-                raise RuntimeError, "Log database '%s' already exists" % filename
-            self._load()
+                self._load()
+
+            break
 
         self.old_showwarning = None
         if capture_warnings:
@@ -573,7 +600,7 @@ class LogManager(object):
         self.tick_after()
 
     def tick_before(self):
-        """Record data points from each added :class:`LogQuantity` that 
+        """Record data points from each added :class:`LogQuantity` that
         is not an instance of :class:`PostLogQuantity`. Also, invoke
         :meth:`PostLogQuantity.prepare_for_tick` on :class:`PostLogQuantity`
         instances.
@@ -589,7 +616,7 @@ class LogManager(object):
         self.t_log = time() - tick_start_time
 
     def tick_after(self):
-        """Record data points from each added :class:`LogQuantity` that 
+        """Record data points from each added :class:`LogQuantity` that
         is an instance of :class:`PostLogQuantity`.
 
         May also checkpoint data to disk.
@@ -1059,8 +1086,8 @@ class TimestepCounter(LogQuantity):
 
 
 class StepToStepDuration(PostLogQuantity):
-    """Records the CPU time between invocations of 
-    :meth:`LogManager.tick_before` and 
+    """Records the CPU time between invocations of
+    :meth:`LogManager.tick_before` and
     :meth:`LogManager.tick_after`.
     """
 
@@ -1085,7 +1112,7 @@ class StepToStepDuration(PostLogQuantity):
 
 class TimestepDuration(PostLogQuantity):
     """Records the CPU time between the starts of time steps.
-    :meth:`LogManager.tick_before` and 
+    :meth:`LogManager.tick_before` and
     :meth:`LogManager.tick_after`.
     """
 
