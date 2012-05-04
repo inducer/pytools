@@ -49,6 +49,31 @@ def factorial(n):
 
 
 
+def perm(n, k):
+    """Return P(n, k), the number of permutations of length k drawn from n
+    choices.
+    """
+    result = 1
+    assert k > 0
+    while k:
+        result *= n
+        n -= 1
+        k -= 1
+
+    return result
+
+
+
+
+def comb(n, k):
+    """Return C(n, k), the number of combinations (subsets)
+    of length k drawn from n choices.
+    """
+    return perm(n, k)//factorial(k)
+
+
+
+
 def norm_1(iterable):
     return sum(abs(x) for x in iterable)
 
