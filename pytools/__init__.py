@@ -1427,8 +1427,13 @@ def typedump(val, max_seq=5, special_handlers={}):
     except TypeError:
         return type(val).__name__
     else:
+        if isinstance(val, dict):
+            return "{%s}" % (
+                    ", ".join(
+                        "%r: %s" % (str(k), typedump(v))
+                        for k, v in val.iteritems()))
+
         try:
-            l = len(val)
             if len(val) > max_seq:
                 return "%s(%s,...)" % (
                         type(val).__name__,
