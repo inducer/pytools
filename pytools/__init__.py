@@ -299,6 +299,21 @@ def one(iterable):
 
 
 
+def is_single_valued(iterable, equality_pred=operator.eq):
+    it = iter(iterable)
+    try:
+        first_item = it.next()
+    except StopIteration:
+        raise ValueError, "empty iterable passed to 'single_valued()'"
+
+    for other_item in it:
+        if not equality_pred(other_item, first_item):
+            return False
+    return True
+
+
+
+
 def single_valued(iterable, equality_pred=operator.eq):
     """Return the first entry of *iterable*; Assert that other entries
     are the same with the first entry of *iterable*.
