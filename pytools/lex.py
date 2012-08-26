@@ -9,25 +9,25 @@ class RuleError:
 
 class InvalidTokenError:
     def __init__(self, s, str_index):
-        self.String = s
-        self.Index = str_index
+        self.string = s
+        self.index = str_index
 
     def __str__(self):
         return "at index %d: ...%s..." % \
-               (self.Index, self.String[self.Index:self.Index+20])
+               (self.index, self.string[self.index:self.index+20])
 
 class ParseError:
     def __init__(self, msg, s, token):
-        self.Message = msg
-        self.String = s
+        self.message = msg
+        self.string = s
         self.Token = token
 
     def __str__(self):
         if self.Token is None:
-            return "%s at end of input" % self.Message
+            return "%s at end of input" % self.message
         else:
             return "%s at index %d: ...%s..." % \
-                   (self.Message, self.Token[2], self.String[self.Token[2]:self.Token[2]+20])
+                   (self.message, self.Token[2], self.string[self.Token[2]:self.Token[2]+20])
 
 
 
@@ -94,37 +94,46 @@ def lex(lex_table, str, debug=False):
 
 
 
-class LexIterator:
+class LexIterator(object):
     def __init__(self, lexed, raw_str, lex_index=0):
-        self.Lexed = lexed
-        self.RawString = raw_str
-        self.Index = lex_index
-        
+        self.lexed = lexed
+        self.raw_string = raw_str
+        self.index = lex_index
+
+    def copy(self):
+        return type(self)(self.lexed, self.raw_string, self.index)
+
+    def assign(self, rhs):
+        assert self.lexed is rhs.lexed
+        assert self.raw_string is rhs.raw_string
+
+        self.index = rhs.index
+
     def next_tag(self):
-        return self.Lexed[self.Index][0]
+        return self.lexed[self.index][0]
 
     def next_str(self):
-        return self.Lexed[self.Index][1]
+        return self.lexed[self.index][1]
 
     def next_str_and_advance(self):
         result = self.next_str()
         self.advance()
         return result
-    
+
     def advance(self):
-        self.Index += 1
+        self.index += 1
 
     def is_at_end(self):
-        return self.Index >= len(self.Lexed)
+        return self.index >= len(self.lexed)
 
     def is_next(self, tag):
         return self.next_tag() is tag
 
     def raise_parse_error(self, msg):
         if self.is_at_end():
-            raise ParseError, (msg, self.RawString, None)
+            raise ParseError, (msg, self.raw_string, None)
         else:
-            raise ParseError, (msg, self.RawString, self.Lexed[self.Index])
+            raise ParseError, (msg, self.raw_string, self.lexed[self.index])
 
     def expected(self, what_expected):
         if self.is_at_end():
