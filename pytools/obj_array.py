@@ -1,4 +1,5 @@
 import numpy
+from pytools.decorator import decorator
 
 
 
@@ -144,6 +145,42 @@ def with_object_array_or_scalar(f, field, obj_array_only=False):
     else:
         return f(field)
 
+
+
+as_oarray_func = decorator(with_object_array_or_scalar)
+
+
+
+
+def with_object_array_or_scalar_n_args(f, *args):
+    oarray_arg_indices = []
+    for i, arg in enumerate(args):
+        if is_obj_array(arg):
+            oarray_arg_indices.append(i)
+
+    if not oarray_arg_indices:
+        return f(*args)
+
+    leading_oa_index = oarray_arg_indices[0]
+
+    ls = log_shape(args[leading_oa_index])
+    if ls != ():
+        from pytools import indices_in_shape
+        result = numpy.zeros(ls, dtype=object)
+
+        new_args = list(args)
+        for i in indices_in_shape(ls):
+            for arg_i in oarray_arg_indices:
+                new_args[arg_i] = args[arg_i][i]
+
+            result[i] = f(*new_args)
+        return result
+    else:
+        return f(*args)
+
+
+
+as_oarray_func_n_args = decorator(with_object_array_or_scalar_n_args)
 
 
 
