@@ -13,7 +13,7 @@ except ImportError:
     from distutils.command.build_py import build_py
 
 setup(name="pytools",
-      version="2011.5",
+      version="2012.1",
       description="A collection of tools for Python",
       long_description="""
       Pytools is a big bag of things that are "missing" from the Python standard
