@@ -1,5 +1,5 @@
 import numpy
-from pytools.decorator import decorator
+from pytools import my_decorator as decorator
 
 
 
