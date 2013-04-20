@@ -139,20 +139,14 @@ def refdebug(obj, top_level=True, exclude=[]):
 
 # {{{ interactive shell
 
-def setup_readline():
+def get_shell_hist_filename():
     import os
-    import atexit
-
     _home = os.environ.get('HOME', '/')
+    return os.path.join(_home, ".pytools-debug-shell-history")
 
-    from pudb.settings import get_save_config_path
-    histfile = os.path.join(
-            _home,
-            ".pytools-debug-shell-history")
-
+def setup_readline():
     try:
-        readline.read_history_file(histfile)
-        atexit.register(readline.write_history_file, histfile)
+        readline.read_history_file(get_shell_hist_filename())
     except Exception:
         # http://docs.python.org/3/howto/pyporting.html#capturing-the-currently-raised-exception
         import sys
@@ -206,6 +200,8 @@ def shell(locals=None, globals=None):
     from code import InteractiveConsole
     cons = InteractiveConsole(ns)
     cons.interact("")
+
+    readline.write_history_file(get_shell_hist_filename())
 
 # }}}
 
