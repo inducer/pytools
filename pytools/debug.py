@@ -51,9 +51,6 @@ def open_unique_debug_file(stem, extension=""):
 
 # }}}
 
-
-
-
 # {{{ refcount debugging ------------------------------------------------------
 class RefDebugQuit(Exception):
     pass
@@ -137,6 +134,78 @@ def refdebug(obj, top_level=True, exclude=[]):
 
         finally:
             print "<--------------"
+
+# }}}
+
+# {{{ interactive shell
+
+def setup_readline():
+    import os
+    import atexit
+
+    _home = os.environ.get('HOME', '/')
+
+    from pudb.settings import get_save_config_path
+    histfile = os.path.join(
+            _home,
+            ".pytools-debug-shell-history")
+
+    try:
+        readline.read_history_file(histfile)
+        atexit.register(readline.write_history_file, histfile)
+    except Exception:
+        # http://docs.python.org/3/howto/pyporting.html#capturing-the-currently-raised-exception
+        import sys
+        e = sys.exc_info()[1]
+
+        from warnings import warn
+        warn("Error opening readline history file: %s" % e)
+
+    readline.parse_and_bind("tab: complete")
+
+try:
+    import readline
+    import rlcompleter
+    HAVE_READLINE = True
+except ImportError:
+    HAVE_READLINE = False
+else:
+    setup_readline()
+
+class SetPropagatingDict(dict):
+    def __init__(self, source_dicts, target_dict):
+        dict.__init__(self)
+        for s in source_dicts[::-1]:
+            self.update(s)
+
+        self.target_dict = target_dict
+
+    def __setitem__(self, key, value):
+        dict.__setitem__(self, key, value)
+        self.target_dict[key] = value
+
+    def __delitem__(self, key):
+        dict.__delitem__(self, key)
+        del self.target_dict[key]
+
+def shell(locals=None, globals=None):
+    from inspect import currentframe, getouterframes
+    calling_frame = getouterframes(currentframe())[1][0]
+
+    if locals is None:
+        locals = calling_frame.f_locals
+    if globals is None:
+        globals = calling_frame.f_globals
+
+    ns = SetPropagatingDict([locals, globals], locals)
+
+    if HAVE_READLINE:
+        readline.set_completer(
+                rlcompleter.Completer(ns).complete)
+
+    from code import InteractiveConsole
+    cons = InteractiveConsole(ns)
+    cons.interact("")
 
 # }}}
 
