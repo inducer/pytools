@@ -360,20 +360,56 @@ FunctionValueCache = memoize
 
 @my_decorator
 def memoize_method(method, instance, *args):
-    dicname = "_memoize_dic_"+method.__name__
+    cache_dict_name = intern("_memoize_dic_"+method.__name__)
     try:
-        return getattr(instance, dicname)[args]
+        return getattr(instance, cache_dict_name)[args]
     except AttributeError:
         result = method(instance, *args)
-        setattr(instance, dicname, {args: result})
+        setattr(instance, cache_dict_name, {args: result})
         return result
     except KeyError:
         result = method(instance, *args)
-        getattr(instance,dicname)[args] = result
+        getattr(instance, cache_dict_name)[args] = result
         return result
 
 
 
+
+def memoize_method_nested(inner):
+    """Adds a cache to a function nested inside a method. The cache is attached
+    to *memoize_cache_context* (if it exists) or *self* in the outer (method)
+    namespace.
+
+    Requires Python 2.5 or newer.
+    """
+
+    from functools import wraps
+    cache_dict_name = intern("_memoize_inner_dic_%s_%s_%d"
+            % (inner.__name__, inner.func_code.co_filename,
+                inner.func_code.co_firstlineno))
+
+    from inspect import currentframe, getouterframes
+    outer_frame = getouterframes(currentframe())[1][0]
+    cache_context = outer_frame.f_locals.get("memoize_cache_context")
+    if cache_context is None:
+        cache_context = outer_frame.f_locals.get("self")
+
+    try:
+        cache_dict = getattr(cache_context, cache_dict_name)
+    except AttributeError:
+        cache_dict = {}
+        setattr(cache_context, cache_dict_name, cache_dict)
+
+    @wraps(inner)
+    def new_inner(*args):
+        try:
+            return cache_dict[args]
+        except KeyError:
+            result = inner(*args)
+            cache_dict[args] = result
+            return result
+
+    return new_inner
 
 FunctionValueCache = memoize
 
