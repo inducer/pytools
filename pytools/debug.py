@@ -23,8 +23,8 @@ def make_unique_filesystem_object(stem, extension="", directory="",
     while True:
         fname = join(directory, "%s-%d%s" % (stem, i, extension))
         try:
-            return creator(fname)
-        except OSError, e:
+            return creator(fname), fname
+        except OSError:
             i += 1
 
 
