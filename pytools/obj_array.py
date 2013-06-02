@@ -2,14 +2,13 @@ import numpy
 from pytools import my_decorator as decorator
 
 
-
-
 def gen_len(expr):
     from pytools.obj_array import is_obj_array
     if is_obj_array(expr):
         return len(expr)
     else:
         return 1
+
 
 def gen_slice(expr, slice):
     result = expr[slice]
@@ -19,15 +18,11 @@ def gen_slice(expr, slice):
         return result
 
 
-
-
 def is_obj_array(val):
     try:
         return isinstance(val, numpy.ndarray) and val.dtype == object
     except AttributeError:
         return False
-
-
 
 
 def to_obj_array(ary):
@@ -41,15 +36,11 @@ def to_obj_array(ary):
     return result
 
 
-
-
 def is_field_equal(a, b):
     if is_obj_array(a):
         return is_obj_array(b) and (a.shape == b.shape) and (a == b).all()
     else:
         return not is_obj_array(b) and a == b
-
-
 
 
 def make_obj_array(res_list):
@@ -60,8 +51,6 @@ def make_obj_array(res_list):
     return result
 
 
-
-
 def setify_field(f):
     from hedge.tools import is_obj_array
     if is_obj_array(f):
@@ -70,15 +59,11 @@ def setify_field(f):
         return set([f])
 
 
-
-
 def hashable_field(f):
     if is_obj_array(f):
         return tuple(f)
     else:
         return f
-
-
 
 
 def field_equal(a, b):
@@ -89,8 +74,6 @@ def field_equal(a, b):
         return (a == b).all()
     else:
         return a == b
-
-
 
 
 def join_fields(*args):
@@ -109,8 +92,6 @@ def join_fields(*args):
     return make_obj_array(res_list)
 
 
-
-
 def log_shape(array):
     """Returns the "logical shape" of the array.
 
@@ -124,8 +105,6 @@ def log_shape(array):
             return array.shape[:-1]
     except AttributeError:
         return ()
-
-
 
 
 def with_object_array_or_scalar(f, field, obj_array_only=False):
@@ -145,11 +124,7 @@ def with_object_array_or_scalar(f, field, obj_array_only=False):
     else:
         return f(field)
 
-
-
 as_oarray_func = decorator(with_object_array_or_scalar)
-
-
 
 
 def with_object_array_or_scalar_n_args(f, *args):
@@ -178,10 +153,7 @@ def with_object_array_or_scalar_n_args(f, *args):
     else:
         return f(*args)
 
-
-
 as_oarray_func_n_args = decorator(with_object_array_or_scalar_n_args)
-
 
 
 def cast_field(field, dtype):
@@ -189,16 +161,17 @@ def cast_field(field, dtype):
             lambda f: f.astype(dtype), field)
 
 
-
-
 def oarray_real(ary):
     return with_object_array_or_scalar(lambda x: x.real, ary)
+
 
 def oarray_imag(ary):
     return with_object_array_or_scalar(lambda x: x.imag, ary)
 
+
 def oarray_real_copy(ary):
     return with_object_array_or_scalar(lambda x: x.real.copy(), ary)
+
 
 def oarray_imag_copy(ary):
     return with_object_array_or_scalar(lambda x: x.imag.copy(), ary)
