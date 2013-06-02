@@ -1,8 +1,29 @@
 from __future__ import division
 
-import sys
+__copyright__ = "Copyright (C) 2009-2013 Andreas Kloeckner"
+
+__license__ = """
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+"""
+
+
 import operator
-import types
 
 from pytools.decorator import decorator
 
@@ -15,38 +36,31 @@ else:
     my_decorator = decorator_module.decorator
 
 
-
-
 # {{{ math --------------------------------------------------------------------
-def delta(x,y):
+
+def delta(x, y):
     if x == y:
         return 1
     else:
         return 0
 
 
-
-
 def levi_civita(tup):
     """Compute an entry of the Levi-Civita tensor for the indices *tuple*."""
     if len(tup) == 2:
-        i,j = tup
+        i, j = tup
         return j-i
     if len(tup) == 3:
-        i,j,k = tup
+        i, j, k = tup
         return (j-i)*(k-i)*(k-j)/2
     else:
         raise NotImplementedError
 
 
-
-
 def factorial(n):
     from operator import mul
     assert n == int(n)
-    return reduce(mul, (i for i in xrange(1,n+1)), 1)
-
-
+    return reduce(mul, (i for i in xrange(1, n+1)), 1)
 
 
 def perm(n, k):
@@ -63,8 +77,6 @@ def perm(n, k):
     return result
 
 
-
-
 def comb(n, k):
     """Return C(n, k), the number of combinations (subsets)
     of length k drawn from n choices.
@@ -72,19 +84,21 @@ def comb(n, k):
     return perm(n, k)//factorial(k)
 
 
-
-
 def norm_1(iterable):
     return sum(abs(x) for x in iterable)
+
 
 def norm_2(iterable):
     return sum(x**2 for x in iterable)**0.5
 
+
 def norm_inf(iterable):
     return max(abs(x) for x in iterable)
 
+
 def norm_p(iterable, p):
     return sum(i**p for i in iterable)**(1/p)
+
 
 class Norm(object):
     def __init__(self, p):
@@ -95,9 +109,11 @@ class Norm(object):
 
 # }}}
 
-# {{{ data structures ---------------------------------------------------------
+
+# {{{ data structures
 
 # {{{ record
+
 class Record(object):
     """An aggregate of named sub-variables. Assumes that each record sub-type
     will be individually derived from this class.
@@ -163,8 +179,6 @@ class Record(object):
 # }}}
 
 
-
-
 class Reference(object):
     def __init__(self, value):
         self.value = value
@@ -178,13 +192,10 @@ class Reference(object):
         self.value = value
 
 
+# {{{ dictionary with default
 
-
-
-
-# {{{ dictionary with default 
 class DictionaryWithDefault(object):
-    def __init__(self, default_value_generator, start = {}):
+    def __init__(self, default_value_generator, start={}):
         self._Dictionary = dict(start)
         self._DefaultGenerator = default_value_generator
 
@@ -214,7 +225,6 @@ class DictionaryWithDefault(object):
 # }}}
 
 
-
 class FakeList(object):
     def __init__(self, f, length):
         self._Length = length
@@ -231,11 +241,10 @@ class FakeList(object):
             return self._Function(index)
 
 
-
-
 # {{{ dependent dictionary ----------------------------------------------------
+
 class DependentDictionary(object):
-    def __init__(self, f, start = {}):
+    def __init__(self, f, start={}):
         self._Function = f
         self._Dictionary = start.copy()
 
@@ -274,7 +283,9 @@ class DependentDictionary(object):
 
 # }}}
 
-# {{{ assertive accessors -----------------------------------------------------
+
+# {{{ assertive accessors
+
 def one(iterable):
     """Return the first entry of *iterable*. Assert that *iterable* has only
     that one entry.
@@ -283,12 +294,12 @@ def one(iterable):
     try:
         v = it.next()
     except StopIteration:
-        raise ValueError, "empty iterable passed to 'one()'"
+        raise ValueError("empty iterable passed to 'one()'")
 
     def no_more():
         try:
-            v2 = it.next()
-            raise ValueError, "iterable with more than one entry passed to 'one()'"
+            it.next()
+            raise ValueError("iterable with more than one entry passed to 'one()'")
         except StopIteration:
             return True
 
@@ -297,14 +308,12 @@ def one(iterable):
     return v
 
 
-
-
 def is_single_valued(iterable, equality_pred=operator.eq):
     it = iter(iterable)
     try:
         first_item = it.next()
     except StopIteration:
-        raise ValueError, "empty iterable passed to 'single_valued()'"
+        raise ValueError("empty iterable passed to 'single_valued()'")
 
     for other_item in it:
         if not equality_pred(other_item, first_item):
@@ -312,6 +321,12 @@ def is_single_valued(iterable, equality_pred=operator.eq):
     return True
 
 
+all_equal = is_single_valued
+
+
+def all_roughly_equal(iterable, threshold):
+    return is_single_valued(iterable,
+            equality_pred=lambda a, b: abs(a-b) < threshold)
 
 
 def single_valued(iterable, equality_pred=operator.eq):
@@ -322,7 +337,7 @@ def single_valued(iterable, equality_pred=operator.eq):
     try:
         first_item = it.next()
     except StopIteration:
-        raise ValueError, "empty iterable passed to 'single_valued()'"
+        raise ValueError("empty iterable passed to 'single_valued()'")
 
     def others_same():
         for other_item in it:
@@ -335,7 +350,9 @@ def single_valued(iterable, equality_pred=operator.eq):
 
 # }}}
 
-# {{{ memoization -------------------------------------------------------------
+
+# {{{ memoization
+
 @my_decorator
 def memoize(func, *args):
     # by Michele Simionato
@@ -356,8 +373,6 @@ def memoize(func, *args):
 FunctionValueCache = memoize
 
 
-
-
 @my_decorator
 def memoize_method(method, instance, *args):
     cache_dict_name = intern("_memoize_dic_"+method.__name__)
@@ -371,8 +386,6 @@ def memoize_method(method, instance, *args):
         result = method(instance, *args)
         getattr(instance, cache_dict_name)[args] = result
         return result
-
-
 
 
 def memoize_method_nested(inner):
@@ -415,85 +428,9 @@ FunctionValueCache = memoize
 
 # }}}
 
-# {{{ plotting ----------------------------------------------------------------
-def write_1d_gnuplot_graph(f, a, b, steps=100, fname=",,f.data", progress = False):
-    h = float(b - a)/steps
-    gnuplot_file = file(fname, "w")
 
-    def do_plot(func):
-        for n in range(steps):
-            if progress:
-                sys.stdout.write(".")
-                sys.stdout.flush()
-            x = a + h * n
-            gnuplot_file.write("%f\t%f\n" % (x, func(x)))
+# {{{ syntactical sugar
 
-    do_plot(f)
-    if progress:
-        sys.stdout.write("\n")
-
-def write_1d_gnuplot_graphs(f, a, b, steps=100, fnames=None, progress=False):
-    h = float(b - a)/steps
-    if not fnames:
-        result_count = len(f(a))
-        fnames = [",,f%d.data" % i for i in range(result_count)]
-
-    gnuplot_files = [file(fname, "w") for fname in fnames]
-
-    for n in range(steps):
-        if progress:
-            sys.stdout.write(".")
-            sys.stdout.flush()
-        x = a + h * n
-        for gpfile, y in zip(gnuplot_files, f(x)):
-            gpfile.write("%f\t%f\n" % (x, y))
-    if progress:
-        sys.stdout.write("\n")
-
-
-
-def write_2d_gnuplot_graph(f, (x0, y0), (x1, y1), (xsteps, ysteps)=(100, 100), fname=",,f.data"):
-    hx = float(x1 - x0)/xsteps
-    hy = float(y1 - y0)/ysteps
-    gnuplot_file = file(fname, "w")
-
-    for ny in range(ysteps):
-        for nx in range(xsteps):
-            x = x0 + hx * nx
-            y = y0 + hy * ny
-            gnuplot_file.write("%g\t%g\t%g\n" % (x, y, f(x, y)))
-
-        gnuplot_file.write("\n")
-
-
-def write_gnuplot_graph(f, a, b, steps = 100, fname = ",,f.data", progress = False):
-    h = float(b - a)/steps
-    gnuplot_file = file(fname, "w")
-
-    def do_plot(func):
-        for n in range(steps):
-            if progress:
-                sys.stdout.write(".")
-                sys.stdout.flush()
-            x = a + h * n
-            gnuplot_file.write("%f\t%f\n" % (x, func(x)))
-
-    if isinstance(f, types.ListType):
-        for f_index, real_f in enumerate(f):
-            if progress:
-                sys.stdout.write("function %d: " % f_index)
-            do_plot(real_f)
-            gnuplot_file.write("\n")
-            if progress:
-                sys.stdout.write("\n")
-    else:
-        do_plot(f)
-        if progress:
-            sys.stdout.write("\n")
-
-# }}}
-
-# {{{ syntactical sugar -------------------------------------------------------
 class InfixOperator:
     """Pseudo-infix operators that allow syntax of the kind `op1 <<operator>> op2'.
 
@@ -502,14 +439,15 @@ class InfixOperator:
     """
     def __init__(self, function):
         self.function = function
+
     def __rlshift__(self, other):
         return InfixOperator(lambda x: self.function(other, x))
+
     def __rshift__(self, other):
         return self.function(other)
+
     def call(self, a, b):
         return self.function(a, b)
-
-
 
 
 def monkeypatch_method(cls):
@@ -518,8 +456,6 @@ def monkeypatch_method(cls):
         setattr(cls, func.__name__, func)
         return func
     return decorator
-
-
 
 
 def monkeypatch_class(name, bases, namespace):
@@ -534,15 +470,15 @@ def monkeypatch_class(name, bases, namespace):
 
 # }}}
 
-# {{{ generic utilities -------------------------------------------------------
+
+# {{{ generic utilities
+
 def add_tuples(t1, t2):
     return tuple([t1v + t2v for t1v, t2v in zip(t1, t2)])
 
+
 def negate_tuple(t1):
     return tuple([-t1v for t1v in t1])
-
-
-
 
 
 def shift(vec, dist):
@@ -564,11 +500,8 @@ def shift(vec, dist):
     return result
 
 
-
 def len_iterable(iterable):
     return sum(1 for i in iterable)
-
-
 
 
 def flatten(list):
@@ -582,51 +515,15 @@ def flatten(list):
             yield j
 
 
-
-
 def general_sum(sequence):
     return reduce(operator.add, sequence)
 
 
-
-
 def linear_combination(coefficients, vectors):
     result = coefficients[0] * vectors[0]
-    for c,v in zip(coefficients, vectors)[1:]:
+    for c, v in zip(coefficients, vectors)[1:]:
         result += c*v
     return result
-
-
-
-
-def all_equal(iterable):
-    it = iterable.__iter__()
-    try:
-        value = it.next()
-    except StopIteration:
-        return True # empty sequence
-
-    for i in it:
-        if i != value:
-            return False
-    return True
-
-
-
-
-def all_roughly_equal(iterable, threshold):
-    it = iterable.__iter__()
-    try:
-        value = it.next()
-    except StopIteration:
-        return True # empty sequence
-
-    for i in it:
-        if abs(i - value) > threshold:
-            return False
-    return True
-
-
 
 
 def common_prefix(iterable, empty=None):
@@ -634,7 +531,7 @@ def common_prefix(iterable, empty=None):
     try:
         pfx = it.next()
     except StopIteration:
-        return  empty
+        return empty
 
     for v in it:
         for j in range(len(pfx)):
@@ -647,12 +544,8 @@ def common_prefix(iterable, empty=None):
     return pfx
 
 
-
-
 def decorate(function, list):
     return map(lambda x: (x, function(x)), list)
-
-
 
 
 def partition(criterion, list):
@@ -666,8 +559,6 @@ def partition(criterion, list):
     return part_true, part_false
 
 
-
-
 def partition2(iterable):
     part_true = []
     part_false = []
@@ -679,13 +570,9 @@ def partition2(iterable):
     return part_true, part_false
 
 
-
-
 def product(iterable):
     from operator import mul
     return reduce(mul, iterable, 1)
-
-
 
 
 try:
@@ -705,10 +592,6 @@ except AttributeError:
         return False
 
 
-
-
-
-
 def reverse_dictionary(the_dict):
     result = {}
     for key, value in the_dict.iteritems():
@@ -718,17 +601,14 @@ def reverse_dictionary(the_dict):
         result[value] = key
     return result
 
+
 def set_sum(set_iterable):
     from operator import or_
     return reduce(or_, set_iterable, set())
 
 
-
-
 def div_ceil(nr, dr):
     return -(-nr // dr)
-
-
 
 
 def uniform_interval_splitting(n, granularity, max_intervals):
@@ -744,7 +624,7 @@ def uniform_interval_splitting(n, granularity, max_intervals):
     """
     # ported from Thrust -- minor Apache v2 license violation
 
-    grains  = div_ceil(n, granularity)
+    grains = div_ceil(n, granularity)
 
     # one grain per interval
     if grains <= max_intervals:
@@ -755,8 +635,6 @@ def uniform_interval_splitting(n, granularity, max_intervals):
     num_intervals = div_ceil(n, interval_size)
 
     return interval_size, num_intervals
-
-
 
 
 def find_max_where(predicate, prec=1e-5, initial_guess=1, fail_bound=1e38):
@@ -813,57 +691,15 @@ def find_max_where(predicate, prec=1e-5, initial_guess=1, fail_bound=1e38):
 
 # }}}
 
-# {{{ argmin, argmax ----------------------------------------------------------
-def argmin_f(list, f = lambda x: x):
-    # deprecated -- the function has become unnecessary because of
-    # generator expressions
-    current_min_index = -1
-    current_min = f(list[0])
 
-    for idx, item in enumerate(list[1:]):
-        value = f(item)
-        if value < current_min:
-            current_min_index = idx
-            current_min = value
-    return current_min_index+1
-
-
-
-
-def argmax_f(list, f = lambda x: x):
-    # deprecated -- the function has become unnecessary because of
-    # generator expressions
-    current_max_index = -1
-    current_max = f(list[0])
-
-    for idx, item in enumerate(list[1:]):
-        value = f(item)
-        if value > current_max:
-            current_max_index = idx
-            current_max = value
-    return current_max_index+1
-
-
-
-
-def argmin(iterable):
-    return argmin2(enumerate(iterable))
-
-
-
-
-def argmax(iterable):
-    return argmax2(enumerate(iterable))
-
-
-
+# {{{ argmin, argmax
 
 def argmin2(iterable, return_value=False):
     it = iter(iterable)
     try:
         current_argmin, current_min = it.next()
     except StopIteration:
-        raise ValueError, "argmin of empty iterable"
+        raise ValueError("argmin of empty iterable")
 
     for arg, item in it:
         if item < current_min:
@@ -876,14 +712,12 @@ def argmin2(iterable, return_value=False):
         return current_argmin
 
 
-
-
 def argmax2(iterable, return_value=False):
     it = iter(iterable)
     try:
         current_argmax, current_max = it.next()
     except StopIteration:
-        raise ValueError, "argmax of empty iterable"
+        raise ValueError("argmax of empty iterable")
 
     for arg, item in it:
         if item > current_max:
@@ -895,16 +729,23 @@ def argmax2(iterable, return_value=False):
     else:
         return current_argmax
 
+
+def argmin(iterable):
+    return argmin2(enumerate(iterable))
+
+
+def argmax(iterable):
+    return argmax2(enumerate(iterable))
+
 # }}}
 
-# {{{ cartesian products etc. -------------------------------------------------
+
+# {{{ cartesian products etc.
+
 def cartesian_product(list1, list2):
     for i in list1:
         for j in list2:
-            yield (i,j)
-
-
-
+            yield (i, j)
 
 
 def distinct_pairs(list1, list2):
@@ -912,8 +753,6 @@ def distinct_pairs(list1, list2):
         for j, yj in enumerate(list2):
             if i != j:
                 yield (xi, yj)
-
-
 
 
 def cartesian_product_sum(list1, list2):
@@ -926,7 +765,9 @@ def cartesian_product_sum(list1, list2):
 
 # }}}
 
-# {{{ elementary statistics ---------------------------------------------------
+
+# {{{ elementary statistics
+
 def average(iterable):
     """Return the average of the values in iterable.
 
@@ -938,15 +779,13 @@ def average(iterable):
         sum = it.next()
         count = 1
     except StopIteration:
-        raise ValueError, "empty average"
+        raise ValueError("empty average")
 
     for value in it:
         sum = sum + value
         count += 1
 
     return sum/count
-
-
 
 
 class VarianceAggregator:
@@ -980,8 +819,6 @@ class VarianceAggregator:
                 return self.m2/(self.n - 1)
 
 
-
-
 def variance(iterable, entire_pop):
     v_comp = VarianceAggregator(entire_pop)
 
@@ -991,20 +828,18 @@ def variance(iterable, entire_pop):
     return v_comp.finalize()
 
 
-
-
 def std_deviation(iterable, finite_pop):
     from math import sqrt
     return sqrt(variance(iterable, finite_pop))
 
 # }}}
 
-# {{{ permutations, tuples, integer sequences ---------------------------------
+
+# {{{ permutations, tuples, integer sequences
+
 def wandering_element(length, wanderer=1, landscape=0):
     for i in range(length):
         yield i*(landscape,) + (wanderer,) + (length-1-i)*(landscape,)
-
-
 
 
 def indices_in_shape(shape):
@@ -1018,8 +853,6 @@ def indices_in_shape(shape):
         for i in xrange(0, shape[0]):
             for rest in indices_in_shape(remainder):
                 yield (i,)+rest
-
-
 
 
 def generate_nonnegative_integer_tuples_below(n, length=None, least=0):
@@ -1047,8 +880,8 @@ def generate_nonnegative_integer_tuples_below(n, length=None, least=0):
         for base in generate_nonnegative_integer_tuples_below(n, next_length, least):
             yield my_part + base
 
+
 def generate_decreasing_nonnegative_tuples_summing_to(n, length, min=0, max=None):
-    sig = (n,length,max)
     if length == 0:
         yield ()
     elif length == 1:
@@ -1082,40 +915,44 @@ def generate_nonnegative_integer_tuples_summing_to_at_most(n, length):
                     n-i, length-1):
                 yield remainder + (i,)
 
+
 def generate_all_nonnegative_integer_tuples(length, least=0):
     assert length >= 0
     current_max = least
     while True:
         for max_pos in range(length):
-            for prebase in generate_nonnegative_integer_tuples_below(current_max, max_pos, least):
-                for postbase in generate_nonnegative_integer_tuples_below(current_max+1, length-max_pos-1, least):
+            for prebase in generate_nonnegative_integer_tuples_below(
+                    current_max, max_pos, least):
+                for postbase in generate_nonnegative_integer_tuples_below(
+                        current_max+1, length-max_pos-1, least):
                     yield prebase + [current_max] + postbase
         current_max += 1
 
- # backwards compatibility
+# backwards compatibility
 generate_positive_integer_tuples_below = generate_nonnegative_integer_tuples_below
 generate_all_positive_integer_tuples = generate_all_nonnegative_integer_tuples
+
 
 def _pos_and_neg_adaptor(tuple_iter):
     for tup in tuple_iter:
         nonzero_indices = [i for i in range(len(tup)) if tup[i] != 0]
-        for do_neg_tup in generate_nonnegative_integer_tuples_below(2, len(nonzero_indices)):
+        for do_neg_tup in generate_nonnegative_integer_tuples_below(
+                2, len(nonzero_indices)):
             this_result = list(tup)
             for index, do_neg in enumerate(do_neg_tup):
                 if do_neg:
                     this_result[nonzero_indices[index]] *= -1
             yield tuple(this_result)
 
+
 def generate_all_integer_tuples_below(n, length, least_abs=0):
     return _pos_and_neg_adaptor(generate_nonnegative_integer_tuples_below(
         n, length, least_abs))
 
+
 def generate_all_integer_tuples(length, least_abs=0):
     return _pos_and_neg_adaptor(generate_all_nonnegative_integer_tuples(
         length, least_abs))
-
-
-
 
 
 def generate_permutations(original):
@@ -1123,17 +960,13 @@ def generate_permutations(original):
 
     Nicked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/252178
     """
-    if len(original) <=1:
+    if len(original) <= 1:
         yield original
     else:
         for perm in generate_permutations(original[1:]):
             for i in range(len(perm)+1):
                 #nb str[0:1] works in both string and list contexts
                 yield perm[:i] + original[0:1] + perm[i:]
-
-
-
-
 
 
 def generate_unique_permutations(original):
@@ -1147,13 +980,16 @@ def generate_unique_permutations(original):
             had_those.add(perm)
             yield perm
 
+
 def enumerate_basic_directions(dimensions):
     coordinate_list = [[0], [1], [-1]]
     return reduce(cartesian_product_sum, [coordinate_list] * dimensions)[1:]
 
 # }}}
 
-# {{{ index mangling ----------------------------------------------------------
+
+# {{{ index mangling
+
 def get_read_from_map_from_permutation(original, permuted):
     """With a permutation given by C{original} and C{permuted},
     generate a list C{rfm} of indices such that
@@ -1173,8 +1009,6 @@ def get_read_from_map_from_permutation(original, permuted):
             (original[i], i) for i in xrange(len(original)))
     assert len(where_in_original) == len(original)
     return tuple(where_in_original[pi] for pi in permuted)
-
-
 
 
 def get_write_to_map_from_permutation(original, permuted):
@@ -1203,6 +1037,7 @@ def get_write_to_map_from_permutation(original, permuted):
 
 # }}}
 
+
 # {{{ graph algorithms
 
 def a_star(initial_state, goal_state, neighbor_map,
@@ -1223,6 +1058,7 @@ def a_star(initial_state, goal_state, neighbor_map,
 
     class AStarNode(object):
         __slots__ = ["state", "parent", "path_cost"]
+
         def __init__(self, state, parent, path_cost):
             self.state = state
             self.parent = parent
@@ -1257,17 +1093,19 @@ def a_star(initial_state, goal_state, neighbor_map,
             step_cost = get_step_cost(top, state)
 
             estimated_path_cost = top.path_cost+step_cost+remaining_cost
-            heappush(queue, 
-                (estimated_path_cost, 
+            heappush(queue,
+                (estimated_path_cost,
                     AStarNode(state, top, path_cost=top.path_cost + step_cost)))
 
     raise RuntimeError("no solution")
 
 # }}}
 
-# {{{ formatting --------------------------------------------------------------
 
-# {{{ table formatting --------------------------------------------------------
+# {{{ formatting
+
+# {{{ table formatting
+
 class Table:
     """An ASCII table generator."""
     def __init__(self):
@@ -1300,9 +1138,11 @@ class Table:
 
 # }}}
 
-# {{{ histogram formatting ----------------------------------------------------
-def string_histogram(iterable, min_value=None, max_value=None, bin_count=20, width=70,
-        bin_starts=None, use_unicode=True):
+
+# {{{ histogram formatting
+
+def string_histogram(iterable, min_value=None, max_value=None,
+        bin_count=20, width=70, bin_starts=None, use_unicode=True):
     if bin_starts is None:
         if min_value is None or max_value is None:
             iterable = list(iterable)
@@ -1352,6 +1192,7 @@ def string_histogram(iterable, min_value=None, max_value=None, bin_count=20, wid
 
 # }}}
 
+
 def word_wrap(text, width, wrap_using="\n"):
     # http://code.activestate.com/recipes/148061-one-liner-word-wrap-function/
     """
@@ -1363,13 +1204,14 @@ def word_wrap(text, width, wrap_using="\n"):
     return reduce(lambda line, word, width=width: '%s%s%s' %
             (line,
                 space_or_break[(len(line)-line.rfind('\n')-1
-                    + len(word.split('\n',1)[0]
-                        ) >= width)],
+                    + len(word.split('\n', 1)[0])
+                    >= width)],
                     word),
             text.split(' ')
             )
 
 # }}}
+
 
 # {{{ command line interfaces -------------------------------------------------
 
@@ -1436,7 +1278,8 @@ class CPyUserInterface(object):
             if not (added_key.startswith("user_") or added_key.startswith("_")):
                 raise ValueError(
                         "invalid setup key: '%s' "
-                        "(user variables must start with 'user_' or '_')" % added_key)
+                        "(user variables must start with 'user_' or '_')"
+                        % added_key)
 
         result = self.Parameters(dict((key, execenv[key]) for key in self.variables))
         self.validate(result)
@@ -1447,7 +1290,8 @@ class CPyUserInterface(object):
 
 # }}}
 
-# {{{ code maintenance --------------------------------------------------------
+
+# {{{ code maintenance
 
 class MovedFunctionDeprecationWrapper:
     def __init__(self, f):
@@ -1463,7 +1307,8 @@ class MovedFunctionDeprecationWrapper:
 
 # }}}
 
-# {{{ debugging ---------------------------------------------------------------
+
+# {{{ debugging
 
 def typedump(val, max_seq=5, special_handlers={}):
     try:
@@ -1499,8 +1344,6 @@ def typedump(val, max_seq=5, special_handlers={}):
             return val.__class__.__name__
 
 
-
-
 def invoke_editor(s, filename="edit.txt", descr="the file"):
     from tempfile import mkdtemp
     tempdir = mkdtemp()
@@ -1531,7 +1374,9 @@ def invoke_editor(s, filename="edit.txt", descr="the file"):
 
 # }}}
 
-# {{{ progress bars -----------------------------------------------------------
+
+# {{{ progress bars
+
 class ProgressBar:
     def __init__(self, descr, total, initial=0, length=40):
         import time
@@ -1567,7 +1412,8 @@ class ProgressBar:
                 self.speed_meas_start_done = self.done
 
             if self.time_per_step is not None:
-                eta_str = "%6.1fs" % max(0, (self.total-self.done) * self.time_per_step)
+                eta_str = "%6.1fs" % max(
+                        0, (self.total-self.done) * self.time_per_step)
             else:
                 eta_str = "?"
 
@@ -1594,11 +1440,13 @@ class ProgressBar:
 
 # }}}
 
-# {{{ file system related -----------------------------------------------------
+
+# {{{ file system related
+
 def assert_not_a_file(name):
     import os
     if os.access(name, os.F_OK):
-        raise IOError, "file `%s' already exists" % name
+        raise IOError("file `%s' already exists" % name)
 
 
 def add_python_path_relative_to_script(rel_path):
@@ -1612,7 +1460,9 @@ def add_python_path_relative_to_script(rel_path):
 
 # }}}
 
-# {{{ numpy dtype mangling ----------------------------------------------------
+
+# {{{ numpy dtype mangling
+
 def common_dtype(dtypes, default=None):
     dtypes = list(dtypes)
     if dtypes:
@@ -1623,9 +1473,6 @@ def common_dtype(dtypes, default=None):
         else:
             raise ValueError(
                     "cannot find common dtype of empty dtype list")
-
-
-
 
 
 def to_uncomplex_dtype(dtype):
@@ -1640,8 +1487,6 @@ def to_uncomplex_dtype(dtype):
         return numpy.float64
     else:
         raise TypeError("unrecgonized dtype '%s'" % dtype)
-
-
 
 
 def match_precision(dtype, dtype_to_match):
@@ -1663,6 +1508,7 @@ def match_precision(dtype, dtype_to_match):
             return numpy.dtype(numpy.float32)
 
 # }}}
+
 
 # {{{ unique name generation
 
@@ -1700,7 +1546,6 @@ class UniqueNameGenerator:
         return var_name
 
 # }}}
-
 
 
 def _test():
