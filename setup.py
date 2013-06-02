@@ -13,7 +13,7 @@ except ImportError:
     from distutils.command.build_py import build_py
 
 setup(name="pytools",
-      version="2013.1",
+      version="2013.2",
       description="A collection of tools for Python",
       long_description="""
       Pytools is a big bag of things that are "missing" from the Python standard
@@ -21,7 +21,7 @@ setup(name="pytools",
       probably of little interest to you unless you use those. If you're curious
       nonetheless, here's what's on offer:
 
-      * A ton of small tool functions such as `len_iterable`, `argmin`, 
+      * A ton of small tool functions such as `len_iterable`, `argmin`,
         tuple generation, permutation generation, ASCII table pretty printing,
         GvR's mokeypatch_xxx() hack, the elusive `flatten`, and much more.
       * Michele Simionato's decorator module
@@ -30,20 +30,20 @@ setup(name="pytools",
       * A lexer, `pytools.lex`.
       """,
       classifiers=[
-        'Development Status :: 4 - Beta',
-        'Intended Audience :: Developers',
-        'Intended Audience :: Other Audience',
-        'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: MIT License',
-        'Natural Language :: English',
-        'Programming Language :: Python',
-        'Topic :: Scientific/Engineering',
-        'Topic :: Scientific/Engineering :: Information Analysis',
-        'Topic :: Scientific/Engineering :: Mathematics',
-        'Topic :: Scientific/Engineering :: Visualization',
-        'Topic :: Software Development :: Libraries',
-        'Topic :: Utilities',
-        ],
+          'Development Status :: 4 - Beta',
+          'Intended Audience :: Developers',
+          'Intended Audience :: Other Audience',
+          'Intended Audience :: Science/Research',
+          'License :: OSI Approved :: MIT License',
+          'Natural Language :: English',
+          'Programming Language :: Python',
+          'Topic :: Scientific/Engineering',
+          'Topic :: Scientific/Engineering :: Information Analysis',
+          'Topic :: Scientific/Engineering :: Mathematics',
+          'Topic :: Scientific/Engineering :: Visualization',
+          'Topic :: Software Development :: Libraries',
+          'Topic :: Utilities',
+          ],
 
       install_requires=[
           "decorator>=3.2.0"
@@ -52,7 +52,7 @@ setup(name="pytools",
       author="Andreas Kloeckner",
       url="http://pypi.python.org/pypi/pytools",
       author_email="inform@tiker.net",
-      license = "MIT",
+      license="MIT",
       packages=["pytools"],
 
       # 2to3 invocation
