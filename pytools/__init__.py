@@ -1522,8 +1522,9 @@ def generate_unique_possibilities(prefix):
 
 
 class UniqueNameGenerator:
-    def __init__(self, existing_names):
+    def __init__(self, existing_names=set(), forced_prefix=""):
         self.existing_names = existing_names.copy()
+        self.forced_prefix = forced_prefix
 
     def is_name_conflicting(self, name):
         return name in self.existing_names
@@ -1531,13 +1532,18 @@ class UniqueNameGenerator:
     def add_name(self, name):
         if self.is_name_conflicting(name):
             raise ValueError("name '%s' conflicts with existing names")
+        if not name.startswith(self.forced_prefix):
+            raise ValueError("name '%s' does not start with required prefix")
+
         self.existing_names.add(name)
 
     def add_names(self, names):
         for name in names:
             self.add_name(name)
 
-    def __call__(self, based_on="var"):
+    def __call__(self, based_on="id"):
+        based_on = self.forced_prefix + based_on
+
         for var_name in generate_unique_possibilities(based_on):
             if not self.is_name_conflicting(var_name):
                 break
