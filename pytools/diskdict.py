@@ -1,16 +1,44 @@
 # see end of file for sqlite import
 
+from pytools import memoize
 
+
+@memoize
+def get_disk_dict(name, version, **kwargs):
+    import sys
+    import os
+
+    from os.path import join
+    from tempfile import gettempdir
+    import getpass
+    cache_dir = join(gettempdir(),
+            "%s-v%s-uid%s-py%s" % (
+                name, version,
+                getpass.getuser(), ".".join(str(i) for i in sys.version_info)))
+
+    # {{{ ensure cache directory exists
+
+    try:
+        os.mkdir(cache_dir)
+    except OSError, e:
+        from errno import EEXIST
+        if e.errno != EEXIST:
+            raise
+
+    # }}}
+
+    return DiskDict(join(cache_dir, "database.sqlite"), **kwargs)
 
 
 class DiskDict(object):
-    """Provides a disk-backed dictionary. Unlike L{shelve}, this class allows
+    """Provides a disk-backed dictionary. Unlike :mod:`shelve`, this class allows
     arbitrary values for keys, at a slight performance penalty.
 
-    Note that this is a dangerous game: The C{hash()} of many objects changes
-    between runs. In particular, C{hash(None)} changes between runs.
-    C{str}, C{unicode}, C{int}, C{tuple} and C{long} seem to be constant
-    for a given Python executable, but they may change for a new version.
+    Note that this is a dangerous game: The :func:`hash` of many objects
+    changes between runs. In particular, ``hash(None)`` changes between runs.
+    :class:`str`, :class:`unicode`, :class:`int`, :class:`tuple` and
+    :class:`long` seem to be constant for a given Python executable, but they
+    may change for a new version.
 
     So don't use this class for data that you absolutely *have* to be able
     to retrieve. It's fine for caches and the like, though.
@@ -60,7 +88,8 @@ class DiskDict(object):
                     "select key_pickle, version_pickle, result_pickle from data"
                     " where key_hash = ? and version_hash = ?",
                     (hash(key), self.version_hash)):
-                if loads(str(key_pickle)) == key and loads(str(version_pickle)) == self.version:
+                if loads(str(key_pickle)) == key \
+                        and loads(str(version_pickle)) == self.version:
                     result = loads(str(result_pickle))
                     self.cache[key] = result
                     return True
@@ -76,7 +105,8 @@ class DiskDict(object):
                     "select key_pickle, version_pickle, result_pickle from data"
                     " where key_hash = ? and version_hash = ?",
                     (hash(key), self.version_hash)):
-                if loads(str(key_pickle)) == key and loads(str(version_pickle)) == self.version:
+                if loads(str(key_pickle)) == key \
+                        and loads(str(version_pickle)) == self.version:
                     result = loads(str(result_pickle))
                     self.cache[key] = result
                     return result
@@ -107,7 +137,8 @@ class DiskDict(object):
 
         from cPickle import dumps
         self.db_conn.execute("insert into data"
-                " (key_hash, key_pickle, version_hash, version_pickle, result_pickle)"
+                " (key_hash, key_pickle, version_hash, "
+                "    version_pickle, result_pickle)"
                 " values (?,?,?,?,?)",
                 (hash(key), sqlite.Binary(dumps(key)),
                     self.version_hash, self.version_pickle,
@@ -119,8 +150,6 @@ class DiskDict(object):
             self.db_conn.commit()
 
 
-
-
 try:
     import sqlite3 as sqlite
 except ImportError:
@@ -130,4 +159,4 @@ except ImportError:
         import warnings
         warnings.warn("DiskDict will be memory-only: "
                 "a usable version of sqlite was not found.")
-        DiskDict = dict
+        DiskDict = dict  # noqa
