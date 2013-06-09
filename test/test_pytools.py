@@ -1,8 +1,6 @@
 from __future__ import division
 
 
-
-
 def test_memoize_method_nested():
     from pytools import memoize_method_nested
 
