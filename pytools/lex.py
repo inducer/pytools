@@ -35,30 +35,30 @@ class ParseError:
 
 
 class RE:
-    def __init__(self, str, flags=0):
-        self.Content = str
-        self.RE = re.compile(str, flags)
+    def __init__(self, s, flags=0):
+        self.Content = s
+        self.RE = re.compile(s, flags)
 
     def __repr__(self):
         return "RE(%s)" % self.Content
 
 
-def lex(lex_table, str, debug=False):
+def lex(lex_table, s, debug=False):
     rule_dict = dict(lex_table)
 
-    def matches_rule(rule, str, start):
+    def matches_rule(rule, s, start):
         if debug:
-            print "Trying", rule, "on", str[start:]
+            print "Trying", rule, "on", s[start:]
         if isinstance(rule, tuple):
             if rule[0] == "|":
                 for subrule in rule[1:]:
-                    length = matches_rule(subrule, str, start)
+                    length = matches_rule(subrule, s, start)
                     if length:
                         return length
             else:
                 my_match_length = 0
                 for subrule in rule:
-                    length = matches_rule(subrule, str, start)
+                    length = matches_rule(subrule, s, start)
                     if length:
                         my_match_length += length
                         start += length
@@ -66,9 +66,9 @@ def lex(lex_table, str, debug=False):
                         return 0
                 return my_match_length
         elif isinstance(rule, basestring):
-            return matches_rule(rule_dict[rule], str, start)
+            return matches_rule(rule_dict[rule], s, start)
         elif isinstance(rule, RE):
-            match_obj = rule.RE.match(str, start)
+            match_obj = rule.RE.match(s, start)
             if match_obj:
                 return match_obj.end()-start
             else:
@@ -78,17 +78,17 @@ def lex(lex_table, str, debug=False):
 
     result = []
     i = 0
-    while i < len(str):
+    while i < len(s):
         rule_matched = False
         for name, rule in lex_table:
-            length = matches_rule(rule, str, i)
+            length = matches_rule(rule, s, i)
             if length:
-                result.append((name, str[i:i+length], i))
+                result.append((name, s[i:i+length], i))
                 i += length
                 rule_matched = True
                 break
         if not rule_matched:
-            raise InvalidTokenError(str, i)
+            raise InvalidTokenError(s, i)
     return result
 
 
