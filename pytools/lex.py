@@ -1,11 +1,13 @@
 import re
 
+
 class RuleError:
     def __init__(self, rule):
         self.Rule = rule
 
     def __str__(self):
         return repr(self.Rule)
+
 
 class InvalidTokenError:
     def __init__(self, s, str_index):
@@ -15,6 +17,7 @@ class InvalidTokenError:
     def __str__(self):
         return "at index %d: ...%s..." % \
                (self.index, self.string[self.index:self.index+20])
+
 
 class ParseError:
     def __init__(self, msg, s, token):
@@ -27,9 +30,8 @@ class ParseError:
             return "%s at end of input" % self.message
         else:
             return "%s at index %d: ...%s..." % \
-                   (self.message, self.Token[2], self.string[self.Token[2]:self.Token[2]+20])
-
-
+                   (self.message, self.Token[2],
+                           self.string[self.Token[2]:self.Token[2]+20])
 
 
 class RE:
@@ -39,8 +41,6 @@ class RE:
 
     def __repr__(self):
         return "RE(%s)" % self.Content
-
-
 
 
 def lex(lex_table, str, debug=False):
@@ -74,7 +74,7 @@ def lex(lex_table, str, debug=False):
             else:
                 return 0
         else:
-            raise RuleError, rule
+            raise RuleError(rule)
 
     result = []
     i = 0
@@ -88,10 +88,8 @@ def lex(lex_table, str, debug=False):
                 rule_matched = True
                 break
         if not rule_matched:
-            raise InvalidTokenError, (str, i)
+            raise InvalidTokenError(str, i)
     return result
-
-
 
 
 class LexIterator(object):
@@ -131,17 +129,19 @@ class LexIterator(object):
 
     def raise_parse_error(self, msg):
         if self.is_at_end():
-            raise ParseError, (msg, self.raw_string, None)
+            raise ParseError(msg, self.raw_string, None)
         else:
-            raise ParseError, (msg, self.raw_string, self.lexed[self.index])
+            raise ParseError(msg, self.raw_string, self.lexed[self.index])
 
     def expected(self, what_expected):
         if self.is_at_end():
-            self.raise_parse_error("%s expected, end of input found instead" % \
-                                   what_expected)
+            self.raise_parse_error(
+                    "%s expected, end of input found instead" %
+                    what_expected)
         else:
-            self.raise_parse_error("%s expected, %s found instead" % \
-                                   (what_expected, str(self.next_tag())))
+            self.raise_parse_error(
+                    "%s expected, %s found instead" %
+                    (what_expected, str(self.next_tag())))
 
     def expect_not_end(self):
         if self.is_at_end():
@@ -151,5 +151,3 @@ class LexIterator(object):
         self.expect_not_end()
         if not self.is_next(tag):
             self.expected(str(tag))
-
-
