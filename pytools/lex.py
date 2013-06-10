@@ -19,7 +19,7 @@ class InvalidTokenError:
                (self.index, self.string[self.index:self.index+20])
 
 
-class ParseError:
+class ParseError(RuntimeError):
     def __init__(self, msg, s, token):
         self.message = msg
         self.string = s
