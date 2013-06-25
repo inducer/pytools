@@ -1,8 +1,6 @@
 from pytools import memoize
 
 
-
-
 # {{{ debug files -------------------------------------------------------------
 
 def make_unique_filesystem_object(stem, extension="", directory="",
@@ -28,8 +26,6 @@ def make_unique_filesystem_object(stem, extension="", directory="",
             i += 1
 
 
-
-
 @memoize
 def get_run_debug_directory():
     def creator(name):
@@ -37,9 +33,7 @@ def get_run_debug_directory():
         mkdir(name)
         return name
 
-    return make_unique_filesystem_object("run-debug", creator=creator)
-
-
+    return make_unique_filesystem_object("run-debug", creator=creator)[0]
 
 
 def open_unique_debug_file(stem, extension=""):
@@ -51,9 +45,12 @@ def open_unique_debug_file(stem, extension=""):
 
 # }}}
 
+
 # {{{ refcount debugging ------------------------------------------------------
+
 class RefDebugQuit(Exception):
     pass
+
 
 def refdebug(obj, top_level=True, exclude=[]):
     from types import FrameType
@@ -107,7 +104,7 @@ def refdebug(obj, top_level=True, exclude=[]):
 
                 response = raw_input()
 
-                if response =="d":
+                if response == "d":
                     refdebug(r, top_level=False, exclude=exclude+[reflist])
                     print_head = True
                 elif response == "n":
@@ -137,6 +134,7 @@ def refdebug(obj, top_level=True, exclude=[]):
 
 # }}}
 
+
 # {{{ interactive shell
 
 def get_shell_hist_filename():
@@ -144,11 +142,12 @@ def get_shell_hist_filename():
     _home = os.environ.get('HOME', '/')
     return os.path.join(_home, ".pytools-debug-shell-history")
 
+
 def setup_readline():
     try:
         readline.read_history_file(get_shell_hist_filename())
     except Exception:
-        # http://docs.python.org/3/howto/pyporting.html#capturing-the-currently-raised-exception
+        # http://docs.python.org/3/howto/pyporting.html#capturing-the-currently-raised-exception  # noqa
         import sys
         e = sys.exc_info()[1]
 
@@ -166,6 +165,7 @@ except ImportError:
 else:
     setup_readline()
 
+
 class SetPropagatingDict(dict):
     def __init__(self, source_dicts, target_dict):
         dict.__init__(self)
@@ -181,6 +181,7 @@ class SetPropagatingDict(dict):
     def __delitem__(self, key):
         dict.__delitem__(self, key)
         del self.target_dict[key]
+
 
 def shell(locals=None, globals=None):
     from inspect import currentframe, getouterframes
