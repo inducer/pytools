@@ -144,15 +144,18 @@ def get_shell_hist_filename():
 
 
 def setup_readline():
-    try:
-        readline.read_history_file(get_shell_hist_filename())
-    except Exception:
-        # http://docs.python.org/3/howto/pyporting.html#capturing-the-currently-raised-exception  # noqa
-        import sys
-        e = sys.exc_info()[1]
+    from os.path import exists
+    hist_filename = get_shell_hist_filename()
+    if exists(hist_filename):
+        try:
+            readline.read_history_file(hist_filename)
+        except Exception:
+            # http://docs.python.org/3/howto/pyporting.html#capturing-the-currently-raised-exception  # noqa
+            import sys
+            e = sys.exc_info()[1]
 
-        from warnings import warn
-        warn("Error opening readline history file: %s" % e)
+            from warnings import warn
+            warn("Error opening readline history file: %s" % e)
 
     readline.parse_and_bind("tab: complete")
 
