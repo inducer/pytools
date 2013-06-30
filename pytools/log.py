@@ -1,5 +1,8 @@
 from __future__ import division
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 
 
@@ -666,8 +669,11 @@ class LogManager(object):
         self.last_save_time = time()
 
     def add_quantity(self, quantity, interval=1):
-        """Add an object derived from L{LogQuantity} to this manager."""
+        """Add an object derived from :class:`LogQuantity` to this manager."""
+
         def add_internal(name, unit, description, def_agg):
+            logger.debug("add log quantity '%s'" % name)
+
             if name in self.quantity_data:
                 raise RuntimeError("cannot add the same quantity '%s' twice" % name)
             self.quantity_data[name] = _QuantityData(unit, description, def_agg)
