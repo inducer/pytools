@@ -302,7 +302,7 @@ class LogManager(object):
         :param mode: One of "w", "r" for write, read. "w" assumes that the
           database is initially empty. May also be "wu" to indicate that
           a unique filename should be chosen automatically.
-        :arg mpi_comm: A :mod:`mpi4py.MPI.Communicator`. If given, logs are
+        :arg mpi_comm: A :mod:`mpi4py.MPI.Comm`. If given, logs are
             periodically synchronized to the head node, which then writes them
             out to disk.
         :param capture_warnings: Tap the Python warnings facility and save warnings
