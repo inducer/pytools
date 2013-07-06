@@ -24,6 +24,7 @@ THE SOFTWARE.
 
 
 import operator
+import sys
 
 from pytools.decorator import decorator
 
@@ -351,7 +352,7 @@ def single_valued(iterable, equality_pred=operator.eq):
 # }}}
 
 
-# {{{ memoization
+# {{{ memoization / attribute storage
 
 @my_decorator
 def memoize(func, *args):
@@ -370,22 +371,54 @@ def memoize(func, *args):
         result = func(*args)
         func._memoize_dic[args] = result
         return result
+
 FunctionValueCache = memoize
 
 
-@my_decorator
-def memoize_method(method, instance, *args):
-    cache_dict_name = intern("_memoize_dic_"+method.__name__)
-    try:
-        return getattr(instance, cache_dict_name)[args]
-    except AttributeError:
-        result = method(instance, *args)
-        setattr(instance, cache_dict_name, {args: result})
-        return result
-    except KeyError:
-        result = method(instance, *args)
-        getattr(instance, cache_dict_name)[args] = result
-        return result
+if sys.version_info >= (2, 5):
+    # For Python 2.5 and newer, support cache deletion by a
+    # 'method_name.clear_cache(self)' call.
+
+    def memoize_method(method):
+        cache_dict_name = intern("_memoize_dic_"+method.__name__)
+
+        def wrapper(self, *args):
+            try:
+                return getattr(self, cache_dict_name)[args]
+            except AttributeError:
+                result = method(self, *args)
+                setattr(self, cache_dict_name, {args: result})
+                return result
+            except KeyError:
+                result = method(self, *args)
+                getattr(self, cache_dict_name)[args] = result
+                return result
+
+        def clear_cache(self):
+            delattr(self, cache_dict_name)
+
+        from functools import update_wrapper
+        new_wrapper = update_wrapper(wrapper, method)
+        new_wrapper.clear_cache = clear_cache
+
+        return new_wrapper
+
+else:
+    # For sad old Python 2.4, cache deletion is not supported.
+
+    @my_decorator
+    def memoize_method(method, instance, *args):
+        cache_dict_name = intern("_memoize_dic_"+method.__name__)
+        try:
+            return getattr(instance, cache_dict_name)[args]
+        except AttributeError:
+            result = method(instance, *args)
+            setattr(instance, cache_dict_name, {args: result})
+            return result
+        except KeyError:
+            result = method(instance, *args)
+            getattr(instance, cache_dict_name)[args] = result
+            return result
 
 
 def memoize_method_nested(inner):
@@ -423,8 +456,6 @@ def memoize_method_nested(inner):
             return result
 
     return new_inner
-
-FunctionValueCache = memoize
 
 # }}}
 
