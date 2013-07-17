@@ -1288,9 +1288,9 @@ class CPyUserInterface(object):
         import os
         for arg in argv[1:]:
             if os.access(arg, os.F_OK):
-                exec open(arg, "r") in execenv
+                exec(compile(open(arg, "r"), arg, 'exec'), execenv)
             else:
-                exec arg in execenv
+                exec(compile(arg, "<command line>", 'exec'), execenv)
 
         # check if the user set invalid keys
         for added_key in (
