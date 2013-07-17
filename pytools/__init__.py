@@ -1237,6 +1237,14 @@ def word_wrap(text, width, wrap_using="\n"):
 
 # {{{ command line interfaces -------------------------------------------------
 
+def _exec_arg(arg, execenv):
+    import os
+    if os.access(arg, os.F_OK):
+        exec(compile(open(arg, "r"), arg, 'exec'), execenv)
+    else:
+        exec(compile(arg, "<command line>", 'exec'), execenv)
+
+
 class CPyUserInterface(object):
     class Parameters(Record):
         pass
@@ -1285,12 +1293,8 @@ class CPyUserInterface(object):
         execenv = self.variables.copy()
         execenv.update(self.constants)
 
-        import os
         for arg in argv[1:]:
-            if os.access(arg, os.F_OK):
-                exec(compile(open(arg, "r"), arg, 'exec'), execenv)
-            else:
-                exec(compile(arg, "<command line>", 'exec'), execenv)
+            _exec_arg(arg, execenv)
 
         # check if the user set invalid keys
         for added_key in (
