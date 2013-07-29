@@ -45,3 +45,23 @@ def test_memoize_method_clear():
     assert sc.run_count == 1
 
     sc.f.clear_cache(sc)
+
+
+def test_p_convergence_verifier():
+    from pytools.convergence import PConvergenceVerifier
+
+    pconv_verifier = PConvergenceVerifier()
+    for order in [2, 3, 4, 5]:
+        pconv_verifier.add_data_point(order, 0.1**order)
+    pconv_verifier()
+
+    pconv_verifier = PConvergenceVerifier()
+    for order in [2, 3, 4, 5]:
+        pconv_verifier.add_data_point(order, 0.5**order)
+    pconv_verifier()
+
+    pconv_verifier = PConvergenceVerifier()
+    for order in [2, 3, 4, 5]:
+        pconv_verifier.add_data_point(order, 2)
+    with pytest.raises(AssertionError):
+        pconv_verifier()

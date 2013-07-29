@@ -80,4 +80,36 @@ class EOCRecorder(object):
 # }}}
 
 
+# {{{ p convergence verifier
+
+class PConvergenceVerifier(object):
+    def __init__(self):
+        self.orders = []
+        self.errors = []
+
+    def add_data_point(self, order, error):
+        self.orders.append(order)
+        self.errors.append(error)
+
+    def __str__(self):
+        from pytools import Table
+        tbl = Table()
+        tbl.add_row(("p", "error"))
+
+        for p, err in zip(self.orders, self.errors):
+            tbl.add_row((str(p), str(err)))
+
+        return str(tbl)
+
+    def __call__(self):
+        orders = np.array(self.orders, np.float64)
+        errors = np.abs(np.array(self.errors, np.float64))
+
+        rel_change = np.diff(1e-20 + np.log10(errors)) / np.diff(orders)
+
+        assert (rel_change < -0.2).all()
+
+# }}}
+
+
 # vim: foldmethod=marker
