@@ -4,6 +4,49 @@ import pytest
 import sys  # noqa
 
 
+@pytest.mark.skipif("sys.version_info < (2, 5)")
+def test_memoize_method_clear():
+    from pytools import memoize_method
+
+    class SomeClass:
+        def __init__(self):
+            self.run_count = 0
+
+        @memoize_method
+        def f(self):
+            self.run_count += 1
+            return 17
+
+    sc = SomeClass()
+    sc.f()
+    sc.f()
+    assert sc.run_count == 1
+
+    sc.f.clear_cache(sc)
+
+
+def test_memoize_method_with_uncached():
+    from pytools import memoize_method_with_uncached
+
+    class SomeClass:
+        def __init__(self):
+            self.run_count = 0
+
+        @memoize_method_with_uncached(uncached_args=[1], uncached_kwargs=["z"])
+        def f(self, x, y, z):
+            self.run_count += 1
+            return 17
+
+    sc = SomeClass()
+    sc.f(17, 18, z=19)
+    sc.f(17, 19, z=20)
+    assert sc.run_count == 1
+    sc.f(18, 19, z=20)
+    assert sc.run_count == 2
+
+    sc.f.clear_cache(sc)
+
+
 def test_memoize_method_nested():
     from pytools import memoize_method_nested
 
@@ -24,27 +67,6 @@ def test_memoize_method_nested():
     sc = SomeClass()
     sc.f()
     assert sc.run_count == 1
-
-
-@pytest.mark.skipif("sys.version_info < (2, 5)")
-def test_memoize_method_clear():
-    from pytools import memoize_method
-
-    class SomeClass:
-        def __init__(self):
-            self.run_count = 0
-
-        @memoize_method
-        def f(self):
-            self.run_count += 1
-            return 17
-
-    sc = SomeClass()
-    sc.f()
-    sc.f()
-    assert sc.run_count == 1
-
-    sc.f.clear_cache(sc)
 
 
 def test_p_convergence_verifier():

@@ -378,8 +378,13 @@ FunctionValueCache = memoize
 class _HasKwargs(object):
     pass
 
+
 def memoize_method(method):
-    """Supports cache deletion via ``method_name.clear_cache(self)``."""
+    """Supports cache deletion via ``method_name.clear_cache(self)``.
+
+    .. note::
+        *clear_cache* support requires Python 2.5 or newer.
+    """
 
     cache_dict_name = intern("_memoize_dic_"+method.__name__)
 
@@ -410,6 +415,61 @@ def memoize_method(method):
 
     return new_wrapper
 
+
+def memoize_method_with_uncached(uncached_args=[], uncached_kwargs=set()):
+    """Supports cache deletion via ``method_name.clear_cache(self)``.
+
+    :arg uncached_args: a list of argument numbers
+        (0-based, not counting 'self' argument)
+    """
+
+    # delete starting from the end
+    uncached_args = sorted(uncached_args, reverse=True)
+    uncached_kwargs = list(uncached_kwargs)
+
+    def parametrized_decorator(method):
+        cache_dict_name = intern("_memoize_dic_"+method.__name__)
+
+        def wrapper(self, *args, **kwargs):
+            cache_args = list(args)
+            cache_kwargs = kwargs.copy()
+
+            for i in uncached_args:
+                if i < len(cache_args):
+                    cache_args.pop(i)
+
+            cache_args = tuple(cache_args)
+
+            if kwargs:
+                for name in uncached_kwargs:
+                    cache_kwargs.pop(name, None)
+
+                key = (_HasKwargs, frozenset(cache_kwargs.iteritems())) + cache_args
+            else:
+                key = cache_args
+
+            try:
+                return getattr(self, cache_dict_name)[key]
+            except AttributeError:
+                result = method(self, *args, **kwargs)
+                setattr(self, cache_dict_name, {key: result})
+                return result
+            except KeyError:
+                result = method(self, *args, **kwargs)
+                getattr(self, cache_dict_name)[key] = result
+                return result
+
+        def clear_cache(self):
+            delattr(self, cache_dict_name)
+
+        if sys.version_info >= (2, 5):
+            from functools import update_wrapper
+            new_wrapper = update_wrapper(wrapper, method)
+            new_wrapper.clear_cache = clear_cache
+
+        return new_wrapper
+
+    return parametrized_decorator
 
 
 def memoize_method_nested(inner):
