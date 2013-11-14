@@ -23,6 +23,9 @@ THE SOFTWARE.
 """
 
 
+# loosely based on
+# http://effbot.org/zone/python-code-generator.htm
+
 class Indentation(object):
     def __init__(self, generator):
         self.generator = generator
