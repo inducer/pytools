@@ -123,15 +123,12 @@ class DataTable:
     def sort(self, columns, reverse=False):
         col_indices = [self.column_indices[col] for col in columns]
 
-        def mycmp(row_a, row_b):
-            for col_index in col_indices:
-                this_result = cmp(row_a[col_index], row_b[col_index])
-                if this_result:
-                    return this_result
+        def mykey(row):
+            return tuple(
+                    row[col_index]
+                    for col_index in col_indices)
 
-            return 0
-
-        self.data.sort(mycmp, reverse=reverse)
+        self.data.sort(reverse=reverse, key=mykey)
 
     def aggregated(self, groupby, agg_column, aggregate_func):
         gb_indices = [self.column_indices[col] for col in groupby]
