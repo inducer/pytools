@@ -70,6 +70,8 @@ def test_memoize_method_nested():
 
 
 def test_p_convergence_verifier():
+    pytest.importorskip("numpy")
+
     from pytools.convergence import PConvergenceVerifier
 
     pconv_verifier = PConvergenceVerifier()
