@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import division, with_statement
 
 import pytest
 import sys  # noqa
