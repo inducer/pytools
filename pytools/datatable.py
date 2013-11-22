@@ -1,7 +1,8 @@
 from pytools import Record
+
+
 class Row(Record):
     pass
-
 
 
 class DataTable:
@@ -24,7 +25,7 @@ class DataTable:
                 (colname, i) for i, colname in enumerate(column_names))
 
         if len(self.column_indices) != len(self.column_names):
-            raise RuntimeError, "non-unique column names encountered"
+            raise RuntimeError("non-unique column names encountered")
 
     def __bool__(self):
         return bool(self.data)
@@ -96,9 +97,9 @@ class DataTable:
     def get(self, **kwargs):
         filtered = self.filtered(**kwargs)
         if len(filtered) < 1:
-            raise RuntimeError, "no matching entry for get()"
+            raise RuntimeError("no matching entry for get()")
         if len(filtered) > 1:
-            raise RuntimeError, "more than one matching entry for get()"
+            raise RuntimeError("more than one matching entry for get()")
 
         return Row(dict(zip(self.column_names, filtered.data[0])))
 
@@ -132,34 +133,7 @@ class DataTable:
 
         self.data.sort(mycmp, reverse=reverse)
 
-    def aggregated(self, groupby, agg_column, aggregate_func):
-        gb_indices = [self.column_indices[col] for col in groupby]
-        agg_index = self.column_indices[agg_column]
-
-        first = True
-
-        result_data = []
-
-        for row in self.data:
-            this_values = tuple(row[i] for i in gb_indices)
-            if first or this_values != last_values:
-                if not first:
-                    result_data.append(last_values + (aggregate_func(agg_values),))
-
-                agg_values = [row[agg_index]]
-                last_values = this_values
-                first = False
-            else:
-                agg_values.append(row[agg_index])
-
-        if not first and agg_values:
-            result_data.append(this_values + (aggregate_func(agg_values),))
-
-        return DataTable(
-                [self.column_names[i] for i in gb_indices] + [agg_column], 
-                result_data)
-
-    def join(self, column, other_column, other_table, outer=False): 
+    def join(self, column, other_column, other_table, outer=False):
         """Return a tabled joining this and the C{other_table} on C{column}.
 
         The new table has the following columns:
@@ -237,8 +211,8 @@ class DataTable:
 
             for this_batch_row in this_batch:
                 for other_batch_row in other_batch:
-                    result_data.append((key,) + \
-                            without(this_batch_row, this_key_idx) + \
+                    result_data.append((key,) +
+                            without(this_batch_row, this_key_idx) +
                             without(other_batch_row, other_key_idx))
 
             if outer:
@@ -253,7 +227,7 @@ class DataTable:
     def restricted(self, columns):
         col_indices = [self.column_indices[col] for col in columns]
 
-        return DataTable(columns, 
+        return DataTable(columns,
                 [[row[i] for i in col_indices] for row in self.data])
 
     def column_data(self, column):
@@ -265,4 +239,3 @@ class DataTable:
         csvwriter = writer(filelike, **kwargs)
         csvwriter.writerow(self.column_names)
         csvwriter.writerows(self.data)
-
