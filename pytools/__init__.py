@@ -1396,6 +1396,18 @@ class MovedFunctionDeprecationWrapper:
 
 # {{{ debugging
 
+class StderrToStdout(object):
+    def __enter__(self):
+        import sys
+        self.stderr_backup = sys.stderr
+        sys.stderr = sys.stdout
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        import sys
+        sys.stderr = self.stderr_backup
+        del self.stderr_backup
+
+
 def typedump(val, max_seq=5, special_handlers={}):
     try:
         hdlr = special_handlers[type(val)]
