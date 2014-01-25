@@ -1610,13 +1610,16 @@ def match_precision(dtype, dtype_to_match):
 
 # {{{ unique name generation
 
-def generate_unique_possibilities(prefix):
+def generate_unique_names(prefix):
     yield prefix
 
     try_num = 0
     while True:
         yield "%s_%d" % (prefix, try_num)
         try_num += 1
+
+generate_unique_possibilities = MovedFunctionDeprecationWrapper(
+        generate_unique_names)
 
 
 class UniqueNameGenerator:
@@ -1642,7 +1645,7 @@ class UniqueNameGenerator:
     def __call__(self, based_on="id"):
         based_on = self.forced_prefix + based_on
 
-        for var_name in generate_unique_possibilities(based_on):
+        for var_name in generate_unique_names(based_on):
             if not self.is_name_conflicting(var_name):
                 break
 
