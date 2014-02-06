@@ -115,7 +115,7 @@ class Norm(object):
 
 # {{{ record
 
-class Record(object):
+class RecordWithoutPickling(object):
     """An aggregate of named sub-variables. Assumes that each record sub-type
     will be individually derived from this class.
     """
@@ -147,6 +147,24 @@ class Record(object):
                     pass
         return self.__class__(**kwargs)
 
+    def __repr__(self):
+        return "%s(%s)" % (
+                self.__class__.__name__,
+                ", ".join("%s=%r" % (fld, getattr(self, fld))
+                    for fld in self.__class__.fields
+                    if hasattr(self, fld)))
+
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__
+                and self.__getstate__() == other.__getstate__())
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
+class Record(RecordWithoutPickling):
+    __slots__ = []
+
     def __getstate__(self):
         return dict(
                 (key, getattr(self, key))
@@ -162,21 +180,6 @@ class Record(object):
         for key, value in valuedict.iteritems():
             fields.add(key)
             setattr(self, key, value)
-
-    def __repr__(self):
-        return "%s(%s)" % (
-                self.__class__.__name__,
-                ", ".join("%s=%r" % (fld, getattr(self, fld))
-                    for fld in self.__class__.fields
-                    if hasattr(self, fld)))
-
-    def __eq__(self, other):
-        return (self.__class__ == other.__class__
-                and self.__getstate__() == other.__getstate__())
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
 # }}}
 
 
