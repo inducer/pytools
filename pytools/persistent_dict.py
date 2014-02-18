@@ -174,13 +174,13 @@ class KeyBuilder(object):
     # {{{ updaters
 
     def update_for_int(self, key_hash, key):
-        key_hash.update(str(key))
+        key_hash.update(str(key).encode("utf8"))
 
     update_for_long = update_for_int
     update_for_bool = update_for_int
 
     def update_for_float(self, key_hash, key):
-        key_hash.update(repr(key))
+        key_hash.update(repr(key).encode("utf8"))
 
     if sys.version_info >= (3,):
         def update_for_str(self, key_hash, key):
