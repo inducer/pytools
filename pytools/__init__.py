@@ -154,13 +154,6 @@ class RecordWithoutPickling(object):
                     for fld in self.__class__.fields
                     if hasattr(self, fld)))
 
-    def __eq__(self, other):
-        return (self.__class__ == other.__class__
-                and self.__getstate__() == other.__getstate__())
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
 
 class Record(RecordWithoutPickling):
     __slots__ = []
@@ -180,6 +173,14 @@ class Record(RecordWithoutPickling):
         for key, value in valuedict.iteritems():
             fields.add(key)
             setattr(self, key, value)
+
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__
+                and self.__getstate__() == other.__getstate__())
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 # }}}
 
 
