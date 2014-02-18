@@ -25,13 +25,13 @@ def test_persistent_dict():
         pdict[k] = v
         pdict.store(k, v, info_files={"hey": str(v)})
 
-    for k, v in d.iteritems():
+    for k, v in d.items():
         assert d[k] == pdict[k]
 
     for k, v in zip(keys, values):
         pdict.store(k, v+1, info_files={"hey": str(v)})
 
-    for k, v in d.iteritems():
+    for k, v in d.items():
         assert d[k] + 1 == pdict[k]
 
 
