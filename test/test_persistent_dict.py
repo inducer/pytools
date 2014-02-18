@@ -16,7 +16,7 @@ def test_persistent_dict():
                 chr(65+randrange(26))
                 for i in range(n))
 
-    keys = [(randrange(2000), rand_str()) for i in range(20)]
+    keys = [(randrange(2000), rand_str(), None) for i in range(20)]
     values = [randrange(2000) for i in range(20)]
 
     d = dict(zip(keys, values))
