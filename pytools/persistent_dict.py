@@ -171,12 +171,13 @@ class KeyBuilder(object):
         self.rec(key_hash, key)
         return key_hash.hexdigest()
 
-    # {{{ mappers
+    # {{{ updaters
 
     def update_for_int(self, key_hash, key):
         key_hash.update(str(key))
 
-    upddate_for_long = update_for_int
+    update_for_long = update_for_int
+    update_for_bool = update_for_int
 
     def update_for_float(self, key_hash, key):
         key_hash.update(repr(key))
@@ -194,6 +195,16 @@ class KeyBuilder(object):
     def update_for_tuple(self, key_hash, key):
         for obj_i in key:
             self.rec(key_hash, obj_i)
+
+    def update_for_frozenset(self, key_hash, key):
+        for set_key in sorted(key):
+            self.rec(key_hash, set_key)
+
+    def update_for_NoneType(self, key_hash, key):
+        key_hash.update("<None>".encode('utf8'))
+
+    def update_for_dtype(self, key_hash, key):
+        return key.str.encode("utf8")
 
     # }}}
 
@@ -268,15 +279,15 @@ class PersistentDict(object):
                     with open(info_path, "wt") as outf:
                         outf.write(info_value)
 
-                from cPickle import dump
+                from cPickle import dump, HIGHEST_PROTOCOL
                 value_path = item_dir_m.sub("contents")
                 with open(value_path, "wb") as outf:
-                    dump(value, outf)
+                    dump(value, outf, protocol=HIGHEST_PROTOCOL)
 
                 # Write key last, so that if the reader below
                 key_path = item_dir_m.sub("key")
                 with open(key_path, "wb") as outf:
-                    dump(key, outf)
+                    dump(key, outf, protocol=HIGHEST_PROTOCOL)
 
             except:
                 cleanup_m.error_clean_up()
