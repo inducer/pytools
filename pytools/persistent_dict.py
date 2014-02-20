@@ -24,6 +24,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 import sys
 import os
 
@@ -339,6 +343,8 @@ class PersistentDict(object):
 
                 if read_key != key:
                     # Key collision, oh well.
+                    logger.debug("key collsion in cache at '%s'"
+                            % self.container_dir)
                     raise NoSuchEntryError(key)
 
                 # {{{ load value
