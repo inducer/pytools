@@ -138,14 +138,17 @@ class RecordWithoutPickling(object):
                 fields.add(key)
                 setattr(self, key, value)
 
-    def copy(self, **kwargs):
+    def get_copy_kwargs(self, **kwargs):
         for f in self.__class__.fields:
             if f not in kwargs:
                 try:
                     kwargs[f] = getattr(self, f)
                 except AttributeError:
                     pass
-        return self.__class__(**kwargs)
+        return kwargs
+
+    def copy(self, **kwargs):
+        return self.__class__(**self.get_copy_kwargs(**kwargs))
 
     def __repr__(self):
         return "%s(%s)" % (
