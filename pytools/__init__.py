@@ -157,6 +157,14 @@ class RecordWithoutPickling(object):
                     for fld in self.__class__.fields
                     if hasattr(self, fld)))
 
+    def register_fields(self, new_fields):
+        try:
+            fields = self.__class__.fields
+        except AttributeError:
+            self.__class__.fields = fields = set()
+
+        fields.update(new_fields)
+
 
 class Record(RecordWithoutPickling):
     __slots__ = []
