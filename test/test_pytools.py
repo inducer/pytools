@@ -89,3 +89,41 @@ def test_p_convergence_verifier():
         pconv_verifier.add_data_point(order, 2)
     with pytest.raises(AssertionError):
         pconv_verifier()
+
+
+def test_memoize():
+    from pytools import memoize
+    count = [0]
+
+    @memoize
+    def f(i, j=1):
+        count[0] += 1
+        return i + j
+
+    assert f(1) == 2
+    assert f(1, 2) == 3
+    assert f(2, j=3) == 5
+    assert count[0] == 3
+    assert f(1) == 2
+    assert f(1, 2) == 3
+    assert f(2, j=3) == 5
+    assert count[0] == 3
+
+
+def test_memoize_keyfunc():
+    from pytools import memoize
+    count = [0]
+
+    @memoize(key=lambda i, j=(1,): (i, len(j)))
+    def f(i, j=(1,)):
+        count[0] += 1
+        return i + len(j)
+
+    assert f(1) == 2
+    assert f(1, [2]) == 2
+    assert f(2, j=[2, 3]) == 4
+    assert count[0] == 2
+    assert f(1) == 2
+    assert f(1, (2,)) == 2
+    assert f(2, j=(2, 3)) == 4
+    assert count[0] == 2

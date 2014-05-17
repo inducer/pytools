@@ -10,7 +10,7 @@
 __all__ = ["decorator", "update_wrapper", "getinfo"]
 
 import inspect
-    
+
 def getinfo(func):
     """
     Returns an info dictionary containing:
@@ -21,7 +21,7 @@ def getinfo(func):
     - doc (the docstring : str)
     - module (the module name : str)
     - dict (the function __dict__ : str)
-    
+
     >>> def f(self, x=1, y=2, *args, **kw): pass
 
     >>> info = getinfo(f)
@@ -30,7 +30,7 @@ def getinfo(func):
     'f'
     >>> info["argnames"]
     ['self', 'x', 'y', 'args', 'kw']
-    
+
     >>> info["defaults"]
     (1, 2)
 
@@ -68,7 +68,7 @@ def update_wrapper(wrapper, wrapped, create=False):
     if create: # create a brand new wrapper with the right signature
         src = "lambda %(signature)s: _wrapper_(%(signature)s)" % infodict
         # import sys; print >> sys.stderr, src # for debugging purposes
-        wrapper = eval(src, dict(_wrapper_=wrapper))        
+        wrapper = eval(src, dict(_wrapper_=wrapper))
     try:
         wrapper.__name__ = infodict['name']
     except: # Python version < 2.4
@@ -102,7 +102,7 @@ def decorator(caller, func=None):
      def caller(func, *args, **kw):
          # do something
          return func(*args, **kw)
-    
+
     Here is an example of usage:
 
     >>> @decorator
@@ -112,7 +112,7 @@ def decorator(caller, func=None):
 
     >>> chatty.__name__
     'chatty'
-    
+
     >>> @chatty
     ... def f(): pass
     ...
@@ -137,13 +137,13 @@ if __name__ == "__main__":
     import doctest; doctest.testmod()
 
 #######################     LEGALESE    ##################################
-      
+
 ##   Redistributions of source code must retain the above copyright 
 ##   notice, this list of conditions and the following disclaimer.
 ##   Redistributions in bytecode form must reproduce the above copyright
 ##   notice, this list of conditions and the following disclaimer in
 ##   the documentation and/or other materials provided with the
-##   distribution. 
+##   distribution.
 
 ##   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 ##   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT

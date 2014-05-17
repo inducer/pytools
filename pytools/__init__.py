@@ -369,23 +369,47 @@ def single_valued(iterable, equality_pred=operator.eq):
 
 # {{{ memoization / attribute storage
 
-@my_decorator
-def memoize(func, *args):
+def _memoize(func, key, args, kwargs):
     # by Michele Simionato
     # http://www.phyast.pitt.edu/~micheles/python/
 
     try:
-        return func._memoize_dic[args]
+        return func._memoize_dic[key]
     except AttributeError:
         # _memoize_dic doesn't exist yet.
 
-        result = func(*args)
-        func._memoize_dic = {args: result}
+        result = func(*args, **kwargs)
+        func._memoize_dic = {key: result}
         return result
     except KeyError:
-        result = func(*args)
-        func._memoize_dic[args] = result
+        result = func(*args, **kwargs)
+        func._memoize_dic[key] = result
         return result
+
+try:
+    dict.iteritems
+    def _iteritem(d):
+        return d.iteritems()
+except AttributeError:
+    def _iteritem(d):
+        return d.items()
+
+def memoize(*args, **kwargs):
+    key_func = kwargs.pop(
+        'key', lambda *a, **kw: (a, frozenset(_iteritem(kw))))
+    if kwargs:
+        raise TypeError(
+            "memorize recived unexpected keyword arguments: %s"
+            % ", ".join(kwargs.keys()))
+    @my_decorator
+    def _deco(func, *args, **kwargs):
+        return _memoize(func, key_func(*args, **kwargs), args, kwargs)
+    if not args:
+        return _deco
+    if callable(args[0]) and len(args) == 1:
+        return _deco(args[0])
+    raise TypeError(
+        "memorize recived unexpected position arguments: %s" % args)
 
 FunctionValueCache = memoize
 
