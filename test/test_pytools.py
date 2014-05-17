@@ -95,7 +95,7 @@ def test_memoize():
     from pytools import memoize
     count = [0]
 
-    @memoize
+    @memoize(use_kwargs=True)
     def f(i, j=1):
         count[0] += 1
         return i + j

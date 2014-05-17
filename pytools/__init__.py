@@ -369,41 +369,48 @@ def single_valued(iterable, equality_pred=operator.eq):
 
 # {{{ memoization / attribute storage
 
-def _memoize(func, key, args, kwargs):
-    # by Michele Simionato
-    # http://www.phyast.pitt.edu/~micheles/python/
-
-    try:
-        return func._memoize_dic[key]
-    except AttributeError:
-        # _memoize_dic doesn't exist yet.
-
-        result = func(*args, **kwargs)
-        func._memoize_dic = {key: result}
-        return result
-    except KeyError:
-        result = func(*args, **kwargs)
-        func._memoize_dic[key] = result
-        return result
-
-try:
-    dict.iteritems
-    def _iteritem(d):
-        return d.iteritems()
-except AttributeError:
-    def _iteritem(d):
-        return d.items()
-
 def memoize(*args, **kwargs):
+    use_kw = bool(kwargs.pop('use_kwargs', False))
     key_func = kwargs.pop(
-        'key', lambda *a, **kw: (a, frozenset(_iteritem(kw))))
+        'key', ((lambda *a, **kw: (a, frozenset(kw.iteritems())))
+                if use_kw else None))
     if kwargs:
         raise TypeError(
             "memorize recived unexpected keyword arguments: %s"
             % ", ".join(kwargs.keys()))
-    @my_decorator
-    def _deco(func, *args, **kwargs):
-        return _memoize(func, key_func(*args, **kwargs), args, kwargs)
+    if key_func is not None:
+        @my_decorator
+        def _deco(func, *args, **kwargs):
+            # by Michele Simionato
+            # http://www.phyast.pitt.edu/~micheles/python/
+            key = key_func(*args, **kwargs)
+            try:
+                return func._memoize_dic[key]
+            except AttributeError:
+                # _memoize_dic doesn't exist yet.
+                result = func(*args, **kwargs)
+                func._memoize_dic = {key: result}
+                return result
+            except KeyError:
+                result = func(*args, **kwargs)
+                func._memoize_dic[key] = result
+                return result
+    else:
+        @my_decorator
+        def _deco(func, *args):
+            # by Michele Simionato
+            # http://www.phyast.pitt.edu/~micheles/python/
+            try:
+                return func._memoize_dic[args]
+            except AttributeError:
+                # _memoize_dic doesn't exist yet.
+                result = func(*args)
+                func._memoize_dic = {args: result}
+                return result
+            except KeyError:
+                result = func(*args)
+                func._memoize_dic[args] = result
+                return result
     if not args:
         return _deco
     if callable(args[0]) and len(args) == 1:
