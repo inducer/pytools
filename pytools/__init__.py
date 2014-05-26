@@ -370,14 +370,32 @@ def single_valued(iterable, equality_pred=operator.eq):
 # {{{ memoization / attribute storage
 
 def memoize(*args, **kwargs):
+    """Stores previously computed function values in a cache.
+
+    Two keyword-only arguments are supported:
+
+    :arg use_kwargs: Allows the caller to use keyword arguments. Defaults to
+        ``False``. Setting this to ``True`` has a non-negligible performance
+        impact.
+    :arg key: A function receiving the same arguments as the decorated function
+        which computes and returns the cache key.
+    """
+
     use_kw = bool(kwargs.pop('use_kwargs', False))
-    key_func = kwargs.pop(
-        'key', ((lambda *a, **kw: (a, frozenset(kw.iteritems())))
-                if use_kw else None))
+
+    if use_kw:
+        def default_key_func(*inner_args, **inner_kwargs):
+            return inner_args, frozenset(inner_kwargs.iteritems())
+    else:
+        default_key_func = None
+
+    key_func = kwargs.pop("key", default_key_func)
+
     if kwargs:
         raise TypeError(
-            "memorize recived unexpected keyword arguments: %s"
+            "memoize received unexpected keyword arguments: %s"
             % ", ".join(kwargs.keys()))
+
     if key_func is not None:
         @my_decorator
         def _deco(func, *args, **kwargs):
@@ -416,7 +434,7 @@ def memoize(*args, **kwargs):
     if callable(args[0]) and len(args) == 1:
         return _deco(args[0])
     raise TypeError(
-        "memorize recived unexpected position arguments: %s" % args)
+        "memoize received unexpected position arguments: %s" % args)
 
 FunctionValueCache = memoize
 
