@@ -480,6 +480,47 @@ def memoize_method(method):
     return new_wrapper
 
 
+def memoize_on_first_arg(function):
+    """Like :func:`memoize_method`, but for functions that take the object
+    to do memoization as first argument.
+
+    Supports cache deletion via ``function_name.clear_cache(self)``.
+
+    .. note::
+        *clear_cache* support requires Python 2.5 or newer.
+    """
+
+    cache_dict_name = intern("_memoize_dic_"
+            + function.__module__ + function.__name__)
+
+    def wrapper(obj, *args, **kwargs):
+        if kwargs:
+            key = (_HasKwargs, frozenset(kwargs.iteritems())) + args
+        else:
+            key = args
+
+        try:
+            return getattr(obj, cache_dict_name)[key]
+        except AttributeError:
+            result = function(obj, *args, **kwargs)
+            setattr(obj, cache_dict_name, {key: result})
+            return result
+        except KeyError:
+            result = function(obj, *args, **kwargs)
+            getattr(obj, cache_dict_name)[key] = result
+            return result
+
+    def clear_cache(obj):
+        delattr(obj, cache_dict_name)
+
+    if sys.version_info >= (2, 5):
+        from functools import update_wrapper
+        new_wrapper = update_wrapper(wrapper, function)
+        new_wrapper.clear_cache = clear_cache
+
+    return new_wrapper
+
+
 def memoize_method_with_uncached(uncached_args=[], uncached_kwargs=set()):
     """Supports cache deletion via ``method_name.clear_cache(self)``.
 
