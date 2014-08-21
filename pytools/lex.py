@@ -1,7 +1,7 @@
 import re
 
 
-class RuleError:
+class RuleError(RuntimeError):
     def __init__(self, rule):
         self.Rule = rule
 
@@ -9,7 +9,7 @@ class RuleError:
         return repr(self.Rule)
 
 
-class InvalidTokenError:
+class InvalidTokenError(RuntimeError):
     def __init__(self, s, str_index):
         self.string = s
         self.index = str_index
