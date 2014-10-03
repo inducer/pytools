@@ -107,11 +107,11 @@ class LexIterator(object):
 
         self.index = rhs.index
 
-    def next_tag(self):
-        return self.lexed[self.index][0]
+    def next_tag(self, i=0):
+        return self.lexed[self.index + i][0]
 
-    def next_str(self):
-        return self.lexed[self.index][1]
+    def next_str(self, i=0):
+        return self.lexed[self.index + i][1]
 
     def next_str_and_advance(self):
         result = self.next_str()
@@ -121,11 +121,11 @@ class LexIterator(object):
     def advance(self):
         self.index += 1
 
-    def is_at_end(self):
-        return self.index >= len(self.lexed)
+    def is_at_end(self, i=0):
+        return self.index + i >= len(self.lexed)
 
-    def is_next(self, tag):
-        return self.next_tag() is tag
+    def is_next(self, tag, i=0):
+        return self.next_tag(i) is tag
 
     def raise_parse_error(self, msg):
         if self.is_at_end():
