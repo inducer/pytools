@@ -85,7 +85,7 @@ def join_fields(*args):
             if log_shape(arg) == ():
                 res_list.append(arg)
             else:
-                res_list.extend(arg)
+                res_list.extend(arg.flat)
         else:
             res_list.append(arg)
 
