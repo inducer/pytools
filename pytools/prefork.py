@@ -76,7 +76,7 @@ def _recv_packet(sock, who="Process", partner="other end"):
 
     size, = unpack("I", size_bytes)
 
-    packet = ""
+    packet = b""
     while len(packet) < size:
         packet += sock.recv(size)
 
