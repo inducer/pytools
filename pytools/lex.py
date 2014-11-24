@@ -56,6 +56,7 @@ def lex(lex_table, s, debug=False, match_objects=False):
                             subrule, s, start)
                     if length:
                         return length, match_obj
+                return 0, None
             else:
                 my_match_length = 0
                 for subrule in rule:
