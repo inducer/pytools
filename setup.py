@@ -10,7 +10,7 @@ except ImportError:
     from distutils.command.build_py import build_py
 
 setup(name="pytools",
-      version="2014.3.3",
+      version="2014.3.4",
       description="A collection of tools for Python",
       long_description="""
       Pytools is a big bag of things that are "missing" from the Python standard
