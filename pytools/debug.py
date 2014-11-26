@@ -1,4 +1,8 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from pytools import memoize
+import six
+from six.moves import input
 
 
 # {{{ debug files -------------------------------------------------------------
@@ -15,7 +19,7 @@ def make_unique_filesystem_object(stem, extension="", directory="",
     if creator is None:
         def creator(name):
             return os.fdopen(os.open(name,
-                    os.O_CREAT | os.O_WRONLY | os.O_EXCL, 0444), "w")
+                    os.O_CREAT | os.O_WRONLY | os.O_EXCL, 0o444), "w")
 
     i = 0
     while True:
@@ -75,7 +79,7 @@ def refdebug(obj, top_level=True, exclude=[]):
     else:
         import gc
         print_head = True
-        print "-------------->"
+        print("-------------->")
         try:
             reflist = [x for x in gc.get_referrers(obj)
                     if not is_excluded(x)]
@@ -83,8 +87,8 @@ def refdebug(obj, top_level=True, exclude=[]):
             idx = 0
             while True:
                 if print_head:
-                    print "referring to", id(obj), type(obj), obj
-                    print "----------------------"
+                    print("referring to", id(obj), type(obj), obj)
+                    print("----------------------")
                     print_head = False
                 r = reflist[idx]
 
@@ -93,16 +97,16 @@ def refdebug(obj, top_level=True, exclude=[]):
                 else:
                     s = str(r)
 
-                print "%d/%d: " % (idx, len(reflist)), id(r), type(r), s
+                print("%d/%d: " % (idx, len(reflist)), id(r), type(r), s)
 
                 if isinstance(r, dict):
-                    for k, v in r.iteritems():
+                    for k, v in six.iteritems(r):
                         if v is obj:
-                            print "...referred to from key", k
+                            print("...referred to from key", k)
 
-                print "[d]ig, [n]ext, [p]rev, [e]val, [r]eturn, [q]uit?"
+                print("[d]ig, [n]ext, [p]rev, [e]val, [r]eturn, [q]uit?")
 
-                response = raw_input()
+                response = input()
 
                 if response == "d":
                     refdebug(r, top_level=False, exclude=exclude+[reflist])
@@ -114,23 +118,23 @@ def refdebug(obj, top_level=True, exclude=[]):
                     if idx - 1 >= 0:
                         idx -= 1
                 elif response == "e":
-                    print "type expression, obj is your object:"
-                    expr_str = raw_input()
+                    print("type expression, obj is your object:")
+                    expr_str = input()
                     try:
                         res = eval(expr_str, {"obj": r})
                     except:
                         from traceback import print_exc
                         print_exc()
-                    print res
+                    print(res)
                 elif response == "r":
                     return
                 elif response == "q":
                     raise RefDebugQuit()
                 else:
-                    print "WHAT YOU SAY!!! (invalid choice)"
+                    print("WHAT YOU SAY!!! (invalid choice)")
 
         finally:
-            print "<--------------"
+            print("<--------------")
 
 # }}}
 

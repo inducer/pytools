@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # Python decorator module
 # by Michele Simionato
 # http://www.phyast.pitt.edu/~micheles/python/
@@ -47,9 +48,9 @@ def getinfo(func):
     signature = inspect.formatargspec(regargs, varargs, varkwargs, defaults,
                                       formatvalue=lambda value: "")[1:-1]
     return dict(name=func.__name__, argnames=argnames, signature=signature,
-                defaults = func.func_defaults, doc=func.__doc__,
+                defaults = func.__defaults__, doc=func.__doc__,
                 module=func.__module__, dict=func.__dict__,
-                globals=func.func_globals, closure=func.func_closure)
+                globals=func.__globals__, closure=func.__closure__)
 
 def update_wrapper(wrapper, wrapped, create=False):
     """
@@ -76,7 +77,7 @@ def update_wrapper(wrapper, wrapped, create=False):
     wrapper.__doc__ = infodict['doc']
     wrapper.__module__ = infodict['module']
     wrapper.__dict__.update(infodict['dict'])
-    wrapper.func_defaults = infodict['defaults']
+    wrapper.__defaults__ = infodict['defaults']
     return wrapper
 
 # the real meat is here

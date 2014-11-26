@@ -1,4 +1,6 @@
 from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
 import time
 import pytools
 
@@ -33,13 +35,13 @@ class Job:
         self.Name = name
         self.StopWatch = StopWatch().start()
         if self.is_visible():
-            print "%s..." % name
+            print("%s..." % name)
 
     def done(self):
         elapsed = self.StopWatch.elapsed()
         JOB_TIMES[self.Name] += elapsed
         if self.is_visible():
-            print " " * (len(self.Name) + 2), elapsed, "seconds"
+            print(" " * (len(self.Name) + 2), elapsed, "seconds")
   
     def is_visible(self):
         if PRINT_JOBS.get():
@@ -69,7 +71,7 @@ class EtaEstimator:
 
 def print_job_summary():
     for key in JOB_TIMES:
-        print key, " " * (50-len(key)), JOB_TIMES[key]
+        print(key, " " * (50-len(key)), JOB_TIMES[key])
 
 
 

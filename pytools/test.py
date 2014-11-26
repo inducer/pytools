@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 try:
     from py.test import mark as mark_test
 except ImportError:

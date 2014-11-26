@@ -1,7 +1,11 @@
 from __future__ import division
+from __future__ import absolute_import
+from six.moves import range
 
 
-def do_boxes_intersect((bl1,tr1), (bl2,tr2)):
+def do_boxes_intersect(xxx_todo_changeme, xxx_todo_changeme1):
+    (bl1,tr1) = xxx_todo_changeme
+    (bl2,tr2) = xxx_todo_changeme1
     (dimension,) = bl1.shape
     for i in range(0, dimension):
         if max(bl1[i], bl2[i]) > min(tr1[i], tr2[i]):
@@ -15,7 +19,7 @@ def _get_elements_bounding_box(elements):
     import numpy
 
     if len(elements) == 0:
-        raise RuntimeError, "Cannot get the bounding box of no elements."
+        raise RuntimeError("Cannot get the bounding box of no elements.")
 
     bboxes = [box for el,box in elements]
     bottom_lefts = [bl for bl,tr in bboxes]

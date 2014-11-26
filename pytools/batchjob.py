@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+import six
 def _cp(src, dest):
     from pytools import assert_not_a_file
     assert_not_a_file(dest)
@@ -85,7 +87,7 @@ class GridEngineJob(BatchJob):
 
         from os import getenv
 
-        for var, value in env.iteritems():
+        for var, value in six.iteritems(env):
             if value is INHERIT:
                 value = getenv(var)
 
@@ -117,7 +119,7 @@ class PBSJob(BatchJob):
 
         from os import getenv
 
-        for var, value in env.iteritems():
+        for var, value in six.iteritems(env):
             if value is INHERIT:
                 value = getenv(var)
 
@@ -160,7 +162,7 @@ class ConstructorPlaceholder:
         return "%s(%s)" % (self.classname,
                 ",".join(
                     [str(arg) for arg in self.args]
-                    + ["%s=%s" % (kw, repr(val)) for kw, val in self.kwargs.iteritems()]
+                    + ["%s=%s" % (kw, repr(val)) for kw, val in six.iteritems(self.kwargs)]
                     )
                 )
     __repr__ = __str__

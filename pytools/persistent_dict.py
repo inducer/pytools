@@ -1,6 +1,8 @@
 """Generic persistent, concurrent dictionary-like facility."""
 
 from __future__ import division, with_statement
+from __future__ import absolute_import
+import six
 
 __copyright__ = "Copyright (C) 2011,2014 Andreas Kloeckner"
 
@@ -54,7 +56,7 @@ def _erase_dir(dir):
 
 
 def update_checksum(checksum, obj):
-    if isinstance(obj, unicode):
+    if isinstance(obj, six.text_type):
         checksum.update(obj.encode("utf8"))
     else:
         checksum.update(obj)
@@ -254,7 +256,7 @@ class PersistentDict(object):
 
         try:
             os.makedirs(self.container_dir)
-        except OSError, e:
+        except OSError as e:
             from errno import EEXIST
             if e.errno != EEXIST:
                 raise
@@ -276,13 +278,13 @@ class PersistentDict(object):
                 if item_dir_m.existed:
                     item_dir_m.reset()
 
-                for info_name, info_value in info_files.iteritems():
+                for info_name, info_value in six.iteritems(info_files):
                     info_path = item_dir_m.sub("info_"+info_name)
 
                     with open(info_path, "wt") as outf:
                         outf.write(info_value)
 
-                from cPickle import dump, HIGHEST_PROTOCOL
+                from six.moves.cPickle import dump, HIGHEST_PROTOCOL
                 value_path = item_dir_m.sub("contents")
                 with open(value_path, "wb") as outf:
                     dump(value, outf, protocol=HIGHEST_PROTOCOL)
@@ -315,7 +317,7 @@ class PersistentDict(object):
                 key_path = item_dir_m.sub("key")
                 value_path = item_dir_m.sub("contents")
 
-                from cPickle import load
+                from six.moves.cPickle import load
 
                 # {{{ load key file
 
@@ -324,9 +326,9 @@ class PersistentDict(object):
                 try:
                     with open(key_path, "rb") as inf:
                         read_key = load(inf)
-                except IOError, e:
+                except IOError as e:
                     exc = e
-                except EOFError, e:
+                except EOFError as e:
                     exc = e
 
                 if exc is not None:
@@ -353,9 +355,9 @@ class PersistentDict(object):
                 try:
                     with open(value_path, "rb") as inf:
                         read_contents = load(inf)
-                except IOError, e:
+                except IOError as e:
                     exc = e
-                except EOFError, e:
+                except EOFError as e:
                     exc = e
 
                 if exc is not None:

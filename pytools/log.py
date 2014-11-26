@@ -1,6 +1,11 @@
 from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
 
 import logging
+import six
+from six.moves import range
+from six.moves import zip
 logger = logging.getLogger(__name__)
 
 
@@ -169,7 +174,7 @@ def _join_by_first_of_tuple(list_of_iterables):
     loi = [i.__iter__() for i in list_of_iterables]
     if not loi:
         return
-    key_vals = [iter.next() for iter in loi]
+    key_vals = [next(iter) for iter in loi]
     keys = [kv[0] for kv in key_vals]
     values = [kv[1] for kv in key_vals]
     target_key = max(keys)
@@ -180,7 +185,7 @@ def _join_by_first_of_tuple(list_of_iterables):
     while True:
         while keys[i] < target_key or force_advance:
             try:
-                new_key, new_value = loi[i].next()
+                new_key, new_value = next(loi[i])
             except StopIteration:
                 return
             assert keys[i] < new_key
@@ -229,7 +234,7 @@ def _get_random_suffix(n):
             + [chr(48+i) for i in range(10)])
 
     from random import choice
-    return "".join(choice(characters) for i in xrange(n))
+    return "".join(choice(characters) for i in range(n))
 
 
 def _set_up_schema(db_conn):
@@ -311,7 +316,7 @@ class LogManager(object):
           is requested.
         """
 
-        assert isinstance(mode, basestring), "mode must be a string"
+        assert isinstance(mode, six.string_types), "mode must be a string"
         assert mode in ["w", "r", "wu"], "invalid mode"
 
         self.quantity_data = {}
@@ -554,7 +559,7 @@ class LogManager(object):
             self.db_conn.execute("insert into %s values (?,?,?)" % name,
                     (self.tick_count, self.rank, float(value)))
         except:
-            print "while adding datapoint for '%s':" % name
+            print("while adding datapoint for '%s':" % name)
             raise
 
     def _gather_for_descriptor(self, gd):
@@ -638,7 +643,7 @@ class LogManager(object):
         from sqlite3 import OperationalError
         try:
             self.db_conn.commit()
-        except OperationalError, e:
+        except OperationalError as e:
             from warnings import warn
             warn("encountered sqlite error during commit: %s" % e)
 
@@ -715,8 +720,8 @@ class LogManager(object):
 
             unit_dict = dict((dd.varname, dd.qdat.unit) for dd in dep_data)
             from pytools import all
-            if all(v is not None for v in unit_dict.itervalues()):
-                unit_dict = dict((k, parse(v)) for k, v in unit_dict.iteritems())
+            if all(v is not None for v in six.itervalues(unit_dict)):
+                unit_dict = dict((k, parse(v)) for k, v in six.iteritems(unit_dict))
                 unit = substitute(parsed, unit_dict)
             else:
                 unit = None
@@ -786,7 +791,7 @@ class LogManager(object):
         stepless_data = [tup for step, tup in data]
 
         if stepless_data:
-            data_x, data_y = zip(*stepless_data)
+            data_x, data_y = list(zip(*stepless_data))
         else:
             data_x = []
             data_y = []
@@ -927,7 +932,7 @@ class LogManager(object):
             return
 
         data_block = dict((qname, self.last_values.get(qname, 0))
-                for qname in self.quantity_data.iterkeys())
+                for qname in six.iterkeys(self.quantity_data))
 
         if self.mpi_comm is not None and self.have_nonlocal_watches:
             gathered_data = self.mpi_comm.gather(data_block, self.head_rank)
@@ -937,7 +942,7 @@ class LogManager(object):
         if self.rank == self.head_rank:
             values = {}
             for data_block in gathered_data:
-                for name, value in data_block.iteritems():
+                for name, value in six.iteritems(data_block):
                     values.setdefault(name, []).append(value)
 
             def compute_watch_str(watch):
@@ -949,8 +954,8 @@ class LogManager(object):
                     return "%s:div0" % watch.display
 
             if self.watches:
-                print " | ".join(
-                        compute_watch_str(watch) for watch in self.watches)
+                print(" | ".join(
+                        compute_watch_str(watch) for watch in self.watches))
 
         ticks_per_sec = self.tick_count/max(1, time()-self.start_time)
         self.next_watch_tick = self.tick_count + int(max(1, ticks_per_sec))

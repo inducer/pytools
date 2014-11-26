@@ -5,6 +5,7 @@ parent process.
 
 Since none of this is MPI-specific, it got parked in pytools.
 """
+from __future__ import absolute_import
 
 
 
@@ -22,7 +23,7 @@ class DirectForker:
         from subprocess import call
         try:
             return call(cmdline, cwd=cwd)
-        except OSError, e:
+        except OSError as e:
             raise ExecError("error invoking '%s': %s"
                     % ( " ".join(cmdline), e))
 
@@ -31,7 +32,7 @@ class DirectForker:
         from subprocess import Popen, PIPE
         try:
             return Popen(cmdline, cwd=cwd, stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate()[0]
-        except OSError, e:
+        except OSError as e:
             raise ExecError("error invoking '%s': %s"
                     % ( " ".join(cmdline), e))
 
@@ -48,7 +49,7 @@ class DirectForker:
                 raise ExecError("status %d invoking '%s': %s"
                         % (popen.returncode, " ".join(cmdline), stderr_data))
             return popen.returncode, stdout_data, stderr_data
-        except OSError, e:
+        except OSError as e:
             raise ExecError("error invoking '%s': %s"
                     % ( " ".join(cmdline), e))
 
@@ -56,7 +57,7 @@ class DirectForker:
 
 def _send_packet(sock, data):
     from struct import pack
-    from cPickle import dumps
+    from six.moves.cPickle import dumps
 
     packet = dumps(data)
 
@@ -80,7 +81,7 @@ def _recv_packet(sock, who="Process", partner="other end"):
     while len(packet) < size:
         packet += sock.recv(size)
 
-    from cPickle import loads
+    from six.moves.cPickle import loads
     return loads(packet)
 
 
@@ -110,7 +111,7 @@ def _fork_server(sock):
 
             try:
                 result = funcs[func_name](*args, **kwargs)
-            except Exception, e:
+            except Exception as e:
                 _send_packet(sock, ("exception", e))
             else:
                 _send_packet(sock, ("ok", result))

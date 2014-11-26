@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import numpy
 from pytools import my_decorator as decorator
 

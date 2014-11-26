@@ -1,6 +1,10 @@
 from __future__ import division
-from decorator import decorator
+from __future__ import absolute_import
+from .decorator import decorator
 import operator
+import six
+from six.moves import range
+from six.moves import zip
 
 
 
@@ -214,7 +218,7 @@ def work_with_arithmetic_containers(f, *args, **kwargs):
         else:
             formal_args.append(SimpleArg(len(formal_args)))
 
-    for name, arg in kwargs.iteritems():
+    for name, arg in six.iteritems(kwargs):
         if isinstance(arg, ArithmeticList):
             formal_kwargs[name] = ListArg(len(lists))
             lists.append(arg)
@@ -229,7 +233,7 @@ def work_with_arithmetic_containers(f, *args, **kwargs):
                 f(
                     *list(formal_arg.eval(tp) for formal_arg in formal_args), 
                     **dict((name, formal_arg.eval(tp)) 
-                        for name, formal_arg in formal_kwargs.iteritems())
+                        for name, formal_arg in six.iteritems(formal_kwargs))
                     )
                 for tp in zip(*lists))
     else:
@@ -268,7 +272,7 @@ class ArithmeticListMatrix:
 
         for i, row in enumerate(self.matrix):
             if len(row) != len(other):
-                raise ValueError, "matrix width does not match ArithmeticList"
+                raise ValueError("matrix width does not match ArithmeticList")
 
             for j, entry in enumerate(row):
                 if not isinstance(entry, (int, float)) or entry:

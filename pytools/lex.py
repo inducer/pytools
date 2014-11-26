@@ -1,4 +1,7 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import re
+import six
 
 
 class RuleError(RuntimeError):
@@ -48,7 +51,7 @@ def lex(lex_table, s, debug=False, match_objects=False):
 
     def matches_rule(rule, s, start):
         if debug:
-            print "Trying", rule, "on", s[start:]
+            print("Trying", rule, "on", s[start:])
         if isinstance(rule, tuple):
             if rule[0] == "|":
                 for subrule in rule[1:]:
@@ -67,7 +70,7 @@ def lex(lex_table, s, debug=False, match_objects=False):
                     else:
                         return 0, None
                 return my_match_length, None
-        elif isinstance(rule, basestring):
+        elif isinstance(rule, six.string_types):
             return matches_rule(rule_dict[rule], s, start)
         elif isinstance(rule, RE):
             match_obj = rule.RE.match(s, start)

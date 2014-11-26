@@ -1,6 +1,8 @@
+from __future__ import absolute_import
 # see end of file for sqlite import
 
 from pytools import memoize
+import six
 
 
 @memoize
@@ -20,7 +22,7 @@ def get_disk_dict(name, version, **kwargs):
 
     try:
         os.mkdir(cache_dir)
-    except OSError, e:
+    except OSError as e:
         from errno import EEXIST
         if e.errno != EEXIST:
             raise
@@ -61,14 +63,14 @@ class DiskDict(object):
                     result_pickle blob)""")
 
         def mtime(file):
-            if not isinstance(file, basestring):
+            if not isinstance(file, six.string_types):
                 # assume file names a module
                 file = file.__file__
 
             import os
             return os.stat(file).st_mtime
 
-        from cPickle import dumps
+        from six.moves.cPickle import dumps
         self.version = (version_base,) + tuple(
             mtime(dm) for dm in dep_modules)
         self.version_pickle = dumps(self.version)
@@ -83,7 +85,7 @@ class DiskDict(object):
         if key in self.cache:
             return True
         else:
-            from cPickle import loads
+            from six.moves.cPickle import loads
             for key_pickle, version_pickle, result_pickle in self.db_conn.execute(
                     "select key_pickle, version_pickle, result_pickle from data"
                     " where key_hash = ? and version_hash = ?",
@@ -100,7 +102,7 @@ class DiskDict(object):
         try:
             return self.cache[key]
         except KeyError:
-            from cPickle import loads
+            from six.moves.cPickle import loads
             for key_pickle, version_pickle, result_pickle in self.db_conn.execute(
                     "select key_pickle, version_pickle, result_pickle from data"
                     " where key_hash = ? and version_hash = ?",
@@ -117,7 +119,7 @@ class DiskDict(object):
         if key in self.cache:
             del self.cache[key]
 
-        from cPickle import loads
+        from six.moves.cPickle import loads
         for item_id, key_pickle, version_pickle in self.db_conn.execute(
                 "select id, key_pickle, version_pickle from data"
                 " where key_hash = ? and version_hash = ?",
@@ -135,7 +137,7 @@ class DiskDict(object):
 
         self.cache[key] = value
 
-        from cPickle import dumps
+        from six.moves.cPickle import dumps
         self.db_conn.execute("insert into data"
                 " (key_hash, key_pickle, version_hash, "
                 "    version_pickle, result_pickle)"

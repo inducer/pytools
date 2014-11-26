@@ -1,4 +1,11 @@
 from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+import six
+from six.moves import range
+from six.moves import zip
+from functools import reduce
+from six.moves import input
 
 __copyright__ = "Copyright (C) 2009-2013 Andreas Kloeckner"
 
@@ -61,7 +68,7 @@ def levi_civita(tup):
 def factorial(n):
     from operator import mul
     assert n == int(n)
-    return reduce(mul, (i for i in xrange(1, n+1)), 1)
+    return reduce(mul, (i for i in range(1, n+1)), 1)
 
 
 def perm(n, k):
@@ -133,7 +140,7 @@ class RecordWithoutPickling(object):
         if valuedict is not None:
             kwargs.update(valuedict)
 
-        for key, value in kwargs.iteritems():
+        for key, value in six.iteritems(kwargs):
             if not key in exclude:
                 fields.add(key)
                 setattr(self, key, value)
@@ -181,7 +188,7 @@ class Record(RecordWithoutPickling):
         except AttributeError:
             self.__class__.fields = fields = set()
 
-        for key, value in valuedict.iteritems():
+        for key, value in six.iteritems(valuedict):
             fields.add(key)
             setattr(self, key, value)
 
@@ -230,13 +237,13 @@ class DictionaryWithDefault(object):
         return True
 
     def iterkeys(self):
-        return self._Dictionary.iterkeys()
+        return six.iterkeys(self._Dictionary)
 
     def __iter__(self):
         return self._Dictionary.__iter__()
 
     def iteritems(self):
-        return self._Dictionary.iteritems()
+        return six.iteritems(self._Dictionary)
 
 # }}}
 
@@ -284,16 +291,16 @@ class DependentDictionary(object):
         self._Dictionary[key] = value
 
     def genuineKeys(self):
-        return self._Dictionary.keys()
+        return list(self._Dictionary.keys())
 
     def iteritems(self):
-        return self._Dictionary.iteritems()
+        return six.iteritems(self._Dictionary)
 
     def iterkeys(self):
-        return self._Dictionary.iterkeys()
+        return six.iterkeys(self._Dictionary)
 
     def itervalues(self):
-        return self._Dictionary.itervalues()
+        return six.itervalues(self._Dictionary)
 
 # }}}
 
@@ -308,13 +315,13 @@ def one(iterable):
     """
     it = iter(iterable)
     try:
-        v = it.next()
+        v = next(it)
     except StopIteration:
         raise ValueError("empty iterable passed to 'one()'")
 
     def no_more():
         try:
-            it.next()
+            next(it)
             raise ValueError("iterable with more than one entry passed to 'one()'")
         except StopIteration:
             return True
@@ -327,7 +334,7 @@ def one(iterable):
 def is_single_valued(iterable, equality_pred=operator.eq):
     it = iter(iterable)
     try:
-        first_item = it.next()
+        first_item = next(it)
     except StopIteration:
         raise ValueError("empty iterable passed to 'single_valued()'")
 
@@ -351,7 +358,7 @@ def single_valued(iterable, equality_pred=operator.eq):
     """
     it = iter(iterable)
     try:
-        first_item = it.next()
+        first_item = next(it)
     except StopIteration:
         raise ValueError("empty iterable passed to 'single_valued()'")
 
@@ -385,7 +392,7 @@ def memoize(*args, **kwargs):
 
     if use_kw:
         def default_key_func(*inner_args, **inner_kwargs):
-            return inner_args, frozenset(inner_kwargs.iteritems())
+            return inner_args, frozenset(six.iteritems(inner_kwargs))
     else:
         default_key_func = None
 
@@ -394,7 +401,7 @@ def memoize(*args, **kwargs):
     if kwargs:
         raise TypeError(
             "memoize received unexpected keyword arguments: %s"
-            % ", ".join(kwargs.keys()))
+            % ", ".join(list(kwargs.keys())))
 
     if key_func is not None:
         @my_decorator
@@ -454,7 +461,7 @@ def memoize_method(method):
 
     def wrapper(self, *args, **kwargs):
         if kwargs:
-            key = (_HasKwargs, frozenset(kwargs.iteritems())) + args
+            key = (_HasKwargs, frozenset(six.iteritems(kwargs))) + args
         else:
             key = args
 
@@ -495,7 +502,7 @@ def memoize_on_first_arg(function):
 
     def wrapper(obj, *args, **kwargs):
         if kwargs:
-            key = (_HasKwargs, frozenset(kwargs.iteritems())) + args
+            key = (_HasKwargs, frozenset(six.iteritems(kwargs))) + args
         else:
             key = args
 
@@ -549,7 +556,7 @@ def memoize_method_with_uncached(uncached_args=[], uncached_kwargs=set()):
                 for name in uncached_kwargs:
                     cache_kwargs.pop(name, None)
 
-                key = (_HasKwargs, frozenset(cache_kwargs.iteritems())) + cache_args
+                key = (_HasKwargs, frozenset(six.iteritems(cache_kwargs))) + cache_args
             else:
                 key = cache_args
 
@@ -587,8 +594,8 @@ def memoize_method_nested(inner):
 
     from functools import wraps
     cache_dict_name = intern("_memoize_inner_dic_%s_%s_%d"
-            % (inner.__name__, inner.func_code.co_filename,
-                inner.func_code.co_firstlineno))
+            % (inner.__name__, inner.__code__.co_filename,
+                inner.__code__.co_firstlineno))
 
     from inspect import currentframe, getouterframes
     outer_frame = getouterframes(currentframe())[1][0]
@@ -650,7 +657,7 @@ def monkeypatch_class(name, bases, namespace):
 
     assert len(bases) == 1, "Exactly one base class required"
     base = bases[0]
-    for name, value in namespace.iteritems():
+    for name, value in six.iteritems(namespace):
         if name != "__metaclass__":
             setattr(base, name, value)
     return base
@@ -716,7 +723,7 @@ def linear_combination(coefficients, vectors):
 def common_prefix(iterable, empty=None):
     it = iter(iterable)
     try:
-        pfx = it.next()
+        pfx = next(it)
     except StopIteration:
         return empty
 
@@ -732,7 +739,7 @@ def common_prefix(iterable, empty=None):
 
 
 def decorate(function, list):
-    return map(lambda x: (x, function(x)), list)
+    return [(x, function(x)) for x in list]
 
 
 def partition(criterion, list):
@@ -781,7 +788,7 @@ except AttributeError:
 
 def reverse_dictionary(the_dict):
     result = {}
-    for key, value in the_dict.iteritems():
+    for key, value in six.iteritems(the_dict):
         if value in result:
             raise RuntimeError(
                     "non-reversible mapping, duplicate key '%s'" % value)
@@ -884,7 +891,7 @@ def find_max_where(predicate, prec=1e-5, initial_guess=1, fail_bound=1e38):
 def argmin2(iterable, return_value=False):
     it = iter(iterable)
     try:
-        current_argmin, current_min = it.next()
+        current_argmin, current_min = next(it)
     except StopIteration:
         raise ValueError("argmin of empty iterable")
 
@@ -902,7 +909,7 @@ def argmin2(iterable, return_value=False):
 def argmax2(iterable, return_value=False):
     it = iter(iterable)
     try:
-        current_argmax, current_max = it.next()
+        current_argmax, current_max = next(it)
     except StopIteration:
         raise ValueError("argmax of empty iterable")
 
@@ -963,7 +970,7 @@ def average(iterable):
     it = iterable.__iter__()
 
     try:
-        sum = it.next()
+        sum = next(it)
         count = 1
     except StopIteration:
         raise ValueError("empty average")
@@ -1033,11 +1040,11 @@ def indices_in_shape(shape):
     if len(shape) == 0:
         yield ()
     elif len(shape) == 1:
-        for i in xrange(0, shape[0]):
+        for i in range(0, shape[0]):
             yield (i,)
     else:
         remainder = shape[1:]
-        for i in xrange(0, shape[0]):
+        for i in range(0, shape[0]):
             for rest in indices_in_shape(remainder):
                 yield (i,)+rest
 
@@ -1193,7 +1200,7 @@ def get_read_from_map_from_permutation(original, permuted):
     """
     assert len(original) == len(permuted)
     where_in_original = dict(
-            (original[i], i) for i in xrange(len(original)))
+            (original[i], i) for i in range(len(original)))
     assert len(where_in_original) == len(original)
     return tuple(where_in_original[pi] for pi in permuted)
 
@@ -1217,7 +1224,7 @@ def get_write_to_map_from_permutation(original, permuted):
     assert len(original) == len(permuted)
 
     where_in_permuted = dict(
-            (permuted[i], i) for i in xrange(len(permuted)))
+            (permuted[i], i) for i in range(len(permuted)))
 
     assert len(where_in_permuted) == len(permuted)
     return tuple(where_in_permuted[oi] for oi in original)
@@ -1351,7 +1358,7 @@ def string_histogram(iterable, min_value=None, max_value=None,
             try:
                 bins[bin_nr] += 1
             except:
-                print value, bin_nr, bin_starts
+                print(value, bin_nr, bin_starts)
                 raise
 
     from math import floor, ceil
@@ -1420,26 +1427,26 @@ class CPyUserInterface(object):
         self.doc = doc
 
     def show_usage(self, progname):
-        print "usage: %s <FILE-OR-STATEMENTS>" % progname
-        print
-        print "FILE-OR-STATEMENTS may either be Python statements of the form"
-        print "'variable1 = value1; variable2 = value2' or the name of a file"
-        print "containing such statements. Any valid Python code may be used"
-        print "on the command line or in a command file. If new variables are"
-        print "used, they must start with 'user_' or just '_'."
-        print
-        print "The following variables are recognized:"
+        print("usage: %s <FILE-OR-STATEMENTS>" % progname)
+        print()
+        print("FILE-OR-STATEMENTS may either be Python statements of the form")
+        print("'variable1 = value1; variable2 = value2' or the name of a file")
+        print("containing such statements. Any valid Python code may be used")
+        print("on the command line or in a command file. If new variables are")
+        print("used, they must start with 'user_' or just '_'.")
+        print()
+        print("The following variables are recognized:")
         for v in sorted(self.variables):
-            print "  %s = %s" % (v, self.variables[v])
+            print("  %s = %s" % (v, self.variables[v]))
             if v in self.doc:
-                print "    %s" % self.doc[v]
+                print("    %s" % self.doc[v])
 
-        print
-        print "The following constants are supplied:"
+        print()
+        print("The following constants are supplied:")
         for c in sorted(self.constants):
-            print "  %s = %s" % (c, self.constants[c])
+            print("  %s = %s" % (c, self.constants[c]))
             if c in self.doc:
-                print "    %s" % self.doc[c]
+                print("    %s" % self.doc[c])
 
     def gather(self, argv=None):
         import sys
@@ -1530,7 +1537,7 @@ def typedump(val, max_seq=5, special_handlers={}):
             return "{%s}" % (
                     ", ".join(
                         "%r: %s" % (str(k), typedump(v))
-                        for k, v in val.iteritems()))
+                        for k, v in six.iteritems(val)))
 
         try:
             if len(val) > max_seq:
@@ -1564,9 +1571,9 @@ def invoke_editor(s, filename="edit.txt", descr="the file"):
         p = Popen([os.environ["EDITOR"], full_name])
         os.waitpid(p.pid, 0)[1]
     else:
-        print "(Set the EDITOR environment variable to be " \
-                "dropped directly into an editor next time.)"
-        raw_input("Edit %s at %s now, then hit [Enter]:"
+        print("(Set the EDITOR environment variable to be " \
+                "dropped directly into an editor next time.)")
+        input("Edit %s at %s now, then hit [Enter]:"
                 % (descr, full_name))
 
     inf = open(full_name, "r")

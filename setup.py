@@ -1,13 +1,8 @@
+from __future__ import absolute_import
 #!/usr/bin/env python
 # -*- coding: latin1 -*-
 
 from setuptools import setup
-
-try:
-    from distutils.command.build_py import build_py_2to3 as build_py
-except ImportError:
-    # 2.x
-    from distutils.command.build_py import build_py
 
 setup(name="pytools",
       version="2014.3.4",
@@ -51,7 +46,4 @@ setup(name="pytools",
       url="http://pypi.python.org/pypi/pytools",
       author_email="inform@tiker.net",
       license="MIT",
-      packages=["pytools"],
-
-      # 2to3 invocation
-      cmdclass={'build_py': build_py})
+      packages=["pytools"])

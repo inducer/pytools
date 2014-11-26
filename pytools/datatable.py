@@ -1,4 +1,8 @@
+from __future__ import absolute_import
 from pytools import Record
+import six
+from six.moves import range
+from six.moves import zip
 
 
 class Row(Record):
@@ -58,7 +62,7 @@ class DataTable:
     def insert(self, **kwargs):
         values = [None for i in range(len(self.column_names))]
 
-        for key, val in kwargs.iteritems():
+        for key, val in six.iteritems(kwargs):
             values[self.column_indices[key]] = val
 
         self.insert_row(tuple(values))
@@ -78,7 +82,7 @@ class DataTable:
 
         criteria = tuple(
                 (self.column_indices[key], value)
-                for key, value in kwargs.iteritems())
+                for key, value in six.iteritems(kwargs))
 
         result_data = []
 
@@ -101,7 +105,7 @@ class DataTable:
         if len(filtered) > 1:
             raise RuntimeError("more than one matching entry for get()")
 
-        return Row(dict(zip(self.column_names, filtered.data[0])))
+        return Row(dict(list(zip(self.column_names, filtered.data[0]))))
 
     def clear(self):
         del self.data[:]
@@ -188,8 +192,8 @@ class DataTable:
 
         result_data = []
 
-        this_row = this_iter.next()
-        other_row = other_iter.next()
+        this_row = next(this_iter)
+        other_row = next(other_iter)
 
         this_over = False
         other_over = False
@@ -216,7 +220,7 @@ class DataTable:
                 while this_row[this_key_idx] == this_key:
                     this_batch.append(this_row)
                     try:
-                        this_row = this_iter.next()
+                        this_row = next(this_iter)
                     except StopIteration:
                         this_over = True
                         break
@@ -229,7 +233,7 @@ class DataTable:
                 while other_row[other_key_idx] == other_key:
                     other_batch.append(other_row)
                     try:
-                        other_row = other_iter.next()
+                        other_row = next(other_iter)
                     except StopIteration:
                         other_over = True
                         break

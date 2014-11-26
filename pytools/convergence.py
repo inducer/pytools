@@ -1,4 +1,7 @@
+from __future__ import absolute_import
 import numpy as np
+from six.moves import range
+from six.moves import zip
 
 
 # {{{ eoc estimation --------------------------------------------------------------
@@ -67,7 +70,7 @@ class EOCRecorder(object):
         return self.pretty_print()
 
     def write_gnuplot_file(self, filename):
-        outfile = file(filename, "w")
+        outfile = open(filename, "w")
         for absc, err in self.history:
             outfile.write("%f %f\n" % (absc, err))
         result = self.estimate_order_of_convergence()
