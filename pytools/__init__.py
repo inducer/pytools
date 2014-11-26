@@ -2,10 +2,8 @@ from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
 import six
-from six.moves import range
-from six.moves import zip
+from six.moves import range, zip, intern, input
 from functools import reduce
-from six.moves import input
 
 __copyright__ = "Copyright (C) 2009-2013 Andreas Kloeckner"
 
