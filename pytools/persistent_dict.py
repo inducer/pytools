@@ -191,6 +191,9 @@ class KeyBuilder(object):
     if sys.version_info >= (3,):
         def update_for_str(self, key_hash, key):
             key_hash.update(key.encode('utf8'))
+
+        def update_for_bytes(self, key_hash, key):
+            key_hash.update(key)
     else:
         def update_for_str(self, key_hash, key):
             key_hash.update(key)
