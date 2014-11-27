@@ -1,11 +1,10 @@
-from __future__ import absolute_import
-#!/usr/bin/env python
+#! /usr/bin/env python
 # -*- coding: latin1 -*-
 
 from setuptools import setup
 
 setup(name="pytools",
-      version="2014.3.4",
+      version="2014.3.5",
       description="A collection of tools for Python",
       long_description="""
       Pytools is a big bag of things that are "missing" from the Python standard
@@ -29,13 +28,13 @@ setup(name="pytools",
           'License :: OSI Approved :: MIT License',
           'Natural Language :: English',
           'Programming Language :: Python',
-            'Programming Language :: Python',
-            'Programming Language :: Python :: 2',
-            'Programming Language :: Python :: 2.6',
-            'Programming Language :: Python :: 2.7',
-            'Programming Language :: Python :: 3',
-            'Programming Language :: Python :: 3.3',
-            'Programming Language :: Python :: 3.4',
+          'Programming Language :: Python',
+          'Programming Language :: Python :: 2',
+          'Programming Language :: Python :: 2.6',
+          'Programming Language :: Python :: 2.7',
+          'Programming Language :: Python :: 3',
+          'Programming Language :: Python :: 3.3',
+          'Programming Language :: Python :: 3.4',
           'Topic :: Scientific/Engineering',
           'Topic :: Scientific/Engineering :: Information Analysis',
           'Topic :: Scientific/Engineering :: Mathematics',
