@@ -38,6 +38,8 @@ try:
 except TypeError:
     # this must be Python 2.4
     my_decorator = decorator
+except ImportError:
+    my_decorator = decorator
 else:
     my_decorator = decorator_module.decorator
 
