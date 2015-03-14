@@ -599,8 +599,8 @@ def memoize_method_nested(inner):
             % (inner.__name__, inner.__code__.co_filename,
                 inner.__code__.co_firstlineno))
 
-    from inspect import currentframe, getouterframes
-    outer_frame = getouterframes(currentframe())[1][0]
+    from inspect import currentframe
+    outer_frame = currentframe().f_back
     cache_context = outer_frame.f_locals.get("memoize_cache_context")
     if cache_context is None:
         cache_context = outer_frame.f_locals.get("self")
