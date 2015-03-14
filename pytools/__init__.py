@@ -141,7 +141,7 @@ class RecordWithoutPickling(object):
             kwargs.update(valuedict)
 
         for key, value in six.iteritems(kwargs):
-            if not key in exclude:
+            if key not in exclude:
                 fields.add(key)
                 setattr(self, key, value)
 
@@ -556,7 +556,9 @@ def memoize_method_with_uncached(uncached_args=[], uncached_kwargs=set()):
                 for name in uncached_kwargs:
                     cache_kwargs.pop(name, None)
 
-                key = (_HasKwargs, frozenset(six.iteritems(cache_kwargs))) + cache_args
+                key = (
+                        (_HasKwargs, frozenset(six.iteritems(cache_kwargs)))
+                        + cache_args)
             else:
                 key = cache_args
 
@@ -1571,7 +1573,7 @@ def invoke_editor(s, filename="edit.txt", descr="the file"):
         p = Popen([os.environ["EDITOR"], full_name])
         os.waitpid(p.pid, 0)[1]
     else:
-        print("(Set the EDITOR environment variable to be " \
+        print("(Set the EDITOR environment variable to be "
                 "dropped directly into an editor next time.)")
         input("Edit %s at %s now, then hit [Enter]:"
                 % (descr, full_name))
