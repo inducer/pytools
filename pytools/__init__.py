@@ -1624,7 +1624,7 @@ class ProgressBar:
                 self.speed_meas_start_done = self.done
 
             if self.time_per_step is not None:
-                eta_str = "%6.1fs" % max(
+                eta_str = "%7.1fs " % max(
                         0, (self.total-self.done) * self.time_per_step)
             else:
                 eta_str = "?"
