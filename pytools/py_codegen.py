@@ -64,7 +64,8 @@ class PythonCodeGenerator(object):
         if not s.strip():
             self.code.append("")
         else:
-            self.code.append(" "*(4*self.level) + s)
+            for l in s.split("\n"):
+                self.code.append(" "*(4*self.level) + l)
 
     def indent(self):
         self.level += 1
