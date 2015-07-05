@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 import sys
 import os
+import errno
 
 try:
     import hashlib
@@ -122,23 +123,35 @@ class LockManager(CleanupBase):
 class ItemDirManager(CleanupBase):
     def __init__(self, cleanup_m, path):
         from os import mkdir
+        import errno
 
         self.path = path
         try:
             mkdir(self.path)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+            self.existed = True
+        else:
             cleanup_m.register(self)
             self.existed = False
-        except OSError:
-            self.existed = True
 
     def sub(self, n):
         from os.path import join
         return join(self.path, n)
 
     def reset(self):
-        import os
-        _erase_dir(self.path)
-        os.mkdir(self.path)
+        try:
+            _erase_dir(self.path)
+        except OSError as e:
+            if e.errno != errno.ENOENT:
+                raise
+
+        try:
+            os.mkdir(self.path)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
 
     def clean_up(self):
         pass
@@ -209,7 +222,7 @@ class KeyBuilder(object):
         for set_key in sorted(key):
             self.rec(key_hash, set_key)
 
-    def update_for_NoneType(self, key_hash, key):
+    def update_for_NoneType(self, key_hash, key):  # noqa
         key_hash.update("<None>".encode('utf8'))
 
     def update_for_dtype(self, key_hash, key):
@@ -414,7 +427,12 @@ class PersistentDict(object):
         self.remove(key)
 
     def clear(self):
-        _erase_dir(self.container_dir)
+        try:
+            _erase_dir(self.container_dir)
+        except OSError as e:
+            if e.errno != errno.ENOENT:
+                raise
+
         self._make_container_dir()
 
 # }}}
