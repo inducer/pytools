@@ -44,12 +44,8 @@ class PythonCodeGenerator(object):
         self.level = 0
 
     def extend(self, sub_generator):
-        self.code.extend(sub_generator.code)
-
-    def extend_indent(self, sub_generator):
-        with Indentation(self):
-            for line in sub_generator.code:
-                self.write(line)
+        for line in sub_generator.code:
+            self.code.append(" "*(4*self.level) + line)
 
     def get(self):
         result = "\n".join(self.code)
@@ -64,6 +60,9 @@ class PythonCodeGenerator(object):
         if not s.strip():
             self.code.append("")
         else:
+            if "\n" in s:
+                s = remove_common_indentation(s)
+
             for l in s.split("\n"):
                 self.code.append(" "*(4*self.level) + l)
 
@@ -92,3 +91,32 @@ class PythonFunctionGenerator(PythonCodeGenerator):
         func = result_dict[self.name]
         result_dict["_MODULE_SOURCE_CODE"] = source_text
         return func
+
+
+# {{{ remove common indentation
+
+def remove_common_indentation(code, require_leading_newline=True):
+    if "\n" not in code:
+        return code
+
+    if require_leading_newline and not code.startswith("\n"):
+        return code
+
+    lines = code.split("\n")
+    while lines[0].strip() == "":
+        lines.pop(0)
+    while lines[-1].strip() == "":
+        lines.pop(-1)
+
+    if lines:
+        base_indent = 0
+        while lines[0][base_indent] in " \t":
+            base_indent += 1
+
+        for line in lines[1:]:
+            if line[:base_indent].strip():
+                raise ValueError("inconsistent indentation")
+
+    return "\n".join(line[base_indent:] for line in lines)
+
+# }}}
