@@ -32,6 +32,7 @@ import operator
 import sys
 
 from pytools.decorator import decorator
+from six.moves import intern
 
 try:
     decorator_module = __import__("decorator", level=0)
@@ -1762,6 +1763,8 @@ class UniqueNameGenerator:
         for var_name in generate_unique_names(based_on):
             if not self.is_name_conflicting(var_name):
                 break
+
+        var_name = intern(var_name)
 
         self.existing_names.add(var_name)
         return var_name
