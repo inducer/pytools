@@ -290,7 +290,7 @@ class DependentDictionary(object):
     def __setitem__(self, key, value):
         self._Dictionary[key] = value
 
-    def genuineKeys(self):
+    def genuineKeys(self):  # noqa
         return list(self._Dictionary.keys())
 
     def iteritems(self):
@@ -685,7 +685,7 @@ def shift(vec, dist):
 
     result = vec[:]
 
-    N = len(vec)
+    N = len(vec)  # noqa
     dist = dist % N
 
     # modulo only returns positive distances!
