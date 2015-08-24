@@ -1,9 +1,4 @@
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-import six
-from six.moves import range, zip, intern, input
-from functools import reduce
+from __future__ import division, absolute_import, print_function
 
 __copyright__ = "Copyright (C) 2009-2013 Andreas Kloeckner"
 
@@ -32,7 +27,9 @@ import operator
 import sys
 
 from pytools.decorator import decorator
-from six.moves import intern
+import six
+from six.moves import range, zip, intern, input
+from functools import reduce
 
 try:
     decorator_module = __import__("decorator", level=0)
