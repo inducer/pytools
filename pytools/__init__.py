@@ -1648,6 +1648,12 @@ class ProgressBar:
         self.set_progress(self.total)
         sys.stderr.write("\n")
 
+    def __enter__(self):
+        self.draw()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.finished()
+
 # }}}
 
 
