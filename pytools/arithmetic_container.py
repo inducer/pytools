@@ -65,82 +65,82 @@ class ArithmeticList(list):
     def __ror__(self, other): return self.reverse_binary_operator(other, operator.or_)
     def __rxor__(self, other): return self.reverse_binary_operator(other, operator.xor)
 
-    def __iadd__(self, other): 
+    def __iadd__(self, other):
         self.assert_same_length(other)
-        for i in range(len(self)): 
+        for i in range(len(self)):
             self[i] += other[i]
         return self
 
-    def __isub__(self, other): 
+    def __isub__(self, other):
         self.assert_same_length(other)
-        for i in range(len(self)): 
+        for i in range(len(self)):
             self[i] -= other[i]
         return self
 
-    def __imul__(self, other): 
+    def __imul__(self, other):
         self.assert_same_length(other)
-        for i in range(len(self)): 
+        for i in range(len(self)):
             self[i] *= other[i]
         return self
 
-    def __idiv__(self, other): 
+    def __idiv__(self, other):
         from operator import div
         self.assert_same_length(other)
-        for i in range(len(self)): 
+        for i in range(len(self)):
             self[i] = div(self[i], other[i])
         return self
 
-    def __itruediv__(self, other): 
+    def __itruediv__(self, other):
         self.assert_same_length(other)
-        for i in range(len(self)): 
+        for i in range(len(self)):
             self[i] /= other[i]
         return self
 
-    def __ifloordiv__(self, other): 
+    def __ifloordiv__(self, other):
         self.assert_same_length(other)
-        for i in range(len(self)): 
+        for i in range(len(self)):
             self[i] //= other[i]
         return self
 
-    def __imod__(self, other): 
+    def __imod__(self, other):
         self.assert_same_length(other)
-        for i in range(len(self)): 
+        for i in range(len(self)):
             self[i] %= other[i]
         return self
 
-    def __ipow__(self, other): 
+    def __ipow__(self, other):
         self.assert_same_length(other)
-        for i in range(len(self)): 
+        for i in range(len(self)):
             self[i] **= other[i]
         return self
 
-    def __ilshift__(self, other): 
+    def __ilshift__(self, other):
         self.assert_same_length(other)
-        for i in range(len(self)): 
+        for i in range(len(self)):
             self[i] <<= other[i]
         return self
 
-    def __irshift__(self, other): 
+    def __irshift__(self, other):
         self.assert_same_length(other)
-        for i in range(len(self)): 
+        for i in range(len(self)):
             self[i] >>= other[i]
         return self
 
-    def __iand__(self, other): 
+    def __iand__(self, other):
         self.assert_same_length(other)
-        for i in range(len(self)): 
+        for i in range(len(self)):
             self[i] &= other[i]
         return self
 
-    def __ior__(self, other): 
+    def __ior__(self, other):
         self.assert_same_length(other)
-        for i in range(len(self)): 
+        for i in range(len(self)):
             self[i] |= other[i]
         return self
 
-    def __ixor__(self, other): 
+    def __ixor__(self, other):
         self.assert_same_length(other)
-        for i in range(len(self)): 
+        for i in range(len(self)):
             self[i] ^= other[i]
         return self
 
@@ -156,7 +156,7 @@ class ArithmeticList(list):
     def plus(self, other):
         """Return a copy of self extended by the entries from the iterable
         C{other}.
-        
+
         Makes up for the loss of the C{+} operator (which is now arithmetic).
         """
         result = ArithmeticList(self)
@@ -231,8 +231,8 @@ def work_with_arithmetic_containers(f, *args, **kwargs):
 
         return ArithmeticList(
                 f(
-                    *list(formal_arg.eval(tp) for formal_arg in formal_args), 
-                    **dict((name, formal_arg.eval(tp)) 
+                    *list(formal_arg.eval(tp) for formal_arg in formal_args),
+                    **dict((name, formal_arg.eval(tp))
                         for name, formal_arg in six.iteritems(formal_kwargs))
                     )
                 for tp in zip(*lists))
@@ -309,7 +309,7 @@ class ArithmeticListMatrix:
 
 
 class ArithmeticDictionary(dict):
-    """A dictionary with elementwise (on the values, not the keys) 
+    """A dictionary with elementwise (on the values, not the keys)
     arithmetic operations."""
 
     def _get_empty_self(self):
@@ -382,68 +382,68 @@ class ArithmeticDictionary(dict):
     def __ror__(self, other): return self.reverse_binary_operator(other, operator.or_)
     def __rxor__(self, other): return self.reverse_binary_operator(other, operator.xor)
 
-    def __iadd__(self, other): 
+    def __iadd__(self, other):
         self.assert_same_keys(other)
-        for key in self: 
+        for key in self:
             self[key] += other[key]
         return self
 
-    def __isub__(self, other): 
+    def __isub__(self, other):
         self.assert_same_keys(other)
-        for key in self: 
+        for key in self:
             self[key] -= other[key]
         return self
 
-    def __imul__(self, other): 
+    def __imul__(self, other):
         self.assert_same_keys(other)
-        for key in self: 
+        for key in self:
             self[key] *= other[key]
         return self
 
-    def __idiv__(self, other): 
+    def __idiv__(self, other):
         self.assert_same_keys(other)
-        for key in self: 
+        for key in self:
             self[key] /= other[key]
         return self
 
-    def __imod__(self, other): 
+    def __imod__(self, other):
         self.assert_same_keys(other)
-        for key in self: 
+        for key in self:
             self[key] %= other[key]
         return self
 
-    def __ipow__(self, other): 
+    def __ipow__(self, other):
         self.assert_same_keys(other)
-        for key in self: 
+        for key in self:
             self[key] **= other[key]
         return self
 
-    def __ilshift__(self, other): 
+    def __ilshift__(self, other):
         self.assert_same_keys(other)
-        for key in self: 
+        for key in self:
             self[key] <<= other[key]
         return self
 
-    def __irshift__(self, other): 
+    def __irshift__(self, other):
         self.assert_same_keys(other)
-        for key in self: 
+        for key in self:
             self[key] >>= other[key]
         return self
 
-    def __iand__(self, other): 
+    def __iand__(self, other):
         self.assert_same_keys(other)
-        for key in self: 
+        for key in self:
             self[key] &= other[key]
         return self
 
-    def __ior__(self, other): 
+    def __ior__(self, other):
         self.assert_same_keys(other)
-        for key in self: 
+        for key in self:
             self[key] |= other[key]
         return self
 
-    def __ixor__(self, other): 
+    def __ixor__(self, other):
         self.assert_same_keys(other)
-        for key in self: 
+        for key in self:
             self[key] ^= other[key]
         return self
