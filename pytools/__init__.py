@@ -592,6 +592,10 @@ def memoize_method_nested(inner):
     Requires Python 2.5 or newer.
     """
 
+    from warnings import warn
+    warn("memoize_method_nested is deprecated. Use @memoize_in(self, 'identifier') "
+            "instead", DeprecationWarning, stacklevel=2)
+
     from functools import wraps
     cache_dict_name = intern("_memoize_inner_dic_%s_%s_%d"
             % (inner.__name__, inner.__code__.co_filename,
@@ -619,6 +623,37 @@ def memoize_method_nested(inner):
             return result
 
     return new_inner
+
+
+class memoize_in(object):  # noqa
+    """Adds a cache to a function nested inside a method. The cache is attached
+    to *memoize_cache_context* (if it exists) or *self* in the outer (method)
+    namespace.
+
+    Requires Python 2.5 or newer.
+    """
+
+    def __init__(self, container, identifier):
+        key = "_pytools_memoize_in_dict_for_"+identifier
+        try:
+            self.cache_dict = getattr(container, key)
+        except AttributeError:
+            self.cache_dict = {}
+            setattr(container, key, self.cache_dict)
+
+    def __call__(self, inner):
+        from functools import wraps
+
+        @wraps(inner)
+        def new_inner(*args):
+            try:
+                return self.cache_dict[args]
+            except KeyError:
+                result = inner(*args)
+                self.cache_dict[args] = result
+                return result
+
+        return new_inner
 
 # }}}
 
