@@ -46,7 +46,7 @@ setup(name="pytools",
       install_requires=[
           "decorator>=3.2.0",
           "appdirs>=1.4.0",
-          "six",
+          "six>=1.8.0",
           ],
 
       author="Andreas Kloeckner",
