@@ -47,6 +47,9 @@ class EOCRecorder(object):
     def order_estimate(self):
         return self.estimate_order_of_convergence()[0, 1]
 
+    def max_error(self):
+        return max(err for absc, err in self.history)
+
     def pretty_print(self, abscissa_label="h", error_label="Error", gliding_mean=2):
         from pytools import Table
 
