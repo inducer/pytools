@@ -47,6 +47,7 @@ setup(name="pytools",
           "decorator>=3.2.0",
           "appdirs>=1.4.0",
           "six>=1.8.0",
+          "numpy>=1.6.0",
           ],
 
       author="Andreas Kloeckner",
