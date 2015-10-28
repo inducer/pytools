@@ -2,7 +2,6 @@ from __future__ import division, with_statement
 from __future__ import absolute_import
 
 import pytest
-import sys  # noqa
 
 
 @pytest.mark.skipif("sys.version_info < (2, 5)")
@@ -128,3 +127,40 @@ def test_memoize_keyfunc():
     assert f(1, (2,)) == 2
     assert f(2, j=(2, 3)) == 4
     assert count[0] == 2
+
+
+@pytest.mark.parametrize("dims", [2, 3])
+def test_spatial_btree(dims, do_plot=False):
+    import numpy as np
+    nparticles = 2000
+    x = -1 + 2*np.random.rand(dims, nparticles)
+    x = np.sign(x)*np.abs(x)**1.9
+    x = (1.4 + x) % 2 - 1
+
+    bl = np.min(x, axis=-1)
+    tr = np.max(x, axis=-1)
+    print(bl, tr)
+
+    from pytools.spatial_btree import SpatialBinaryTreeBucket
+    tree = SpatialBinaryTreeBucket(bl, tr, max_elements_per_box=10)
+    for i in range(nparticles):
+        tree.insert(i, (x[:, i], x[:, i]))
+
+    if do_plot:
+        import matplotlib.pyplot as pt
+        pt.gca().set_aspect("equal")
+        pt.plot(x[0], x[1], "x")
+        tree.plot(fill=None)
+        pt.show()
+
+
+if __name__ == "__main__":
+    # make sure that import failures get reported, instead of skipping the tests.
+    import pyopencl  # noqa
+
+    import sys
+    if len(sys.argv) > 1:
+        exec(sys.argv[1])
+    else:
+        from py.test.cmdline import main
+        main([__file__])
