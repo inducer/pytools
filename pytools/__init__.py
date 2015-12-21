@@ -851,7 +851,7 @@ def uniform_interval_splitting(n, granularity, max_intervals):
 
     and *interval_size* is a multiple of *granularity*.
     """
-    # ported from Thrust -- minor Apache v2 license violation
+    # ported from Thrust
 
     grains = div_ceil(n, granularity)
 
