@@ -1072,6 +1072,9 @@ def wandering_element(length, wanderer=1, landscape=0):
 
 
 def indices_in_shape(shape):
+    if isinstance(shape, int):
+        shape = (shape,)
+
     if len(shape) == 0:
         yield ()
     elif len(shape) == 1:
