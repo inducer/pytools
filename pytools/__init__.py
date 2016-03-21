@@ -804,21 +804,8 @@ def product(iterable):
     return reduce(mul, iterable, 1)
 
 
-try:
-    all = __builtins__.all
-    any = __builtins__.any
-except AttributeError:
-    def all(iterable):
-        for i in iterable:
-            if not i:
-                return False
-        return True
-
-    def any(iterable):
-        for i in iterable:
-            if i:
-                return True
-        return False
+all = six.moves.builtins.all
+any = six.moves.builtins.any
 
 
 def reverse_dictionary(the_dict):
