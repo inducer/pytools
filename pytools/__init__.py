@@ -448,44 +448,7 @@ class _HasKwargs(object):
     pass
 
 
-def memoize_method(method):
-    """Supports cache deletion via ``method_name.clear_cache(self)``.
-
-    .. note::
-        *clear_cache* support requires Python 2.5 or newer.
-    """
-
-    cache_dict_name = intern("_memoize_dic_"+method.__name__)
-
-    def wrapper(self, *args, **kwargs):
-        if kwargs:
-            key = (_HasKwargs, frozenset(six.iteritems(kwargs))) + args
-        else:
-            key = args
-
-        try:
-            return getattr(self, cache_dict_name)[key]
-        except AttributeError:
-            result = method(self, *args, **kwargs)
-            setattr(self, cache_dict_name, {key: result})
-            return result
-        except KeyError:
-            result = method(self, *args, **kwargs)
-            getattr(self, cache_dict_name)[key] = result
-            return result
-
-    def clear_cache(self):
-        delattr(self, cache_dict_name)
-
-    if sys.version_info >= (2, 5):
-        from functools import update_wrapper
-        new_wrapper = update_wrapper(wrapper, method)
-        new_wrapper.clear_cache = clear_cache
-
-    return new_wrapper
-
-
-def memoize_on_first_arg(function):
+def memoize_on_first_arg(function, cache_dict_name=None):
     """Like :func:`memoize_method`, but for functions that take the object
     to do memoization as first argument.
 
@@ -495,8 +458,9 @@ def memoize_on_first_arg(function):
         *clear_cache* support requires Python 2.5 or newer.
     """
 
-    cache_dict_name = intern("_memoize_dic_"
-            + function.__module__ + function.__name__)
+    if cache_dict_name is None:
+        cache_dict_name = intern("_memoize_dic_"
+                + function.__module__ + function.__name__)
 
     def wrapper(obj, *args, **kwargs):
         if kwargs:
@@ -524,6 +488,16 @@ def memoize_on_first_arg(function):
         new_wrapper.clear_cache = clear_cache
 
     return new_wrapper
+
+
+def memoize_method(method):
+    """Supports cache deletion via ``method_name.clear_cache(self)``.
+
+    .. note::
+        *clear_cache* support requires Python 2.5 or newer.
+    """
+
+    return memoize_on_first_arg(method, intern("_memoize_dic_"+method.__name__))
 
 
 def memoize_method_with_uncached(uncached_args=[], uncached_kwargs=set()):
@@ -627,8 +601,7 @@ def memoize_method_nested(inner):
 
 class memoize_in(object):  # noqa
     """Adds a cache to a function nested inside a method. The cache is attached
-    to *memoize_cache_context* (if it exists) or *self* in the outer (method)
-    namespace.
+    to *object*.
 
     Requires Python 2.5 or newer.
     """
