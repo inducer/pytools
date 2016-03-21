@@ -1393,9 +1393,9 @@ def string_histogram(iterable, min_value=None, max_value=None,
             full = int(floor(scaled))
             eighths = int(ceil((scaled-full)*8))
             if eighths:
-                return full*unichr(0x2588) + unichr(0x2588+(8-eighths))
+                return full*six.unichr(0x2588) + six.unichr(0x2588+(8-eighths))
             else:
-                return full*unichr(0x2588)
+                return full*six.unichr(0x2588)
     else:
         def format_bar(cnt):
             return int(ceil(cnt*width/max_count))*"#"
