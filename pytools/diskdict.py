@@ -90,9 +90,9 @@ class DiskDict(object):
                     "select key_pickle, version_pickle, result_pickle from data"
                     " where key_hash = ? and version_hash = ?",
                     (hash(key), self.version_hash)):
-                if loads(str(key_pickle)) == key \
-                        and loads(str(version_pickle)) == self.version:
-                    result = loads(str(result_pickle))
+                if loads(six.binary_type(key_pickle)) == key \
+                        and loads(six.binary_type(version_pickle)) == self.version:
+                    result = loads(six.binary_type(result_pickle))
                     self.cache[key] = result
                     return True
 
@@ -107,9 +107,9 @@ class DiskDict(object):
                     "select key_pickle, version_pickle, result_pickle from data"
                     " where key_hash = ? and version_hash = ?",
                     (hash(key), self.version_hash)):
-                if loads(str(key_pickle)) == key \
-                        and loads(str(version_pickle)) == self.version:
-                    result = loads(str(result_pickle))
+                if loads(six.binary_type(key_pickle)) == key \
+                        and loads(six.binary_type(version_pickle)) == self.version:
+                    result = loads(six.binary_type(result_pickle))
                     self.cache[key] = result
                     return result
 
@@ -124,7 +124,8 @@ class DiskDict(object):
                 "select id, key_pickle, version_pickle from data"
                 " where key_hash = ? and version_hash = ?",
                 (hash(key), self.version_hash)):
-            if loads(key_pickle) == key and loads(version_pickle) == self.version:
+            if (loads(six.binary_type(key_pickle)) == key
+                    and loads(six.binary_type(version_pickle)) == self.version):
                 self.db_conn.execute("delete from data where id = ?", (item_id,))
 
         self.commit_countdown -= 1

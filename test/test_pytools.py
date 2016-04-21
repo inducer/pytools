@@ -154,6 +154,42 @@ def test_spatial_btree(dims, do_plot=False):
         pt.show()
 
 
+def test_diskdict():
+    from pytools.diskdict import DiskDict
+
+    from tempfile import NamedTemporaryFile
+
+    with NamedTemporaryFile() as ntf:
+        d = DiskDict(ntf.name)
+
+        key_val = [
+            ((), "hi"),
+            (frozenset([1, 2, "hi"]), 5)
+            ]
+
+        for k, v in key_val:
+            d[k] = v
+        for k, v in key_val:
+            assert d[k] == v
+        del d
+
+        d = DiskDict(ntf.name)
+        for k, v in key_val:
+            del d[k]
+        del d
+
+        d = DiskDict(ntf.name)
+        for k, v in key_val:
+            d[k] = v
+        del d
+
+        d = DiskDict(ntf.name)
+        for k, v in key_val:
+            assert k in d
+            assert d[k] == v
+        del d
+
+
 if __name__ == "__main__":
     # make sure that import failures get reported, instead of skipping the tests.
     import pyopencl  # noqa
