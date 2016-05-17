@@ -65,7 +65,12 @@ class DirectForker(object):
         return retc
 
     def waitall(self):
-        return {aid: self.wait(aid) for aid in list(self.apids)}
+        rets = {}
+
+        for aid in list(self.apids):
+            rets[aid] = self.wait(aid)
+
+        return rets
 
 
 def _send_packet(sock, data):
