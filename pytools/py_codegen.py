@@ -86,7 +86,9 @@ class PythonFunctionGenerator(PythonCodeGenerator):
     def get_function(self):
         result_dict = {}
         source_text = self.get()
-        exec(compile(source_text.rstrip()+"\n", "<generated function %s>" % self.name, "exec"),
+        exec(compile(
+            source_text.rstrip()+"\n", "<generated function %s>"
+            % self.name, "exec"),
                 result_dict)
         func = result_dict[self.name]
         result_dict["_MODULE_SOURCE_CODE"] = source_text
