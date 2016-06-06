@@ -85,9 +85,22 @@ class SpatialBinaryTreeBucket:
         """
 
         def insert_into_subdivision(element, bbox):
-            for bucket in self.all_buckets:
-                if do_boxes_intersect((bucket.bottom_left, bucket.top_right), bbox):
-                    bucket.insert(element, bbox)
+            bucket_matches = [
+                ibucket
+                for ibucket, bucket in enumerate(self.all_buckets)
+                if do_boxes_intersect((bucket.bottom_left, bucket.top_right), bbox)]
+
+            from random import uniform
+            if len(bucket_matches) > len(self.all_buckets) // 2:
+                # Would go into more than half of all buckets--keep it here
+                self.elements.append((element, bbox))
+            elif len(bucket_matches) > 1 and uniform(0, 1) > 0.95:
+                # Would go into more than one bucket and therefore may recurse
+                # indefinitely. Keep it here with a low probability.
+                self.elements.append((element, bbox))
+            else:
+                for ibucket_match in bucket_matches:
+                    self.all_buckets[ibucket_match].insert(element, bbox)
 
         if self.buckets is None:
             # No subdivisions yet.
@@ -99,13 +112,12 @@ class SpatialBinaryTreeBucket:
                         self.all_buckets,
                         max_elements_per_box=self.max_elements_per_box)
 
-                # Move all elements from the full bucket into the new finer ones
-                for el, el_bbox in self.elements:
-                    insert_into_subdivision(el, el_bbox)
+                old_elements = self.elements
+                self.elements = []
 
-                # Free up some memory. Elements are now stored in the
-                # subdivision, so we don't need them here any more.
-                del self.elements
+                # Move all elements from the full bucket into the new finer ones
+                for el, el_bbox in old_elements:
+                    insert_into_subdivision(el, el_bbox)
 
                 insert_into_subdivision(element, bbox)
             else:
@@ -128,10 +140,10 @@ class SpatialBinaryTreeBucket:
 
             for result in bucket.generate_matches(point):
                 yield result
-        else:
-            # We don't. Perform linear search.
-            for el, bbox in self.elements:
-                yield el
+
+        # Perform linear search.
+        for el, bbox in self.elements:
+            yield el
 
     def visualize(self, file):
         file.write("%f %f\n" % (self.bottom_left[0], self.bottom_left[1]))
