@@ -305,6 +305,9 @@ class PersistentDict(object):
                 with open(value_path, "wb") as outf:
                     dump(value, outf, protocol=HIGHEST_PROTOCOL)
 
+                logger.debug("%s: cache store [key=%s]" % (
+                    self.identifier, hexdigest_key))
+
                 # Write key last, so that if the reader below
                 key_path = item_dir_m.sub("key")
                 with open(key_path, "wb") as outf:
@@ -322,6 +325,8 @@ class PersistentDict(object):
         from os.path import join, isdir
         item_dir = join(self.container_dir, hexdigest_key)
         if not isdir(item_dir):
+            logger.debug("%s: cache miss [key=%s]" % (
+                self.identifier, hexdigest_key))
             raise NoSuchEntryError(key)
 
         cleanup_m = CleanupManager()
@@ -360,9 +365,12 @@ class PersistentDict(object):
 
                 if read_key != key:
                     # Key collision, oh well.
-                    logger.debug("key collsion in cache at '%s'"
-                            % self.container_dir)
+                    logger.info("%s: key collsion in cache at '%s'"
+                            % (self.identifier, self.container_dir))
                     raise NoSuchEntryError(key)
+
+                logger.debug("%s: cache hit [key=%s]" % (
+                    self.identifier, hexdigest_key))
 
                 # {{{ load value
 
