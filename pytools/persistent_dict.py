@@ -365,7 +365,7 @@ class PersistentDict(object):
 
                 if read_key != key:
                     # Key collision, oh well.
-                    logger.info("%s: key collsion in cache at '%s'"
+                    logger.info("%s: key collision in cache at '%s'"
                             % (self.identifier, self.container_dir))
                     raise NoSuchEntryError(key)
 
