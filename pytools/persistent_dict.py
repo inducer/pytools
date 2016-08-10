@@ -365,7 +365,11 @@ class PersistentDict(object):
 
                 if read_key != key:
                     # Key collision, oh well.
-                    logger.info("%s: key collision in cache at '%s'"
+                    from warnings import warn
+                    warn("%s: key collision in cache at '%s' -- these are "
+                            "sufficiently unlikely that they're often "
+                            "indicative of a broken implementation "
+                            "of equality comparison"
                             % (self.identifier, self.container_dir))
                     raise NoSuchEntryError(key)
 
