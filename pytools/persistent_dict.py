@@ -226,7 +226,7 @@ class KeyBuilder(object):
         key_hash.update("<None>".encode('utf8'))
 
     def update_for_dtype(self, key_hash, key):
-        return key.str.encode("utf8")
+        key_hash.update(key.str.encode('utf8'))
 
     # }}}
 
