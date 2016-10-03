@@ -136,7 +136,9 @@ class LexIterator(object):
         return self.index + i >= len(self.lexed)
 
     def is_next(self, tag, i=0):
-        return self.next_tag(i) is tag
+        return (
+                self.index + i < len(self.lexed)
+                and self.next_tag(i) is tag)
 
     def raise_parse_error(self, msg):
         if self.is_at_end():
