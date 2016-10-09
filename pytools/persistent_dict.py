@@ -375,6 +375,8 @@ class PersistentDict(object):
                             "indicative of a broken implementation "
                             "of equality comparison"
                             % (self.identifier, self.container_dir))
+                    # This is here so we can debug the equality comparison
+                    read_key == key
                     raise NoSuchEntryError(key)
 
                 logger.debug("%s: cache hit [key=%s]" % (
