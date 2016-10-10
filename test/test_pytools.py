@@ -2,6 +2,7 @@ from __future__ import division, with_statement
 from __future__ import absolute_import
 
 import pytest
+import sys
 
 
 @pytest.mark.skipif("sys.version_info < (2, 5)")
@@ -155,6 +156,9 @@ def test_spatial_btree(dims, do_plot=False):
 
 
 def test_diskdict():
+    if sys.platform.startswith("win"):
+        pytest.xfail("unreliable on windows")
+
     from pytools.diskdict import DiskDict
 
     from tempfile import NamedTemporaryFile
@@ -194,7 +198,6 @@ if __name__ == "__main__":
     # make sure that import failures get reported, instead of skipping the tests.
     import pyopencl  # noqa
 
-    import sys
     if len(sys.argv) > 1:
         exec(sys.argv[1])
     else:
