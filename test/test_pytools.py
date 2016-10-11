@@ -132,6 +132,7 @@ def test_memoize_keyfunc():
 
 @pytest.mark.parametrize("dims", [2, 3])
 def test_spatial_btree(dims, do_plot=False):
+    pytest.importorskip("numpy")
     import numpy as np
     nparticles = 2000
     x = -1 + 2*np.random.rand(dims, nparticles)
