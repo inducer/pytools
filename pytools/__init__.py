@@ -441,6 +441,7 @@ def memoize(*args, **kwargs):
     raise TypeError(
         "memoize received unexpected position arguments: %s" % args)
 
+
 FunctionValueCache = memoize
 
 
@@ -1120,6 +1121,7 @@ def generate_all_nonnegative_integer_tuples(length, least=0):
                     yield prebase + [current_max] + postbase
         current_max += 1
 
+
 # backwards compatibility
 generate_positive_integer_tuples_below = generate_nonnegative_integer_tuples_below
 generate_all_positive_integer_tuples = generate_all_nonnegative_integer_tuples
@@ -1734,6 +1736,7 @@ def generate_unique_names(prefix):
         yield "%s_%d" % (prefix, try_num)
         try_num += 1
 
+
 generate_unique_possibilities = MovedFunctionDeprecationWrapper(
         generate_unique_names)
 
@@ -1776,6 +1779,7 @@ class UniqueNameGenerator:
 def _test():
     import doctest
     doctest.testmod()
+
 
 if __name__ == "__main__":
     _test()
