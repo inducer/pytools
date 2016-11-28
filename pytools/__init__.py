@@ -197,6 +197,19 @@ class Record(RecordWithoutPickling):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+
+class ImmutableRecordWithoutPickling(RecordWithoutPickling):
+    "Hashable record. Does not explicitly enforce immutability."
+
+    def __hash__(self):
+        return hash(
+                (type(self),) + tuple(getattr(self, field)
+                    for field in self.__class__.fields))
+
+
+class ImmutableRecord(Record, ImmutableRecordWithoutPickling):
+    pass
+
 # }}}
 
 
