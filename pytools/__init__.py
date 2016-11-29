@@ -207,7 +207,7 @@ class ImmutableRecordWithoutPickling(RecordWithoutPickling):
                     for field in self.__class__.fields))
 
 
-class ImmutableRecord(Record, ImmutableRecordWithoutPickling):
+class ImmutableRecord(ImmutableRecordWithoutPickling, Record):
     pass
 
 # }}}
