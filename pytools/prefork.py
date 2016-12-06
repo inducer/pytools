@@ -37,7 +37,7 @@ class DirectForker(object):
 
             return self.count
         except OSError as e:
-             raise ExecError("error invoking '%s': %s"
+            raise ExecError("error invoking '%s': %s"
                              % (" ".join(cmdline), e))
 
     def call_capture_output(self, cmdline, cwd=None, error_on_nonzero=True):

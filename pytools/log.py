@@ -538,7 +538,7 @@ class LogManager(object):
         self.constants[name] = value
 
         from pickle import dumps
-        value = buffer(dumps(value))
+        value = bytes(dumps(value))
 
         if existed:
             self.db_conn.execute("update constants set value = ? where name = ?",
@@ -662,7 +662,7 @@ class LogManager(object):
             from pickle import dumps
             self.db_conn.execute("""insert into quantities values (?,?,?,?)""", (
                 name, unit, description,
-                buffer(dumps(def_agg))))
+                bytes(dumps(def_agg))))
             self.db_conn.execute("""create table %s
               (step integer, rank integer, value real)""" % name)
 

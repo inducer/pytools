@@ -163,6 +163,7 @@ def setup_readline():
 
     readline.parse_and_bind("tab: complete")
 
+
 try:
     import readline
     import rlcompleter

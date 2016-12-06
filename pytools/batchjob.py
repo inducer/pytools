@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 import six
+
+
 def _cp(src, dest):
     from pytools import assert_not_a_file
     assert_not_a_file(dest)
@@ -15,14 +17,9 @@ def _cp(src, dest):
         inf.close()
 
 
-
-
-
 def get_timestamp():
     from datetime import datetime
     return datetime.now().strftime("%Y-%m-%d-%H%M%S")
-
-
 
 
 class BatchJob(object):
@@ -49,7 +46,7 @@ class BatchJob(object):
 
         runscript = open("%s/run.sh" % self.path, "w")
         import sys
-        runscript.write("%s %s setup.cpy" 
+        runscript.write("%s %s setup.cpy"
                 % (sys.executable, main_file))
         runscript.close()
 
@@ -68,12 +65,8 @@ class BatchJob(object):
         setup.close()
 
 
-
-
-class INHERIT(object):
+class INHERIT(object):  # noqa
     pass
-
-
 
 
 class GridEngineJob(BatchJob):
@@ -103,8 +96,6 @@ class GridEngineJob(BatchJob):
             raise RuntimeError("Process submission of %s failed" % self.moniker)
 
 
-
-
 class PBSJob(BatchJob):
     def submit(self, env={"LD_LIBRARY_PATH": INHERIT, "PYTHONPATH": INHERIT},
             memory_megs=None, extra_args=[]):
@@ -132,18 +123,14 @@ class PBSJob(BatchJob):
             raise RuntimeError("Process submission of %s failed" % self.moniker)
 
 
-
-
 def guess_job_class():
     from subprocess import Popen, PIPE, STDOUT
-    qstat_helplines = Popen(["qstat", "--help"], 
+    qstat_helplines = Popen(["qstat", "--help"],
             stdout=PIPE, stderr=STDOUT).communicate()[0].split("\n")
     if qstat_helplines[0].startswith("GE"):
         return GridEngineJob
     else:
         return PBSJob
-
-
 
 
 class ConstructorPlaceholder:
@@ -162,8 +149,8 @@ class ConstructorPlaceholder:
         return "%s(%s)" % (self.classname,
                 ",".join(
                     [str(arg) for arg in self.args]
-                    + ["%s=%s" % (kw, repr(val)) for kw, val in six.iteritems(self.kwargs)]
+                    + ["%s=%s" % (kw, repr(val))
+                        for kw, val in six.iteritems(self.kwargs)]
                     )
                 )
     __repr__ = __str__
-
