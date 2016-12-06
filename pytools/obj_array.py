@@ -66,6 +66,7 @@ def obj_array_to_hashable(f):
     else:
         return f
 
+
 hashable_field = MovedFunctionDeprecationWrapper(obj_array_to_hashable)
 
 
@@ -77,6 +78,7 @@ def obj_array_equal(a, b):
         return np.array_equal(a, b)
     else:
         return a == b
+
 
 field_equal = MovedFunctionDeprecationWrapper(obj_array_equal)
 
@@ -129,6 +131,7 @@ def with_object_array_or_scalar(f, field, obj_array_only=False):
     else:
         return f(field)
 
+
 as_oarray_func = decorator(with_object_array_or_scalar)
 
 
@@ -157,6 +160,7 @@ def with_object_array_or_scalar_n_args(f, *args):
         return result
     else:
         return f(*args)
+
 
 as_oarray_func_n_args = decorator(with_object_array_or_scalar_n_args)
 

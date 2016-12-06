@@ -2,8 +2,6 @@ from __future__ import division
 from __future__ import absolute_import
 
 
-
-
 def test_variance():
     data = [4, 7, 13, 16]
 
@@ -12,7 +10,7 @@ def test_variance():
         return ((
             sum(di**2 for di in data)
             - sum(data)**2/n)
-            /(n-1))
+            / (n-1))
 
     from pytools import variance
     orig_variance = variance(data, entire_pop=False)
@@ -21,4 +19,3 @@ def test_variance():
 
     data = [1e9 + x for x in data]
     assert abs(variance(data, entire_pop=False) - orig_variance) < 1e-15
-
