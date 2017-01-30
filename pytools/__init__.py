@@ -1750,6 +1750,18 @@ def generate_unique_names(prefix):
         try_num += 1
 
 
+def generate_numbered_unique_names(prefix, num=None):
+    orig_num = num
+    num = 0
+    if orig_num is None:
+        yield (num, prefix)
+
+    while True:
+        name = "%s_%d" % (prefix, num)
+        num += 1
+        yield (num, name)
+
+
 generate_unique_possibilities = MovedFunctionDeprecationWrapper(
         generate_unique_names)
 
@@ -1758,6 +1770,7 @@ class UniqueNameGenerator:
     def __init__(self, existing_names=set(), forced_prefix=""):
         self.existing_names = existing_names.copy()
         self.forced_prefix = forced_prefix
+        self.prefix_to_counter = {}
 
     def is_name_conflicting(self, name):
         return name in self.existing_names
@@ -1777,9 +1790,13 @@ class UniqueNameGenerator:
     def __call__(self, based_on="id"):
         based_on = self.forced_prefix + based_on
 
-        for var_name in generate_unique_names(based_on):
+        counter = self.prefix_to_counter.get(based_on, None)
+
+        for counter, var_name in generate_numbered_unique_names(based_on, counter):
             if not self.is_name_conflicting(var_name):
                 break
+
+        self.prefix_to_counter[based_on] = counter
 
         var_name = intern(var_name)
 
