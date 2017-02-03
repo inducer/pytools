@@ -81,6 +81,15 @@ class DiskDict(object):
         self.commit_interval = commit_interval
         self.commit_countdown = self.commit_interval
 
+        from warnings import warn
+        warn("Given that Python 3+ uses hash randomization, DiskDict will typically "
+                "be entirely useless and should not be used . Since object hashes "
+                "will change between runs, it will be unable to retrieve objects "
+                "from the dictionary in a second run, defeating the purpose of "
+                "persisting to disk."
+                "DiskDict is deprecated and will be removed in 2018. "
+                "Use pytools.persistent_dict instead.", DeprecationWarning, stacklevel=2)
+
     def __contains__(self, key):
         if key in self.cache:
             return True
