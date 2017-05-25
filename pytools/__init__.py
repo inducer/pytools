@@ -1775,6 +1775,11 @@ class UniqueNameGenerator:
     def is_name_conflicting(self, name):
         return name in self.existing_names
 
+    def _name_added(self, name):
+        """Callback to alert subclasses when a name has been added.
+        """
+        pass
+
     def add_name(self, name):
         if self.is_name_conflicting(name):
             raise ValueError("name '%s' conflicts with existing names")
@@ -1782,6 +1787,7 @@ class UniqueNameGenerator:
             raise ValueError("name '%s' does not start with required prefix")
 
         self.existing_names.add(name)
+        self._name_added(name)
 
     def add_names(self, names):
         for name in names:
@@ -1801,6 +1807,7 @@ class UniqueNameGenerator:
         var_name = intern(var_name)
 
         self.existing_names.add(var_name)
+        self._name_added(var_name)
         return var_name
 
 # }}}
