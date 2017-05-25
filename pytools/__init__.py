@@ -1777,6 +1777,11 @@ class UniqueNameGenerator:
 
     def _name_added(self, name):
         """Callback to alert subclasses when a name has been added.
+
+        .. note::
+
+            This will not get called for the names in the *existing_names*
+            argument to :meth:`__init__`.
         """
         pass
 
