@@ -1766,7 +1766,7 @@ generate_unique_possibilities = MovedFunctionDeprecationWrapper(
         generate_unique_names)
 
 
-class UniqueNameGenerator:
+class UniqueNameGenerator(object):
     def __init__(self, existing_names=set(), forced_prefix=""):
         self.existing_names = existing_names.copy()
         self.forced_prefix = forced_prefix
