@@ -1,5 +1,4 @@
-from __future__ import division, with_statement
-from __future__ import absolute_import
+from __future__ import division, with_statement, absolute_import
 
 import pytest  # noqa
 import sys  # noqa
