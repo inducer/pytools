@@ -170,24 +170,44 @@ class ItemDirManager(CleanupBase):
 
 class KeyBuilder(object):
     def rec(self, key_hash, key):
-        try:
-            method = key.update_persistent_hash
-        except AttributeError:
-            pass
-        else:
-            method(key_hash, self)
-            return
+        digest = None
 
         try:
-            method = getattr(self, "update_for_"+type(key).__name__)
+            digest = key._pytools_persistent_hash_digest
         except AttributeError:
             pass
-        else:
-            method(key_hash, key)
-            return
 
-        raise TypeError("unsupported type for persistent hash keying: %s"
-                % type(key))
+        if digest is None:
+            try:
+                method = key.update_persistent_hash
+            except AttributeError:
+                pass
+            else:
+                inner_key_hash = new_hash()
+                method(inner_key_hash, self)
+                digest = inner_key_hash.digest()
+
+        if digest is None:
+            try:
+                method = getattr(self, "update_for_"+type(key).__name__)
+            except AttributeError:
+                pass
+            else:
+                inner_key_hash = new_hash()
+                method(inner_key_hash, key)
+                digest = inner_key_hash.digest()
+
+        if digest is None:
+            raise TypeError("unsupported type for persistent hash keying: %s"
+                    % type(key))
+
+        if not isinstance(key, type):
+            try:
+                key._pytools_persistent_hash_digest = digest
+            except Exception:
+                pass
+
+        key_hash.update(digest)
 
     def __call__(self, key):
         key_hash = new_hash()
