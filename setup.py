@@ -4,7 +4,7 @@
 from setuptools import setup
 
 setup(name="pytools",
-      version="2017.2",
+      version="2017.3",
       description="A collection of tools for Python",
       long_description="""
       Pytools is a big bag of things that are "missing" from the Python standard
