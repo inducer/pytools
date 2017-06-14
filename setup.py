@@ -3,8 +3,17 @@
 
 from setuptools import setup
 
+ver_dic = {}
+version_file = open("pytools/version.py")
+try:
+    version_file_contents = version_file.read()
+finally:
+    version_file.close()
+
+exec(compile(version_file_contents, "pytools/version.py", 'exec'), ver_dic)
+
 setup(name="pytools",
-      version="2017.3",
+      version=ver_dic["VERSION_TEXT"],
       description="A collection of tools for Python",
       long_description="""
       Pytools is a big bag of things that are "missing" from the Python standard
