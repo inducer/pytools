@@ -6,22 +6,22 @@ __doc__ = """
 Handling :mod:`numpy` Object Arrays
 ===================================
 
-.. automethod:: oarray_real
-.. automethod:: oarray_imag
-.. automethod:: oarray_real_copy
-.. automethod:: oarray_imag_copy
+.. autofunction:: oarray_real
+.. autofunction:: oarray_imag
+.. autofunction:: oarray_real_copy
+.. autofunction:: oarray_imag_copy
 
 Creation
 --------
 
-.. automethod:: join_fields
-.. automethod:: make_obj_array
+.. autofunction:: join_fields
+.. autofunction:: make_obj_array
 
 Mapping
 -------
 
-.. automethod:: with_object_array_or_scalar
-.. automethod:: with_object_array_or_scalar_n_args
+.. autofunction:: with_object_array_or_scalar
+.. autofunction:: with_object_array_or_scalar_n_args
 """
 
 
