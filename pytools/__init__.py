@@ -41,6 +41,91 @@ except ImportError:
 else:
     my_decorator = decorator_module.decorator
 
+__doc__ = """
+A Collection of Utilities
+=========================
+
+Math
+----
+
+.. autofunction:: levi_civita
+.. autofunction:: perm
+.. autofunction:: comb
+
+Assertive accessors
+-------------------
+
+.. autofunction:: one
+.. autofunction:: is_single_valued
+.. autofunction:: all_roughly_equal
+.. autofunction:: single_valued
+
+Memoization
+-----------
+
+.. autofunction:: memoize
+.. autofunction:: memoize_on_first_arg
+.. autofunction:: memoize_method
+.. autofunction:: memoize_method_with_uncached
+.. autofunction:: memoize_in
+
+Argmin/max
+----------
+
+.. autofunction:: argmin2
+.. autofunction:: argmax2
+.. autofunction:: argmin
+.. autofunction:: argmax
+
+Cartesian products
+------------------
+.. autofunction:: cartesian_product
+.. autofunction:: distinct_pairs
+
+Permutations, Tuples, Integer sequences
+---------------------------------------
+
+.. autofunction:: wandering_element
+.. autofunction:: indices_in_shape
+.. autofunction:: generate_nonnegative_integer_tuples_below
+.. autofunction:: generate_nonnegative_integer_tuples_summing_to_at_most
+.. autofunction:: generate_all_nonnegative_integer_tuples
+.. autofunction:: generate_all_integer_tuples_below
+.. autofunction:: generate_all_integer_tuples
+.. autofunction:: generate_permutations
+.. autofunction:: generate_unique_permutations
+
+Graph Algorithms
+----------------
+
+.. autofunction:: a_star
+
+Formatting
+----------
+
+.. autoclass:: Table
+.. autofunction:: string_histogram
+.. autofunction:: word_wrap
+
+Debugging
+---------
+
+.. autofunction:: typedump
+.. autofunction:: invoke_editor
+
+Progress bars
+-------------
+
+.. autoclass:: ProgressBar
+
+Name generation
+---------------
+
+.. autofunction:: generate_unique_names
+.. autofunction:: generate_numbered_unique_names
+.. autofunction:: UniqueNameGenerator
+"""
+
 
 # {{{ math --------------------------------------------------------------------
 
@@ -1163,7 +1248,7 @@ def generate_all_integer_tuples(length, least_abs=0):
 
 
 def generate_permutations(original):
-    """Generate all permutations of the list `original'.
+    """Generate all permutations of the list *original*.
 
     Nicked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/252178
     """
@@ -1177,7 +1262,7 @@ def generate_permutations(original):
 
 
 def generate_unique_permutations(original):
-    """Generate all unique permutations of the list `original'.
+    """Generate all unique permutations of the list *original*.
     """
 
     had_those = set()
@@ -1314,7 +1399,13 @@ def a_star(initial_state, goal_state, neighbor_map,
 # {{{ table formatting
 
 class Table:
-    """An ASCII table generator."""
+    """An ASCII table generator.
+
+    .. automethod:: add_row
+    .. automethod:: __str__
+    .. automethod:: latex
+    """
+
     def __init__(self):
         self.rows = []
 
@@ -1402,10 +1493,10 @@ def string_histogram(iterable, min_value=None, max_value=None,
 
 def word_wrap(text, width, wrap_using="\n"):
     # http://code.activestate.com/recipes/148061-one-liner-word-wrap-function/
-    """
+    r"""
     A word-wrap function that preserves existing line breaks
     and most spaces in the text. Expects that existing line
-    breaks are posix newlines (\n).
+    breaks are posix newlines (``\n``).
     """
     space_or_break = [" ", wrap_using]
     return reduce(lambda line, word, width=width: '%s%s%s' %
@@ -1601,6 +1692,14 @@ def invoke_editor(s, filename="edit.txt", descr="the file"):
 # {{{ progress bars
 
 class ProgressBar:
+    """
+    .. automethod:: draw
+    .. automethod:: progress
+    .. automethod:: set_progress
+    .. automethod:: finished
+    .. automethod:: __enter__
+    .. automethod:: __exit__
+    """
     def __init__(self, descr, total, initial=0, length=40):
         import time
         self.description = descr
@@ -1767,6 +1866,12 @@ generate_unique_possibilities = MovedFunctionDeprecationWrapper(
 
 
 class UniqueNameGenerator(object):
+    """
+    .. automethod:: is_name_conflicting
+    .. automethod:: add_name
+    .. automethod:: add_names
+    .. automethod:: __call__
+    """
     def __init__(self, existing_names=set(), forced_prefix=""):
         self.existing_names = existing_names.copy()
         self.forced_prefix = forced_prefix

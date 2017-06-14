@@ -15,20 +15,7 @@ exec(compile(version_file_contents, "pytools/version.py", 'exec'), ver_dic)
 setup(name="pytools",
       version=ver_dic["VERSION_TEXT"],
       description="A collection of tools for Python",
-      long_description="""
-      Pytools is a big bag of things that are "missing" from the Python standard
-      library. This is mainly a dependency of my other software packages, and is
-      probably of little interest to you unless you use those. If you're curious
-      nonetheless, here's what's on offer:
-
-      * A ton of small tool functions such as `len_iterable`, `argmin`,
-        tuple generation, permutation generation, ASCII table pretty printing,
-        GvR's mokeypatch_xxx() hack, the elusive `flatten`, and much more.
-      * Michele Simionato's decorator module
-      * A time-series logging module, `pytools.log`.
-      * Batch job submission, `pytools.batchjob`.
-      * A lexer, `pytools.lex`.
-      """,
+      long_description=open("README.rst", "r").read(),
       classifiers=[
           'Development Status :: 4 - Beta',
           'Intended Audience :: Developers',

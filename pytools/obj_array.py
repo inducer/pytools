@@ -2,6 +2,28 @@ from __future__ import absolute_import, division
 import numpy as np
 from pytools import my_decorator as decorator, MovedFunctionDeprecationWrapper
 
+__doc__ = """
+Handling :mod:`numpy` Object Arrays
+===================================
+
+.. automethod:: oarray_real
+.. automethod:: oarray_imag
+.. automethod:: oarray_real_copy
+.. automethod:: oarray_imag_copy
+
+Creation
+--------
+
+.. automethod:: join_fields
+.. automethod:: make_obj_array
+
+Mapping
+-------
+
+.. automethod:: with_object_array_or_scalar
+.. automethod:: with_object_array_or_scalar_n_args
+"""
+
 
 def gen_len(expr):
     from pytools.obj_array import is_obj_array

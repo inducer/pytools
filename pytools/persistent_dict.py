@@ -1,8 +1,6 @@
 """Generic persistent, concurrent dictionary-like facility."""
 
-from __future__ import division, with_statement
-from __future__ import absolute_import
-import six
+from __future__ import division, with_statement, absolute_import
 
 __copyright__ = "Copyright (C) 2011,2014 Andreas Kloeckner"
 
@@ -30,9 +28,22 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+import six
 import sys
 import os
 import errno
+
+__doc__ = """
+Persistent Hashing
+==================
+
+This module contains functionality that allows hashing with keys that remain
+valid across interpreter invocations, unlike Python's built-in hashes.
+
+.. autoexception:: NoSuchEntryError
+.. autoclass:: KeyBuilder
+.. autoclass:: PersistentDict
+"""
 
 try:
     import hashlib
@@ -269,6 +280,11 @@ class PersistentDict(object):
         :arg identifier: a file-name-compatible string identifying this
             dictionary
         :arg key_builder: a subclass of :class:`KeyBuilder`
+
+        .. automethod:: __getitem__
+        .. automethod:: __setitem__
+        .. automethod:: __delitem__
+        .. automethod:: clear
         """
 
         self.identifier = identifier
