@@ -1923,6 +1923,23 @@ class UniqueNameGenerator(object):
 # }}}
 
 
+# {{{ recursion limit
+
+class MinRecursionLimit(object):
+    def __init__(self, min_rec_limit):
+        self.min_rec_limit = min_rec_limit
+
+    def __enter__(self):
+        self.prev_recursion_limit = sys.getrecursionlimit()
+        new_limit = max(self.prev_recursion_limit, self.min_rec_limit)
+        sys.setrecursionlimit(new_limit)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.setrecursionlimit(self.prev_recursion_limit)
+
+# }}}
+
+
 def _test():
     import doctest
     doctest.testmod()
