@@ -502,19 +502,21 @@ class PersistentDict(object):
             with open(version_path, "wb") as versionf:
                 dump(0, versionf, protocol=HIGHEST_PROTOCOL)
 
-    def _read_cached(self, file_name, version, cache):
-        try:
-            value, cached_version = cache[file_name]
-            if version == cached_version:
-                return value
-        except KeyError:
-            pass
+    def _read_cached(self, file_name, version, cache, use_cache):
+        if use_cache:
+            try:
+                value, cached_version = cache[file_name]
+                if version == cached_version:
+                    return value
+            except KeyError:
+                pass
 
         with open(file_name, "rb") as inf:
             from six.moves.cPickle import load
             value = load(inf)
 
-        cache[file_name] = (value, version)
+        if use_cache:
+            cache[file_name] = (value, version)
 
         return value
 
@@ -542,25 +544,23 @@ class PersistentDict(object):
 
                 version = None
                 exc = None
+                use_cache = True
 
                 try:
                     with open(version_path, "rb") as versionf:
                         from six.moves.cPickle import load
                         version = load(versionf)
                 except IOError:
-                    # Not a fatal error - but we won't be able to use the cache.
+                    # Not a fatal error - but we won't be able to use the
+                    # LRU cache.
+                    #
+                    # This allows us to still read cache directory hiearchies
+                    # created by previous version (< 2017.5).
                     self._read_key_cache.discard(key_path)
                     self._read_contents_cache.discard(value_path)
+                    use_cache = False
                 except (OSError, EOFError) as e:
                     exc = e
-
-                if version is None:
-                    try:
-                        # If the version doesn't exist, reset the version
-                        # counter.
-                        self._tick_version(hexdigest_key)
-                    except (OSError, IOError, EOFError) as e:
-                        exc = e
 
                 if exc is not None:
                     item_dir_m.reset()
@@ -579,7 +579,7 @@ class PersistentDict(object):
 
                 try:
                     read_key = self._read_cached(key_path, version,
-                            self._read_key_cache)
+                            self._read_key_cache, use_cache)
                 except (OSError, IOError, EOFError) as e:
                     exc = e
 
@@ -615,7 +615,7 @@ class PersistentDict(object):
 
                 try:
                     read_contents = self._read_cached(value_path, version,
-                            self._read_contents_cache)
+                            self._read_contents_cache, use_cache)
                 except (OSError, IOError, EOFError) as e:
                     exc = e
 
