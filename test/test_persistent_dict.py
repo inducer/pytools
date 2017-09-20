@@ -62,17 +62,16 @@ def test_persistent_dict_in_memory_cache():
     # {{{ test LRU policy
 
     val1 = pdict[1]
-    val1.val = 0
 
-    assert pdict[1].val == 0
+    assert pdict[1] is val1
     pdict[2]
-    assert pdict[1].val == 0
+    assert pdict[1] is val1
     pdict[3]
-    assert pdict[1].val == 0
+    assert pdict[1] is val1
     pdict[2]
-    assert pdict[1].val == 0
+    assert pdict[1] is val1
     pdict[4]
-    assert pdict[1].val == 1
+    assert pdict[1] is not val1
 
     # }}}
 
