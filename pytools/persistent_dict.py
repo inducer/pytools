@@ -701,7 +701,7 @@ class PersistentDict(_PersistentDictBase):
                 # {{{ load key
 
                 try:
-                    stored_key = self._read(key_path)
+                    read_key = self._read(key_path)
                 except:
                     item_dir_m.reset()
                     from warnings import warn
@@ -711,7 +711,7 @@ class PersistentDict(_PersistentDictBase):
                             % (self.identifier, hexdigest_key))
                     raise NoSuchEntryError(key)
 
-                self._collision_check(key, stored_key)
+                self._collision_check(key, read_key)
 
                 # }}}
 
