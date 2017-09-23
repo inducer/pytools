@@ -4,15 +4,13 @@ import pytest  # noqa
 import sys  # noqa
 import tempfile
 import shutil
-import warnings
 
 from six.moves import range
 from six.moves import zip
 
-from pytools.persistent_dict import (PersistentDict,
-                                     WriteOncePersistentDict,
-                                     NoSuchEntryError,
-                                     ReadOnlyEntryError)
+from pytools.persistent_dict import (
+        PersistentDict, WriteOncePersistentDict, NoSuchEntryError,
+        ReadOnlyEntryError)
 
 
 # {{{ type for testing
@@ -37,13 +35,19 @@ class PDictTestingKeyOrValue(object):
     def update_persistent_hash(self, key_hash, key_builder):
         key_builder.rec(key_hash, self.hash_key)
 
+    def __repr__(self):
+        return "PDictTestingKeyOrValue(val=%r,hash_key=%r)" % (
+                (self.val, self.hash_key))
+
+    __str__ = __repr__
+
 # }}}
 
 
 def test_persistent_dict_storage_and_lookup():
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = PersistentDict(tmpdir)
+        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
 
         from random import randrange
 
@@ -91,7 +95,7 @@ def test_persistent_dict_storage_and_lookup():
 def test_persistent_dict_deletion():
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = PersistentDict(tmpdir)
+        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
 
         pdict[0] = 0
         del pdict[0]
@@ -109,8 +113,8 @@ def test_persistent_dict_deletion():
 def test_persistent_dict_synchronization():
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict1 = PersistentDict(tmpdir)
-        pdict2 = PersistentDict(tmpdir)
+        pdict1 = PersistentDict("pytools-test", container_dir=tmpdir)
+        pdict2 = PersistentDict("pytools-test", container_dir=tmpdir)
 
         # check lookup
         pdict1[0] = 1
@@ -139,15 +143,34 @@ def test_persistent_dict_cache_collisions():
 
         pdict[key1] = 1
 
-        # Suppress pdict collision warnings.
-        with warnings.catch_warnings():
-            # check lookup
+        # check lookup
+        with pytest.warns(UserWarning):
             with pytest.raises(NoSuchEntryError):
                 pdict[key2]
 
-            # check deletion
+        # check deletion
+        with pytest.warns(UserWarning):
             with pytest.raises(NoSuchEntryError):
                 del pdict[key2]
+
+        # check presence after deletion
+        pdict[key1]
+
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+def test_persistent_dict_clear():
+    try:
+        tmpdir = tempfile.mkdtemp()
+        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+
+        pdict[0] = 1
+        pdict[0]
+        pdict.clear()
+
+        with pytest.raises(NoSuchEntryError):
+            pdict[0]
 
     finally:
         shutil.rmtree(tmpdir)
@@ -156,7 +179,7 @@ def test_persistent_dict_cache_collisions():
 def test_write_once_persistent_dict_storage_and_lookup():
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = WriteOncePersistentDict(tmpdir)
+        pdict = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
 
         # check lookup
         pdict[0] = 1
@@ -173,7 +196,8 @@ def test_write_once_persistent_dict_storage_and_lookup():
 def test_write_once_persistent_dict_lru_policy():
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = WriteOncePersistentDict(tmpdir, in_mem_cache_size=3)
+        pdict = WriteOncePersistentDict(
+                "pytools-test", container_dir=tmpdir, in_mem_cache_size=3)
 
         pdict[1] = PDictTestingKeyOrValue(1)
         pdict[2] = PDictTestingKeyOrValue(2)
@@ -185,10 +209,15 @@ def test_write_once_persistent_dict_lru_policy():
         assert pdict[1] is val1
         pdict[2]
         assert pdict[1] is val1
+        pdict[2]
         pdict[3]
         assert pdict[1] is val1
         pdict[2]
+        pdict[3]
+        pdict[2]
         assert pdict[1] is val1
+        pdict[2]
+        pdict[3]
         pdict[4]
         assert pdict[1] is not val1
 
@@ -199,8 +228,8 @@ def test_write_once_persistent_dict_lru_policy():
 def test_write_once_persistent_dict_synchronization():
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict1 = WriteOncePersistentDict(tmpdir)
-        pdict2 = WriteOncePersistentDict(tmpdir)
+        pdict1 = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+        pdict2 = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
 
         # check lookup
         pdict1[1] = 0
@@ -217,19 +246,33 @@ def test_write_once_persistent_dict_synchronization():
 def test_write_once_persistent_dict_cache_collisions():
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = WriteOncePersistentDict(tmpdir)
+        pdict = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
 
         key1 = PDictTestingKeyOrValue(1, hash_key=0)
         key2 = PDictTestingKeyOrValue(2, hash_key=0)
 
         pdict[key1] = 1
 
-        # Suppress pdict collision warnings.
-        with warnings.catch_warnings():
+        with pytest.warns(UserWarning):
             # check lookup
             with pytest.raises(NoSuchEntryError):
                 pdict[key2]
 
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+def test_write_once_persistent_dict_clear():
+    try:
+        tmpdir = tempfile.mkdtemp()
+        pdict = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+
+        pdict[0] = 1
+        pdict[0]
+        pdict.clear()
+
+        with pytest.raises(NoSuchEntryError):
+            pdict[0]
     finally:
         shutil.rmtree(tmpdir)
 
