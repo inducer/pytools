@@ -136,7 +136,7 @@ def test_persistent_dict_synchronization():
 def test_persistent_dict_cache_collisions():
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = PersistentDict(tmpdir)
+        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
 
         key1 = PDictTestingKeyOrValue(1, hash_key=0)
         key2 = PDictTestingKeyOrValue(2, hash_key=0)
