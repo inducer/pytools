@@ -176,10 +176,13 @@ def test_persistent_dict_clear():
         shutil.rmtree(tmpdir)
 
 
-def test_write_once_persistent_dict_storage_and_lookup():
+@pytest.mark.parametrize("in_mem_cache_size", (0, 256))
+def test_write_once_persistent_dict_storage_and_lookup(in_mem_cache_size):
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+        pdict = WriteOncePersistentDict(
+                "pytools-test", container_dir=tmpdir,
+                in_mem_cache_size=in_mem_cache_size)
 
         # check lookup
         pdict[0] = 1
