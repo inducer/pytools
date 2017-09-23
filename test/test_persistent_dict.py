@@ -192,6 +192,10 @@ def test_write_once_persistent_dict_storage_and_lookup(in_mem_cache_size):
         with pytest.raises(ReadOnlyEntryError):
             pdict[0] = 2
 
+        # check not found
+        with pytest.raises(NoSuchEntryError):
+            pdict[1]
+
     finally:
         shutil.rmtree(tmpdir)
 
