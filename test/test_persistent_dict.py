@@ -261,10 +261,14 @@ def test_write_once_persistent_dict_cache_collisions():
         key2 = PDictTestingKeyOrValue(2, hash_key=0)
         pdict[key1] = 1
 
+        # check lookup        
         with pytest.warns(UserWarning):
-            # check lookup
             with pytest.raises(NoSuchEntryError):
                 pdict[key2]
+
+        # check update
+        with pytest.raises(ReadOnlyEntryError):
+            pdict[key2] = 1
 
     finally:
         shutil.rmtree(tmpdir)
