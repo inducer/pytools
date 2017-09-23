@@ -124,6 +124,11 @@ Name generation
 .. autofunction:: generate_unique_names
 .. autofunction:: generate_numbered_unique_names
 .. autofunction:: UniqueNameGenerator
+
+Auxiliary files
+---------------
+
+.. autofunction:: download_from_web_if_not_present
 """
 
 
@@ -1936,6 +1941,28 @@ class MinRecursionLimit(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         sys.setrecursionlimit(self.prev_recursion_limit)
+
+# }}}
+
+
+# {{{ download from web if not present
+
+def download_from_web_if_not_present(url, local_name=None):
+    """
+    .. versionadded:: 2017.5
+    """
+
+    from os.path import basename, exists
+    if local_name is None:
+        local_name = basename(url)
+
+    if not exists(local_name):
+        from six.moves.urllib.request import urlopen
+        with urlopen(url) as inf:
+            contents = inf.read()
+
+            with open(local_name, "wb") as outf:
+                outf.write(contents)
 
 # }}}
 
