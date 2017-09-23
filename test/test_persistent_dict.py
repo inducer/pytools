@@ -250,7 +250,6 @@ def test_write_once_persistent_dict_cache_collisions():
 
         key1 = PDictTestingKeyOrValue(1, hash_key=0)
         key2 = PDictTestingKeyOrValue(2, hash_key=0)
-        
         pdict[key1] = 1
 
         with pytest.warns(UserWarning):
