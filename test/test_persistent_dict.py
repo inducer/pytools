@@ -187,6 +187,8 @@ def test_write_once_persistent_dict_storage_and_lookup(in_mem_cache_size):
         # check lookup
         pdict[0] = 1
         assert pdict[0] == 1
+        # do two lookups to test the cache
+        assert pdict[0] == 1
 
         # check updating
         with pytest.raises(ReadOnlyEntryError):
