@@ -272,7 +272,6 @@ class _LinkedList(object):
 
     Supports inserting at the left and deleting from an arbitrary location.
     """
-
     def __init__(self):
         self.count = 0
         self.head = None
@@ -329,7 +328,6 @@ class _LinkedList(object):
 class _LRUCache(collections.MutableMapping):
     """A mapping that keeps at most *maxsize* items with an LRU replacement policy.
     """
-
     def __init__(self, maxsize):
         self.lru_order = _LinkedList()
         self.maxsize = maxsize
