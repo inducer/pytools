@@ -356,7 +356,6 @@ class _LRUCache(collections.MutableMapping):
 
     def clear(self):
         self.cache.clear()
-        del self.lru_order
         self.lru_order = _LinkedList()
 
     def __setitem__(self, item, value):
