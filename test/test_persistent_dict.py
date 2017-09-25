@@ -81,12 +81,23 @@ def test_persistent_dict_storage_and_lookup():
 
         # }}}
 
-        # {{{ check not found
+        # {{{ check store_if_not_present
+
+        for k, v in zip(keys, values):
+            pdict.store_if_not_present(k, d[k] + 2)
+
+        for k, v in d.items():
+            assert d[k] + 1 == pdict[k]
+
+        pdict.store_if_not_present(2001, 2001)
+        assert pdict[2001] == 2001
+
+        # }}}
+
+        # check not found
 
         with pytest.raises(NoSuchEntryError):
             pdict[3000]
-
-        # }}}
 
     finally:
         shutil.rmtree(tmpdir)
@@ -154,7 +165,11 @@ def test_persistent_dict_cache_collisions():
                 del pdict[key2]
 
         # check presence after deletion
-        pdict[key1]
+        assert pdict[key1] == 1
+
+        # check store_if_not_present
+        pdict.store_if_not_present(key2, 2)
+        assert pdict[key1] == 1
 
     finally:
         shutil.rmtree(tmpdir)
@@ -197,6 +212,12 @@ def test_write_once_persistent_dict_storage_and_lookup(in_mem_cache_size):
         # check not found
         with pytest.raises(NoSuchEntryError):
             pdict[1]
+
+        # check store_if_not_present
+        pdict.store_if_not_present(0, 2)
+        assert pdict[0] == 1
+        pdict.store_if_not_present(1, 1)
+        assert pdict[1] == 1
 
     finally:
         shutil.rmtree(tmpdir)
@@ -269,6 +290,10 @@ def test_write_once_persistent_dict_cache_collisions():
         # check update
         with pytest.raises(ReadOnlyEntryError):
             pdict[key2] = 1
+
+        # check store_if_not_present
+        pdict.store_if_not_present(key2, 1)
+        assert pdict[key1] == 1
 
     finally:
         shutil.rmtree(tmpdir)

@@ -417,7 +417,10 @@ class _PersistentDictBase(object):
 
         self._make_container_dir()
 
-    def store(self, key, value):
+    def store_if_not_present(self, key, value):
+        self.store(key, value, _skip_if_present=True)
+
+    def store(self, key, value, _skip_if_present=False):
         raise NotImplementedError()
 
     def fetch(self, key):
@@ -497,6 +500,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
         .. automethod:: __getitem__
         .. automethod:: __setitem__
         .. automethod:: clear
+        .. automethod:: store_if_not_present
         """
         _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
         self._cache = _LRUCache(in_mem_cache_size)
@@ -521,7 +525,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
                         "on the lock file '%s'"
                         "--something is wrong" % lock_file)
 
-    def store(self, key, value):
+    def store(self, key, value, _skip_if_present=False):
         hexdigest_key = self.key_builder(key)
 
         cleanup_m = CleanupManager()
@@ -533,6 +537,8 @@ class WriteOncePersistentDict(_PersistentDictBase):
                         delete_on_error=False)
 
                 if item_dir_m.existed:
+                    if _skip_if_present:
+                        return
                     raise ReadOnlyEntryError(key)
 
                 item_dir_m.mkdir()
@@ -642,10 +648,11 @@ class PersistentDict(_PersistentDictBase):
         .. automethod:: __setitem__
         .. automethod:: __delitem__
         .. automethod:: clear
+        .. automethod:: store_if_not_present
         """
         _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
 
-    def store(self, key, value):
+    def store(self, key, value, _skip_if_present=False):
         hexdigest_key = self.key_builder(key)
 
         cleanup_m = CleanupManager()
@@ -657,6 +664,8 @@ class PersistentDict(_PersistentDictBase):
                         delete_on_error=True)
 
                 if item_dir_m.existed:
+                    if _skip_if_present:
+                        return
                     item_dir_m.reset()
 
                 item_dir_m.mkdir()
