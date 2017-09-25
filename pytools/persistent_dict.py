@@ -2,7 +2,10 @@
 
 from __future__ import division, with_statement, absolute_import
 
-__copyright__ = "Copyright (C) 2011,2014 Andreas Kloeckner"
+__copyright__ = """
+Copyright (C) 2011,2014 Andreas Kloeckner
+Copyright (C) 2017 Matt Wala
+"""
 
 __license__ = """
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,9 +31,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+import collections
 import six
 import sys
 import os
+import shutil
 import errno
 
 __doc__ = """
@@ -41,8 +46,11 @@ This module contains functionality that allows hashing with keys that remain
 valid across interpreter invocations, unlike Python's built-in hashes.
 
 .. autoexception:: NoSuchEntryError
+.. autoexception:: ReadOnlyEntryError
+
 .. autoclass:: KeyBuilder
 .. autoclass:: PersistentDict
+.. autoclass:: WriteOncePersistentDict
 """
 
 try:
@@ -54,17 +62,13 @@ except ImportError:
     new_hash = sha.new
 
 
-def _erase_dir(dir):
-    from os import listdir, unlink, rmdir
-    from os.path import join, isdir
-    for name in listdir(dir):
-        sub_name = join(dir, name)
-        if isdir(sub_name):
-            _erase_dir(sub_name)
-        else:
-            unlink(sub_name)
-
-    rmdir(dir)
+def _make_dir_recursively(dir):
+    try:
+        os.makedirs(dir)
+    except OSError as e:
+        from errno import EEXIST
+        if e.errno != EEXIST:
+            raise
 
 
 def update_checksum(checksum, obj):
@@ -97,34 +101,33 @@ class CleanupManager(CleanupBase):
 
 
 class LockManager(CleanupBase):
-    def __init__(self, cleanup_m, container_dir):
-        if container_dir is not None:
-            self.lock_file = os.path.join(container_dir, "lock")
+    def __init__(self, cleanup_m, lock_file):
+        self.lock_file = lock_file
 
-            attempts = 0
-            while True:
-                try:
-                    self.fd = os.open(self.lock_file,
-                            os.O_CREAT | os.O_WRONLY | os.O_EXCL)
-                    break
-                except OSError:
-                    pass
+        attempts = 0
+        while True:
+            try:
+                self.fd = os.open(self.lock_file,
+                        os.O_CREAT | os.O_WRONLY | os.O_EXCL)
+                break
+            except OSError:
+                pass
 
-                from time import sleep
-                sleep(1)
+            from time import sleep
+            sleep(1)
 
-                attempts += 1
+            attempts += 1
 
-                if attempts > 10:
-                    from warnings import warn
-                    warn("could not obtain lock--delete '%s' if necessary"
-                            % self.lock_file)
-                if attempts > 3 * 60:
-                    raise RuntimeError("waited more than three minutes "
-                            "on the lock file '%s'"
-                            "--something is wrong" % self.lock_file)
+            if attempts > 10:
+                from warnings import warn
+                warn("could not obtain lock--delete '%s' if necessary"
+                        % self.lock_file)
+            if attempts > 3 * 60:
+                raise RuntimeError("waited more than three minutes "
+                        "on the lock file '%s'"
+                        "--something is wrong" % self.lock_file)
 
-            cleanup_m.register(self)
+        cleanup_m.register(self)
 
     def clean_up(self):
         import os
@@ -136,34 +139,26 @@ class LockManager(CleanupBase):
 
 
 class ItemDirManager(CleanupBase):
-    def __init__(self, cleanup_m, path):
-        from os import mkdir
-        import errno
+    def __init__(self, cleanup_m, path, delete_on_error):
+        from os.path import isdir
 
+        self.existed = isdir(path)
         self.path = path
-        try:
-            mkdir(self.path)
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
-            self.existed = True
-        else:
-            cleanup_m.register(self)
-            self.existed = False
+        self.delete_on_error = delete_on_error
 
-    def sub(self, n):
-        from os.path import join
-        return join(self.path, n)
+        cleanup_m.register(self)
 
     def reset(self):
         try:
-            _erase_dir(self.path)
+            shutil.rmtree(self.path)
         except OSError as e:
             if e.errno != errno.ENOENT:
                 raise
 
+    def mkdir(self):
+        from os import mkdir
         try:
-            os.mkdir(self.path)
+            mkdir(self.path)
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
@@ -172,7 +167,8 @@ class ItemDirManager(CleanupBase):
         pass
 
     def error_clean_up(self):
-        _erase_dir(self.path)
+        if self.delete_on_error:
+            self.reset()
 
 # }}}
 
@@ -268,25 +264,139 @@ class KeyBuilder(object):
 # }}}
 
 
+# {{{ lru cache
+
+class _LinkedList(object):
+    """The list operates on nodes of the form [value, leftptr, rightpr]. To create a
+    node of this form you can use `LinkedList.new_node().`
+
+    Supports inserting at the left and deleting from an arbitrary location.
+    """
+    def __init__(self):
+        self.count = 0
+        self.head = None
+        self.end = None
+
+    @staticmethod
+    def new_node(element):
+        return [element, None, None]
+
+    def __len__(self):
+        return self.count
+
+    def appendleft_node(self, node):
+        self.count += 1
+
+        if self.head is None:
+            self.head = self.end = node
+            return
+
+        self.head[1] = node
+        node[2] = self.head
+
+        self.head = node
+
+    def pop_node(self):
+        end = self.end
+        self.remove_node(end)
+        return end
+
+    def remove_node(self, node):
+        self.count -= 1
+
+        if self.head is self.end:
+            assert node is self.head
+            self.head = self.end = None
+            return
+
+        left = node[1]
+        right = node[2]
+
+        if left is None:
+            self.head = right
+        else:
+            left[2] = right
+
+        if right is None:
+            self.end = left
+        else:
+            right[1] = left
+
+        node[1] = node[2] = None
+
+
+class _LRUCache(collections.MutableMapping):
+    """A mapping that keeps at most *maxsize* items with an LRU replacement policy.
+    """
+    def __init__(self, maxsize):
+        self.lru_order = _LinkedList()
+        self.maxsize = maxsize
+        self.cache = {}
+
+    def __delitem__(self, item):
+        node = self.cache[item]
+        self.lru_order.remove_node(node)
+        del self.cache[item]
+
+    def __getitem__(self, item):
+        node = self.cache[item]
+        self.lru_order.remove_node(node)
+        self.lru_order.appendleft_node(node)
+        # A linked list node contains a tuple of the form (item, value).
+        return node[0][1]
+
+    def __contains__(self, item):
+        return item in self.cache
+
+    def __iter__(self):
+        return iter(self.cache)
+
+    def __len__(self):
+        return len(self.cache)
+
+    def clear(self):
+        self.cache.clear()
+        self.lru_order = _LinkedList()
+
+    def __setitem__(self, item, value):
+        if self.maxsize < 1:
+            return
+
+        try:
+            node = self.cache[item]
+            self.lru_order.remove_node(node)
+        except KeyError:
+            if len(self.lru_order) >= self.maxsize:
+                # Make room for new elements.
+                end_node = self.lru_order.pop_node()
+                del self.cache[end_node[0][0]]
+
+            node = self.lru_order.new_node((item, value))
+            self.cache[item] = node
+
+        self.lru_order.appendleft_node(node)
+
+        assert len(self.cache) == len(self.lru_order), \
+                (len(self.cache), len(self.lru_order))
+        assert len(self.lru_order) <= self.maxsize
+
+        return node[0]
+
+# }}}
+
+
 # {{{ top-level
 
 class NoSuchEntryError(KeyError):
     pass
 
 
-class PersistentDict(object):
+class ReadOnlyEntryError(KeyError):
+    pass
+
+
+class _PersistentDictBase(object):
     def __init__(self, identifier, key_builder=None, container_dir=None):
-        """
-        :arg identifier: a file-name-compatible string identifying this
-            dictionary
-        :arg key_builder: a subclass of :class:`KeyBuilder`
-
-        .. automethod:: __getitem__
-        .. automethod:: __setitem__
-        .. automethod:: __delitem__
-        .. automethod:: clear
-        """
-
         self.identifier = identifier
 
         if key_builder is None:
@@ -307,52 +417,134 @@ class PersistentDict(object):
 
         self._make_container_dir()
 
-    def _make_container_dir(self):
-        # {{{ ensure container directory exists
+    def store(self, key, value):
+        raise NotImplementedError()
 
+    def fetch(self, key):
+        raise NotImplementedError()
+
+    def _read(self, path):
+        from six.moves.cPickle import load
+        with open(path, "rb") as inf:
+            return load(inf)
+
+    def _write(self, path, value):
+        from six.moves.cPickle import dump, HIGHEST_PROTOCOL
+        with open(path, "wb") as outf:
+            dump(value, outf, protocol=HIGHEST_PROTOCOL)
+
+    def _item_dir(self, hexdigest_key):
+        from os.path import join
+        return join(self.container_dir, hexdigest_key)
+
+    def _key_file(self, hexdigest_key):
+        from os.path import join
+        return join(self._item_dir(hexdigest_key), "key")
+
+    def _contents_file(self, hexdigest_key):
+        from os.path import join
+        return join(self._item_dir(hexdigest_key), "contents")
+
+    def _lock_file(self, hexdigest_key):
+        from os.path import join
+        return join(self.container_dir, str(hexdigest_key) + ".lock")
+
+    def _make_container_dir(self):
+        _make_dir_recursively(self.container_dir)
+
+    def _collision_check(self, key, stored_key):
+        if stored_key != key:
+            # Key collision, oh well.
+            from warnings import warn
+            warn("%s: key collision in cache at '%s' -- these are "
+                    "sufficiently unlikely that they're often "
+                    "indicative of a broken implementation "
+                    "of equality comparison"
+                    % (self.identifier, self.container_dir))
+            # This is here so we can debug the equality comparison
+            stored_key == key
+            raise NoSuchEntryError(key)
+
+    def __getitem__(self, key):
+        return self.fetch(key)
+
+    def __setitem__(self, key, value):
+        self.store(key, value)
+
+    def __delitem__(self, key):
+        raise NotImplementedError()
+
+    def clear(self):
         try:
-            os.makedirs(self.container_dir)
+            shutil.rmtree(self.container_dir)
         except OSError as e:
-            from errno import EEXIST
-            if e.errno != EEXIST:
+            if e.errno != errno.ENOENT:
                 raise
 
-        # }}}
+        self._make_container_dir()
 
-    def store(self, key, value, info_files={}):
+
+class WriteOncePersistentDict(_PersistentDictBase):
+    def __init__(self, identifier, key_builder=None, container_dir=None,
+             in_mem_cache_size=256):
+        """
+        :arg identifier: a file-name-compatible string identifying this
+            dictionary
+        :arg key_builder: a subclass of :class:`KeyBuilder`
+        :arg in_mem_cache_size: retain an in-memory cache of up to
+            *in_mem_cache_size* items
+
+        .. automethod:: __getitem__
+        .. automethod:: __setitem__
+        .. automethod:: clear
+        """
+        _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
+        self._cache = _LRUCache(in_mem_cache_size)
+
+    def _spin_until_removed(self, lock_file):
+        from os.path import exists
+
+        attempts = 0
+        while exists(lock_file):
+            from time import sleep
+            sleep(1)
+
+            attempts += 1
+
+            if attempts > 10:
+                from warnings import warn
+                warn("waiting until unlocked--delete '%s' if necessary"
+                        % lock_file)
+
+            if attempts > 3 * 60:
+                raise RuntimeError("waited more than three minutes "
+                        "on the lock file '%s'"
+                        "--something is wrong" % lock_file)
+
+    def store(self, key, value):
         hexdigest_key = self.key_builder(key)
 
         cleanup_m = CleanupManager()
         try:
             try:
-                LockManager(cleanup_m, self.container_dir)
-
-                from os.path import join
-                item_dir_m = ItemDirManager(cleanup_m,
-                        join(self.container_dir, hexdigest_key))
+                LockManager(cleanup_m, self._lock_file(hexdigest_key))
+                item_dir_m = ItemDirManager(
+                        cleanup_m, self._item_dir(hexdigest_key),
+                        delete_on_error=False)
 
                 if item_dir_m.existed:
-                    item_dir_m.reset()
+                    raise ReadOnlyEntryError(key)
 
-                for info_name, info_value in six.iteritems(info_files):
-                    info_path = item_dir_m.sub("info_"+info_name)
+                item_dir_m.mkdir()
 
-                    with open(info_path, "wt") as outf:
-                        outf.write(info_value)
+                key_path = self._key_file(hexdigest_key)
+                value_path = self._contents_file(hexdigest_key)
 
-                from six.moves.cPickle import dump, HIGHEST_PROTOCOL
-                value_path = item_dir_m.sub("contents")
-                with open(value_path, "wb") as outf:
-                    dump(value, outf, protocol=HIGHEST_PROTOCOL)
+                self._write(value_path, value)
+                self._write(key_path, key)
 
-                logger.debug("%s: cache store [key=%s]" % (
-                    self.identifier, hexdigest_key))
-
-                # Write key last, so that if the reader below
-                key_path = item_dir_m.sub("key")
-                with open(key_path, "wb") as outf:
-                    dump(key, outf, protocol=HIGHEST_PROTOCOL)
-
+                logger.debug("%s: disk cache store [key=%s]" % (
+                        self.identifier, hexdigest_key))
             except:
                 cleanup_m.error_clean_up()
                 raise
@@ -362,37 +554,152 @@ class PersistentDict(object):
     def fetch(self, key):
         hexdigest_key = self.key_builder(key)
 
-        from os.path import join, isdir
-        item_dir = join(self.container_dir, hexdigest_key)
+        # {{{ in memory cache
+
+        try:
+            stored_key, stored_value = self._cache[hexdigest_key]
+        except KeyError:
+            pass
+        else:
+            logger.debug("%s: in mem cache hit [key=%s]" % (
+                    self.identifier, hexdigest_key))
+            self._collision_check(key, stored_key)
+            return stored_value
+
+        # }}}
+
+        # {{{ check path exists and is unlocked
+
+        item_dir = self._item_dir(hexdigest_key)
+
+        from os.path import isdir
+        if not isdir(item_dir):
+            logger.debug("%s: disk cache miss [key=%s]" % (
+                    self.identifier, hexdigest_key))
+            raise NoSuchEntryError(key)
+
+        lock_file = self._lock_file(hexdigest_key)
+        self._spin_until_removed(lock_file)
+
+        # }}}
+
+        key_file = self._key_file(hexdigest_key)
+        contents_file = self._contents_file(hexdigest_key)
+
+        # Note: Unlike PersistentDict, this doesn't autodelete invalid entires,
+        # because that would lead to a race condition.
+
+        # {{{ load key file and do equality check
+
+        try:
+            read_key = self._read(key_file)
+        except:
+            from warnings import warn
+            warn("pytools.persistent_dict.WriteOncePersistentDict(%s) "
+                    "encountered an invalid "
+                    "key file for key %s. Remove the directory "
+                    "'%s' if necessary."
+                    % (self.identifier, hexdigest_key, item_dir))
+            raise NoSuchEntryError(key)
+
+        self._collision_check(key, read_key)
+
+        # }}}
+
+        logger.debug("%s: disk cache hit [key=%s]" % (
+                self.identifier, hexdigest_key))
+
+        # {{{ load contents
+
+        try:
+            read_contents = self._read(contents_file)
+        except:
+            warn("pytools.persistent_dict.WriteOncePersistentDict(%s) "
+                    "encountered an invalid "
+                    "key file for key %s. Remove the directory "
+                    "'%s' if necessary."
+                    % (self.identifier, hexdigest_key, item_dir))
+            raise NoSuchEntryError(key)
+
+        # }}}
+
+        self._cache[hexdigest_key] = (key, read_contents)
+        return read_contents
+
+    def clear(self):
+        _PersistentDictBase.clear(self)
+        self._cache.clear()
+
+
+class PersistentDict(_PersistentDictBase):
+    def __init__(self, identifier, key_builder=None, container_dir=None):
+        """
+        :arg identifier: a file-name-compatible string identifying this
+            dictionary
+        :arg key_builder: a subclass of :class:`KeyBuilder`
+
+        .. automethod:: __getitem__
+        .. automethod:: __setitem__
+        .. automethod:: __delitem__
+        .. automethod:: clear
+        """
+        _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
+
+    def store(self, key, value):
+        hexdigest_key = self.key_builder(key)
+
+        cleanup_m = CleanupManager()
+        try:
+            try:
+                LockManager(cleanup_m, self._lock_file(hexdigest_key))
+                item_dir_m = ItemDirManager(
+                        cleanup_m, self._item_dir(hexdigest_key),
+                        delete_on_error=True)
+
+                if item_dir_m.existed:
+                    item_dir_m.reset()
+
+                item_dir_m.mkdir()
+
+                key_path = self._key_file(hexdigest_key)
+                value_path = self._contents_file(hexdigest_key)
+
+                self._write(value_path, value)
+                self._write(key_path, key)
+
+                logger.debug("%s: cache store [key=%s]" % (
+                        self.identifier, hexdigest_key))
+            except:
+                cleanup_m.error_clean_up()
+                raise
+        finally:
+            cleanup_m.clean_up()
+
+    def fetch(self, key):
+        hexdigest_key = self.key_builder(key)
+        item_dir = self._item_dir(hexdigest_key)
+
+        from os.path import isdir
         if not isdir(item_dir):
             logger.debug("%s: cache miss [key=%s]" % (
-                self.identifier, hexdigest_key))
+                    self.identifier, hexdigest_key))
             raise NoSuchEntryError(key)
 
         cleanup_m = CleanupManager()
         try:
             try:
-                LockManager(cleanup_m, self.container_dir)
+                LockManager(cleanup_m, self._lock_file(hexdigest_key))
+                item_dir_m = ItemDirManager(
+                        cleanup_m, item_dir, delete_on_error=False)
 
-                item_dir_m = ItemDirManager(cleanup_m, item_dir)
-                key_path = item_dir_m.sub("key")
-                value_path = item_dir_m.sub("contents")
+                key_path = self._key_file(hexdigest_key)
+                value_path = self._contents_file(hexdigest_key)
 
-                from six.moves.cPickle import load
-
-                # {{{ load key file
-
-                exc = None
+                # {{{ load key
 
                 try:
-                    with open(key_path, "rb") as inf:
-                        read_key = load(inf)
-                except IOError as e:
-                    exc = e
-                except EOFError as e:
-                    exc = e
-
-                if exc is not None:
+                    read_key = self._read(key_path)
+                except:
                     item_dir_m.reset()
                     from warnings import warn
                     warn("pytools.persistent_dict.PersistentDict(%s) "
@@ -401,36 +708,18 @@ class PersistentDict(object):
                             % (self.identifier, hexdigest_key))
                     raise NoSuchEntryError(key)
 
+                self._collision_check(key, read_key)
+
                 # }}}
 
-                if read_key != key:
-                    # Key collision, oh well.
-                    from warnings import warn
-                    warn("%s: key collision in cache at '%s' -- these are "
-                            "sufficiently unlikely that they're often "
-                            "indicative of a broken implementation "
-                            "of equality comparison"
-                            % (self.identifier, self.container_dir))
-                    # This is here so we can debug the equality comparison
-                    read_key == key
-                    raise NoSuchEntryError(key)
-
                 logger.debug("%s: cache hit [key=%s]" % (
-                    self.identifier, hexdigest_key))
+                        self.identifier, hexdigest_key))
 
                 # {{{ load value
 
-                exc = None
-
                 try:
-                    with open(value_path, "rb") as inf:
-                        read_contents = load(inf)
-                except IOError as e:
-                    exc = e
-                except EOFError as e:
-                    exc = e
-
-                if exc is not None:
+                    read_contents = self._read(value_path)
+                except:
                     item_dir_m.reset()
                     from warnings import warn
                     warn("pytools.persistent_dict.PersistentDict(%s) "
@@ -439,9 +728,9 @@ class PersistentDict(object):
                             % (self.identifier, hexdigest_key))
                     raise NoSuchEntryError(key)
 
-                # }}}
-
                 return read_contents
+
+                # }}}
 
             except:
                 cleanup_m.error_clean_up()
@@ -452,17 +741,36 @@ class PersistentDict(object):
     def remove(self, key):
         hexdigest_key = self.key_builder(key)
 
-        from os.path import join, isdir
-        item_dir = join(self.container_dir, hexdigest_key)
+        item_dir = self._item_dir(hexdigest_key)
+        from os.path import isdir
         if not isdir(item_dir):
             raise NoSuchEntryError(key)
 
         cleanup_m = CleanupManager()
         try:
             try:
-                LockManager(cleanup_m, self.container_dir)
+                LockManager(cleanup_m, self._lock_file(hexdigest_key))
+                item_dir_m = ItemDirManager(
+                        cleanup_m, item_dir, delete_on_error=False)
+                key_file = self._key_file(hexdigest_key)
 
-                item_dir_m = ItemDirManager(cleanup_m, item_dir)
+                # {{{ load key
+
+                try:
+                    read_key = self._read(key_file)
+                except:
+                    item_dir_m.reset()
+                    from warnings import warn
+                    warn("pytools.persistent_dict.PersistentDict(%s) "
+                            "encountered an invalid "
+                            "key file for key %s. Entry deleted."
+                            % (self.identifier, hexdigest_key))
+                    raise NoSuchEntryError(key)
+
+                self._collision_check(key, read_key)
+
+                # }}}
+
                 item_dir_m.reset()
 
             except:
@@ -471,23 +779,8 @@ class PersistentDict(object):
         finally:
             cleanup_m.clean_up()
 
-    def __getitem__(self, key):
-        return self.fetch(key)
-
-    def __setitem__(self, key, value):
-        return self.store(key, value)
-
     def __delitem__(self, key):
         self.remove(key)
-
-    def clear(self):
-        try:
-            _erase_dir(self.container_dir)
-        except OSError as e:
-            if e.errno != errno.ENOENT:
-                raise
-
-        self._make_container_dir()
 
 # }}}
 
