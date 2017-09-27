@@ -292,7 +292,7 @@ def test_write_once_persistent_dict_cache_collisions():
             pdict[key2] = 1
 
         # check store_if_not_present
-        pdict.store_if_not_present(key2, 1)
+        pdict.store_if_not_present(key2, 2)
         assert pdict[key1] == 1
 
     finally:
