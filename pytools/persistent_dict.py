@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 import collections
+import functools
 import six
 import sys
 import os
@@ -47,6 +48,8 @@ valid across interpreter invocations, unlike Python's built-in hashes.
 
 .. autoexception:: NoSuchEntryError
 .. autoexception:: ReadOnlyEntryError
+
+.. autowarning:: CollisionWarning
 
 .. autoclass:: KeyBuilder
 .. autoclass:: PersistentDict
@@ -78,6 +81,37 @@ def update_checksum(checksum, obj):
         checksum.update(obj)
 
 
+def _tracks_stacklevel(cls, exclude=frozenset(["__init__"])):
+    """Changes all the methods of `cls` to track the call stack level in a member
+    called `_stacklevel`.
+    """
+    def make_wrapper(f):
+        @functools.wraps(f)
+        def wrapper(obj, *args, **kwargs):
+            assert obj._stacklevel >= 0, obj._stacklevel
+            # Increment by 2 because the method is wrapped.
+            obj._stacklevel += 2
+            try:
+                return f(obj, *args, **kwargs)
+            finally:
+                obj._stacklevel -= 2
+
+        return wrapper
+
+    for member in cls.__dict__:
+        f = getattr(cls, member)
+
+        if member in exclude:
+            continue
+
+        if not six.callable(f):
+            continue
+
+        setattr(cls, member, make_wrapper(f))
+
+    return cls
+
+
 # {{{ cleanup managers
 
 class CleanupBase(object):
@@ -101,7 +135,7 @@ class CleanupManager(CleanupBase):
 
 
 class LockManager(CleanupBase):
-    def __init__(self, cleanup_m, lock_file):
+    def __init__(self, cleanup_m, lock_file, _stacklevel=1):
         self.lock_file = lock_file
 
         attempts = 0
@@ -121,7 +155,8 @@ class LockManager(CleanupBase):
             if attempts > 10:
                 from warnings import warn
                 warn("could not obtain lock--delete '%s' if necessary"
-                        % self.lock_file)
+                        % self.lock_file,
+                     stacklevel=1 + _stacklevel)
             if attempts > 3 * 60:
                 raise RuntimeError("waited more than three minutes "
                         "on the lock file '%s'"
@@ -395,8 +430,16 @@ class ReadOnlyEntryError(KeyError):
     pass
 
 
+class CollisionWarning(UserWarning):
+    pass
+
+
+@_tracks_stacklevel
 class _PersistentDictBase(object):
     def __init__(self, identifier, key_builder=None, container_dir=None):
+        # for issuing warnings
+        self._stacklevel = 0
+
         self.identifier = identifier
 
         if key_builder is None:
@@ -416,6 +459,10 @@ class _PersistentDictBase(object):
         self.container_dir = container_dir
 
         self._make_container_dir()
+
+    def _warn(self, msg, category=UserWarning):
+        from warnings import warn
+        warn(msg, category, stacklevel=1 + self._stacklevel)
 
     def store_if_not_present(self, key, value):
         self.store(key, value, _skip_if_present=True)
@@ -458,15 +505,16 @@ class _PersistentDictBase(object):
     def _collision_check(self, key, stored_key):
         if stored_key != key:
             # Key collision, oh well.
-            from warnings import warn
-            warn("%s: key collision in cache at '%s' -- these are "
+            self._warn("%s: key collision in cache at '%s' -- these are "
                     "sufficiently unlikely that they're often "
                     "indicative of a broken hash key implementation "
                     "(that is not considering some elements relevant "
                     "for equality comparison)"
-                    % (self.identifier, self.container_dir))
+                    % (self.identifier, self.container_dir),
+                    CollisionWarning)
 
-            # This is here so we can debug the equality comparison
+            # This is here so we can step through equality comparison to
+            # see what is actually non-equal.
             stored_key == key
             raise NoSuchEntryError(key)
 
@@ -489,6 +537,7 @@ class _PersistentDictBase(object):
         self._make_container_dir()
 
 
+@_tracks_stacklevel
 class WriteOncePersistentDict(_PersistentDictBase):
     def __init__(self, identifier, key_builder=None, container_dir=None,
              in_mem_cache_size=256):
@@ -518,8 +567,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
             attempts += 1
 
             if attempts > 10:
-                from warnings import warn
-                warn("waiting until unlocked--delete '%s' if necessary"
+                self._warn("waiting until unlocked--delete '%s' if necessary"
                         % lock_file)
 
             if attempts > 3 * 60:
@@ -602,8 +650,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
         try:
             read_key = self._read(key_file)
         except:
-            from warnings import warn
-            warn("pytools.persistent_dict.WriteOncePersistentDict(%s) "
+            self._warn("pytools.persistent_dict.WriteOncePersistentDict(%s) "
                     "encountered an invalid "
                     "key file for key %s. Remove the directory "
                     "'%s' if necessary."
@@ -622,7 +669,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
         try:
             read_contents = self._read(contents_file)
         except:
-            warn("pytools.persistent_dict.WriteOncePersistentDict(%s) "
+            self._warn("pytools.persistent_dict.WriteOncePersistentDict(%s) "
                     "encountered an invalid "
                     "key file for key %s. Remove the directory "
                     "'%s' if necessary."
@@ -639,6 +686,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
         self._cache.clear()
 
 
+@_tracks_stacklevel
 class PersistentDict(_PersistentDictBase):
     def __init__(self, identifier, key_builder=None, container_dir=None):
         """
@@ -660,7 +708,8 @@ class PersistentDict(_PersistentDictBase):
         cleanup_m = CleanupManager()
         try:
             try:
-                LockManager(cleanup_m, self._lock_file(hexdigest_key))
+                LockManager(cleanup_m, self._lock_file(hexdigest_key),
+                        1 + self._stacklevel)
                 item_dir_m = ItemDirManager(
                         cleanup_m, self._item_dir(hexdigest_key),
                         delete_on_error=True)
@@ -699,7 +748,8 @@ class PersistentDict(_PersistentDictBase):
         cleanup_m = CleanupManager()
         try:
             try:
-                LockManager(cleanup_m, self._lock_file(hexdigest_key))
+                LockManager(cleanup_m, self._lock_file(hexdigest_key),
+                        1 + self._stacklevel)
                 item_dir_m = ItemDirManager(
                         cleanup_m, item_dir, delete_on_error=False)
 
@@ -712,8 +762,7 @@ class PersistentDict(_PersistentDictBase):
                     read_key = self._read(key_path)
                 except:
                     item_dir_m.reset()
-                    from warnings import warn
-                    warn("pytools.persistent_dict.PersistentDict(%s) "
+                    self._warn("pytools.persistent_dict.PersistentDict(%s) "
                             "encountered an invalid "
                             "key file for key %s. Entry deleted."
                             % (self.identifier, hexdigest_key))
@@ -732,8 +781,7 @@ class PersistentDict(_PersistentDictBase):
                     read_contents = self._read(value_path)
                 except:
                     item_dir_m.reset()
-                    from warnings import warn
-                    warn("pytools.persistent_dict.PersistentDict(%s) "
+                    self._warn("pytools.persistent_dict.PersistentDict(%s) "
                             "encountered an invalid "
                             "key file for key %s. Entry deleted."
                             % (self.identifier, hexdigest_key))
@@ -760,7 +808,8 @@ class PersistentDict(_PersistentDictBase):
         cleanup_m = CleanupManager()
         try:
             try:
-                LockManager(cleanup_m, self._lock_file(hexdigest_key))
+                LockManager(cleanup_m, self._lock_file(hexdigest_key),
+                        1 + self._stacklevel)
                 item_dir_m = ItemDirManager(
                         cleanup_m, item_dir, delete_on_error=False)
                 key_file = self._key_file(hexdigest_key)
@@ -771,8 +820,7 @@ class PersistentDict(_PersistentDictBase):
                     read_key = self._read(key_file)
                 except:
                     item_dir_m.reset()
-                    from warnings import warn
-                    warn("pytools.persistent_dict.PersistentDict(%s) "
+                    self._warn("pytools.persistent_dict.PersistentDict(%s) "
                             "encountered an invalid "
                             "key file for key %s. Entry deleted."
                             % (self.identifier, hexdigest_key))

@@ -10,7 +10,7 @@ from six.moves import zip
 
 from pytools.persistent_dict import (
         PersistentDict, WriteOncePersistentDict, NoSuchEntryError,
-        ReadOnlyEntryError)
+        ReadOnlyEntryError, CollisionWarning)
 
 
 # {{{ type for testing
@@ -155,12 +155,12 @@ def test_persistent_dict_cache_collisions():
         pdict[key1] = 1
 
         # check lookup
-        with pytest.warns(UserWarning):
+        with pytest.warns(CollisionWarning):
             with pytest.raises(NoSuchEntryError):
                 pdict[key2]
 
         # check deletion
-        with pytest.warns(UserWarning):
+        with pytest.warns(CollisionWarning):
             with pytest.raises(NoSuchEntryError):
                 del pdict[key2]
 
@@ -283,7 +283,7 @@ def test_write_once_persistent_dict_cache_collisions():
         pdict[key1] = 1
 
         # check lookup
-        with pytest.warns(UserWarning):
+        with pytest.warns(CollisionWarning):
             with pytest.raises(NoSuchEntryError):
                 pdict[key2]
 
@@ -292,7 +292,7 @@ def test_write_once_persistent_dict_cache_collisions():
             pdict[key2] = 1
 
         # check store_if_not_present
-        pdict.store_if_not_present(key2, 1)
+        pdict.store_if_not_present(key2, 2)
         assert pdict[key1] == 1
 
     finally:
