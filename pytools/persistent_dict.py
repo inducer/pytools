@@ -461,9 +461,11 @@ class _PersistentDictBase(object):
             from warnings import warn
             warn("%s: key collision in cache at '%s' -- these are "
                     "sufficiently unlikely that they're often "
-                    "indicative of a broken implementation "
-                    "of equality comparison"
+                    "indicative of a broken hash key implementation "
+                    "(that is not considering some elements relevant "
+                    "for equality comparison)"
                     % (self.identifier, self.container_dir))
+
             # This is here so we can debug the equality comparison
             stored_key == key
             raise NoSuchEntryError(key)
