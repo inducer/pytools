@@ -601,7 +601,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
 
                 logger.debug("%s: disk cache store [key=%s]" % (
                         self.identifier, hexdigest_key))
-            except:
+            except Exception:
                 cleanup_m.error_clean_up()
                 raise
         finally:
@@ -649,7 +649,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
 
         try:
             read_key = self._read(key_file)
-        except:
+        except Exception:
             self._warn("pytools.persistent_dict.WriteOncePersistentDict(%s) "
                     "encountered an invalid "
                     "key file for key %s. Remove the directory "
@@ -668,7 +668,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
 
         try:
             read_contents = self._read(contents_file)
-        except:
+        except Exception:
             self._warn("pytools.persistent_dict.WriteOncePersistentDict(%s) "
                     "encountered an invalid "
                     "key file for key %s. Remove the directory "
@@ -729,7 +729,7 @@ class PersistentDict(_PersistentDictBase):
 
                 logger.debug("%s: cache store [key=%s]" % (
                         self.identifier, hexdigest_key))
-            except:
+            except Exception:
                 cleanup_m.error_clean_up()
                 raise
         finally:
@@ -760,7 +760,7 @@ class PersistentDict(_PersistentDictBase):
 
                 try:
                     read_key = self._read(key_path)
-                except:
+                except Exception:
                     item_dir_m.reset()
                     self._warn("pytools.persistent_dict.PersistentDict(%s) "
                             "encountered an invalid "
@@ -779,7 +779,7 @@ class PersistentDict(_PersistentDictBase):
 
                 try:
                     read_contents = self._read(value_path)
-                except:
+                except Exception:
                     item_dir_m.reset()
                     self._warn("pytools.persistent_dict.PersistentDict(%s) "
                             "encountered an invalid "
@@ -791,7 +791,7 @@ class PersistentDict(_PersistentDictBase):
 
                 # }}}
 
-            except:
+            except Exception:
                 cleanup_m.error_clean_up()
                 raise
         finally:
@@ -818,7 +818,7 @@ class PersistentDict(_PersistentDictBase):
 
                 try:
                     read_key = self._read(key_file)
-                except:
+                except Exception:
                     item_dir_m.reset()
                     self._warn("pytools.persistent_dict.PersistentDict(%s) "
                             "encountered an invalid "
@@ -832,7 +832,7 @@ class PersistentDict(_PersistentDictBase):
 
                 item_dir_m.reset()
 
-            except:
+            except Exception:
                 cleanup_m.error_clean_up()
                 raise
         finally:

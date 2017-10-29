@@ -1466,7 +1466,7 @@ def string_histogram(iterable, min_value=None, max_value=None,
             bin_nr = bisect(bin_starts, value)-1
             try:
                 bins[bin_nr] += 1
-            except:
+            except Exception:
                 print(value, bin_nr, bin_starts)
                 raise
 

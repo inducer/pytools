@@ -122,7 +122,7 @@ def refdebug(obj, top_level=True, exclude=[]):
                     expr_str = input()
                     try:
                         res = eval(expr_str, {"obj": r})
-                    except:
+                    except Exception:
                         from traceback import print_exc
                         print_exc()
                     print(res)
