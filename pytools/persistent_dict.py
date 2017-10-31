@@ -40,16 +40,18 @@ import shutil
 import errno
 
 __doc__ = """
-Persistent Hashing
-==================
+Persistent Hashing and Persistent Dictionaries
+==============================================
 
 This module contains functionality that allows hashing with keys that remain
 valid across interpreter invocations, unlike Python's built-in hashes.
 
+This module also provides a disk-backed dictionary that uses persistent hashing.
+
 .. autoexception:: NoSuchEntryError
 .. autoexception:: ReadOnlyEntryError
 
-.. autowarning:: CollisionWarning
+.. autoexception:: CollisionWarning
 
 .. autoclass:: KeyBuilder
 .. autoclass:: PersistentDict
@@ -539,6 +541,19 @@ class _PersistentDictBase(object):
 
 @_tracks_stacklevel
 class WriteOncePersistentDict(_PersistentDictBase):
+    """A concurrent disk-backed dictionary that disallows overwriting/deletion.
+
+    Compared with :class:`PersistentDict`, this class has faster
+    retrieval times.
+
+    .. automethod:: __init__
+    .. automethod:: __getitem__
+    .. automethod:: __setitem__
+    .. automethod:: clear
+    .. automethod:: store
+    .. automethod:: store_if_not_present
+    .. automethod:: fetch
+    """
     def __init__(self, identifier, key_builder=None, container_dir=None,
              in_mem_cache_size=256):
         """
@@ -547,11 +562,6 @@ class WriteOncePersistentDict(_PersistentDictBase):
         :arg key_builder: a subclass of :class:`KeyBuilder`
         :arg in_mem_cache_size: retain an in-memory cache of up to
             *in_mem_cache_size* items
-
-        .. automethod:: __getitem__
-        .. automethod:: __setitem__
-        .. automethod:: clear
-        .. automethod:: store_if_not_present
         """
         _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
         self._cache = _LRUCache(in_mem_cache_size)
@@ -688,17 +698,21 @@ class WriteOncePersistentDict(_PersistentDictBase):
 
 @_tracks_stacklevel
 class PersistentDict(_PersistentDictBase):
+    """A concurrent disk-backed dictionary.
+
+    .. automethod:: __init__
+    .. automethod:: __getitem__
+    .. automethod:: __setitem__
+    .. automethod:: clear
+    .. automethod:: store
+    .. automethod:: store_if_not_present
+    .. automethod:: fetch
+    """
     def __init__(self, identifier, key_builder=None, container_dir=None):
         """
         :arg identifier: a file-name-compatible string identifying this
             dictionary
         :arg key_builder: a subclass of :class:`KeyBuilder`
-
-        .. automethod:: __getitem__
-        .. automethod:: __setitem__
-        .. automethod:: __delitem__
-        .. automethod:: clear
-        .. automethod:: store_if_not_present
         """
         _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
 
