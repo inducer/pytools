@@ -649,12 +649,12 @@ class WriteOncePersistentDict(_PersistentDictBase):
 
         try:
             read_key = self._read(key_file)
-        except Exception:
+        except Exception as e:
             self._warn("pytools.persistent_dict.WriteOncePersistentDict(%s) "
                     "encountered an invalid "
                     "key file for key %s. Remove the directory "
-                    "'%s' if necessary."
-                    % (self.identifier, hexdigest_key, item_dir))
+                    "'%s' if necessary. (caught: %s)"
+                    % (self.identifier, hexdigest_key, item_dir, str(e)))
             raise NoSuchEntryError(key)
 
         self._collision_check(key, read_key)
