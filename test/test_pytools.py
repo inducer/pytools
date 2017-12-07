@@ -195,6 +195,17 @@ def test_diskdict():
         del d
 
 
+def test_generate_numbered_unique_names():
+    from pytools import generate_numbered_unique_names
+
+    gen = generate_numbered_unique_names("a")
+    assert next(gen) == (0, "a")
+    assert next(gen) == (1, "a_0")
+
+    gen = generate_numbered_unique_names("b", 6)
+    assert next(gen) == (7, "b_6")
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])

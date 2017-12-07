@@ -1855,10 +1855,9 @@ def generate_unique_names(prefix):
 
 
 def generate_numbered_unique_names(prefix, num=None):
-    orig_num = num
-    num = 0
-    if orig_num is None:
-        yield (num, prefix)
+    if num is None:
+        yield (0, prefix)
+        num = 0
 
     while True:
         name = "%s_%d" % (prefix, num)
