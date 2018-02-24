@@ -1939,6 +1939,18 @@ class MinRecursionLimit(object):
         sys.setrecursionlimit(new_limit)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        # Deep recursion can produce deeply nested data structures
+        # (or long chains of to-be gc'd generators) that cannot be
+        # undergo garbage collection with a lower recursion limit.
+        #
+        # Force a garbage collection while the recursion limit is
+        # still high to avoid this situation.
+        #
+        # See https://gitlab.tiker.net/inducer/sumpy/issues/31 for
+        # context.
+        import gc
+        gc.collect()
+
         sys.setrecursionlimit(self.prev_recursion_limit)
 
 # }}}
