@@ -206,6 +206,11 @@ def test_generate_numbered_unique_names():
     assert next(gen) == (7, "b_6")
 
 
+def test_find_module_git_revision():
+    import pytools
+    print(pytools.find_module_git_revision(pytools.__file__, n_levels_up=1))
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
