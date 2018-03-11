@@ -1943,15 +1943,13 @@ class MinRecursionLimit(object):
         # (or long chains of to-be gc'd generators) that cannot be
         # undergo garbage collection with a lower recursion limit.
         #
-        # Force a garbage collection while the recursion limit is
-        # still high to avoid this situation.
+        # As a result, it doesn't seem possible to lower the recursion limit
+        # again after it has been raised without causing reliability issues.
         #
         # See https://gitlab.tiker.net/inducer/sumpy/issues/31 for
         # context.
-        import gc
-        gc.collect()
 
-        sys.setrecursionlimit(self.prev_recursion_limit)
+        pass
 
 # }}}
 
