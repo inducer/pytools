@@ -1988,10 +1988,24 @@ def find_git_revision(tree_root):
     if not exists(join(tree_root, ".git")):
         return None
 
+    # construct minimal environment
+    # stolen from
+    # https://github.com/numpy/numpy/blob/055ce3e90b50b5f9ef8cf1b8641c42e391f10735/setup.py#L70-L92
+    import os
+    env = {}
+    for k in ['SYSTEMROOT', 'PATH', 'HOME']:
+        v = os.environ.get(k)
+        if v is not None:
+            env[k] = v
+    # LANGUAGE is used on win32
+    env['LANGUAGE'] = 'C'
+    env['LANG'] = 'C'
+    env['LC_ALL'] = 'C'
+
     from subprocess import Popen, PIPE, STDOUT
     p = Popen(["git", "rev-parse", "HEAD"], shell=False,
               stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True,
-              cwd=tree_root)
+              cwd=tree_root, env=env)
     (git_rev, _) = p.communicate()
 
     import sys
