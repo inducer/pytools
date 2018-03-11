@@ -1978,6 +1978,49 @@ def download_from_web_if_not_present(url, local_name=None):
 # }}}
 
 
+# {{{ find git revisions
+
+def find_git_revision(tree_root):
+    # Keep this routine self-contained so that it can be copy-pasted into
+    # setup.py.
+
+    from os.path import join, exists, abspath
+    tree_root = abspath(tree_root)
+
+    if not exists(join(tree_root, ".git")):
+        return None
+
+    from subprocess import Popen, PIPE, STDOUT
+    p = Popen(["git", "rev-parse", "HEAD"], shell=False,
+              stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True,
+              cwd=tree_root)
+    (git_rev, _) = p.communicate()
+
+    import sys
+    if sys.version_info >= (3,):
+        git_rev = git_rev.decode()
+
+    git_rev = git_rev.rstrip()
+
+    retcode = p.returncode
+    assert retcode is not None
+    if retcode != 0:
+        from warnings import warn
+        warn("unable to find git revision")
+        return None
+
+    return git_rev
+
+
+def find_module_git_revision(module_file, n_levels_up):
+    from os.path import dirname, join
+    tree_root = join(*([dirname(module_file)] + [".." * n_levels_up]))
+
+    return find_git_revision(tree_root)
+
+# }}}
+
+
 def _test():
     import doctest
     doctest.testmod()
