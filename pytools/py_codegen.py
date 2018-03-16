@@ -100,6 +100,10 @@ class PythonFunctionGenerator(PythonCodeGenerator):
     def get_function(self):
         return self.get_module()[self.name]
 
+    def get_picklable_function(self):
+        module = self.get_picklable_module()
+        return PicklableFunction(module, self.name)
+
 
 # {{{ pickling of binaries for generated code
 
@@ -121,27 +125,32 @@ class PicklableModule(object):
 
         nondefault_globals = {}
         functions = {}
+        modules = {}
 
-        from types import FunctionType
+        from types import FunctionType, ModuleType
         for k, v in six.iteritems(self.mod_globals):
             if isinstance(v, FunctionType):
                 functions[k] = (
                         v.__name__,
                         marshal.dumps(v.__code__),
                         v.__defaults__)
-
+            elif isinstance(v, ModuleType):
+                modules[k] = v.__name__
             elif k not in _empty_module_dict:
                 nondefault_globals[k] = v
 
         import imp
-        return (0, imp.get_magic(), functions, nondefault_globals)
+        return (1, imp.get_magic(), functions, modules, nondefault_globals)
 
     def __setstate__(self, obj):
         v = obj[0]
         if v == 0:
             magic, functions, nondefault_globals = obj[1:]
+            modules = {}
+        elif v == 1:
+            magic, functions, modules, nondefault_globals = obj[1:]
         else:
-            raise ValueError("unknown version of PicklableGeneratedFunction")
+            raise ValueError("unknown version of PicklableModule")
 
         import imp
         if magic != imp.get_magic():
@@ -155,12 +164,43 @@ class PicklableModule(object):
         mod_globals.update(nondefault_globals)
         self.mod_globals = mod_globals
 
+        from pytools.importlib_backport import import_module
+
+        for k, mod_name in six.iteritems(modules):
+            mod_globals[k] = import_module(mod_name)
+
         from types import FunctionType
         for k, v in six.iteritems(functions):
             name, code_bytes, argdefs = v
             f = FunctionType(
                     marshal.loads(code_bytes), mod_globals, argdefs=argdefs)
             mod_globals[k] = f
+
+# }}}
+
+
+# {{{ picklable function
+
+class PicklableFunction(object):
+    """Convience class wrapping a function in a :class:`PicklableModule`.
+    """
+
+    def __init__(self, module, name):
+        self._initialize(module, name)
+
+    def _initialize(self, module, name):
+        self.module = module
+        self.name = name
+        self.func = module.mod_globals[name]
+
+    def __call__(self, *args, **kwargs):
+        return self.func(*args, **kwargs)
+
+    def __getstate__(self):
+        return {"module": self.module, "name": self.name}
+
+    def __setstate__(self, obj):
+        self._initialize(obj["module"], obj["name"])
 
 # }}}
 
