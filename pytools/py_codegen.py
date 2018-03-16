@@ -164,7 +164,7 @@ class PicklableModule(object):
         mod_globals.update(nondefault_globals)
         self.mod_globals = mod_globals
 
-        from pytools.importlib import import_module
+        from pytools.importlib_compat import import_module
 
         for k, mod_name in six.iteritems(modules):
             mod_globals[k] = import_module(mod_name)
