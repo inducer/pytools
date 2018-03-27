@@ -2048,7 +2048,7 @@ def reshaped_view(a, newshape):
 
     :arg a: a :class:`numpy.ndarray` object.
     :arg newshape: an ``int`` object or a tuple of ``int`` objects.
-    
+
     .. versionadded:: 2018.4
     """
 
