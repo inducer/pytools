@@ -2033,6 +2033,24 @@ def find_module_git_revision(module_file, n_levels_up):
 # }}}
 
 
+# {{{ create a reshaped view of a numpy array
+
+def reshaped_view(a, newshape):
+    """ Create a new view object with shape ``newshape`` without copying the data of
+    ``a``. This function is different from ``numpy.reshape`` by raising an
+    exception when data copy is necessary.
+
+    :arg a: a :class:`numpy.ndarray` object.
+    :arg newshape: an ``int`` object or a tuple of ``int`` objects.
+    """
+
+    newview = a.view()
+    newview.shape = newshape
+    return newview
+
+# }}}
+
+
 def _test():
     import doctest
     doctest.testmod()
