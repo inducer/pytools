@@ -129,6 +129,12 @@ Functions for dealing with (large) auxiliary files
 --------------------------------------------------
 
 .. autofunction:: download_from_web_if_not_present
+
+Helpers for :mod:`numpy`
+------------------------
+
+.. autofunction:: reshaped_view
+
 """
 
 
@@ -2042,6 +2048,8 @@ def reshaped_view(a, newshape):
 
     :arg a: a :class:`numpy.ndarray` object.
     :arg newshape: an ``int`` object or a tuple of ``int`` objects.
+    
+    .. versionadded:: 2018.4
     """
 
     newview = a.view()
