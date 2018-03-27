@@ -129,6 +129,12 @@ Functions for dealing with (large) auxiliary files
 --------------------------------------------------
 
 .. autofunction:: download_from_web_if_not_present
+
+Helpers for :mod:`numpy`
+------------------------
+
+.. autofunction:: reshaped_view
+
 """
 
 
@@ -2029,6 +2035,26 @@ def find_module_git_revision(module_file, n_levels_up):
     tree_root = join(*([dirname(module_file)] + [".." * n_levels_up]))
 
     return find_git_revision(tree_root)
+
+# }}}
+
+
+# {{{ create a reshaped view of a numpy array
+
+def reshaped_view(a, newshape):
+    """ Create a new view object with shape ``newshape`` without copying the data of
+    ``a``. This function is different from ``numpy.reshape`` by raising an
+    exception when data copy is necessary.
+
+    :arg a: a :class:`numpy.ndarray` object.
+    :arg newshape: an ``int`` object or a tuple of ``int`` objects.
+
+    .. versionadded:: 2018.4
+    """
+
+    newview = a.view()
+    newview.shape = newshape
+    return newview
 
 # }}}
 

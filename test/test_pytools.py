@@ -211,6 +211,18 @@ def test_find_module_git_revision():
     print(pytools.find_module_git_revision(pytools.__file__, n_levels_up=1))
 
 
+def test_reshaped_view():
+    import pytools
+    import numpy as np
+
+    a = np.zeros((10, 2))
+    b = a.T
+    c = pytools.reshaped_view(a, -1)
+    assert c.shape == (20,)
+    with pytest.raises(AttributeError):
+        pytools.reshaped_view(b, -1)
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
