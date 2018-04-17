@@ -207,7 +207,7 @@ def _join_by_first_of_tuple(list_of_iterables):
 
 def _get_unique_id():
     try:
-        from uiid import uuid1
+        from uuid import uuid1
     except ImportError:
         try:
             import hashlib
@@ -221,7 +221,7 @@ def _get_unique_id():
         rng = Random()
         rng.seed()
         for i in range(20):
-            checksum.update(str(rng.randrange(1 << 30)))
+            checksum.update(str(rng.randrange(1 << 30)).encode('utf-32'))
         return checksum.hexdigest()
     else:
         return uuid1().hex
