@@ -586,10 +586,9 @@ def memoize_on_first_arg(function, cache_dict_name=None):
     def clear_cache(obj):
         delattr(obj, cache_dict_name)
 
-    if sys.version_info >= (2, 5):
-        from functools import update_wrapper
-        new_wrapper = update_wrapper(wrapper, function)
-        new_wrapper.clear_cache = clear_cache
+    from functools import update_wrapper
+    new_wrapper = update_wrapper(wrapper, function)
+    new_wrapper.clear_cache = clear_cache
 
     return new_wrapper
 
