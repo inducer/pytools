@@ -31,6 +31,8 @@ import six
 from six.moves import range, zip, intern, input
 from functools import reduce
 
+import logging
+
 try:
     decorator_module = __import__("decorator", level=0)
 except TypeError:
@@ -135,6 +137,13 @@ Helpers for :mod:`numpy`
 
 .. autofunction:: reshaped_view
 
+
+Log utilities
+-------------
+
+.. autoclass:: ProcessLogger
+.. autoclass:: DebugProcessLogger
+.. autoclass:: log_process
 """
 
 
@@ -592,10 +601,9 @@ def memoize_on_first_arg(function, cache_dict_name=None):
     def clear_cache(obj):
         delattr(obj, cache_dict_name)
 
-    if sys.version_info >= (2, 5):
-        from functools import update_wrapper
-        new_wrapper = update_wrapper(wrapper, function)
-        new_wrapper.clear_cache = clear_cache
+    from functools import update_wrapper
+    new_wrapper = update_wrapper(wrapper, function)
+    new_wrapper.clear_cache = clear_cache
 
     return new_wrapper
 
@@ -2055,6 +2063,124 @@ def reshaped_view(a, newshape):
     newview = a.view()
     newview.shape = newshape
     return newview
+
+# }}}
+
+
+# {{{ log utilities
+
+class ProcessLogger(object):
+    """Logs the completion time of a (presumably) lengthy process to :mod:`logging`.
+    Only uses a high log level if the process took perceptible time.
+
+    .. automethod:: __init__
+    .. automethod:: done
+    .. automethod:: __enter__
+    .. automethod:: __exit__
+    """
+
+    default_noisy_level = logging.INFO
+
+    def __init__(self, logger, description,
+            silent_level=None, noisy_level=None, long_threshold_seconds=None):
+        self.logger = logger
+        self.description = description
+        self.silent_level = silent_level or logging.DEBUG
+        self.noisy_level = noisy_level or self.default_noisy_level
+        self.long_threshold_seconds = (
+                # 0 is a valid value that should override the default
+                0.3 if long_threshold_seconds is None else long_threshold_seconds)
+
+        self.logger.log(self.silent_level, "%s: start", self.description)
+        self.is_done = False
+
+        import time
+        if sys.version_info >= (3, 3):
+            self.perf_counter_start = time.perf_counter()
+            self.process_time_start = time.process_time()
+
+        else:
+            import timeit
+            self.time_start = timeit.default_timer()
+
+        import threading
+        self.late_start_log_thread = threading.Thread(target=self.log_start_if_long)
+        self.late_start_log_thread.start()
+
+    def log_start_if_long(self):
+        from time import sleep
+
+        sleep_duration = 10*self.long_threshold_seconds
+        sleep(sleep_duration)
+
+        if not self.is_done:
+            self.logger.log(
+                    self.noisy_level, "%s: started %.gs ago",
+                    self.description,
+                    sleep_duration)
+
+    def done(self, extra_msg=None, *extra_fmt_args):
+        import time
+        if sys.version_info >= (3, 3):
+            wall_elapsed = time.perf_counter() - self.perf_counter_start
+            process_elapsed = time.process_time() - self.process_time_start
+
+        else:
+            import timeit
+            wall_elapsed = timeit.default_timer() - self.time_start
+            process_elapsed = None
+
+        self.is_done = True
+
+        completion_level = (
+                self.noisy_level
+                if wall_elapsed > self.long_threshold_seconds
+                else self.silent_level)
+
+        if process_elapsed is not None:
+            msg = "%s: completed (%.2fs wall, %.1fx CPU)"
+            fmt_args = [self.description, wall_elapsed, process_elapsed/wall_elapsed]
+        else:
+            msg = "%s: completed (%f.2s wall)"
+            fmt_args = [self.description, wall_elapsed]
+
+        if extra_msg:
+            msg += ": " + extra_msg
+            fmt_args.extend(extra_fmt_args)
+
+        self.logger.log(completion_level, msg, *fmt_args)
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.done()
+
+
+class DebugProcessLogger(ProcessLogger):
+    default_noisy_level = logging.DEBUG
+
+
+class log_process(object):  # noqa: N801
+    """A decorator that uses :class:`ProcessLogger` to log data about calls
+    to the wrapped function.
+    """
+
+    def __init__(self, logger, description=None):
+        self.logger = logger
+        self.description = description
+
+    def __call__(self, wrapped):
+        def wrapper(*args, **kwargs):
+            with ProcessLogger(
+                    self.logger,
+                    self.description or wrapped.__name__):
+                return wrapped(*args, **kwargs)
+
+        from functools import update_wrapper
+        new_wrapper = update_wrapper(wrapper, wrapped)
+
+        return new_wrapper
 
 # }}}
 
