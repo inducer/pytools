@@ -2104,10 +2104,14 @@ class ProcessLogger(object):
             self.time_start = timeit.default_timer()
 
         import threading
-        self.late_start_log_thread = threading.Thread(target=self.log_start_if_long)
+        self.late_start_log_thread = threading.Thread(target=self._log_start_if_long)
+
+        # Do not delay interpreter exit if thread not finished.
+        self.late_start_log_thread.daemon = True
+
         self.late_start_log_thread.start()
 
-    def log_start_if_long(self):
+    def _log_start_if_long(self):
         from time import sleep
 
         sleep_duration = 10*self.long_threshold_seconds
