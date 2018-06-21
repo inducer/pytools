@@ -125,7 +125,7 @@ Name generation
 
 .. autofunction:: generate_unique_names
 .. autofunction:: generate_numbered_unique_names
-.. autofunction:: UniqueNameGenerator
+.. autoclass:: UniqueNameGenerator
 
 Functions for dealing with (large) auxiliary files
 --------------------------------------------------
