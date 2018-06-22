@@ -2087,6 +2087,8 @@ class ProcessTimer(object):
     .. attribute:: process_elapsed
 
         Only available in Python 3.3+.
+
+    .. versionadded:: 2018.5
     """
 
     def __init__(self):
