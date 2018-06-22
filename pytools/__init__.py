@@ -138,6 +138,11 @@ Helpers for :mod:`numpy`
 .. autofunction:: reshaped_view
 
 
+Timing data
+-----------
+
+.. autoclass:: ProcessTimer
+
 Log utilities
 -------------
 
@@ -2067,6 +2072,53 @@ def reshaped_view(a, newshape):
 # }}}
 
 
+# {{{ process timer
+
+class ProcessTimer(object):
+    """Measures elapsed wall time and process time.
+
+    .. automethod:: __enter__
+    .. automethod:: __exit__
+    .. automethod:: done
+
+    Timing data attributes:
+
+    .. attribute:: wall_elapsed
+    .. attribute:: process_elapsed
+
+        Only available in Python 3.3+.
+    """
+
+    def __init__(self):
+        import time
+        if sys.version_info >= (3, 3):
+            self.perf_counter_start = time.perf_counter()
+            self.process_time_start = time.process_time()
+
+        else:
+            import timeit
+            self.time_start = timeit.default_timer()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.done()
+
+    def done(self):
+        import time
+        if sys.version_info >= (3, 3):
+            self.wall_elapsed = time.perf_counter() - self.perf_counter_start
+            self.process_elapsed = time.process_time() - self.process_time_start
+
+        else:
+            import timeit
+            self.wall_elapsed = timeit.default_timer() - self.time_start
+            self.process_elapsed = None
+
+# }}}
+
+
 # {{{ log utilities
 
 class ProcessLogger(object):
@@ -2094,22 +2146,13 @@ class ProcessLogger(object):
         self.logger.log(self.silent_level, "%s: start", self.description)
         self.is_done = False
 
-        import time
-        if sys.version_info >= (3, 3):
-            self.perf_counter_start = time.perf_counter()
-            self.process_time_start = time.process_time()
-
-        else:
-            import timeit
-            self.time_start = timeit.default_timer()
-
         import threading
         self.late_start_log_thread = threading.Thread(target=self._log_start_if_long)
-
         # Do not delay interpreter exit if thread not finished.
         self.late_start_log_thread.daemon = True
-
         self.late_start_log_thread.start()
+
+        self.timer = ProcessTimer()
 
     def _log_start_if_long(self):
         from time import sleep
@@ -2124,17 +2167,11 @@ class ProcessLogger(object):
                     sleep_duration)
 
     def done(self, extra_msg=None, *extra_fmt_args):
-        import time
-        if sys.version_info >= (3, 3):
-            wall_elapsed = time.perf_counter() - self.perf_counter_start
-            process_elapsed = time.process_time() - self.process_time_start
-
-        else:
-            import timeit
-            wall_elapsed = timeit.default_timer() - self.time_start
-            process_elapsed = None
-
+        self.timer.done()
         self.is_done = True
+
+        wall_elapsed = self.timer.wall_elapsed
+        process_elapsed = self.timer.process_elapsed
 
         completion_level = (
                 self.noisy_level
