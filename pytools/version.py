@@ -1,3 +1,3 @@
-VERSION = (2018, 5, 1)
+VERSION = (2018, 5, 2)
 VERSION_STATUS = ""
 VERSION_TEXT = ".".join(str(x) for x in VERSION) + VERSION_STATUS
