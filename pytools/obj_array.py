@@ -59,11 +59,15 @@ def to_obj_array(ary):
     return result
 
 
-def is_field_equal(a, b):
+def is_equal(a, b):
     if is_obj_array(a):
         return is_obj_array(b) and (a.shape == b.shape) and (a == b).all()
     else:
         return not is_obj_array(b) and a == b
+
+
+# moderately deprecated
+is_field_equal = is_equal
 
 
 def make_obj_array(res_list):
