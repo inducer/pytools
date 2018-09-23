@@ -1,3 +1,17 @@
+Python 2.6:
+  script:
+  - py_version=2.6
+  - export EXTRA_INSTALL="numpy"
+  - curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/build-and-test-py-project.sh
+  - ". ./build-and-test-py-project.sh"
+  tags:
+  - python2.6
+  except:
+  - tags
+  artifacts:
+    reports:
+      junit: test/pytest.xml
+
 Python 2.7:
   script:
   - py_version=2.7
@@ -26,14 +40,14 @@ Python 3.5:
     reports:
       junit: test/pytest.xml
 
-Python 2.6:
+Python 3.7:
   script:
-  - py_version=2.6
+  - py_version=3.7
   - export EXTRA_INSTALL="numpy"
   - curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/build-and-test-py-project.sh
   - ". ./build-and-test-py-project.sh"
   tags:
-  - python2.6
+  - python3.7
   except:
   - tags
   artifacts:
