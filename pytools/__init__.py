@@ -1583,10 +1583,10 @@ class CPyUserInterface(object):
             argv = sys.argv
 
         if len(argv) == 1 or (
-                ("-h" in argv) or
-                ("help" in argv) or
-                ("-help" in argv) or
-                ("--help" in argv)):
+                ("-h" in argv)
+                or ("help" in argv)
+                or ("-help" in argv)
+                or ("--help" in argv)):
             self.show_usage(argv[0])
             sys.exit(2)
 
