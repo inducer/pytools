@@ -30,8 +30,12 @@ THE SOFTWARE.
 import logging
 logger = logging.getLogger(__name__)
 
+try:
+    import collections.abc as abc
+except ImportError:
+    # Python 2
+    import collections as abc
 
-import collections
 import functools
 import six
 import sys
@@ -362,7 +366,7 @@ class _LinkedList(object):
         node[1] = node[2] = None
 
 
-class _LRUCache(collections.MutableMapping):
+class _LRUCache(abc.MutableMapping):
     """A mapping that keeps at most *maxsize* items with an LRU replacement policy.
     """
     def __init__(self, maxsize):
