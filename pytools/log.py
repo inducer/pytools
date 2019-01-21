@@ -799,23 +799,6 @@ class LogManager(object):
         return (data_x, descr_x, unit_x), \
                (data_y, descr_y, unit_y)
 
-    def plot_gnuplot(self, gp, expr_x, expr_y, **kwargs):
-        """Plot data to Gnuplot.py.
-
-        @arg gp: a Gnuplot.Gnuplot instance to which the plot is sent.
-        @arg expr_x: an allowed argument to :meth:`get_joint_dataset`.
-        @arg expr_y: an allowed argument to :meth:`get_joint_dataset`.
-        @arg kwargs: keyword arguments that are directly passed on to
-          C{Gnuplot.Data}.
-        """
-        (data_x, descr_x, unit_x), (data_y, descr_y, unit_y) = \
-                self.get_plot_data(expr_x, expr_y)
-
-        gp.xlabel("%s [%s]" % (descr_x, unit_x))
-        gp.ylabel("%s [%s]" % (descr_y, unit_y))
-        from gnuplot_py import Data
-        gp.plot(Data(data_x, data_y, **kwargs))
-
     def write_datafile(self, filename, expr_x, expr_y):
         (data_x, label_x), (data_y, label_y) = self.get_plot_data(
                 expr_x, expr_y)

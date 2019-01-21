@@ -1,9 +1,9 @@
-from __future__ import division, with_statement, absolute_import
+from __future__ import absolute_import, division, with_statement
 
-import pytest  # noqa
+import sys
+
 import pytools
 import pytools.py_codegen as codegen
-import sys
 
 
 def test_pickling_with_module_import():
@@ -34,5 +34,5 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
     else:
-        from py.test import main
+        from pytest import main
         main([__file__])

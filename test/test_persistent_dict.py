@@ -1,16 +1,14 @@
-from __future__ import division, with_statement, absolute_import
+from __future__ import absolute_import, division, with_statement
 
-import pytest  # noqa
+import shutil
 import sys  # noqa
 import tempfile
-import shutil
 
-from six.moves import range
-from six.moves import zip
+import pytest
+from six.moves import range, zip
 
-from pytools.persistent_dict import (
-        PersistentDict, WriteOncePersistentDict, NoSuchEntryError,
-        ReadOnlyEntryError, CollisionWarning)
+from pytools.persistent_dict import (CollisionWarning, NoSuchEntryError,
+        PersistentDict, ReadOnlyEntryError, WriteOncePersistentDict)
 
 
 # {{{ type for testing
@@ -97,7 +95,7 @@ def test_persistent_dict_storage_and_lookup():
         # check not found
 
         with pytest.raises(NoSuchEntryError):
-            pdict[3000]
+            pdict.fetch(3000)
 
     finally:
         shutil.rmtree(tmpdir)
@@ -112,7 +110,7 @@ def test_persistent_dict_deletion():
         del pdict[0]
 
         with pytest.raises(NoSuchEntryError):
-            pdict[0]
+            pdict.fetch(0)
 
         with pytest.raises(NoSuchEntryError):
             del pdict[1]
@@ -138,7 +136,7 @@ def test_persistent_dict_synchronization():
         # check deletion
         del pdict1[0]
         with pytest.raises(NoSuchEntryError):
-            pdict2[0]
+            pdict2.fetch(0)
 
     finally:
         shutil.rmtree(tmpdir)
@@ -157,7 +155,7 @@ def test_persistent_dict_cache_collisions():
         # check lookup
         with pytest.warns(CollisionWarning):
             with pytest.raises(NoSuchEntryError):
-                pdict[key2]
+                pdict.fetch(key2)
 
         # check deletion
         with pytest.warns(CollisionWarning):
@@ -181,11 +179,11 @@ def test_persistent_dict_clear():
         pdict = PersistentDict("pytools-test", container_dir=tmpdir)
 
         pdict[0] = 1
-        pdict[0]
+        pdict.fetch(0)
         pdict.clear()
 
         with pytest.raises(NoSuchEntryError):
-            pdict[0]
+            pdict.fetch(0)
 
     finally:
         shutil.rmtree(tmpdir)
@@ -211,7 +209,7 @@ def test_write_once_persistent_dict_storage_and_lookup(in_mem_cache_size):
 
         # check not found
         with pytest.raises(NoSuchEntryError):
-            pdict[1]
+            pdict.fetch(1)
 
         # check store_if_not_present
         pdict.store_if_not_present(0, 2)
@@ -234,22 +232,22 @@ def test_write_once_persistent_dict_lru_policy():
         pdict[3] = PDictTestingKeyOrValue(3)
         pdict[4] = PDictTestingKeyOrValue(4)
 
-        val1 = pdict[1]
+        val1 = pdict.fetch(1)
 
-        assert pdict[1] is val1
-        pdict[2]
-        assert pdict[1] is val1
-        pdict[2]
-        pdict[3]
-        assert pdict[1] is val1
-        pdict[2]
-        pdict[3]
-        pdict[2]
-        assert pdict[1] is val1
-        pdict[2]
-        pdict[3]
-        pdict[4]
-        assert pdict[1] is not val1
+        assert pdict.fetch(1) is val1
+        pdict.fetch(2)
+        assert pdict.fetch(1) is val1
+        pdict.fetch(2)
+        pdict.fetch(3)
+        assert pdict.fetch(1) is val1
+        pdict.fetch(2)
+        pdict.fetch(3)
+        pdict.fetch(2)
+        assert pdict.fetch(1) is val1
+        pdict.fetch(2)
+        pdict.fetch(3)
+        pdict.fetch(4)
+        assert pdict.fetch(1) is not val1
 
     finally:
         shutil.rmtree(tmpdir)
@@ -285,7 +283,7 @@ def test_write_once_persistent_dict_cache_collisions():
         # check lookup
         with pytest.warns(CollisionWarning):
             with pytest.raises(NoSuchEntryError):
-                pdict[key2]
+                pdict.fetch(key2)
 
         # check update
         with pytest.raises(ReadOnlyEntryError):
@@ -305,11 +303,11 @@ def test_write_once_persistent_dict_clear():
         pdict = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
 
         pdict[0] = 1
-        pdict[0]
+        pdict.fetch(0)
         pdict.clear()
 
         with pytest.raises(NoSuchEntryError):
-            pdict[0]
+            pdict.fetch(0)
     finally:
         shutil.rmtree(tmpdir)
 
@@ -318,5 +316,4 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
     else:
-        from pytest import main
-        main([__file__])
+        pytest.main([__file__])

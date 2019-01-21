@@ -28,7 +28,6 @@ THE SOFTWARE.
 """
 
 import logging
-logger = logging.getLogger(__name__)
 
 try:
     import collections.abc as abc
@@ -36,12 +35,14 @@ except ImportError:
     # Python 2
     import collections as abc
 
-import functools
-import six
-import sys
 import os
 import shutil
+import sys
 import errno
+
+import six
+
+logger = logging.getLogger(__name__)
 
 __doc__ = """
 Persistent Hashing and Persistent Dictionaries
@@ -71,9 +72,9 @@ except ImportError:
     new_hash = sha.new
 
 
-def _make_dir_recursively(dir):
+def _make_dir_recursively(dir_):
     try:
-        os.makedirs(dir)
+        os.makedirs(dir_)
     except OSError as e:
         from errno import EEXIST
         if e.errno != EEXIST:
@@ -85,37 +86,6 @@ def update_checksum(checksum, obj):
         checksum.update(obj.encode("utf8"))
     else:
         checksum.update(obj)
-
-
-def _tracks_stacklevel(cls, exclude=frozenset(["__init__"])):
-    """Changes all the methods of `cls` to track the call stack level in a member
-    called `_stacklevel`.
-    """
-    def make_wrapper(f):
-        @functools.wraps(f)
-        def wrapper(obj, *args, **kwargs):
-            assert obj._stacklevel >= 0, obj._stacklevel
-            # Increment by 2 because the method is wrapped.
-            obj._stacklevel += 2
-            try:
-                return f(obj, *args, **kwargs)
-            finally:
-                obj._stacklevel -= 2
-
-        return wrapper
-
-    for member in cls.__dict__:
-        f = getattr(cls, member)
-
-        if member in exclude:
-            continue
-
-        if not six.callable(f):
-            continue
-
-        setattr(cls, member, make_wrapper(f))
-
-    return cls
 
 
 # {{{ cleanup managers
@@ -141,7 +111,7 @@ class CleanupManager(CleanupBase):
 
 
 class LockManager(CleanupBase):
-    def __init__(self, cleanup_m, lock_file, _stacklevel=1):
+    def __init__(self, cleanup_m, lock_file, stacklevel=0):
         self.lock_file = lock_file
 
         attempts = 0
@@ -162,7 +132,7 @@ class LockManager(CleanupBase):
                 from warnings import warn
                 warn("could not obtain lock--delete '%s' if necessary"
                         % self.lock_file,
-                     stacklevel=1 + _stacklevel)
+                        stacklevel=1 + stacklevel)
             if attempts > 3 * 60:
                 raise RuntimeError("waited more than three minutes "
                         "on the lock file '%s'"
@@ -171,7 +141,6 @@ class LockManager(CleanupBase):
         cleanup_m.register(self)
 
     def clean_up(self):
-        import os
         os.close(self.fd)
         os.unlink(self.lock_file)
 
@@ -221,7 +190,7 @@ class KeyBuilder(object):
         digest = None
 
         try:
-            digest = key._pytools_persistent_hash_digest
+            digest = key._pytools_persistent_hash_digest  # noqa pylint:disable=protected-access
         except AttributeError:
             pass
 
@@ -251,8 +220,10 @@ class KeyBuilder(object):
 
         if not isinstance(key, type):
             try:
-                key._pytools_persistent_hash_digest = digest
-            except Exception:
+                key._pytools_persistent_hash_digest = digest   # noqa pylint:disable=protected-access
+            except AttributeError:
+                pass
+            except TypeError:
                 pass
 
         key_hash.update(digest)
@@ -264,26 +235,32 @@ class KeyBuilder(object):
 
     # {{{ updaters
 
-    def update_for_int(self, key_hash, key):
+    @staticmethod
+    def update_for_int(key_hash, key):
         key_hash.update(str(key).encode("utf8"))
 
     update_for_long = update_for_int
     update_for_bool = update_for_int
 
-    def update_for_float(self, key_hash, key):
+    @staticmethod
+    def update_for_float(key_hash, key):
         key_hash.update(repr(key).encode("utf8"))
 
     if sys.version_info >= (3,):
-        def update_for_str(self, key_hash, key):
+        @staticmethod
+        def update_for_str(key_hash, key):
             key_hash.update(key.encode('utf8'))
 
-        def update_for_bytes(self, key_hash, key):
+        @staticmethod
+        def update_for_bytes(key_hash, key):
             key_hash.update(key)
     else:
-        def update_for_str(self, key_hash, key):
+        @staticmethod
+        def update_for_str(key_hash, key):
             key_hash.update(key)
 
-        def update_for_unicode(self, key_hash, key):
+        @staticmethod
+        def update_for_unicode(key_hash, key):
             key_hash.update(key.encode('utf8'))
 
     def update_for_tuple(self, key_hash, key):
@@ -294,10 +271,13 @@ class KeyBuilder(object):
         for set_key in sorted(key):
             self.rec(key_hash, set_key)
 
-    def update_for_NoneType(self, key_hash, key):  # noqa
+    @staticmethod
+    def update_for_NoneType(key_hash, key):  # noqa
+        del key
         key_hash.update("<None>".encode('utf8'))
 
-    def update_for_dtype(self, key_hash, key):
+    @staticmethod
+    def update_for_dtype(key_hash, key):
         key_hash.update(key.str.encode('utf8'))
 
     # }}}
@@ -421,8 +401,6 @@ class _LRUCache(abc.MutableMapping):
                 (len(self.cache), len(self.lru_order))
         assert len(self.lru_order) <= self.maxsize
 
-        return node[0]
-
 # }}}
 
 
@@ -440,12 +418,8 @@ class CollisionWarning(UserWarning):
     pass
 
 
-@_tracks_stacklevel
 class _PersistentDictBase(object):
     def __init__(self, identifier, key_builder=None, container_dir=None):
-        # for issuing warnings
-        self._stacklevel = 0
-
         self.identifier = identifier
 
         if key_builder is None:
@@ -466,25 +440,28 @@ class _PersistentDictBase(object):
 
         self._make_container_dir()
 
-    def _warn(self, msg, category=UserWarning):
+    @staticmethod
+    def _warn(msg, category=UserWarning, stacklevel=0):
         from warnings import warn
-        warn(msg, category, stacklevel=1 + self._stacklevel)
+        warn(msg, category, stacklevel=1 + stacklevel)
 
-    def store_if_not_present(self, key, value):
-        self.store(key, value, _skip_if_present=True)
+    def store_if_not_present(self, key, value, _stacklevel=0):
+        self.store(key, value, _skip_if_present=True, _stacklevel=1 + _stacklevel)
 
-    def store(self, key, value, _skip_if_present=False):
+    def store(self, key, value, _skip_if_present=False, _stacklevel=0):
         raise NotImplementedError()
 
-    def fetch(self, key):
+    def fetch(self, key, _stacklevel=0):
         raise NotImplementedError()
 
-    def _read(self, path):
+    @staticmethod
+    def _read(path):
         from six.moves.cPickle import load
         with open(path, "rb") as inf:
             return load(inf)
 
-    def _write(self, path, value):
+    @staticmethod
+    def _write(path, value):
         from six.moves.cPickle import dump, HIGHEST_PROTOCOL
         with open(path, "wb") as outf:
             dump(value, outf, protocol=HIGHEST_PROTOCOL)
@@ -508,7 +485,7 @@ class _PersistentDictBase(object):
     def _make_container_dir(self):
         _make_dir_recursively(self.container_dir)
 
-    def _collision_check(self, key, stored_key):
+    def _collision_check(self, key, stored_key, _stacklevel):
         if stored_key != key:
             # Key collision, oh well.
             self._warn("%s: key collision in cache at '%s' -- these are "
@@ -517,21 +494,19 @@ class _PersistentDictBase(object):
                     "(that is not considering some elements relevant "
                     "for equality comparison)"
                     % (self.identifier, self.container_dir),
-                    CollisionWarning)
+                    CollisionWarning,
+                    1 + _stacklevel)
 
             # This is here so we can step through equality comparison to
             # see what is actually non-equal.
-            stored_key == key
+            stored_key == key  # pylint:disable=pointless-statement
             raise NoSuchEntryError(key)
 
     def __getitem__(self, key):
-        return self.fetch(key)
+        return self.fetch(key, _stacklevel=1)
 
     def __setitem__(self, key, value):
-        self.store(key, value)
-
-    def __delitem__(self, key):
-        raise NotImplementedError()
+        self.store(key, value, _stacklevel=1)
 
     def clear(self):
         try:
@@ -543,7 +518,6 @@ class _PersistentDictBase(object):
         self._make_container_dir()
 
 
-@_tracks_stacklevel
 class WriteOncePersistentDict(_PersistentDictBase):
     """A concurrent disk-backed dictionary that disallows overwriting/deletion.
 
@@ -570,7 +544,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
         _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
         self._cache = _LRUCache(in_mem_cache_size)
 
-    def _spin_until_removed(self, lock_file):
+    def _spin_until_removed(self, lock_file, stacklevel):
         from os.path import exists
 
         attempts = 0
@@ -582,20 +556,21 @@ class WriteOncePersistentDict(_PersistentDictBase):
 
             if attempts > 10:
                 self._warn("waiting until unlocked--delete '%s' if necessary"
-                        % lock_file)
+                        % lock_file, stacklevel=1 + stacklevel)
 
             if attempts > 3 * 60:
                 raise RuntimeError("waited more than three minutes "
                         "on the lock file '%s'"
                         "--something is wrong" % lock_file)
 
-    def store(self, key, value, _skip_if_present=False):
+    def store(self, key, value, _skip_if_present=False, _stacklevel=0):
         hexdigest_key = self.key_builder(key)
 
         cleanup_m = CleanupManager()
         try:
             try:
-                LockManager(cleanup_m, self._lock_file(hexdigest_key))
+                LockManager(cleanup_m, self._lock_file(hexdigest_key),
+                        1 + _stacklevel)
                 item_dir_m = ItemDirManager(
                         cleanup_m, self._item_dir(hexdigest_key),
                         delete_on_error=False)
@@ -613,15 +588,15 @@ class WriteOncePersistentDict(_PersistentDictBase):
                 self._write(value_path, value)
                 self._write(key_path, key)
 
-                logger.debug("%s: disk cache store [key=%s]" % (
-                        self.identifier, hexdigest_key))
+                logger.debug("%s: disk cache store [key=%s]",
+                        self.identifier, hexdigest_key)
             except Exception:
                 cleanup_m.error_clean_up()
                 raise
         finally:
             cleanup_m.clean_up()
 
-    def fetch(self, key):
+    def fetch(self, key, _stacklevel=0):
         hexdigest_key = self.key_builder(key)
 
         # {{{ in memory cache
@@ -631,9 +606,9 @@ class WriteOncePersistentDict(_PersistentDictBase):
         except KeyError:
             pass
         else:
-            logger.debug("%s: in mem cache hit [key=%s]" % (
-                    self.identifier, hexdigest_key))
-            self._collision_check(key, stored_key)
+            logger.debug("%s: in mem cache hit [key=%s]",
+                    self.identifier, hexdigest_key)
+            self._collision_check(key, stored_key, 1 + _stacklevel)
             return stored_value
 
         # }}}
@@ -644,12 +619,12 @@ class WriteOncePersistentDict(_PersistentDictBase):
 
         from os.path import isdir
         if not isdir(item_dir):
-            logger.debug("%s: disk cache miss [key=%s]" % (
-                    self.identifier, hexdigest_key))
+            logger.debug("%s: disk cache miss [key=%s]",
+                    self.identifier, hexdigest_key)
             raise NoSuchEntryError(key)
 
         lock_file = self._lock_file(hexdigest_key)
-        self._spin_until_removed(lock_file)
+        self._spin_until_removed(lock_file, 1 + _stacklevel)
 
         # }}}
 
@@ -668,15 +643,16 @@ class WriteOncePersistentDict(_PersistentDictBase):
                     "encountered an invalid "
                     "key file for key %s. Remove the directory "
                     "'%s' if necessary. (caught: %s)"
-                    % (self.identifier, hexdigest_key, item_dir, str(e)))
+                    % (self.identifier, hexdigest_key, item_dir, str(e)),
+                    stacklevel=1 + _stacklevel)
             raise NoSuchEntryError(key)
 
-        self._collision_check(key, read_key)
+        self._collision_check(key, read_key, 1 + _stacklevel)
 
         # }}}
 
-        logger.debug("%s: disk cache hit [key=%s]" % (
-                self.identifier, hexdigest_key))
+        logger.debug("%s: disk cache hit [key=%s]",
+                self.identifier, hexdigest_key)
 
         # {{{ load contents
 
@@ -687,7 +663,8 @@ class WriteOncePersistentDict(_PersistentDictBase):
                     "encountered an invalid "
                     "key file for key %s. Remove the directory "
                     "'%s' if necessary."
-                    % (self.identifier, hexdigest_key, item_dir))
+                    % (self.identifier, hexdigest_key, item_dir),
+                    stacklevel=1 + _stacklevel)
             raise NoSuchEntryError(key)
 
         # }}}
@@ -700,17 +677,18 @@ class WriteOncePersistentDict(_PersistentDictBase):
         self._cache.clear()
 
 
-@_tracks_stacklevel
 class PersistentDict(_PersistentDictBase):
     """A concurrent disk-backed dictionary.
 
     .. automethod:: __init__
     .. automethod:: __getitem__
     .. automethod:: __setitem__
+    .. automethod:: __delitem__
     .. automethod:: clear
     .. automethod:: store
     .. automethod:: store_if_not_present
     .. automethod:: fetch
+    .. automethod:: remove
     """
     def __init__(self, identifier, key_builder=None, container_dir=None):
         """
@@ -720,14 +698,14 @@ class PersistentDict(_PersistentDictBase):
         """
         _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
 
-    def store(self, key, value, _skip_if_present=False):
+    def store(self, key, value, _skip_if_present=False, _stacklevel=0):
         hexdigest_key = self.key_builder(key)
 
         cleanup_m = CleanupManager()
         try:
             try:
                 LockManager(cleanup_m, self._lock_file(hexdigest_key),
-                        1 + self._stacklevel)
+                        1 + _stacklevel)
                 item_dir_m = ItemDirManager(
                         cleanup_m, self._item_dir(hexdigest_key),
                         delete_on_error=True)
@@ -745,29 +723,29 @@ class PersistentDict(_PersistentDictBase):
                 self._write(value_path, value)
                 self._write(key_path, key)
 
-                logger.debug("%s: cache store [key=%s]" % (
-                        self.identifier, hexdigest_key))
+                logger.debug("%s: cache store [key=%s]",
+                        self.identifier, hexdigest_key)
             except Exception:
                 cleanup_m.error_clean_up()
                 raise
         finally:
             cleanup_m.clean_up()
 
-    def fetch(self, key):
+    def fetch(self, key, _stacklevel=0):
         hexdigest_key = self.key_builder(key)
         item_dir = self._item_dir(hexdigest_key)
 
         from os.path import isdir
         if not isdir(item_dir):
-            logger.debug("%s: cache miss [key=%s]" % (
-                    self.identifier, hexdigest_key))
+            logger.debug("%s: cache miss [key=%s]",
+                    self.identifier, hexdigest_key)
             raise NoSuchEntryError(key)
 
         cleanup_m = CleanupManager()
         try:
             try:
                 LockManager(cleanup_m, self._lock_file(hexdigest_key),
-                        1 + self._stacklevel)
+                        1 + _stacklevel)
                 item_dir_m = ItemDirManager(
                         cleanup_m, item_dir, delete_on_error=False)
 
@@ -783,15 +761,16 @@ class PersistentDict(_PersistentDictBase):
                     self._warn("pytools.persistent_dict.PersistentDict(%s) "
                             "encountered an invalid "
                             "key file for key %s. Entry deleted."
-                            % (self.identifier, hexdigest_key))
+                            % (self.identifier, hexdigest_key),
+                            stacklevel=1 + _stacklevel)
                     raise NoSuchEntryError(key)
 
-                self._collision_check(key, read_key)
+                self._collision_check(key, read_key, 1 + _stacklevel)
 
                 # }}}
 
-                logger.debug("%s: cache hit [key=%s]" % (
-                        self.identifier, hexdigest_key))
+                logger.debug("%s: cache hit [key=%s]",
+                        self.identifier, hexdigest_key)
 
                 # {{{ load value
 
@@ -802,7 +781,8 @@ class PersistentDict(_PersistentDictBase):
                     self._warn("pytools.persistent_dict.PersistentDict(%s) "
                             "encountered an invalid "
                             "key file for key %s. Entry deleted."
-                            % (self.identifier, hexdigest_key))
+                            % (self.identifier, hexdigest_key),
+                            stacklevel=1 + _stacklevel)
                     raise NoSuchEntryError(key)
 
                 return read_contents
@@ -815,7 +795,7 @@ class PersistentDict(_PersistentDictBase):
         finally:
             cleanup_m.clean_up()
 
-    def remove(self, key):
+    def remove(self, key, _stacklevel=0):
         hexdigest_key = self.key_builder(key)
 
         item_dir = self._item_dir(hexdigest_key)
@@ -827,7 +807,7 @@ class PersistentDict(_PersistentDictBase):
         try:
             try:
                 LockManager(cleanup_m, self._lock_file(hexdigest_key),
-                        1 + self._stacklevel)
+                        1 + _stacklevel)
                 item_dir_m = ItemDirManager(
                         cleanup_m, item_dir, delete_on_error=False)
                 key_file = self._key_file(hexdigest_key)
@@ -841,10 +821,11 @@ class PersistentDict(_PersistentDictBase):
                     self._warn("pytools.persistent_dict.PersistentDict(%s) "
                             "encountered an invalid "
                             "key file for key %s. Entry deleted."
-                            % (self.identifier, hexdigest_key))
+                            % (self.identifier, hexdigest_key),
+                            stacklevel=1 + _stacklevel)
                     raise NoSuchEntryError(key)
 
-                self._collision_check(key, read_key)
+                self._collision_check(key, read_key, 1 + _stacklevel)
 
                 # }}}
 
@@ -857,7 +838,7 @@ class PersistentDict(_PersistentDictBase):
             cleanup_m.clean_up()
 
     def __delitem__(self, key):
-        self.remove(key)
+        self.remove(key, _stacklevel=1)
 
 # }}}
 

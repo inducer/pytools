@@ -59,7 +59,18 @@ Flake8:
   - curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/prepare-and-run-flake8.sh
   - ". ./prepare-and-run-flake8.sh pytools test"
   tags:
-  - python3.5
+  - python3.6
+  except:
+  - tags
+
+Pylint:
+  script:
+  - EXTRA_INSTALL="pymbolic matplotlib mpi4py"
+  - py_version=3.6
+  - curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/prepare-and-run-pylint.sh
+  - ". ./prepare-and-run-pylint.sh pytools test/test_*.py"
+  tags:
+  - python3.6
   except:
   - tags
 

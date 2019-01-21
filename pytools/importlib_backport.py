@@ -66,12 +66,12 @@ def _resolve_name(name, package, level):
     if not hasattr(package, 'rindex'):
         raise ValueError("'package' not set to a string")
     dot = len(package)
-    for x in six.moves.xrange(level, 1, -1):
+    for _ in six.moves.xrange(level, 1, -1):
         try:
             dot = package.rindex('.', 0, dot)
         except ValueError:
             raise ValueError("attempted relative import beyond top-level "
-                              "package")
+                             "package")
     return "%s.%s" % (package[:dot], name)
 
 

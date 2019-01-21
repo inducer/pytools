@@ -22,6 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+import marshal
+import imp
+from types import FunctionType, ModuleType
+
 import six
 
 
@@ -121,13 +125,10 @@ class PicklableModule(object):
         self.mod_globals = mod_globals
 
     def __getstate__(self):
-        import marshal
-
         nondefault_globals = {}
         functions = {}
         modules = {}
 
-        from types import FunctionType, ModuleType
         for k, v in six.iteritems(self.mod_globals):
             if isinstance(v, FunctionType):
                 functions[k] = (
@@ -139,42 +140,36 @@ class PicklableModule(object):
             elif k not in _empty_module_dict:
                 nondefault_globals[k] = v
 
-        import imp
         return (1, imp.get_magic(), functions, modules, nondefault_globals)
 
     def __setstate__(self, obj):
-        v = obj[0]
-        if v == 0:
+        if obj[0] == 0:
             magic, functions, nondefault_globals = obj[1:]
             modules = {}
-        elif v == 1:
+        elif obj[0] == 1:
             magic, functions, modules, nondefault_globals = obj[1:]
         else:
             raise ValueError("unknown version of PicklableModule")
 
-        import imp
         if magic != imp.get_magic():
             raise ValueError("cannot unpickle function binary: "
                     "incorrect magic value (got: %s, expected: %s)"
                     % (magic, imp.get_magic()))
 
-        import marshal
-
         mod_globals = _empty_module_dict.copy()
         mod_globals.update(nondefault_globals)
-        self.mod_globals = mod_globals
 
         from pytools.importlib_backport import import_module
-
         for k, mod_name in six.iteritems(modules):
             mod_globals[k] = import_module(mod_name)
 
-        from types import FunctionType
-        for k, v in six.iteritems(functions):
-            name, code_bytes, argdefs = v
+        for k, (name, code_bytes, argdefs) in six.iteritems(functions):
             f = FunctionType(
-                    marshal.loads(code_bytes), mod_globals, argdefs=argdefs)
+                    marshal.loads(code_bytes), mod_globals, name=name,
+                    argdefs=argdefs)
             mod_globals[k] = f
+
+        self.mod_globals = mod_globals
 
 # }}}
 

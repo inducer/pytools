@@ -13,7 +13,7 @@ def check_for_mpi_relaunch(argv):
     sys.exit()
 
 
-def run_with_mpi_ranks(py_script, ranks, callable, args=(), kwargs=None):
+def run_with_mpi_ranks(py_script, ranks, callable_, args=(), kwargs=None):
     if kwargs is None:
         kwargs = {}
 
@@ -23,7 +23,7 @@ def run_with_mpi_ranks(py_script, ranks, callable, args=(), kwargs=None):
     newenv["PYTOOLS_RUN_WITHIN_MPI"] = "1"
 
     from pickle import dumps
-    callable_and_args = dumps((callable, args, kwargs))
+    callable_and_args = dumps((callable_, args, kwargs))
 
     from subprocess import check_call
     check_call(["mpirun", "-np", str(ranks),

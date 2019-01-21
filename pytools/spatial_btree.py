@@ -106,7 +106,7 @@ class SpatialBinaryTreeBucket:
             # No subdivisions yet.
             if len(self.elements) > self.max_elements_per_box:
                 # Too many elements. Need to subdivide.
-                self.all_buckets = []
+                self.all_buckets = []  # noqa: E501 pylint:disable=attribute-defined-outside-init
                 self.buckets = make_buckets(
                         self.bottom_left, self.top_right,
                         self.all_buckets,
@@ -142,7 +142,7 @@ class SpatialBinaryTreeBucket:
                 yield result
 
         # Perform linear search.
-        for el, bbox in self.elements:
+        for el, _ in self.elements:
             yield el
 
     def visualize(self, file):

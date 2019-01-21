@@ -1,8 +1,9 @@
 from __future__ import absolute_import
-from pytools import Record
+
 import six
-from six.moves import range
-from six.moves import zip
+from six.moves import range, zip
+
+from pytools import Record
 
 
 class Row(Record):
@@ -100,7 +101,7 @@ class DataTable:
 
     def get(self, **kwargs):
         filtered = self.filtered(**kwargs)
-        if len(filtered) < 1:
+        if not filtered:
             raise RuntimeError("no matching entry for get()")
         if len(filtered) > 1:
             raise RuntimeError("more than one matching entry for get()")
@@ -175,7 +176,7 @@ class DataTable:
 
         Assumes both tables are sorted ascendingly by the column
         by which they are joined.
-        """
+        """  # pylint:disable=too-many-locals,too-many-branches
 
         def without(indexable, idx):
             return indexable[:idx] + indexable[idx+1:]

@@ -1,3 +1,6 @@
+# pylint:  disable=too-many-lines
+# (Yes, it has a point!)
+
 from __future__ import division, absolute_import, print_function
 
 __copyright__ = "Copyright (C) 2009-2013 Andreas Kloeckner"
@@ -25,23 +28,15 @@ THE SOFTWARE.
 
 import operator
 import sys
-
-from pytools.decorator import decorator
-import six
-from six.moves import range, zip, intern, input
+import logging
 from functools import reduce
 
-import logging
+import six
+from six.moves import range, zip, intern, input
 
-try:
-    decorator_module = __import__("decorator", level=0)
-except TypeError:
-    # this must be Python 2.4
-    my_decorator = decorator
-except ImportError:
-    my_decorator = decorator
-else:
-    my_decorator = decorator_module.decorator
+
+decorator_module = __import__("decorator", level=0)
+my_decorator = decorator_module.decorator
 
 __doc__ = """
 A Collection of Utilities
@@ -237,8 +232,11 @@ class RecordWithoutPickling(object):
 
     __slots__ = []
 
-    def __init__(self, valuedict=None, exclude=["self"], **kwargs):
+    def __init__(self, valuedict=None, exclude=None, **kwargs):
         assert self.__class__ is not Record
+
+        if exclude is None:
+            exclude = ["self"]
 
         try:
             fields = self.__class__.fields
@@ -279,6 +277,13 @@ class RecordWithoutPickling(object):
             self.__class__.fields = fields = set()
 
         fields.update(new_fields)
+
+    def __getattr__(self, name):
+        # This method is implemented to avoid pylint 'no-member' errors for
+        # attribute access.
+        raise AttributeError(
+                "'%s' object has no attribute '%s'" % (
+                    self.__class__.__name__, name))
 
 
 class Record(RecordWithoutPickling):
@@ -336,39 +341,6 @@ class Reference(object):
         self.value = value
 
 
-# {{{ dictionary with default
-
-class DictionaryWithDefault(object):
-    def __init__(self, default_value_generator, start={}):
-        self._Dictionary = dict(start)
-        self._DefaultGenerator = default_value_generator
-
-    def __getitem__(self, index):
-        try:
-            return self._Dictionary[index]
-        except KeyError:
-            value = self._DefaultGenerator(index)
-            self._Dictionary[index] = value
-            return value
-
-    def __setitem__(self, index, value):
-        self._Dictionary[index] = value
-
-    def __contains__(self, item):
-        return True
-
-    def iterkeys(self):
-        return six.iterkeys(self._Dictionary)
-
-    def __iter__(self):
-        return self._Dictionary.__iter__()
-
-    def iteritems(self):
-        return six.iteritems(self._Dictionary)
-
-# }}}
-
-
 class FakeList(object):
     def __init__(self, f, length):
         self._Length = length
@@ -388,7 +360,10 @@ class FakeList(object):
 # {{{ dependent dictionary ----------------------------------------------------
 
 class DependentDictionary(object):
-    def __init__(self, f, start={}):
+    def __init__(self, f, start=None):
+        if start is None:
+            start = {}
+
         self._Function = f
         self._Dictionary = start.copy()
 
@@ -397,7 +372,7 @@ class DependentDictionary(object):
 
     def __contains__(self, key):
         try:
-            self[key]
+            self[key]  # pylint: disable=pointless-statement
             return True
         except KeyError:
             return False
@@ -531,15 +506,15 @@ def memoize(*args, **kwargs):
             # http://www.phyast.pitt.edu/~micheles/python/
             key = key_func(*args, **kwargs)
             try:
-                return func._memoize_dic[key]
+                return func._memoize_dic[key]  # pylint: disable=protected-access
             except AttributeError:
                 # _memoize_dic doesn't exist yet.
                 result = func(*args, **kwargs)
-                func._memoize_dic = {key: result}
+                func._memoize_dic = {key: result}  # pylint: disable=protected-access
                 return result
             except KeyError:
                 result = func(*args, **kwargs)
-                func._memoize_dic[key] = result
+                func._memoize_dic[key] = result  # pylint: disable=protected-access
                 return result
     else:
         @my_decorator
@@ -547,15 +522,15 @@ def memoize(*args, **kwargs):
             # by Michele Simionato
             # http://www.phyast.pitt.edu/~micheles/python/
             try:
-                return func._memoize_dic[args]
+                return func._memoize_dic[args]  # pylint: disable=protected-access
             except AttributeError:
                 # _memoize_dic doesn't exist yet.
                 result = func(*args)
-                func._memoize_dic = {args: result}
+                func._memoize_dic = {args: result}  # pylint:disable=protected-access
                 return result
             except KeyError:
                 result = func(*args)
-                func._memoize_dic[args] = result
+                func._memoize_dic[args] = result  # pylint: disable=protected-access
                 return result
     if not args:
         return _deco
@@ -623,12 +598,17 @@ def memoize_method(method):
     return memoize_on_first_arg(method, intern("_memoize_dic_"+method.__name__))
 
 
-def memoize_method_with_uncached(uncached_args=[], uncached_kwargs=set()):
+def memoize_method_with_uncached(uncached_args=None, uncached_kwargs=None):
     """Supports cache deletion via ``method_name.clear_cache(self)``.
 
     :arg uncached_args: a list of argument numbers
         (0-based, not counting 'self' argument)
     """
+
+    if uncached_args is None:
+        uncached_args = []
+    if uncached_kwargs is None:
+        uncached_kwargs = set()
 
     # delete starting from the end
     uncached_args = sorted(uncached_args, reverse=True)
@@ -783,7 +763,7 @@ def monkeypatch_method(cls):
     return decorator
 
 
-def monkeypatch_class(name, bases, namespace):
+def monkeypatch_class(_name, bases, namespace):
     # from GvR, http://mail.python.org/pipermail/python-dev/2008-January/076194.html
 
     assert len(bases) == 1, "Exactly one base class required"
@@ -829,13 +809,13 @@ def len_iterable(iterable):
     return sum(1 for i in iterable)
 
 
-def flatten(list):
+def flatten(iterable):
     """For an iterable of sub-iterables, generate each member of each
     sub-iterable in turn, i.e. a flattened version of that super-iterable.
 
     Example: Turn [[a,b,c],[d,e,f]] into [a,b,c,d,e,f].
     """
-    for sublist in list:
+    for sublist in iterable:
         for j in sublist:
             yield j
 
@@ -846,7 +826,7 @@ def general_sum(sequence):
 
 def linear_combination(coefficients, vectors):
     result = coefficients[0] * vectors[0]
-    for c, v in zip(coefficients, vectors)[1:]:
+    for c, v in zip(coefficients[1:], vectors[1:]):
         result += c*v
     return result
 
@@ -859,8 +839,8 @@ def common_prefix(iterable, empty=None):
         return empty
 
     for v in it:
-        for j in range(len(pfx)):
-            if pfx[j] != v[j]:
+        for j, pfx_j in enumerate(pfx):
+            if pfx_j != v[j]:
                 pfx = pfx[:j]
                 if j == 0:
                     return pfx
@@ -869,14 +849,14 @@ def common_prefix(iterable, empty=None):
     return pfx
 
 
-def decorate(function, list):
-    return [(x, function(x)) for x in list]
+def decorate(function, iterable):
+    return [(x, function(x)) for x in iterable]
 
 
-def partition(criterion, list):
+def partition(criterion, iterable):
     part_true = []
     part_false = []
-    for i in list:
+    for i in iterable:
         if criterion(i):
             part_true.append(i)
         else:
@@ -900,8 +880,8 @@ def product(iterable):
     return reduce(mul, iterable, 1)
 
 
-all = six.moves.builtins.all
-any = six.moves.builtins.any
+all = six.moves.builtins.all  # pylint: disable=redefined-builtin
+any = six.moves.builtins.any  # pylint: disable=redefined-builtin
 
 
 def reverse_dictionary(the_dict):
@@ -955,7 +935,7 @@ def find_max_where(predicate, prec=1e-5, initial_guess=1, fail_bound=1e38):
 
     # {{{ establish bracket
 
-    mag = 1
+    mag = initial_guess
 
     if predicate(mag):
         mag *= 2
@@ -996,8 +976,8 @@ def find_max_where(predicate, prec=1e-5, initial_guess=1, fail_bound=1e38):
             lower_true = mid
         else:
             upper_false = mid
-    else:
-        return lower_true
+
+    return lower_true
 
     # }}}
 
@@ -1088,16 +1068,16 @@ def average(iterable):
     it = iterable.__iter__()
 
     try:
-        sum = next(it)
+        s = next(it)
         count = 1
     except StopIteration:
         raise ValueError("empty average")
 
     for value in it:
-        sum = sum + value
+        s = s + value
         count += 1
 
-    return sum/count
+    return s/count
 
 
 class VarianceAggregator:
@@ -1114,9 +1094,9 @@ class VarianceAggregator:
 
     def step(self, x):
         self.n += 1
-        delta = x - self.mean
-        self.mean += delta/self.n
-        self.m2 += delta*(x - self.mean)
+        delta_ = x - self.mean
+        self.mean += delta_/self.n
+        self.m2 += delta_*(x - self.mean)
 
     def finalize(self):
         if self.entire_pop:
@@ -1158,7 +1138,7 @@ def indices_in_shape(shape):
     if isinstance(shape, int):
         shape = (shape,)
 
-    if len(shape) == 0:
+    if not shape:
         yield ()
     elif len(shape) == 1:
         for i in range(0, shape[0]):
@@ -1173,7 +1153,7 @@ def indices_in_shape(shape):
 def generate_nonnegative_integer_tuples_below(n, length=None, least=0):
     """n may be a sequence, in which case length must be None."""
     if length is None:
-        if len(n) == 0:
+        if not n:
             yield ()
             return
 
@@ -1196,23 +1176,24 @@ def generate_nonnegative_integer_tuples_below(n, length=None, least=0):
             yield my_part + base
 
 
-def generate_decreasing_nonnegative_tuples_summing_to(n, length, min=0, max=None):
+def generate_decreasing_nonnegative_tuples_summing_to(
+        n, length, min_value=0, max_value=None):
     if length == 0:
         yield ()
     elif length == 1:
-        if n <= max:
-            #print "MX", n, max
+        if n <= max_value:
+            #print "MX", n, max_value
             yield (n,)
         else:
             return
     else:
-        if max is None or n < max:
-            max = n
+        if max_value is None or n < max_value:
+            max_value = n
 
-        for i in range(min, max+1):
+        for i in range(min_value, max_value+1):
             #print "SIG", sig, i
             for remainder in generate_decreasing_nonnegative_tuples_summing_to(
-                    n-i, length-1, min, i):
+                    n-i, length-1, min_value, i):
                 yield (i,) + remainder
 
 
@@ -1279,10 +1260,10 @@ def generate_permutations(original):
     if len(original) <= 1:
         yield original
     else:
-        for perm in generate_permutations(original[1:]):
-            for i in range(len(perm)+1):
+        for perm_ in generate_permutations(original[1:]):
+            for i in range(len(perm_)+1):
                 #nb str[0:1] works in both string and list contexts
-                yield perm[:i] + original[0:1] + perm[i:]
+                yield perm_[:i] + original[0:1] + perm_[i:]
 
 
 def generate_unique_permutations(original):
@@ -1291,10 +1272,10 @@ def generate_unique_permutations(original):
 
     had_those = set()
 
-    for perm in generate_permutations(original):
-        if perm not in had_those:
-            had_those.add(perm)
-            yield perm
+    for perm_ in generate_permutations(original):
+        if perm_ not in had_those:
+            had_those.add(perm_)
+            yield perm_
 
 
 def enumerate_basic_directions(dimensions):
@@ -1314,12 +1295,18 @@ def get_read_from_map_from_permutation(original, permuted):
     Requires that the permutation can be inferred from
     C{original} and C{permuted}.
 
-    >>> for p1 in generate_permutations(range(5)):
-    ...     for p2 in generate_permutations(range(5)):
-    ...         rfm = get_read_from_map_from_permutation(p1, p2)
-    ...         p2a = [p1[rfm[i]] for i in range(len(p1))]
-    ...         assert p2 == p2a
+    .. doctest ::
+
+        >>> for p1 in generate_permutations(range(5)):
+        ...     for p2 in generate_permutations(range(5)):
+        ...         rfm = get_read_from_map_from_permutation(p1, p2)
+        ...         p2a = [p1[rfm[i]] for i in range(len(p1))]
+        ...         assert p2 == p2a
     """
+    from warnings import warn
+    warn("get_read_from_map_from_permutation is deprecated and will be "
+            "removed in 2019", DeprecationWarning, stacklevel=2)
+
     assert len(original) == len(permuted)
     where_in_original = dict(
             (original[i], i) for i in range(len(original)))
@@ -1335,14 +1322,20 @@ def get_write_to_map_from_permutation(original, permuted):
     Requires that the permutation can be inferred from
     C{original} and C{permuted}.
 
-    >>> for p1 in generate_permutations(range(5)):
-    ...     for p2 in generate_permutations(range(5)):
-    ...         wtm = get_write_to_map_from_permutation(p1, p2)
-    ...         p2a = [0] * len(p2)
-    ...         for i, oi in enumerate(p1):
-    ...             p2a[wtm[i]] = oi
-    ...         assert p2 == p2a
+    .. doctest::
+
+        >>> for p1 in generate_permutations(range(5)):
+        ...     for p2 in generate_permutations(range(5)):
+        ...         wtm = get_write_to_map_from_permutation(p1, p2)
+        ...         p2a = [0] * len(p2)
+        ...         for i, oi in enumerate(p1):
+        ...             p2a[wtm[i]] = oi
+        ...         assert p2 == p2a
     """
+    from warnings import warn
+    warn("get_write_to_map_from_permutation is deprecated and will be "
+            "removed in 2019", DeprecationWarning, stacklevel=2)
+
     assert len(original) == len(permuted)
 
     where_in_permuted = dict(
@@ -1356,9 +1349,11 @@ def get_write_to_map_from_permutation(original, permuted):
 
 # {{{ graph algorithms
 
-def a_star(initial_state, goal_state, neighbor_map,
+def a_star(  # pylint: disable=too-many-locals
+        initial_state, goal_state, neighbor_map,
         estimate_remaining_cost=None,
-        get_step_cost=lambda x, y: 1):
+        get_step_cost=lambda x, y: 1
+        ):
     """
     With the default cost and heuristic, this amounts to Dijkstra's algorithm.
     """
@@ -1366,7 +1361,7 @@ def a_star(initial_state, goal_state, neighbor_map,
     from heapq import heappop, heappush
 
     if estimate_remaining_cost is None:
-        def estimate_remaining_cost(x):
+        def estimate_remaining_cost(x):  # pylint: disable=function-redefined
             if x != goal_state:
                 return 1
             else:
@@ -1387,7 +1382,7 @@ def a_star(initial_state, goal_state, neighbor_map,
     queue = [(init_remcost, AStarNode(initial_state, parent=None, path_cost=0))]
     visited_states = set()
 
-    while len(queue):
+    while queue:
         _, top = heappop(queue)
         visited_states.add(top.state)
 
@@ -1449,7 +1444,9 @@ class Table:
                               for col_width in col_widths)]
         return "\n".join(lines)
 
-    def latex(self, skip_lines=0, hline_after=[]):
+    def latex(self, skip_lines=0, hline_after=None):
+        if hline_after is None:
+            hline_after = []
         lines = []
         for row_nr, row in list(enumerate(self.rows))[skip_lines:]:
             lines.append(" & ".join(row)+r" \\")
@@ -1463,7 +1460,8 @@ class Table:
 
 # {{{ histogram formatting
 
-def string_histogram(iterable, min_value=None, max_value=None,
+def string_histogram(  # pylint: disable=too-many-arguments,too-many-locals
+        iterable, min_value=None, max_value=None,
         bin_count=20, width=70, bin_starts=None, use_unicode=True):
     if bin_starts is None:
         if min_value is None or max_value is None:
@@ -1523,7 +1521,7 @@ def word_wrap(text, width, wrap_using="\n"):
     breaks are posix newlines (``\n``).
     """
     space_or_break = [" ", wrap_using]
-    return reduce(lambda line, word, width=width: '%s%s%s' %
+    return reduce(lambda line, word: '%s%s%s' %
             (line,
                 space_or_break[(len(line)-line.rfind('\n')-1
                     + len(word.split('\n', 1)[0])
@@ -1549,7 +1547,11 @@ class CPyUserInterface(object):
     class Parameters(Record):
         pass
 
-    def __init__(self, variables, constants={}, doc={}):
+    def __init__(self, variables, constants=None, doc=None):
+        if constants is None:
+            constants = {}
+        if doc is None:
+            doc = {}
         self.variables = variables
         self.constants = constants
         self.doc = doc
@@ -1577,8 +1579,6 @@ class CPyUserInterface(object):
                 print("    %s" % self.doc[c])
 
     def gather(self, argv=None):
-        import sys
-
         if argv is None:
             argv = sys.argv
 
@@ -1638,17 +1638,19 @@ class MovedFunctionDeprecationWrapper:
 
 class StderrToStdout(object):
     def __enter__(self):
-        import sys
+        # pylint: disable=attribute-defined-outside-init
         self.stderr_backup = sys.stderr
         sys.stderr = sys.stdout
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        import sys
         sys.stderr = self.stderr_backup
         del self.stderr_backup
 
 
-def typedump(val, max_seq=5, special_handlers={}):
+def typedump(val, max_seq=5, special_handlers=None):
+    if special_handlers is None:
+        special_handlers = {}
+
     try:
         hdlr = special_handlers[type(val)]
     except KeyError:
@@ -1697,7 +1699,7 @@ def invoke_editor(s, filename="edit.txt", descr="the file"):
     if "EDITOR" in os.environ:
         from subprocess import Popen
         p = Popen([os.environ["EDITOR"], full_name])
-        os.waitpid(p.pid, 0)[1]
+        os.waitpid(p.pid, 0)
     else:
         print("(Set the EDITOR environment variable to be "
                 "dropped directly into an editor next time.)")
@@ -1715,7 +1717,7 @@ def invoke_editor(s, filename="edit.txt", descr="the file"):
 
 # {{{ progress bars
 
-class ProgressBar:
+class ProgressBar(object):  # pylint: disable=too-many-instance-attributes
     """
     .. automethod:: draw
     .. automethod:: progress
@@ -1763,7 +1765,6 @@ class ProgressBar:
             else:
                 eta_str = "?"
 
-            import sys
             sys.stderr.write("%-20s [%s] ETA %s\r" % (
                 self.description,
                 squares*"#"+(self.length-squares)*" ",
@@ -1780,7 +1781,6 @@ class ProgressBar:
         self.draw()
 
     def finished(self):
-        import sys
         self.set_progress(self.total)
         sys.stderr.write("\n")
 
@@ -1802,7 +1802,6 @@ def assert_not_a_file(name):
 
 
 def add_python_path_relative_to_script(rel_path):
-    import sys
     from os.path import dirname, join, abspath
 
     script_name = sys.argv[0]
@@ -1895,7 +1894,10 @@ class UniqueNameGenerator(object):
     .. automethod:: add_names
     .. automethod:: __call__
     """
-    def __init__(self, existing_names=set(), forced_prefix=""):
+    def __init__(self, existing_names=None, forced_prefix=""):
+        if existing_names is None:
+            existing_names = set()
+
         self.existing_names = existing_names.copy()
         self.forced_prefix = forced_prefix
         self.prefix_to_counter = {}
@@ -1937,7 +1939,7 @@ class UniqueNameGenerator(object):
 
         self.prefix_to_counter[based_on] = counter
 
-        var_name = intern(var_name)
+        var_name = intern(var_name)  # pylint: disable=undefined-loop-variable
 
         self.existing_names.add(var_name)
         self._name_added(var_name)
@@ -1953,6 +1955,8 @@ class MinRecursionLimit(object):
         self.min_rec_limit = min_rec_limit
 
     def __enter__(self):
+        # pylint: disable=attribute-defined-outside-init
+
         self.prev_recursion_limit = sys.getrecursionlimit()
         new_limit = max(self.prev_recursion_limit, self.min_rec_limit)
         sys.setrecursionlimit(new_limit)
@@ -1997,7 +2001,7 @@ def download_from_web_if_not_present(url, local_name=None):
 
 # {{{ find git revisions
 
-def find_git_revision(tree_root):
+def find_git_revision(tree_root):  # pylint: disable=too-many-locals
     # Keep this routine self-contained so that it can be copy-pasted into
     # setup.py.
 
@@ -2027,7 +2031,6 @@ def find_git_revision(tree_root):
               cwd=tree_root, env=env)
     (git_rev, _) = p.communicate()
 
-    import sys
     if sys.version_info >= (3,):
         git_rev = git_rev.decode()
 
@@ -2108,6 +2111,8 @@ class ProcessTimer(object):
         self.done()
 
     def done(self):
+        # pylint: disable=attribute-defined-outside-init
+
         import time
         if sys.version_info >= (3, 3):
             self.wall_elapsed = time.perf_counter() - self.perf_counter_start
@@ -2123,7 +2128,7 @@ class ProcessTimer(object):
 
 # {{{ log utilities
 
-class ProcessLogger(object):
+class ProcessLogger(object):  # pylint: disable=too-many-instance-attributes
     """Logs the completion time of a (presumably) lengthy process to :mod:`logging`.
     Only uses a high log level if the process took perceptible time.
 
@@ -2135,7 +2140,8 @@ class ProcessLogger(object):
 
     default_noisy_level = logging.INFO
 
-    def __init__(self, logger, description,
+    def __init__(  # pylint: disable=too-many-arguments
+            self, logger, description,
             silent_level=None, noisy_level=None, long_threshold_seconds=None):
         self.logger = logger
         self.description = description
@@ -2168,7 +2174,8 @@ class ProcessLogger(object):
                     self.description,
                     sleep_duration)
 
-    def done(self, extra_msg=None, *extra_fmt_args):
+    def done(  # pylint: disable=keyword-arg-before-vararg
+            self, extra_msg=None, *extra_fmt_args):
         self.timer.done()
         self.is_done = True
 
