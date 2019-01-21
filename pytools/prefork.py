@@ -17,11 +17,12 @@ class DirectForker(object):
         self.apids = {}
         self.count = 0
 
-    def call(self, cmdline, cwd=None):
-        from subprocess import call
+    @staticmethod
+    def call(cmdline, cwd=None):
+        from subprocess import call as spcall
 
         try:
-            return call(cmdline, cwd=cwd)
+            return spcall(cmdline, cwd=cwd)
         except OSError as e:
             raise ExecError("error invoking '%s': %s"
                             % (" ".join(cmdline), e))
@@ -40,7 +41,8 @@ class DirectForker(object):
             raise ExecError("error invoking '%s': %s"
                              % (" ".join(cmdline), e))
 
-    def call_capture_output(self, cmdline, cwd=None, error_on_nonzero=True):
+    @staticmethod
+    def call_capture_output(cmdline, cwd=None, error_on_nonzero=True):
         from subprocess import Popen, PIPE
 
         try:
@@ -123,7 +125,7 @@ def _fork_server(sock):
     try:
         while True:
             func_name, args, kwargs = _recv_packet(
-                sock,  who="Prefork server", partner="parent"
+                sock, who="Prefork server", partner="parent"
             )
 
             if func_name == "quit":
@@ -133,7 +135,8 @@ def _fork_server(sock):
             else:
                 try:
                     result = funcs[func_name](*args, **kwargs)
-                except Exception as e:
+                # FIXME: Is catching all exceptions the right course of action?
+                except Exception as e:  # pylint:disable=broad-except
                     _send_packet(sock, ("exception", e))
                 else:
                     _send_packet(sock, ("ok", result))
@@ -141,7 +144,7 @@ def _fork_server(sock):
         sock.close()
 
     import os
-    os._exit(0)
+    os._exit(0)  # pylint:disable=protected-access
 
 
 class IndirectForker(object):
@@ -155,13 +158,14 @@ class IndirectForker(object):
     def _remote_invoke(self, name, *args, **kwargs):
         _send_packet(self.socket, (name, args, kwargs))
         status, result = _recv_packet(
-            self.socket,  who="Prefork client", partner="prefork server"
+            self.socket, who="Prefork client", partner="prefork server"
         )
 
         if status == "exception":
             raise result
-        elif status == "ok":
-            return result
+
+        assert status == "ok"
+        return result
 
     def _quit(self):
         self._remote_invoke("quit")
@@ -186,8 +190,11 @@ class IndirectForker(object):
         return self._remote_invoke("waitall")
 
 
+forker = DirectForker()
+
+
 def enable_prefork():
-    global forker
+    global forker  # pylint:disable=global-statement
 
     if isinstance(forker, IndirectForker):
         return
@@ -206,9 +213,6 @@ def enable_prefork():
     else:
         s_child.close()
         forker = IndirectForker(fork_res, s_parent)
-
-
-forker = DirectForker()
 
 
 def call(cmdline, cwd=None):

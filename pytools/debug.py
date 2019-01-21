@@ -1,8 +1,8 @@
-from __future__ import absolute_import
-from __future__ import print_function
-from pytools import memoize
+from __future__ import absolute_import, print_function
+
 import six
 from six.moves import input
+from pytools import memoize
 
 
 # {{{ debug files -------------------------------------------------------------
@@ -17,9 +17,10 @@ def make_unique_filesystem_object(stem, extension="", directory="",
     import os
 
     if creator is None:
-        def creator(name):
+        def default_creator(name):
             return os.fdopen(os.open(name,
                     os.O_CREAT | os.O_WRONLY | os.O_EXCL, 0o444), "w")
+        creator = default_creator
 
     i = 0
     while True:
@@ -56,7 +57,7 @@ class RefDebugQuit(Exception):
     pass
 
 
-def refdebug(obj, top_level=True, exclude=[]):
+def refdebug(obj, top_level=True, exclude=()):  # noqa: E501  pylint:disable=too-many-locals,too-many-branches,too-many-statements
     from types import FrameType
 
     def is_excluded(o):
@@ -76,65 +77,66 @@ def refdebug(obj, top_level=True, exclude=[]):
             refdebug(obj, top_level=False, exclude=exclude)
         except RefDebugQuit:
             pass
-    else:
-        import gc
-        print_head = True
-        print("-------------->")
-        try:
-            reflist = [x for x in gc.get_referrers(obj)
-                    if not is_excluded(x)]
+        return
 
-            idx = 0
-            while True:
-                if print_head:
-                    print("referring to", id(obj), type(obj), obj)
-                    print("----------------------")
-                    print_head = False
-                r = reflist[idx]
+    import gc
+    print_head = True
+    print("-------------->")
+    try:
+        reflist = [x for x in gc.get_referrers(obj)
+                if not is_excluded(x)]
 
-                if isinstance(r, FrameType):
-                    s = str(r.f_code)
-                else:
-                    s = str(r)
+        idx = 0
+        while True:
+            if print_head:
+                print("referring to", id(obj), type(obj), obj)
+                print("----------------------")
+                print_head = False
+            r = reflist[idx]
 
-                print("%d/%d: " % (idx, len(reflist)), id(r), type(r), s)
+            if isinstance(r, FrameType):
+                s = str(r.f_code)
+            else:
+                s = str(r)
 
-                if isinstance(r, dict):
-                    for k, v in six.iteritems(r):
-                        if v is obj:
-                            print("...referred to from key", k)
+            print("%d/%d: " % (idx, len(reflist)), id(r), type(r), s)
 
-                print("[d]ig, [n]ext, [p]rev, [e]val, [r]eturn, [q]uit?")
+            if isinstance(r, dict):
+                for k, v in six.iteritems(r):
+                    if v is obj:
+                        print("...referred to from key", k)
 
-                response = input()
+            print("[d]ig, [n]ext, [p]rev, [e]val, [r]eturn, [q]uit?")
 
-                if response == "d":
-                    refdebug(r, top_level=False, exclude=exclude+[reflist])
-                    print_head = True
-                elif response == "n":
-                    if idx + 1 < len(reflist):
-                        idx += 1
-                elif response == "p":
-                    if idx - 1 >= 0:
-                        idx -= 1
-                elif response == "e":
-                    print("type expression, obj is your object:")
-                    expr_str = input()
-                    try:
-                        res = eval(expr_str, {"obj": r})
-                    except Exception:
-                        from traceback import print_exc
-                        print_exc()
-                    print(res)
-                elif response == "r":
-                    return
-                elif response == "q":
-                    raise RefDebugQuit()
-                else:
-                    print("WHAT YOU SAY!!! (invalid choice)")
+            response = input()
 
-        finally:
-            print("<--------------")
+            if response == "d":
+                refdebug(r, top_level=False, exclude=exclude+[reflist])
+                print_head = True
+            elif response == "n":
+                if idx + 1 < len(reflist):
+                    idx += 1
+            elif response == "p":
+                if idx - 1 >= 0:
+                    idx -= 1
+            elif response == "e":
+                print("type expression, obj is your object:")
+                expr_str = input()
+                try:
+                    res = eval(expr_str, {"obj": r})  # pylint:disable=eval-used
+                except Exception:  # pylint:disable=broad-except
+                    from traceback import print_exc
+                    print_exc()
+                print(res)
+            elif response == "r":
+                return
+            elif response == "q":
+                raise RefDebugQuit()
+            else:
+                print("WHAT YOU SAY!!! (invalid choice)")
+
+    finally:
+        print("<--------------")
 
 # }}}
 
@@ -153,8 +155,8 @@ def setup_readline():
     if exists(hist_filename):
         try:
             readline.read_history_file(hist_filename)
-        except Exception:
-            # http://docs.python.org/3/howto/pyporting.html#capturing-the-currently-raised-exception  # noqa
+        except Exception:  # pylint:disable=broad-except
+            # http://docs.python.org/3/howto/pyporting.html#capturing-the-currently-raised-exception  # noqa: E501  pylint:disable=line-too-long
             import sys
             e = sys.exc_info()[1]
 
@@ -191,16 +193,16 @@ class SetPropagatingDict(dict):
         del self.target_dict[key]
 
 
-def shell(locals=None, globals=None):
+def shell(locals_=None, globals_=None):
     from inspect import currentframe, getouterframes
     calling_frame = getouterframes(currentframe())[1][0]
 
-    if locals is None:
-        locals = calling_frame.f_locals
-    if globals is None:
-        globals = calling_frame.f_globals
+    if locals_ is None:
+        locals_ = calling_frame.f_locals
+    if globals_ is None:
+        globals_ = calling_frame.f_globals
 
-    ns = SetPropagatingDict([locals, globals], locals)
+    ns = SetPropagatingDict([locals_, globals_], locals_)
 
     if HAVE_READLINE:
         readline.set_completer(

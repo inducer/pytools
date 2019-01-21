@@ -1,8 +1,8 @@
-from __future__ import division, with_statement
-from __future__ import absolute_import
+from __future__ import absolute_import, division, with_statement
+
+import sys
 
 import pytest
-import sys
 
 
 @pytest.mark.skipif("sys.version_info < (2, 5)")
@@ -23,7 +23,7 @@ def test_memoize_method_clear():
     sc.f()
     assert sc.run_count == 1
 
-    sc.f.clear_cache(sc)
+    sc.f.clear_cache(sc)  # pylint: disable=no-member
 
 
 def test_memoize_method_with_uncached():
@@ -35,6 +35,7 @@ def test_memoize_method_with_uncached():
 
         @memoize_method_with_uncached(uncached_args=[1], uncached_kwargs=["z"])
         def f(self, x, y, z):
+            del x, y, z
             self.run_count += 1
             return 17
 
@@ -45,7 +46,7 @@ def test_memoize_method_with_uncached():
     sc.f(18, 19, z=20)
     assert sc.run_count == 2
 
-    sc.f.clear_cache(sc)
+    sc.f.clear_cache(sc)  # pylint: disable=no-member
 
 
 def test_memoize_method_nested():
@@ -154,45 +155,6 @@ def test_spatial_btree(dims, do_plot=False):
         pt.plot(x[0], x[1], "x")
         tree.plot(fill=None)
         pt.show()
-
-
-def test_diskdict():
-    if sys.platform.startswith("win"):
-        pytest.xfail("unreliable on windows")
-
-    from pytools.diskdict import DiskDict
-
-    from tempfile import NamedTemporaryFile
-
-    with NamedTemporaryFile() as ntf:
-        d = DiskDict(ntf.name)
-
-        key_val = [
-            ((), "hi"),
-            (frozenset([1, 2, "hi"]), 5)
-            ]
-
-        for k, v in key_val:
-            d[k] = v
-        for k, v in key_val:
-            assert d[k] == v
-        del d
-
-        d = DiskDict(ntf.name)
-        for k, v in key_val:
-            del d[k]
-        del d
-
-        d = DiskDict(ntf.name)
-        for k, v in key_val:
-            d[k] = v
-        del d
-
-        d = DiskDict(ntf.name)
-        for k, v in key_val:
-            assert k in d
-            assert d[k] == v
-        del d
 
 
 def test_generate_numbered_unique_names():

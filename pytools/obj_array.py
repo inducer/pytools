@@ -26,15 +26,14 @@ Mapping
 
 
 def gen_len(expr):
-    from pytools.obj_array import is_obj_array
     if is_obj_array(expr):
         return len(expr)
     else:
         return 1
 
 
-def gen_slice(expr, slice):
-    result = expr[slice]
+def gen_slice(expr, slice_):
+    result = expr[slice_]
     if len(result) == 1:
         return result[0]
     else:
@@ -79,7 +78,6 @@ def make_obj_array(res_list):
 
 
 def setify_field(f):
-    from hedge.tools import is_obj_array
     if is_obj_array(f):
         return set(f)
     else:

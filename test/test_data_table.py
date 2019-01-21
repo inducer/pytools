@@ -64,7 +64,7 @@ def test_sort():
 def test_aggregate():
     et = get_employee_table()
     et.sort(["dept"])
-    agg = et.aggregated(["dept"], "lastname", lambda lst: ",".join(lst))
+    agg = et.aggregated(["dept"], "lastname", ",".join)
     assert len(agg) == 4
     for dept, lastnames in agg:
         lastnames = lastnames.split(",")

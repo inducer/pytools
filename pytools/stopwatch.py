@@ -68,5 +68,5 @@ def print_job_summary():
 
 HIDDEN_JOBS = []
 VISIBLE_JOBS = []
-JOB_TIMES = pytools.DictionaryWithDefault(lambda x: 0)
+JOB_TIMES = pytools.DependentDictionary(lambda x: 0)
 PRINT_JOBS = pytools.Reference(True)

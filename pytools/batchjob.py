@@ -23,7 +23,7 @@ def get_timestamp():
 
 
 class BatchJob(object):
-    def __init__(self, moniker, main_file, aux_files=[], timestamp=None):
+    def __init__(self, moniker, main_file, aux_files=(), timestamp=None):
         import os
         import os.path
 
@@ -70,8 +70,8 @@ class INHERIT(object):  # noqa
 
 
 class GridEngineJob(BatchJob):
-    def submit(self, env={"LD_LIBRARY_PATH": INHERIT, "PYTHONPATH": INHERIT},
-            memory_megs=None, extra_args=[]):
+    def submit(self, env=(("LD_LIBRARY_PATH", INHERIT), ("PYTHONPATH", INHERIT)),
+            memory_megs=None, extra_args=()):
         from subprocess import Popen
         args = [
             "-N", self.moniker,
@@ -79,7 +79,7 @@ class GridEngineJob(BatchJob):
             ]
 
         from os import getenv
-
+        env = dict(env)
         for var, value in six.iteritems(env):
             if value is INHERIT:
                 value = getenv(var)
@@ -97,8 +97,8 @@ class GridEngineJob(BatchJob):
 
 
 class PBSJob(BatchJob):
-    def submit(self, env={"LD_LIBRARY_PATH": INHERIT, "PYTHONPATH": INHERIT},
-            memory_megs=None, extra_args=[]):
+    def submit(self, env=(("LD_LIBRARY_PATH", INHERIT), ("PYTHONPATH", INHERIT)),
+            memory_megs=None, extra_args=()):
         from subprocess import Popen
         args = [
             "-N", self.moniker,
@@ -110,6 +110,7 @@ class PBSJob(BatchJob):
 
         from os import getenv
 
+        env = dict(env)
         for var, value in six.iteritems(env):
             if value is INHERIT:
                 value = getenv(var)
