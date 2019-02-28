@@ -148,8 +148,8 @@ class LexIterator(object):
     def raise_parse_error(self, msg):
         if self.is_at_end():
             raise ParseError(msg, self.raw_string, None)
-        else:
-            raise ParseError(msg, self.raw_string, self.lexed[self.index])
+
+        raise ParseError(msg, self.raw_string, self.lexed[self.index])
 
     def expected(self, what_expected):
         if self.is_at_end():
