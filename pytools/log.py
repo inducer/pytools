@@ -404,7 +404,8 @@ class LogManager(object):
                 # we've opened an existing database
                 if mode == "w":
                     raise RuntimeError("Log database '%s' already exists" % filename)
-                elif mode == "wu":
+
+                if mode == "wu":
                     # try again with a new suffix
                     continue
 
@@ -446,9 +447,9 @@ class LogManager(object):
             if self.old_showwarning is None:
                 raise RuntimeError(
                         "Warnings capture was disabled, but never enabled")
-            else:
-                warnings.showwarning = self.old_showwarning
-                self.old_showwarning = None
+
+            warnings.showwarning = self.old_showwarning
+            self.old_showwarning = None
 
     def _load(self):
         if self.mpi_comm and self.mpi_comm.rank != self.head_rank:
@@ -859,8 +860,8 @@ class LogManager(object):
                     if self.is_parallel:
                         raise ValueError(
                                 "must specify explicit aggregator for '%s'" % name)
-                    else:
-                        agg_func = lambda lst: lst[0]
+
+                    agg_func = lambda lst: lst[0]
             elif isinstance(dep, Lookup):
                 assert isinstance(dep.aggregate, Variable)
                 name = dep.aggregate.name

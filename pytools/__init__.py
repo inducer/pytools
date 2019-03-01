@@ -315,11 +315,17 @@ class Record(RecordWithoutPickling):
 
 class ImmutableRecordWithoutPickling(RecordWithoutPickling):
     "Hashable record. Does not explicitly enforce immutability."
+    def __init__(self, *args, **kwargs):
+        RecordWithoutPickling.__init__(self, *args, **kwargs)
+        self._cached_hash = None
 
     def __hash__(self):
-        return hash(
+        if self._cached_hash is None:
+            self._cached_hash = hash(
                 (type(self),) + tuple(getattr(self, field)
                     for field in self.__class__.fields))
+
+        return self._cached_hash
 
 
 class ImmutableRecord(ImmutableRecordWithoutPickling, Record):
