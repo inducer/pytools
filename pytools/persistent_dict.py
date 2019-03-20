@@ -642,8 +642,9 @@ class WriteOncePersistentDict(_PersistentDictBase):
             self._warn("pytools.persistent_dict.WriteOncePersistentDict(%s) "
                     "encountered an invalid "
                     "key file for key %s. Remove the directory "
-                    "'%s' if necessary. (caught: %s)"
-                    % (self.identifier, hexdigest_key, item_dir, str(e)),
+                    "'%s' if necessary. (caught: %s: %s)"
+                    % (self.identifier, hexdigest_key, item_dir,
+                        type(e).__name__, str(e)),
                     stacklevel=1 + _stacklevel)
             raise NoSuchEntryError(key)
 
