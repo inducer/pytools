@@ -136,6 +136,11 @@ Helpers for :mod:`numpy`
 Timing data
 -----------
 
+.. data:: SUPPORTS_PROCESS_TIME
+
+   A :class:`bool` indicating whether :class:`ProcessTimer` measures elapsed
+   process time (available on Python 3.3+).
+
 .. autoclass:: ProcessTimer
 
 Log utilities
@@ -315,11 +320,17 @@ class Record(RecordWithoutPickling):
 
 class ImmutableRecordWithoutPickling(RecordWithoutPickling):
     "Hashable record. Does not explicitly enforce immutability."
+    def __init__(self, *args, **kwargs):
+        RecordWithoutPickling.__init__(self, *args, **kwargs)
+        self._cached_hash = None
 
     def __hash__(self):
-        return hash(
+        if self._cached_hash is None:
+            self._cached_hash = hash(
                 (type(self),) + tuple(getattr(self, field)
                     for field in self.__class__.fields))
+
+        return self._cached_hash
 
 
 class ImmutableRecord(ImmutableRecordWithoutPickling, Record):
@@ -2077,6 +2088,9 @@ def reshaped_view(a, newshape):
 
 # {{{ process timer
 
+SUPPORTS_PROCESS_TIME = (sys.version_info >= (3, 3))
+
+
 class ProcessTimer(object):
     """Measures elapsed wall time and process time.
 
@@ -2096,7 +2110,7 @@ class ProcessTimer(object):
 
     def __init__(self):
         import time
-        if sys.version_info >= (3, 3):
+        if SUPPORTS_PROCESS_TIME:
             self.perf_counter_start = time.perf_counter()
             self.process_time_start = time.process_time()
 
@@ -2114,7 +2128,7 @@ class ProcessTimer(object):
         # pylint: disable=attribute-defined-outside-init
 
         import time
-        if sys.version_info >= (3, 3):
+        if SUPPORTS_PROCESS_TIME:
             self.wall_elapsed = time.perf_counter() - self.perf_counter_start
             self.process_elapsed = time.process_time() - self.process_time_start
 
