@@ -1,8 +1,10 @@
 from __future__ import absolute_import, division, with_statement
 
 import sys
-
 import pytest
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 @pytest.mark.skipif("sys.version_info < (2, 5)")
@@ -183,6 +185,18 @@ def test_reshaped_view():
     assert c.shape == (20,)
     with pytest.raises(AttributeError):
         pytools.reshaped_view(b, -1)
+
+
+def test_processlogger():
+    logging.basicConfig(level=logging.INFO)
+
+    from pytools import ProcessLogger
+    plog = ProcessLogger(logger, "testing the process logger",
+            long_threshold_seconds=0.01)
+
+    from time import sleep
+    with plog:
+        sleep(0.3)
 
 
 if __name__ == "__main__":
