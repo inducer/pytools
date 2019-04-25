@@ -2189,14 +2189,6 @@ class ProcessLogger(object):  # pylint: disable=too-many-instance-attributes
             use_late_start_logging = False
 
         if use_late_start_logging:
-            # https://github.com/firedrakeproject/firedrake/issues/1422
-            # Starting a thread may irrecoverably break various environments,
-            # e.g. MPI.
-            #
-            # Since the late-start logging is an optional 'quality-of-life'
-            # feature for interactive use, do not do it unless there is (weak)
-            # evidence of interactive use.
-
             try:
                 self.late_start_log_thread.start()
             except RuntimeError:
