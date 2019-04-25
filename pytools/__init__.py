@@ -2170,9 +2170,35 @@ class ProcessLogger(object):  # pylint: disable=too-many-instance-attributes
 
         import threading
         self.late_start_log_thread = threading.Thread(target=self._log_start_if_long)
+
         # Do not delay interpreter exit if thread not finished.
         self.late_start_log_thread.daemon = True
-        self.late_start_log_thread.start()
+
+        # https://github.com/firedrakeproject/firedrake/issues/1422
+        # Starting a thread may irrecoverably break various environments,
+        # e.g. MPI.
+        #
+        # Since the late-start logging is an optional 'quality-of-life'
+        # feature for interactive use, do not do it unless there is (weak)
+        # evidence of interactive use.
+        import sys
+        use_late_start_logging = sys.stdin.isatty()
+
+        import os
+        if os.environ.get("PYTOOLS_LOG_NO_THREADS", ""):
+            use_late_start_logging = False
+
+        if use_late_start_logging:
+            try:
+                self.late_start_log_thread.start()
+            except RuntimeError:
+                # https://github.com/firedrakeproject/firedrake/issues/1422
+                #
+                # Starting a thread may fail in various environments, e.g. MPI.
+                # Since the late-start logging is an optional 'quality-of-life'
+                # feature for interactive use, tolerate failures of it without
+                # warning.
+                pass
 
         self.timer = ProcessTimer()
 
