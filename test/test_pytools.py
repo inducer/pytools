@@ -226,9 +226,9 @@ def test_eoc():
     print()
 
     p = eoc.pretty_print(
-            abscissa_format="{:.5e}",
-            error_format="{:.5e}",
-            eoc_format="{:>5.2f}")
+            abscissa_format="%.5e",
+            error_format="%.5e",
+            eoc_format="%5.2f")
     print(p)
 
 

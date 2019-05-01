@@ -54,9 +54,9 @@ class EOCRecorder(object):
             abscissa_label="h",
             error_label="Error",
             gliding_mean=2,
-            abscissa_format="{}",
-            error_format="{}",
-            eoc_format="{}"):
+            abscissa_format="%s",
+            error_format="%s",
+            eoc_format="%s"):
         from pytools import Table
 
         tbl = Table()
@@ -64,17 +64,17 @@ class EOCRecorder(object):
 
         gm_eoc = self.estimate_order_of_convergence(gliding_mean)
         for i, (absc, err) in enumerate(self.history):
-            absc_str = abscissa_format.format(absc)
-            err_str = error_format.format(err)
+            absc_str = abscissa_format % absc
+            err_str = error_format % err
             if i < gliding_mean-1:
                 eoc_str = ""
             else:
-                eoc_str = eoc_format.format(gm_eoc[i - gliding_mean + 1, 1])
+                eoc_str = eoc_format % (gm_eoc[i - gliding_mean + 1, 1])
 
             tbl.add_row((absc_str, err_str, eoc_str))
 
         if len(self.history) > 1:
-            return "{}\n\nOverall EOC: {}".format(tbl,
+            return "%s\n\nOverall EOC: %s" % (str(tbl),
                     self.estimate_order_of_convergence()[0, 1])
         else:
             return str(tbl)
