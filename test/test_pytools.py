@@ -199,6 +199,39 @@ def test_processlogger():
         sleep(0.3)
 
 
+def test_table():
+    import math
+    from pytools import Table
+
+    tbl = Table()
+    tbl.add_row(("i", "i^2", "i^3", "sqrt(i)"))
+
+    for i in range(8):
+        tbl.add_row((i, i ** 2, i ** 3, math.sqrt(i)))
+
+    print(tbl)
+    print()
+    print(tbl.latex())
+
+
+def test_eoc():
+    from pytools.convergence import EOCRecorder
+    eoc = EOCRecorder()
+
+    for i in range(1, 8):
+        eoc.add_data_point(1.0 / i, 10 ** (-i))
+
+    p = eoc.pretty_print()
+    print(p)
+    print()
+
+    p = eoc.pretty_print(
+            abscissa_format="{:.5e}",
+            error_format="{:.5e}",
+            eoc_format="{:>5.2f}")
+    print(p)
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
