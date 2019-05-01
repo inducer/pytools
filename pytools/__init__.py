@@ -1447,12 +1447,12 @@ class Table:
         col_widths = [max(len(row[i]) for row in self.rows)
                       for i in range(columns)]
 
-        lines = [
-            "|".join([cell.ljust(col_width)
-                      for cell, col_width in zip(row, col_widths)])
+        lines = [" | ".join([cell.ljust(col_width)
+            for cell, col_width in zip(row, col_widths)])
             for row in self.rows]
-        lines[1:1] = ["+".join("-"*col_width
-                              for col_width in col_widths)]
+        lines[1:1] = ["+".join("-" * (col_width + 1 + (i > 0))
+            for i, col_width in enumerate(col_widths))]
+
         return "\n".join(lines)
 
     def latex(self, skip_lines=0, hline_after=None):
