@@ -1,7 +1,9 @@
 from __future__ import absolute_import, print_function
+import sys
 
 import six
 from six.moves import input
+
 from pytools import memoize
 
 
@@ -213,6 +215,29 @@ def shell(locals_=None, globals_=None):
     cons.interact("")
 
     readline.write_history_file(get_shell_hist_filename())
+
+# }}}
+
+
+# {{{ estimate memory usage
+
+def estimate_memory_usage(root, seen_ids=None):
+    if seen_ids is None:
+        seen_ids = set()
+
+    id_root = id(root)
+    if id_root in seen_ids:
+        return 0
+
+    seen_ids.add(id_root)
+
+    result = sys.getsizeof(root)
+
+    from gc import get_referents
+    for ref in get_referents(root):
+        result += estimate_memory_usage(ref, seen_ids=seen_ids)
+
+    return result
 
 # }}}
 
