@@ -23,10 +23,17 @@ THE SOFTWARE.
 """
 
 import marshal
-import imp
 from types import FunctionType, ModuleType
 
 import six
+
+
+try:
+    from importlib.util import MAGIC_NUMBER as BYTECODE_VERSION
+except ImportError:
+    # Pre-3.4
+    import imp
+    BYTECODE_VERSION = imp.get_magic()
 
 
 # loosely based on
@@ -140,7 +147,7 @@ class PicklableModule(object):
             elif k not in _empty_module_dict:
                 nondefault_globals[k] = v
 
-        return (1, imp.get_magic(), functions, modules, nondefault_globals)
+        return (1, BYTECODE_VERSION, functions, modules, nondefault_globals)
 
     def __setstate__(self, obj):
         if obj[0] == 0:
@@ -151,10 +158,10 @@ class PicklableModule(object):
         else:
             raise ValueError("unknown version of PicklableModule")
 
-        if magic != imp.get_magic():
+        if magic != BYTECODE_VERSION:
             raise ValueError("cannot unpickle function binary: "
-                    "incorrect magic value (got: %s, expected: %s)"
-                    % (magic, imp.get_magic()))
+                    "incorrect magic value (got: %r, expected: %r)"
+                    % (magic, BYTECODE_VERSION))
 
         mod_globals = _empty_module_dict.copy()
         mod_globals.update(nondefault_globals)
