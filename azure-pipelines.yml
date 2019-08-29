@@ -66,9 +66,9 @@ jobs:
     -
         script: |
             set -e
-            EXTRA_INSTALL="pymbolic matplotlib mpi4py"
+            EXTRA_INSTALL="pymbolic matplotlib"
             py_version=3
             curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/prepare-and-run-pylint.sh
             . ./prepare-and-run-pylint.sh pytools test/test_*.py
 
-        displayName: 'Flake8'
+        displayName: 'Pylint'
