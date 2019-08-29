@@ -6,7 +6,7 @@ Pytools: Lots of Little Utilities
     :target: https://gitlab.tiker.net/inducer/pytools/commits/master
 .. image:: https://dev.azure.com/ak-spam/inducer/_apis/build/status/inducer.pytools?branchName=master
     :alt: Azure Build Status
-    :target: https://dev.azure.com/ak-spam/inducer/_build/latest?definitionId=1&branchName=master
+    :target: https://dev.azure.com/ak-spam/inducer/_build/latest?definitionId=2&branchName=master
 .. image:: https://badge.fury.io/py/pytools.png
     :alt: Python Package Index Release Page
     :target: https://pypi.org/project/pytools/
