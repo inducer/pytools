@@ -39,7 +39,7 @@ jobs:
         vmImage: 'ubuntu-latest'
     strategy:
         matrix:
-            Python36:
+            Python37:
                 python.version: '3.7'
 
     steps:
@@ -62,7 +62,7 @@ jobs:
         vmImage: 'ubuntu-latest'
     strategy:
         matrix:
-            Python36:
+            Python37:
                 python.version: '3.7'
 
     steps:
@@ -76,6 +76,6 @@ jobs:
             set -e
             EXTRA_INSTALL="pymbolic matplotlib"
             curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/prepare-and-run-pylint.sh
-            . ./prepare-and-run-pylint.sh pytools test/test_*.py
+            . ./prepare-and-run-pylint.sh islpy test/test_*.py
 
         displayName: 'Pylint'
