@@ -53,7 +53,7 @@ class DirectForker(object):
             if error_on_nonzero and popen.returncode:
                 raise ExecError("status %d invoking '%s': %s"
                                 % (popen.returncode, " ".join(cmdline),
-                                   stderr_data))
+                                   stderr_data.decode("utf-8", errors="replace")))
 
             return popen.returncode, stdout_data, stderr_data
         except OSError as e:
