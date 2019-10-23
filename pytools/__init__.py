@@ -2182,7 +2182,7 @@ class ProcessLogger(object):  # pylint: disable=too-many-instance-attributes
         # feature for interactive use, do not do it unless there is (weak)
         # evidence of interactive use.
         import sys
-        use_late_start_logging = sys.stdin.isatty()
+        use_late_start_logging = bool(sys.stdin and sys.stdin.isatty())
 
         import os
         if os.environ.get("PYTOOLS_LOG_NO_THREADS", ""):
