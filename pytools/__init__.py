@@ -1045,10 +1045,15 @@ def argmax(iterable):
 
 # {{{ cartesian products etc.
 
-def cartesian_product(list1, list2):
-    for i in list1:
-        for j in list2:
-            yield (i, j)
+def cartesian_product(*args):
+    if len(args) == 1:
+        for arg in args[0]:
+            yield (arg,)
+        return
+    first = args[:-1]
+    for prod in cartesian_product(*first):
+        for i in args[-1]:
+            yield prod + (i,)
 
 
 def distinct_pairs(list1, list2):
