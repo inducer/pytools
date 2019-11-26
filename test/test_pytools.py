@@ -170,6 +170,24 @@ def test_generate_numbered_unique_names():
     assert next(gen) == (7, "b_6")
 
 
+def test_cartesian_product():
+    from pytools import cartesian_product
+
+    expected_outputs = [
+        (0, 2, 4),
+        (0, 2, 5),
+        (0, 3, 4),
+        (0, 3, 5),
+        (1, 2, 4),
+        (1, 2, 5),
+        (1, 3, 4),
+        (1, 3, 5),
+    ]
+
+    for i, output in enumerate(cartesian_product([0, 1], [2, 3], [4, 5])):
+        assert output == expected_outputs[i]
+
+
 def test_find_module_git_revision():
     import pytools
     print(pytools.find_module_git_revision(pytools.__file__, n_levels_up=1))

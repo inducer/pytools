@@ -1045,10 +1045,15 @@ def argmax(iterable):
 
 # {{{ cartesian products etc.
 
-def cartesian_product(list1, list2):
-    for i in list1:
-        for j in list2:
-            yield (i, j)
+def cartesian_product(*args):
+    if len(args) == 1:
+        for arg in args[0]:
+            yield (arg,)
+        return
+    first = args[:-1]
+    for prod in cartesian_product(*first):
+        for i in args[-1]:
+            yield prod + (i,)
 
 
 def distinct_pairs(list1, list2):
@@ -2182,7 +2187,11 @@ class ProcessLogger(object):  # pylint: disable=too-many-instance-attributes
         # feature for interactive use, do not do it unless there is (weak)
         # evidence of interactive use.
         import sys
-        use_late_start_logging = sys.stdin.isatty()
+        if sys.stdin is None:
+            # Can happen, e.g., if pudb is controlling the console.
+            use_late_start_logging = False
+        else:
+            use_late_start_logging = sys.stdin.isatty()
 
         import os
         if os.environ.get("PYTOOLS_LOG_NO_THREADS", ""):
