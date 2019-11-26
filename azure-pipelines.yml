@@ -79,3 +79,11 @@ jobs:
             . ./prepare-and-run-pylint.sh islpy test/test_*.py
 
         displayName: 'Pylint'
+
+schedules:
+-
+    cron: "0 0 * * 0"
+    displayName: Weekly build
+    branches:
+        include:
+        - master
