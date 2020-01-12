@@ -250,6 +250,17 @@ def test_eoc():
     print(p)
 
 
+def test_natsorted():
+    from pytools import natsorted, natorder
+
+    assert natorder("1.001") < natorder("1.01")
+
+    assert natsorted(["x10", "x1", "x9"]) == ["x1", "x9", "x10"]
+    assert natsorted(map(str, range(100))) == list(map(str, range(100)))
+    assert natsorted(["x10", "x1", "x9"], reverse=True) == ["x10", "x9", "x1"]
+    assert natsorted([10, 1, 9], key=lambda d: "x%d" % d) == [1, 9, 10]
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
