@@ -2317,6 +2317,13 @@ def natorder(item):
 def natsorted(iterable, key=None, reverse=False):
     """Sort using natural order [1]_, as opposed to lexicographic order.
 
+    Example::
+
+        >>> sorted(["_10", "_1", "_9"]) == ["_1", "_10", "_9"]
+        True
+        >>> natsorted(["_10", "_1", "_9"]) == ["_1", "_9", "_10"]
+        True
+
     :arg iterable: an iterable to be sorted. It must only have strings, unless
         *key* is specified.
     :arg key: if provided, a key function that returns strings for ordering
@@ -2324,13 +2331,6 @@ def natsorted(iterable, key=None, reverse=False):
     :arg reverse: if *True*, sorts in descending order.
 
     :returns: a sorted list
-
-    Example::
-
-        >>> sorted(["x10", "x1", "x9"]) == ["x1", "x10", "x9"]
-        True
-        >>> natsorted(["x10", "x1", "x9"]) == ["x1", "x9", "x10"]
-        True
 
     .. [1] https://en.wikipedia.org/wiki/Natural_sort_order
 
