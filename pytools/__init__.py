@@ -149,6 +149,12 @@ Log utilities
 .. autoclass:: ProcessLogger
 .. autoclass:: DebugProcessLogger
 .. autoclass:: log_process
+
+Sorting in natural order
+------------------------
+
+.. autofunction:: natorder
+.. autofunction:: natsorted
 """
 
 
@@ -2280,6 +2286,59 @@ class log_process(object):  # noqa: N801
         new_wrapper = update_wrapper(wrapper, wrapped)
 
         return new_wrapper
+
+# }}}
+
+
+# {{{ sorting in natural order
+
+def natorder(item):
+    """Return a key for natural order string comparison.
+
+    See :func:`natsorted`.
+
+    .. versionadded:: 2020.1
+    """
+    import re
+    result = []
+    for (int_val, string_val) in re.findall(r"(\d+)|(\D+)", item):
+        if int_val:
+            result.append(int(int_val))
+            # Tie-breaker in case of leading zeros in *int_val*.  Longer values
+            # compare smaller to preserve order of numbers in decimal notation,
+            # e.g., "1.001" < "1.01"
+            # (cf. https://github.com/sourcefrog/natsort)
+            result.append(-len(int_val))
+        else:
+            result.append(string_val)
+    return result
+
+
+def natsorted(iterable, key=None, reverse=False):
+    """Sort using natural order [1]_, as opposed to lexicographic order.
+
+    :arg iterable: an iterable to be sorted. It must only have strings, unless
+        *key* is specified.
+    :arg key: if provided, a key function that returns strings for ordering
+        using natural order.
+    :arg reverse: if *True*, sorts in descending order.
+
+    :returns: a sorted list
+
+    Example::
+
+        >>> sorted(["x10", "x1", "x9"]) == ["x1", "x10", "x9"]
+        True
+        >>> natsorted(["x10", "x1", "x9"]) == ["x1", "x9", "x10"]
+        True
+
+    .. [1] https://en.wikipedia.org/wiki/Natural_sort_order
+
+    .. versionadded:: 2020.1
+    """
+    if key is None:
+        key = lambda x: x
+    return sorted(iterable, key=lambda y: natorder(key(y)), reverse=reverse)
 
 # }}}
 
