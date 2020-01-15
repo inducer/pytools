@@ -54,7 +54,7 @@ jobs:
         script: |
             set -e
             curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/prepare-and-run-flake8.sh
-            . ./prepare-and-run-flake8.sh pytools test
+            . ./prepare-and-run-flake8.sh ./pytools ./test
 
         displayName: 'Flake8'
 
@@ -64,8 +64,8 @@ jobs:
         vmImage: 'ubuntu-latest'
     strategy:
         matrix:
-            Python38:
-                python.version: '3.8'
+            Python37:
+                python.version: '3.7'
 
     steps:
     -
