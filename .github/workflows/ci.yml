@@ -1,6 +1,5 @@
 name: Continuous Integration
 on: [push]
-
     push:
         paths-ignore:
         - 'doc/*.rst'
