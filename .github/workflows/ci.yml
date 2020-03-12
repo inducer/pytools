@@ -1,0 +1,27 @@
+name: Continuous Integration
+on: [push]
+
+    push:
+        paths-ignore:
+        - 'doc/*.rst'
+    pull_request:
+        paths-ignore:
+        - 'doc/*.rst'
+    schedule:
+        - cron:  '17 3 * * 0'
+
+jobs:
+    build:
+        name: Flake8
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v2
+        - uses: actions/setup-python@v1
+            with:
+                python-version: '3.x' 
+        - run:
+            set -e
+            curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/prepare-and-run-flake8.sh
+            . ./prepare-and-run-flake8.sh ./pytools ./test
+
+# vim: sw=4
