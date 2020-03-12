@@ -20,7 +20,6 @@ jobs:
             with:
                 python-version: '3.x' 
         -   run: |
-                set -e
                 curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/prepare-and-run-flake8.sh
                 . ./prepare-and-run-flake8.sh ./pytools ./test
 
@@ -34,7 +33,6 @@ jobs:
             with:
                 python-version: '3.x' 
         -   run: |
-                set -e
                 EXTRA_INSTALL="pymbolic matplotlib"
                 curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/prepare-and-run-pylint.sh
                 . ./prepare-and-run-pylint.sh pytools test/test_*.py
@@ -52,9 +50,7 @@ jobs:
             with:
                 python-version: ${{ matrix.python-version }}
         -   run: |
-                #set -e
                 EXTRA_INSTALL="numpy"
-                false
                 curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/build-and-test-py-project.sh
                 . ./build-and-test-py-project.sh
 
