@@ -1,8 +1,8 @@
 name: Continuous Integration
 on:
     push:
-        paths-ignore:
-        - 'doc/*.rst'
+        branches:
+        - master
     pull_request:
         paths-ignore:
         - 'doc/*.rst'
@@ -52,8 +52,9 @@ jobs:
             with:
                 python-version: ${{ matrix.python-version }}
         -   run: |
-                set -e
+                #set -e
                 EXTRA_INSTALL="numpy"
+                false
                 curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/build-and-test-py-project.sh
                 . ./build-and-test-py-project.sh
 
