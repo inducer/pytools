@@ -10,7 +10,7 @@ on:
         - cron:  '17 3 * * 0'
 
 jobs:
-    build:
+    flake8:
         name: Flake8
         runs-on: ubuntu-latest
         steps:
@@ -23,5 +23,38 @@ jobs:
                 set -e
                 curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/prepare-and-run-flake8.sh
                 . ./prepare-and-run-flake8.sh ./pytools ./test
+
+    pylint:
+        name: Pylint
+        runs-on: ubuntu-latest
+        steps:
+        -   uses: actions/checkout@v2
+        -
+            uses: actions/setup-python@v1
+            with:
+                python-version: '3.x' 
+        -   run: |
+                set -e
+                EXTRA_INSTALL="pymbolic matplotlib"
+                curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/prepare-and-run-pylint.sh
+                . ./prepare-and-run-pylint.sh pytools test/test_*.py
+
+    pytest:
+        name: Pytest on Py${{ matrix.python-version }}
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                python-version: [2.7, 3.6, 3.7, 3.8, pypy2, pypy3]
+        steps:
+        -   uses: actions/checkout@v2
+        -
+            uses: actions/setup-python@v1
+            with:
+                python-version: ${{ matrix.python-version }}
+        -   run: |
+                set -e
+                EXTRA_INSTALL="numpy"
+                curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/build-and-test-py-project.sh
+                . ./build-and-test-py-project.sh
 
 # vim: sw=4
