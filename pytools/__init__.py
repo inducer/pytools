@@ -1497,6 +1497,36 @@ def compute_topological_order(graph):
 
 # }}}
 
+
+# {{{ compute transitive closure
+
+def compute_transitive_closure(graph):
+    """Compute the transitive closure of a directed graph using Warshall's
+        algorithm.
+
+    :arg graph: A :class:`dict` representing a directed graph. The dictionary
+        contains one key representing each node in the graph, and this key maps
+        to a :class:`set` of nodes that are connected to the node by outgoing
+        edges. This graph may contain cycles.
+
+    :returns: A :class:`dict` representing the transitive closure of the graph.
+    """
+    # Warshall's algorithm
+
+    from copy import deepcopy
+    closure = deepcopy(graph)
+
+    # (assumes all graph nodes are included in keys)
+    for k in graph.keys():
+        for n1 in graph.keys():
+            for n2 in graph.keys():
+                if k in closure[n1] and n2 in closure[k]:
+                    closure[n1].add(n2)
+
+    return closure
+
+# }}}
+
 # }}}
 
 
