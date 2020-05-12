@@ -1456,6 +1456,7 @@ def compute_topological_order(graph):
     reverse_order = []
     visited = set()
     visiting = set()
+
     # go through each node
     for root in graph:
 
