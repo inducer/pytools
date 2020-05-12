@@ -1433,9 +1433,69 @@ def a_star(  # pylint: disable=too-many-locals
     raise RuntimeError("no solution")
 
 
+# {{{ compute topological order
+
 class CycleError(Exception):
     """Raised when a topological ordering cannot be computed due to a cycle."""
     pass
+
+
+def compute_topological_order(graph):
+    """Compute a toplogical order of nodes in a directed graph.
+
+    :arg graph: A :class:`dict` representing a directed graph. The dictionary
+        contains one key representing each node in the graph, and this key maps
+        to a :class:`set` of nodes that are connected to the node by outgoing
+        edges.
+
+    :returns: A :class:`list` representing a valid topological ordering of the
+        nodes in the directed graph.
+    """
+
+    # find a valid ordering of graph nodes
+    reverse_order = []
+    visited = set()
+    visiting = set()
+    # go through each node
+    for root in graph:
+
+        if root in visited:
+            # already encountered root as someone else's child
+            # and processed it at that time
+            continue
+
+        stack = [(root, iter(graph[root]))]
+        visiting.add(root)
+
+        while stack:
+            node, children = stack.pop()
+
+            for child in children:
+                # note: each iteration removes child from children
+                if child in visiting:
+                    raise CycleError()
+
+                if child in visited:
+                    continue
+
+                visiting.add(child)
+
+                # put (node, remaining children) back on stack
+                stack.append((node, children))
+
+                # put (child, grandchildren) on stack
+                stack.append((child, iter(graph.get(child, ()))))
+                break
+            else:
+                # loop did not break,
+                # so either this is a leaf or all children have been visited
+                visiting.remove(node)
+                visited.add(node)
+                reverse_order.append(node)
+
+    return list(reversed(reverse_order))
+
+# }}}
 
 # }}}
 
