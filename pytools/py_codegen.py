@@ -76,8 +76,8 @@ class PythonCodeGenerator(object):
             if "\n" in s:
                 s = remove_common_indentation(s)
 
-            for l in s.split("\n"):
-                self.code.append(" "*(4*self.level) + l)
+            for line in s.split("\n"):
+                self.code.append(" "*(4*self.level) + line)
 
     def indent(self):
         self.level += 1
