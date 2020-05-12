@@ -149,6 +149,35 @@ def test_graph_cycle_finder():
     assert contains_cycle(graph)
 
 
+def test_induced_subgraph():
+
+    from loopy.tools import get_induced_subgraph
+
+    graph = {
+        "a": set(["b", "c"]),
+        "b": set(["d", "e"]),
+        "c": set(["d", "f"]),
+        "d": set(),
+        "e": set(),
+        "f": set(["g", ]),
+        "g": set(["h", "i", "j"]),
+        }
+
+    node_subset = set(["b", "c", "e", "f", "g"])
+
+    expected_subgraph = {
+        "b": set(["e", ]),
+        "c": set(["f", ]),
+        "e": set(),
+        "f": set(["g", ]),
+        "g": set(),
+        }
+
+    subgraph = get_induced_subgraph(graph, node_subset)
+
+    assert subgraph == expected_subgraph
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
