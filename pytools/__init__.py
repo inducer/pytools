@@ -1450,6 +1450,8 @@ def compute_topological_order(graph):
 
     :returns: A :class:`list` representing a valid topological ordering of the
         nodes in the directed graph.
+
+    .. versionadded:: 2020.2
     """
 
     # find a valid ordering of graph nodes
@@ -1511,6 +1513,8 @@ def compute_transitive_closure(graph):
         edges. This graph may contain cycles.
 
     :returns: A :class:`dict` representing the transitive closure of the graph.
+
+    .. versionadded:: 2020.2
     """
     # Warshall's algorithm
 
@@ -1540,6 +1544,8 @@ def contains_cycle(graph):
         edges.
 
     :returns: A :class:`bool` indicating whether the graph contains a cycle.
+
+    .. versionadded:: 2020.2
     """
 
     try:
@@ -1567,6 +1573,8 @@ def get_induced_subgraph(graph, subgraph_nodes):
 
     :returns: A :class:`dict` representing the induced subgraph formed by
         the subset of the vertices included in `subgraph_nodes`.
+
+    .. versionadded:: 2020.2
     """
 
     new_graph = {}
