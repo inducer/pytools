@@ -102,6 +102,53 @@ def test_transitive_closure():
     assert closure == expected_closure
 
 
+def test_graph_cycle_finder():
+
+    from loopy.tools import contains_cycle
+
+    graph = {
+        "a": set(["b", "c"]),
+        "b": set(["d", "e"]),
+        "c": set(["d", "f"]),
+        "d": set(),
+        "e": set(),
+        "f": set(["g", ]),
+        "g": set(),
+        }
+
+    assert not contains_cycle(graph)
+
+    graph = {
+        "a": set(["b", "c"]),
+        "b": set(["d", "e"]),
+        "c": set(["d", "f"]),
+        "d": set(),
+        "e": set(),
+        "f": set(["g", ]),
+        "g": set(["a", ]),
+        }
+
+    assert contains_cycle(graph)
+
+    graph = {
+        "a": set(["a", "c"]),
+        "b": set(["d", "e"]),
+        "c": set(["d", "f"]),
+        "d": set(),
+        "e": set(),
+        "f": set(["g", ]),
+        "g": set(),
+        }
+
+    assert contains_cycle(graph)
+
+    graph = {
+        "a": set(["a"]),
+        }
+
+    assert contains_cycle(graph)
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
