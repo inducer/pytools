@@ -33,6 +33,75 @@ def test_compute_topological_order():
         compute_topological_order(cycle)
 
 
+def test_transitive_closure():
+    from loopy.tools import compute_transitive_closure
+
+    # simple test
+    graph = {
+        1: set([2, ]),
+        2: set([3, ]),
+        3: set([4, ]),
+        4: set(),
+        }
+
+    expected_closure = {
+        1: set([2, 3, 4, ]),
+        2: set([3, 4, ]),
+        3: set([4, ]),
+        4: set(),
+        }
+
+    closure = compute_transitive_closure(graph)
+
+    assert closure == expected_closure
+
+    # test with branches that reconnect
+    graph = {
+        1: set([2, ]),
+        2: set(),
+        3: set([1, ]),
+        4: set([1, ]),
+        5: set([6, 7, ]),
+        6: set([7, ]),
+        7: set([1, ]),
+        8: set([3, 4, ]),
+        }
+
+    expected_closure = {
+        1: set([2, ]),
+        2: set(),
+        3: set([1, 2, ]),
+        4: set([1, 2, ]),
+        5: set([1, 2, 6, 7, ]),
+        6: set([1, 2, 7, ]),
+        7: set([1, 2, ]),
+        8: set([1, 2, 3, 4, ]),
+        }
+
+    closure = compute_transitive_closure(graph)
+
+    assert closure == expected_closure
+
+    # test with cycles
+    graph = {
+        1: set([2, ]),
+        2: set([3, ]),
+        3: set([4, ]),
+        4: set([1, ]),
+        }
+
+    expected_closure = {
+        1: set([1, 2, 3, 4, ]),
+        2: set([1, 2, 3, 4, ]),
+        3: set([1, 2, 3, 4, ]),
+        4: set([1, 2, 3, 4, ]),
+        }
+
+    closure = compute_transitive_closure(graph)
+
+    assert closure == expected_closure
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
