@@ -1432,6 +1432,11 @@ def a_star(  # pylint: disable=too-many-locals
 
     raise RuntimeError("no solution")
 
+
+class CycleError(Exception):
+    """Raised when a topological ordering cannot be computed due to a cycle."""
+    pass
+
 # }}}
 
 
