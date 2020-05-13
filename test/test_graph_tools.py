@@ -3,7 +3,7 @@ import pytest
 
 
 def test_compute_sccs():
-    from pytools import compute_sccs
+    from pytools.graph import compute_sccs
     import random
 
     rng = random.Random(0)
@@ -47,7 +47,7 @@ def test_compute_sccs():
 
 
 def test_compute_topological_order():
-    from pytools import compute_topological_order, CycleError
+    from pytools.graph import compute_topological_order, CycleError
 
     empty = {}
     assert compute_topological_order(empty) == []
@@ -78,7 +78,7 @@ def test_compute_topological_order():
 
 
 def test_transitive_closure():
-    from pytools import compute_transitive_closure
+    from pytools.graph import compute_transitive_closure
 
     # simple test
     graph = {
@@ -148,7 +148,7 @@ def test_transitive_closure():
 
 def test_graph_cycle_finder():
 
-    from pytools import contains_cycle
+    from pytools.graph import contains_cycle
 
     graph = {
         "a": set(["b", "c"]),
@@ -195,7 +195,7 @@ def test_graph_cycle_finder():
 
 def test_induced_subgraph():
 
-    from pytools import get_induced_subgraph
+    from pytools.graph import get_induced_subgraph
 
     graph = {
         "a": set(["b", "c"]),
