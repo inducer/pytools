@@ -1364,6 +1364,31 @@ def get_write_to_map_from_permutation(original, permuted):
 # }}}
 
 
+# {{{ code maintenance
+
+class MovedFunctionDeprecationWrapper:
+    def __init__(self, f):
+        self.f = f
+
+    def __call__(self, *args, **kwargs):
+        from warnings import warn
+        warn("This function is deprecated. Use %s.%s instead." % (
+            self.f.__module__, self.f.__name__),
+            DeprecationWarning, stacklevel=2)
+
+        return self.f(*args, **kwargs)
+
+# }}}
+
+
+# {{{ graph algorithms
+
+from pytools.graph import a_star as a_star_moved
+a_star = MovedFunctionDeprecationWrapper(a_star_moved)
+
+# }}}
+
+
 # {{{ formatting
 
 # {{{ table formatting
@@ -1564,23 +1589,6 @@ class CPyUserInterface(object):
 
     def validate(self, setup):
         pass
-
-# }}}
-
-
-# {{{ code maintenance
-
-class MovedFunctionDeprecationWrapper:
-    def __init__(self, f):
-        self.f = f
-
-    def __call__(self, *args, **kwargs):
-        from warnings import warn
-        warn("This function is deprecated. Use %s.%s instead." % (
-            self.f.__module__, self.f.__name__),
-            DeprecationWarning, stacklevel=2)
-
-        return self.f(*args, **kwargs)
 
 # }}}
 
