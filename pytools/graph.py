@@ -37,7 +37,7 @@ Graph Algorithms
 .. autofunction:: compute_topological_order
 .. autofunction:: compute_transitive_closure
 .. autofunction:: contains_cycle
-.. autofunction:: get_induced_subgraph
+.. autofunction:: compute_induced_subgraph
 """
 
 
@@ -290,9 +290,9 @@ def contains_cycle(graph):
 # }}}
 
 
-# {{{ get induced subgraph
+# {{{ compute induced subgraph
 
-def get_induced_subgraph(graph, subgraph_nodes):
+def compute_induced_subgraph(graph, subgraph_nodes):
     """Compute the induced subgraph formed by a subset of the vertices in a
         graph.
 

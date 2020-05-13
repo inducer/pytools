@@ -195,7 +195,7 @@ def test_graph_cycle_finder():
 
 def test_induced_subgraph():
 
-    from pytools.graph import get_induced_subgraph
+    from pytools.graph import compute_induced_subgraph
 
     graph = {
         "a": set(["b", "c"]),
@@ -217,7 +217,7 @@ def test_induced_subgraph():
         "g": set(),
         }
 
-    subgraph = get_induced_subgraph(graph, node_subset)
+    subgraph = compute_induced_subgraph(graph, node_subset)
 
     assert subgraph == expected_subgraph
 
