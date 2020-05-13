@@ -8,6 +8,7 @@ Welcome to pytools's documentation!
     reference
     obj_array
     persistent_dict
+    graph
     misc
 
 Indices and tables
