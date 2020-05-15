@@ -176,9 +176,9 @@ class CycleError(Exception):
 def compute_topological_order(graph):
     """Compute a toplogical order of nodes in a directed graph.
 
-    :arg graph: A :class:`dict` representing a directed graph. The dictionary
+    :arg graph: A :class:`Mapping` representing a directed graph. The dictionary
         contains one key representing each node in the graph, and this key maps
-        to a :class:`set` of nodes that are connected to the node by outgoing
+        to a :class:`Collection` of nodes that are connected to the node by outgoing
         edges.
 
     :returns: A :class:`list` representing a valid topological ordering of the
@@ -240,9 +240,9 @@ def compute_transitive_closure(graph):
     """Compute the transitive closure of a directed graph using Warshall's
         algorithm.
 
-    :arg graph: A :class:`dict` representing a directed graph. The dictionary
+    :arg graph: A :class:`Mapping` representing a directed graph. The dictionary
         contains one key representing each node in the graph, and this key maps
-        to a :class:`set` of nodes that are connected to the node by outgoing
+        to a :class:`MutableSet` of nodes that are connected to the node by outgoing
         edges. This graph may contain cycles.
 
     :returns: A :class:`dict` representing the transitive closure of the graph.
@@ -271,9 +271,9 @@ def compute_transitive_closure(graph):
 def contains_cycle(graph):
     """Determine whether a graph contains a cycle.
 
-    :arg graph: A :class:`dict` representing a directed graph. The dictionary
+    :arg graph: A :class:`Mapping` representing a directed graph. The dictionary
         contains one key representing each node in the graph, and this key maps
-        to a :class:`set` of nodes that are connected to the node by outgoing
+        to a :class:`Collection` of nodes that are connected to the node by outgoing
         edges.
 
     :returns: A :class:`bool` indicating whether the graph contains a cycle.
@@ -296,12 +296,12 @@ def compute_induced_subgraph(graph, subgraph_nodes):
     """Compute the induced subgraph formed by a subset of the vertices in a
         graph.
 
-    :arg graph: A :class:`dict` representing a directed graph. The dictionary
+    :arg graph: A :class:`Mapping` representing a directed graph. The dictionary
         contains one key representing each node in the graph, and this key maps
-        to a :class:`set` of nodes that are connected to the node by outgoing
+        to a :class:`Set` of nodes that are connected to the node by outgoing
         edges.
 
-    :arg subgraph_nodes: A :class:`set` containing a subset of the graph nodes
+    :arg subgraph_nodes: A :class:`Set` containing a subset of the graph nodes
         graph.
 
     :returns: A :class:`dict` representing the induced subgraph formed by
