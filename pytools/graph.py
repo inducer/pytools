@@ -274,7 +274,7 @@ def contains_cycle(graph):
 
     :arg graph: A :class:`collections.abc.Mapping` representing a directed
         graph. The dictionary contains one key representing each node in the
-        graph, and this key maps to a :class:`collections.abc.Collection` of
+        graph, and this key maps to a :class:`collections.abc.Iterable` of
         nodes that are connected to the node by outgoing edges.
 
     :returns: A :class:`bool` indicating whether the graph contains a cycle.
