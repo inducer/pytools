@@ -305,7 +305,7 @@ def compute_induced_subgraph(graph, subgraph_nodes):
         that are connected to the node by outgoing edges.
 
     :arg subgraph_nodes: A :class:`collections.abc.Set` containing a subset of
-        the graph nodes graph.
+        the graph nodes in the graph.
 
     :returns: A :class:`dict` representing the induced subgraph formed by
         the subset of the vertices included in `subgraph_nodes`.
