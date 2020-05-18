@@ -242,9 +242,10 @@ def compute_transitive_closure(graph):
 
     :arg graph: A :class:`collections.abc.Mapping` representing a directed
         graph. The dictionary contains one key representing each node in the
-        graph, and this key maps to a :class:`collections.abc.MutableSet` of
+        graph, and this key maps to a :class:`collections.abc.Set` of
         nodes that are connected to the node by outgoing edges. This graph may
-        contain cycles. This object must be picklable.
+        contain cycles. This object must be picklable. Every graph node must
+        be included as a key in the graph.
 
     :returns: The transitive closure of the graph, represented using the same
         data type.
@@ -261,7 +262,7 @@ def compute_transitive_closure(graph):
         for n1 in graph.keys():
             for n2 in graph.keys():
                 if k in closure[n1] and n2 in closure[k]:
-                    closure[n1].add(n2)
+                    closure[n1] = closure[n1] | set([n2, ])
 
     return closure
 
