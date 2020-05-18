@@ -244,9 +244,10 @@ def compute_transitive_closure(graph):
         graph. The dictionary contains one key representing each node in the
         graph, and this key maps to a :class:`collections.abc.MutableSet` of
         nodes that are connected to the node by outgoing edges. This graph may
-        contain cycles.
+        contain cycles. This object must be picklable.
 
-    :returns: A :class:`dict` representing the transitive closure of the graph.
+    :returns: The transitive closure of the graph, represented using the same
+        data type.
 
     .. versionadded:: 2020.2
     """
