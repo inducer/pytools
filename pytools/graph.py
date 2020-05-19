@@ -321,13 +321,4 @@ def compute_induced_subgraph(graph, subgraph_nodes):
 
 # }}}
 
-
-def _test():
-    import doctest
-    doctest.testmod()
-
-
-if __name__ == "__main__":
-    _test()
-
 # vim: foldmethod=marker
