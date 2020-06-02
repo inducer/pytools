@@ -209,7 +209,7 @@ def compute_topological_order(graph):
             for child in children:
                 # note: each iteration removes child from children
                 if child in visiting:
-                    raise CycleError()
+                    raise CycleError("Cycle: {}".format(visiting))
 
                 if child in visited:
                     continue
