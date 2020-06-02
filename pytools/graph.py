@@ -169,8 +169,13 @@ def compute_sccs(graph):
 # {{{ compute topological order
 
 class CycleError(Exception):
-    """Raised when a topological ordering cannot be computed due to a cycle."""
-    pass
+    """
+    Raised when a topological ordering cannot be computed due to a cycle.
+
+    :attr node: Node in a directed graph that is part of a cycle.
+    """
+    def __init__(self, node):
+        self.node = node
 
 
 def compute_topological_order(graph):
@@ -209,7 +214,7 @@ def compute_topological_order(graph):
             for child in children:
                 # note: each iteration removes child from children
                 if child in visiting:
-                    raise CycleError()
+                    raise CycleError(child)
 
                 if child in visited:
                     continue
