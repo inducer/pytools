@@ -48,6 +48,8 @@ setup(name="pytools",
           "numpy>=1.6.0",
           ],
 
+      package_data={"pytools": ["py.typed", "__init__.pyi"]},
+
       author="Andreas Kloeckner",
       url="http://pypi.python.org/pypi/pytools",
       author_email="inform@tiker.net",
