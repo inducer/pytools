@@ -1,4 +1,4 @@
-from typing import Any, Iterable, Optional, Set, TypeVar
+from typing import Any, Callable, Iterable, Optional, Set, TypeVar
 from numbers import Number
 
 T = TypeVar("T")
