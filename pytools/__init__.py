@@ -517,7 +517,7 @@ def memoize(*args: F, **kwargs: Any) -> F:
     default_key_func: Optional[Callable[..., Any]]
 
     if use_kw:
-        def default_key_func(*inner_args, **inner_kwargs):
+        def default_key_func(*inner_args, **inner_kwargs):  # noqa pylint:disable=function-redefined
             return inner_args, frozenset(six.iteritems(inner_kwargs))
     else:
         default_key_func = None
