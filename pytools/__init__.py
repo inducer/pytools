@@ -26,10 +26,12 @@ THE SOFTWARE.
 """
 
 
+from functools import reduce
 import operator
 import sys
 import logging
-from functools import reduce
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, TypeVar, Union
+
 
 import six
 from six.moves import range, zip, intern, input
@@ -152,6 +154,13 @@ Sorting in natural order
 .. autofunction:: natsorted
 """
 
+# {{{ type variables
+
+T = TypeVar("T")
+F = TypeVar('F', bound=Callable[..., Any])
+
+# }}}
+
 
 # {{{ math --------------------------------------------------------------------
 
@@ -236,7 +245,7 @@ class RecordWithoutPickling(object):
     will be individually derived from this class.
     """
 
-    __slots__ = []
+    __slots__: List[str] = []
 
     def __init__(self, valuedict=None, exclude=None, **kwargs):
         assert self.__class__ is not Record
@@ -293,7 +302,7 @@ class RecordWithoutPickling(object):
 
 
 class Record(RecordWithoutPickling):
-    __slots__ = []
+    __slots__: List[str] = []
 
     def __getstate__(self):
         return dict(
@@ -417,7 +426,7 @@ class DependentDictionary(object):
 
 # {{{ assertive accessors
 
-def one(iterable):
+def one(iterable: Iterable[T]) -> T:
     """Return the first entry of *iterable*. Assert that *iterable* has only
     that one entry.
     """
@@ -439,7 +448,10 @@ def one(iterable):
     return v
 
 
-def is_single_valued(iterable, equality_pred=operator.eq):
+def is_single_valued(
+        iterable: Iterable[T],
+        equality_pred: Callable[[T, T], bool] = operator.eq
+        ) -> bool:
     it = iter(iterable)
     try:
         first_item = next(it)
@@ -460,7 +472,10 @@ def all_roughly_equal(iterable, threshold):
             equality_pred=lambda a, b: abs(a-b) < threshold)
 
 
-def single_valued(iterable, equality_pred=operator.eq):
+def single_valued(
+        iterable: Iterable[T],
+        equality_pred: Callable[[T, T], bool] = operator.eq
+        ) -> T:
     """Return the first entry of *iterable*; Assert that other entries
     are the same with the first entry of *iterable*.
     """
@@ -484,7 +499,7 @@ def single_valued(iterable, equality_pred=operator.eq):
 
 # {{{ memoization / attribute storage
 
-def memoize(*args, **kwargs):
+def memoize(*args: F, **kwargs: Any) -> F:
     """Stores previously computed function values in a cache.
 
     Two keyword-only arguments are supported:
@@ -497,6 +512,8 @@ def memoize(*args, **kwargs):
     """
 
     use_kw = bool(kwargs.pop('use_kwargs', False))
+
+    default_key_func: Optional[Callable[..., Any]]
 
     if use_kw:
         def default_key_func(*inner_args, **inner_kwargs):
@@ -600,7 +617,7 @@ def memoize_on_first_arg(function, cache_dict_name=None):
     return new_wrapper
 
 
-def memoize_method(method):
+def memoize_method(method: F) -> F:
     """Supports cache deletion via ``method_name.clear_cache(self)``.
 
     .. note::
@@ -1831,7 +1848,8 @@ def generate_unique_names(prefix):
         try_num += 1
 
 
-def generate_numbered_unique_names(prefix, num=None):
+def generate_numbered_unique_names(
+        prefix: str, num: Optional[int] = None) -> Iterable[Tuple[int, str]]:
     if num is None:
         yield (0, prefix)
         num = 0
@@ -1853,18 +1871,20 @@ class UniqueNameGenerator(object):
     .. automethod:: add_names
     .. automethod:: __call__
     """
-    def __init__(self, existing_names=None, forced_prefix=""):
+    def __init__(self,
+            existing_names: Optional[Set[str]] = None,
+            forced_prefix: str = ""):
         if existing_names is None:
             existing_names = set()
 
         self.existing_names = existing_names.copy()
         self.forced_prefix = forced_prefix
-        self.prefix_to_counter = {}
+        self.prefix_to_counter: Dict[str, int] = {}
 
-    def is_name_conflicting(self, name):
+    def is_name_conflicting(self, name: str) -> bool:
         return name in self.existing_names
 
-    def _name_added(self, name):
+    def _name_added(self, name: str) -> None:
         """Callback to alert subclasses when a name has been added.
 
         .. note::
@@ -1874,7 +1894,7 @@ class UniqueNameGenerator(object):
         """
         pass
 
-    def add_name(self, name):
+    def add_name(self, name: str) -> None:
         if self.is_name_conflicting(name):
             raise ValueError("name '%s' conflicts with existing names")
         if not name.startswith(self.forced_prefix):
@@ -1883,11 +1903,11 @@ class UniqueNameGenerator(object):
         self.existing_names.add(name)
         self._name_added(name)
 
-    def add_names(self, names):
+    def add_names(self, names: Iterable[str]) -> None:
         for name in names:
             self.add_name(name)
 
-    def __call__(self, based_on="id"):
+    def __call__(self, based_on: str = "id") -> str:
         based_on = self.forced_prefix + based_on
 
         counter = self.prefix_to_counter.get(based_on, None)
