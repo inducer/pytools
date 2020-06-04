@@ -51,7 +51,7 @@ jobs:
         -   name: "Main Script"
             run: |
                 curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/prepare-and-run-mypy.sh
-                . ./prepare-and-run-mypy.sh python3 mypy"
+                . ./prepare-and-run-mypy.sh python3 mypy
 
     pytest:
         name: Pytest on Py${{ matrix.python-version }}
