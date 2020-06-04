@@ -45,7 +45,7 @@ setup(name="pytools",
           "numpy>=1.6.0",
           ],
 
-      package_data={"pytools": ["py.typed"]}},
+      package_data={"pytools": ["py.typed"]},
 
       author="Andreas Kloeckner",
       url="http://pypi.python.org/pypi/pytools",
