@@ -20,13 +20,16 @@ and say::
 User-visible changes
 ====================
 
-Version 2017.4
---------------
-
 .. note::
 
     This version is currently under development. You can get snapshots from
     Pytools's `git repository <https://github.com/inducer/pytools>`_
+
+Version 2020.3
+--------------
+
+* Type annotations were added.
+* Python 2 support was dropped.
 
 .. _license:
 
