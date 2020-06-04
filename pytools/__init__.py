@@ -30,7 +30,8 @@ from functools import reduce
 import operator
 import sys
 import logging
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, TypeVar, Union
+from typing import (
+        Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, TypeVar)
 
 
 import six
