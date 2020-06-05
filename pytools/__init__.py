@@ -698,8 +698,9 @@ def memoize_method_nested(inner):
     """
 
     from warnings import warn
-    warn("memoize_method_nested is deprecated. Use @memoize_in(self, 'identifier') "
-            "instead", DeprecationWarning, stacklevel=2)
+    warn("memoize_method_nested is deprecated and will go away in 2021. "
+            "Use @memoize_in(self, 'identifier') instead", DeprecationWarning,
+            stacklevel=2)
 
     from functools import wraps
     cache_dict_name = intern("_memoize_inner_dic_%s_%s_%d"
