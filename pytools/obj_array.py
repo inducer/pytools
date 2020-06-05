@@ -37,120 +37,44 @@ Handling :mod:`numpy` Object Arrays
 Creation
 --------
 
-.. autofunction:: join_fields
 .. autofunction:: make_obj_array
 
 Mapping
 -------
 
-.. autofunction:: with_object_array_or_scalar
-.. autofunction:: with_object_array_or_scalar_n_args
 """
 
 
-def gen_len(expr):
-    if is_obj_array(expr):
-        return len(expr)
     else:
         return 1
 
 
-def gen_slice(expr, slice_):
-    result = expr[slice_]
-    if len(result) == 1:
-        return result[0]
     else:
         return result
 
 
+# {{{ deprecated junk
+
 def is_obj_array(val):
+    warn("is_obj_array is deprecated and will go away in 2021, "
+            "just inline the check.", DeprecationWarning, stacklevel=2)
+
     try:
-        return isinstance(val, np.ndarray) and val.dtype == object
+        return isinstance(val, np.ndarray) and val.dtype.char == "O"
     except AttributeError:
         return False
-
-
-def to_obj_array(ary):
-    ls = log_shape(ary)
-    result = np.empty(ls, dtype=object)
-
-    from pytools import indices_in_shape
-    for i in indices_in_shape(ls):
-        result[i] = ary[i]
-
-    return result
-
-
-def is_equal(a, b):
-    if is_obj_array(a):
-        return is_obj_array(b) and (a.shape == b.shape) and (a == b).all()
-    else:
-        return not is_obj_array(b) and a == b
-
-
-# moderately deprecated
-is_field_equal = is_equal
-
-
-def make_obj_array(res_list):
-    result = np.empty((len(res_list),), dtype=object)
-    for i, v in enumerate(res_list):
-        result[i] = v
-
-    return result
-
-
-def setify_field(f):
-    if is_obj_array(f):
-        return set(f)
-    else:
-        return set([f])
-
-
-def obj_array_to_hashable(f):
-    if is_obj_array(f):
-        return tuple(f)
-    else:
-        return f
-
-
-hashable_field = MovedFunctionDeprecationWrapper(obj_array_to_hashable)
-
-
-def obj_array_equal(a, b):
-    a_is_oa = is_obj_array(a)
-    assert a_is_oa == is_obj_array(b)
-
-    if a_is_oa:
-        return np.array_equal(a, b)
-    else:
-        return a == b
-
-
-field_equal = MovedFunctionDeprecationWrapper(obj_array_equal)
-
-
-def join_fields(*args):
-    res_list = []
-    for arg in args:
-        if isinstance(arg, list):
-            res_list.extend(arg)
-        elif isinstance(arg, np.ndarray):
-            if log_shape(arg) == ():
-                res_list.append(arg)
-            else:
-                res_list.extend(arg.flat)
-        else:
-            res_list.append(arg)
-
-    return make_obj_array(res_list)
 
 
 def log_shape(array):
     """Returns the "logical shape" of the array.
 
     The "logical shape" is the shape that's left when the node-depending
-    dimension has been eliminated."""
+    dimension has been eliminated.
+    """
+
+    warn("log_shape is deprecated and will go away in 2021, "
+            "use the actual object array shape.",
+            DeprecationWarning, stacklevel=2)
 
     try:
         if array.dtype.char == "O":
@@ -161,7 +85,93 @@ def log_shape(array):
         return ()
 
 
+def join_fields(*args):
+    warn("join_fields is deprecated and will go away in 2022, "
+            "use flat_obj_array", DeprecationWarning, stacklevel=2)
+
+    return flat_obj_array(*args)
+
+
+def is_equal(a, b):
+    warn("is_equal is deprecated and will go away in 2021, "
+            "use numpy.array_equal", DeprecationWarning, stacklevel=2)
+
+    if is_obj_array(a):
+        return is_obj_array(b) and (a.shape == b.shape) and (a == b).all()
+    else:
+        return not is_obj_array(b) and a == b
+
+
+is_field_equal = is_equal
+
+
+def gen_len(expr):
+    if is_obj_array(expr):
+        return len(expr)
+    else:
+        return 1
+
+
+def gen_slice(expr, slice_):
+    warn("gen_slice is deprecated and will go away in 2021",
+            DeprecationWarning, stacklevel=2)
+
+    result = expr[slice_]
+    if len(result) == 1:
+        return result[0]
+    else:
+        return result
+
+
+def obj_array_equal(a, b):
+    warn("obj_array_equal is deprecated and will go away in 2021, "
+            "use numpy.array_equal", DeprecationWarning, stacklevel=2)
+
+    a_is_oa = is_obj_array(a)
+    assert a_is_oa == is_obj_array(b)
+
+    if a_is_oa:
+        return np.array_equal(a, b)
+    else:
+        return a == b
+
+
+def to_obj_array(ary):
+    warn("to_obj_array is deprecated and will go away in 2021, "
+            "use make_obj_array", DeprecationWarning,
+            stacklevel=2)
+
+    ls = log_shape(ary)
+    result = np.empty(ls, dtype=object)
+
+    for i in np.ndindex(ls):
+        result[i] = ary[i]
+
+    return result
+
+
+def setify_field(f):
+    warn("setify_field is deprecated and will go away in 2021",
+            DeprecationWarning, stacklevel=2)
+
+    if is_obj_array(f):
+        return set(f)
+    else:
+        return set([f])
+
+
+def cast_field(field, dtype):
+    warn("cast_field is deprecated and will go away in 2021",
+            DeprecationWarning, stacklevel=2)
+
+    return with_object_array_or_scalar(
+            lambda f: f.astype(dtype), field)
+
+
 def with_object_array_or_scalar(f, field, obj_array_only=False):
+    warn("with_object_array_or_scalar is deprecated and will go away in 2022, "
+            "use oarray_vectorize", DeprecationWarning, stacklevel=2)
+
     if obj_array_only:
         if is_obj_array(field):
             ls = field.shape
@@ -170,9 +180,8 @@ def with_object_array_or_scalar(f, field, obj_array_only=False):
     else:
         ls = log_shape(field)
     if ls != ():
-        from pytools import indices_in_shape
         result = np.zeros(ls, dtype=object)
-        for i in indices_in_shape(ls):
+        for i in np.ndindex(ls):
             result[i] = f(field[i])
         return result
     else:
@@ -183,6 +192,9 @@ as_oarray_func = decorator(with_object_array_or_scalar)
 
 
 def with_object_array_or_scalar_n_args(f, *args):
+    warn("with_object_array_or_scalar is deprecated and will go away in 2022, "
+            "use oarray_vectorize_n_args", DeprecationWarning, stacklevel=2)
+
     oarray_arg_indices = []
     for i, arg in enumerate(args):
         if is_obj_array(arg):
@@ -195,11 +207,10 @@ def with_object_array_or_scalar_n_args(f, *args):
 
     ls = log_shape(args[leading_oa_index])
     if ls != ():
-        from pytools import indices_in_shape
         result = np.zeros(ls, dtype=object)
 
         new_args = list(args)
-        for i in indices_in_shape(ls):
+        for i in np.ndindex(ls):
             for arg_i in oarray_arg_indices:
                 new_args[arg_i] = args[arg_i][i]
 
@@ -211,11 +222,7 @@ def with_object_array_or_scalar_n_args(f, *args):
 
 as_oarray_func_n_args = decorator(with_object_array_or_scalar_n_args)
 
-
-def cast_field(field, dtype):
-    return with_object_array_or_scalar(
-            lambda f: f.astype(dtype), field)
-
+# }}}
 
 def oarray_real(ary):
     return with_object_array_or_scalar(lambda x: x.real, ary)
@@ -231,3 +238,4 @@ def oarray_real_copy(ary):
 
 def oarray_imag_copy(ary):
     return with_object_array_or_scalar(lambda x: x.imag.copy(), ary)
+# vim: foldmethod=marker
