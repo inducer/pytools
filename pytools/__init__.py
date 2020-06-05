@@ -86,7 +86,6 @@ Permutations, Tuples, Integer sequences
 ---------------------------------------
 
 .. autofunction:: wandering_element
-.. autofunction:: indices_in_shape
 .. autofunction:: generate_nonnegative_integer_tuples_below
 .. autofunction:: generate_nonnegative_integer_tuples_summing_to_at_most
 .. autofunction:: generate_all_nonnegative_integer_tuples
@@ -1170,6 +1169,10 @@ def wandering_element(length, wanderer=1, landscape=0):
 
 
 def indices_in_shape(shape):
+    from warnings import warn
+    warn("indices_in_shape is deprecated. You should prefer numpy.ndindex.",
+            DeprecationWarning, stacklevel=2)
+
     if isinstance(shape, int):
         shape = (shape,)
 
