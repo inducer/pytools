@@ -222,7 +222,7 @@ def obj_array_imag_copy(ary):
 # {{{ deprecated junk
 
 def is_obj_array(val):
-    warn("is_obj_array is deprecated and will go away in 2021, "
+    warn("is_obj_array is deprecated and will go away in 2022, "
             "just inline the check.", DeprecationWarning, stacklevel=2)
 
     try:
