@@ -66,8 +66,9 @@ Memoization
 .. autofunction:: memoize
 .. autofunction:: memoize_on_first_arg
 .. autofunction:: memoize_method
-.. autofunction:: memoize_method_with_uncached
 .. autofunction:: memoize_in
+.. autofunction:: keyed_memoize_on_first_arg
+.. autofunction:: keyed_memoize_method
 
 Argmin/max
 ----------
@@ -561,6 +562,7 @@ def memoize(*args: F, **kwargs: Any) -> F:
                 result = func(*args)
                 func._memoize_dic[args] = result  # pylint: disable=protected-access
                 return result
+
     if not args:
         return _deco
     if callable(args[0]) and len(args) == 1:
@@ -578,12 +580,9 @@ class _HasKwargs(object):
 
 def memoize_on_first_arg(function, cache_dict_name=None):
     """Like :func:`memoize_method`, but for functions that take the object
-    to do memoization as first argument.
+    in which do memoization information is stored as first argument.
 
     Supports cache deletion via ``function_name.clear_cache(self)``.
-
-    .. note::
-        *clear_cache* support requires Python 2.5 or newer.
     """
 
     if cache_dict_name is None:
@@ -619,12 +618,72 @@ def memoize_on_first_arg(function, cache_dict_name=None):
 
 def memoize_method(method: F) -> F:
     """Supports cache deletion via ``method_name.clear_cache(self)``.
-
-    .. note::
-        *clear_cache* support requires Python 2.5 or newer.
     """
 
     return memoize_on_first_arg(method, intern("_memoize_dic_"+method.__name__))
+
+
+class keyed_memoize_on_first_arg:  # noqa: N801
+    """Like :func:`memoize_method`, but for functions that take the object
+    in which memoization information is stored as first argument.
+
+    Supports cache deletion via ``function_name.clear_cache(self)``.
+
+    :arg key: A function receiving the same arguments as the decorated function
+        which computes and returns the cache key.
+
+    .. versionadded :: 2020.3
+    """
+
+    def __init__(self, key, cache_dict_name=None):
+        self.key = key
+        self.cache_dict_name = cache_dict_name
+
+    def _default_cache_dict_name(self, function):
+        return intern("_memoize_dic_"
+                + function.__module__ + function.__name__)
+
+    def __call__(self, function):
+        cache_dict_name = self.cache_dict_name
+        key = self.key
+
+        if cache_dict_name is None:
+            cache_dict_name = self._default_cache_dict_name(function)
+
+        def wrapper(obj, *args, **kwargs):
+            cache_key = key(*args, **kwargs)
+
+            try:
+                return getattr(obj, cache_dict_name)[cache_key]
+            except AttributeError:
+                result = function(obj, *args, **kwargs)
+                setattr(obj, cache_dict_name, {cache_key: result})
+                return result
+            except KeyError:
+                result = function(obj, *args, **kwargs)
+                getattr(obj, cache_dict_name)[cache_key] = result
+                return result
+
+        def clear_cache(obj):
+            delattr(obj, cache_dict_name)
+
+        from functools import update_wrapper
+        new_wrapper = update_wrapper(wrapper, function)
+        new_wrapper.clear_cache = clear_cache
+
+        return new_wrapper
+
+
+class keyed_memoize_method(keyed_memoize_on_first_arg):  # noqa: N801
+    """Supports cache deletion via ``method_name.clear_cache(self)``.
+
+    :arg key: A function receiving the same arguments as the decorated function
+        which computes and returns the cache key.
+
+    .. versionadded :: 2020.3
+    """
+    def _default_cache_dict_name(self, function):
+        return intern("_memoize_dic_" + function.__name__)
 
 
 def memoize_method_with_uncached(uncached_args=None, uncached_kwargs=None):
@@ -633,6 +692,11 @@ def memoize_method_with_uncached(uncached_args=None, uncached_kwargs=None):
     :arg uncached_args: a list of argument numbers
         (0-based, not counting 'self' argument)
     """
+    from warnings import warn
+    warn("memoize_method_with_uncached is deprecated and will go away in 2022. "
+            "Use memoize_method_with_key instead",
+            DeprecationWarning,
+            stacklevel=2)
 
     if uncached_args is None:
         uncached_args = []
@@ -699,8 +763,9 @@ def memoize_method_nested(inner):
     """
 
     from warnings import warn
-    warn("memoize_method_nested is deprecated. Use @memoize_in(self, 'identifier') "
-            "instead", DeprecationWarning, stacklevel=2)
+    warn("memoize_method_nested is deprecated and will go away in 2021. "
+            "Use @memoize_in(self, 'identifier') instead", DeprecationWarning,
+            stacklevel=2)
 
     from functools import wraps
     cache_dict_name = intern("_memoize_inner_dic_%s_%s_%d"
