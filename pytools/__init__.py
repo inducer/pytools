@@ -581,9 +581,6 @@ def memoize_on_first_arg(function, cache_dict_name=None):
     to do memoization as first argument.
 
     Supports cache deletion via ``function_name.clear_cache(self)``.
-
-    .. note::
-        *clear_cache* support requires Python 2.5 or newer.
     """
 
     if cache_dict_name is None:
@@ -619,9 +616,6 @@ def memoize_on_first_arg(function, cache_dict_name=None):
 
 def memoize_method(method: F) -> F:
     """Supports cache deletion via ``method_name.clear_cache(self)``.
-
-    .. note::
-        *clear_cache* support requires Python 2.5 or newer.
     """
 
     return memoize_on_first_arg(method, intern("_memoize_dic_"+method.__name__))
