@@ -52,6 +52,25 @@ Mapping
     else:
         return result
 
+# {{{ workarounds for https://github.com/numpy/numpy/issues/1740
+
+def oarray_real(ary):
+    return rec_oarray_vectorize(lambda x: x.real, ary)
+
+
+def oarray_imag(ary):
+    return rec_oarray_vectorize(lambda x: x.imag, ary)
+
+
+def oarray_real_copy(ary):
+    return rec_oarray_vectorize(lambda x: x.real.copy(), ary)
+
+
+def oarray_imag_copy(ary):
+    return rec_oarray_vectorize(lambda x: x.imag.copy(), ary)
+
+# }}}
+
 
 # {{{ deprecated junk
 
@@ -224,18 +243,4 @@ as_oarray_func_n_args = decorator(with_object_array_or_scalar_n_args)
 
 # }}}
 
-def oarray_real(ary):
-    return with_object_array_or_scalar(lambda x: x.real, ary)
-
-
-def oarray_imag(ary):
-    return with_object_array_or_scalar(lambda x: x.imag, ary)
-
-
-def oarray_real_copy(ary):
-    return with_object_array_or_scalar(lambda x: x.real.copy(), ary)
-
-
-def oarray_imag_copy(ary):
-    return with_object_array_or_scalar(lambda x: x.imag.copy(), ary)
 # vim: foldmethod=marker
