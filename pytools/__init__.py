@@ -1335,8 +1335,8 @@ def get_read_from_map_from_permutation(original, permuted):
 
     .. doctest ::
 
-        >>> for p1 in generate_permutations(range(5)):
-        ...     for p2 in generate_permutations(range(5)):
+        >>> for p1 in generate_permutations(list(range(5))):
+        ...     for p2 in generate_permutations(list(range(5))):
         ...         rfm = get_read_from_map_from_permutation(p1, p2)
         ...         p2a = [p1[rfm[i]] for i in range(len(p1))]
         ...         assert p2 == p2a
