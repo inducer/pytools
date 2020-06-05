@@ -115,6 +115,11 @@ def obj_array_vectorize(f, ary):
     Return an object array of the same shape consisting of the return
     values.
     If *ary* is not an object array, return ``f(ary)``.
+
+    .. note ::
+
+        This function exists because :func:`numpy.vectorize` suffers from the same
+        issue described under :func:`make_obj_array`.
     """
 
     if isinstance(ary, np.ndarray) and ary.dtype.char == "O":
@@ -137,6 +142,11 @@ def rec_obj_array_vectorize(f, ary):
     until non-object-arrays are found and then apply *f* to those
     entries.
     If *ary* is not an object array, return ``f(ary)``.
+
+    .. note ::
+
+        This function exists because :func:`numpy.vectorize` suffers from the same
+        issue described under :func:`make_obj_array`.
     """
     if isinstance(ary, np.ndarray) and ary.dtype.char == "O":
         result = np.empty_like(ary)
@@ -151,6 +161,21 @@ rec_obj_array_vectorized = decorator(rec_obj_array_vectorize)
 
 
 def obj_array_vectorize_n_args(f, *args):
+    """Apply the function *f* elementwise to all entries of any
+    object arrays in *args*. All such ojbect arrays are expected
+    to have the same shape (but this is not checked).
+    Equivalent to an appropriately-looped execution of::
+
+        result[idx] = f(obj_array_arg1[idx], arg2, obj_array_arg3[idx])
+
+    Return an object array of the same shape as the arguments consisting of the
+    return values of *f*.
+
+    .. note ::
+
+        This function exists because :func:`numpy.vectorize` suffers from the same
+        issue described under :func:`make_obj_array`.
+    """
     oarray_arg_indices = []
     for i, arg in enumerate(args):
         if isinstance(arg, np.ndarray) and arg.dtype.char == "O":
