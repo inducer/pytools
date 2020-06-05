@@ -561,6 +561,7 @@ def memoize(*args: F, **kwargs: Any) -> F:
                 result = func(*args)
                 func._memoize_dic[args] = result  # pylint: disable=protected-access
                 return result
+
     if not args:
         return _deco
     if callable(args[0]) and len(args) == 1:
@@ -578,7 +579,7 @@ class _HasKwargs(object):
 
 def memoize_on_first_arg(function, cache_dict_name=None):
     """Like :func:`memoize_method`, but for functions that take the object
-    to do memoization as first argument.
+    in which do memoization information is stored as first argument.
 
     Supports cache deletion via ``function_name.clear_cache(self)``.
     """
