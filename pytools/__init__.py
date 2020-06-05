@@ -66,7 +66,6 @@ Memoization
 .. autofunction:: memoize
 .. autofunction:: memoize_on_first_arg
 .. autofunction:: memoize_method
-.. autofunction:: memoize_method_with_uncached
 .. autofunction:: memoize_in
 
 Argmin/max
@@ -634,6 +633,11 @@ def memoize_method_with_uncached(uncached_args=None, uncached_kwargs=None):
     :arg uncached_args: a list of argument numbers
         (0-based, not counting 'self' argument)
     """
+    from warnings import warn
+    warn("memoize_method_with_uncached is deprecated and will go away in 2022. "
+            "Use memoize_method_with_key instead",
+            DeprecationWarning,
+            stacklevel=2)
 
     if uncached_args is None:
         uncached_args = []
