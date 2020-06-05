@@ -51,6 +51,32 @@ Mapping
 
 
 def make_obj_array(res_list):
+    """Create a one-dimensional object array from *res_list*.
+    This differs from ``numpy.array(res_list, dtype=object)``
+    by whether it tries to determine its shape by descending
+    into nested array-like objects. Consider the following example:
+
+    .. doctest::
+
+        >>> import numpy as np
+        >>> a = np.array([np.arange(5), np.arange(5)], dtype=object)
+        >>> a
+        array([[0, 1, 2, 3, 4],
+               [0, 1, 2, 3, 4]], dtype=object)
+        >>> a.shape
+        (2, 5)
+        >>> # meanwhile:
+        >>> from pytools.obj_array import make_obj_array
+        >>> b = make_obj_array([np.arange(5), np.arange(5)])
+        >>> b
+        array([array([0, 1, 2, 3, 4]), array([0, 1, 2, 3, 4])], dtype=object)
+        >>> b.shape
+        (2,)
+
+    In some settings (such as when the sub-arrays are large and/or
+    live on a GPU), the recursive behavior of :func:`numpy.array`
+    can be undesirable.
+    """
     result = np.empty((len(res_list),), dtype=object)
     result[:] = res_list
     return result
