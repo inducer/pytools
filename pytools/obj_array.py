@@ -31,11 +31,6 @@ __doc__ = """
 Handling :mod:`numpy` Object Arrays
 ===================================
 
-.. autofunction:: oarray_real
-.. autofunction:: oarray_imag
-.. autofunction:: oarray_real_copy
-.. autofunction:: oarray_imag_copy
-
 Creation
 --------
 
@@ -45,8 +40,18 @@ Creation
 Mapping
 -------
 
-.. autofunction:: oarray_vectorize
-.. autofunction:: oarray_vectorize_n_args
+.. autofunction:: obj_array_vectorize
+.. autofunction:: obj_array_vectorize_n_args
+
+Numpy workarounds
+-----------------
+These functions work around a `long-standing, annoying numpy issue
+<https://github.com/numpy/numpy/issues/1740>`__.
+
+.. autofunction:: obj_array_real
+.. autofunction:: obj_array_imag
+.. autofunction:: obj_array_real_copy
+.. autofunction:: obj_array_imag_copy
 """
 
 
@@ -105,7 +110,7 @@ def flat_obj_array(*args):
     return make_obj_array(res_list)
 
 
-def oarray_vectorize(f, ary):
+def obj_array_vectorize(f, ary):
     """Apply the function *f* to all entries of the object array *ary*.
     Return an object array of the same shape consisting of the return
     values.
@@ -121,10 +126,10 @@ def oarray_vectorize(f, ary):
         return f(ary)
 
 
-oarray_vectorized = decorator(oarray_vectorize)
+obj_array_vectorized = decorator(obj_array_vectorize)
 
 
-def rec_oarray_vectorize(f, ary):
+def rec_obj_array_vectorize(f, ary):
     """Apply the function *f* to all entries of the object array *ary*.
     Return an object array of the same shape consisting of the return
     values.
@@ -136,16 +141,16 @@ def rec_oarray_vectorize(f, ary):
     if isinstance(ary, np.ndarray) and ary.dtype.char == "O":
         result = np.empty_like(ary)
         for i in np.ndindex(ary.shape):
-            result[i] = rec_oarray_vectorize(f, ary[i])
+            result[i] = rec_obj_array_vectorize(f, ary[i])
         return result
     else:
         return f(ary)
 
 
-rec_oarray_vectorized = decorator(rec_oarray_vectorize)
+rec_obj_array_vectorized = decorator(rec_obj_array_vectorize)
 
 
-def oarray_vectorize_n_args(f, *args):
+def obj_array_vectorize_n_args(f, *args):
     oarray_arg_indices = []
     for i, arg in enumerate(args):
         if isinstance(arg, np.ndarray) and arg.dtype.char == "O":
@@ -166,25 +171,25 @@ def oarray_vectorize_n_args(f, *args):
     return result
 
 
-oarray_vectorize_n_args = decorator(oarray_vectorize_n_args)
+obj_array_vectorize_n_args = decorator(obj_array_vectorize_n_args)
 
 
 # {{{ workarounds for https://github.com/numpy/numpy/issues/1740
 
-def oarray_real(ary):
-    return rec_oarray_vectorize(lambda x: x.real, ary)
+def obj_array_real(ary):
+    return rec_obj_array_vectorize(lambda x: x.real, ary)
 
 
-def oarray_imag(ary):
-    return rec_oarray_vectorize(lambda x: x.imag, ary)
+def obj_array_imag(ary):
+    return rec_obj_array_vectorize(lambda x: x.imag, ary)
 
 
-def oarray_real_copy(ary):
-    return rec_oarray_vectorize(lambda x: x.real.copy(), ary)
+def obj_array_real_copy(ary):
+    return rec_obj_array_vectorize(lambda x: x.real.copy(), ary)
 
 
-def oarray_imag_copy(ary):
-    return rec_oarray_vectorize(lambda x: x.imag.copy(), ary)
+def obj_array_imag_copy(ary):
+    return rec_obj_array_vectorize(lambda x: x.imag.copy(), ary)
 
 # }}}
 
@@ -306,7 +311,7 @@ def cast_field(field, dtype):
 
 def with_object_array_or_scalar(f, field, obj_array_only=False):
     warn("with_object_array_or_scalar is deprecated and will go away in 2022, "
-            "use oarray_vectorize", DeprecationWarning, stacklevel=2)
+            "use obj_array_vectorize", DeprecationWarning, stacklevel=2)
 
     if obj_array_only:
         if is_obj_array(field):
@@ -329,7 +334,7 @@ as_oarray_func = decorator(with_object_array_or_scalar)
 
 def with_object_array_or_scalar_n_args(f, *args):
     warn("with_object_array_or_scalar is deprecated and will go away in 2022, "
-            "use oarray_vectorize_n_args", DeprecationWarning, stacklevel=2)
+            "use obj_array_vectorize_n_args", DeprecationWarning, stacklevel=2)
 
     oarray_arg_indices = []
     for i, arg in enumerate(args):
@@ -357,6 +362,30 @@ def with_object_array_or_scalar_n_args(f, *args):
 
 
 as_oarray_func_n_args = decorator(with_object_array_or_scalar_n_args)
+
+
+def oarray_real(ary):
+    warn("orarray_real is deprecated and will go away in 2022, "
+            "use obj_rarray_real", DeprecationWarning, stacklevel=2)
+    return obj_array_real(ary)
+
+
+def oarray_imag(ary):
+    warn("orarray_imag is deprecated and will go away in 2022, "
+            "use obj_rarray_imag", DeprecationWarning, stacklevel=2)
+    return obj_array_imag(ary)
+
+
+def oarray_real_copy(ary):
+    warn("orarray_real_copy is deprecated and will go away in 2022, "
+            "use obj_rarray_real_copy", DeprecationWarning, stacklevel=2)
+    return obj_array_real_copy(ary)
+
+
+def oarray_imag_copy(ary):
+    warn("orarray_imag_copy is deprecated and will go away in 2022, "
+            "use obj_rarray_imag_copy", DeprecationWarning, stacklevel=2)
+    return obj_array_imag_copy(ary)
 
 # }}}
 
