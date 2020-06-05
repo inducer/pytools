@@ -67,6 +67,8 @@ Memoization
 .. autofunction:: memoize_on_first_arg
 .. autofunction:: memoize_method
 .. autofunction:: memoize_in
+.. autofunction:: keyed_memoize_on_first_arg
+.. autofunction:: keyed_memoize_method
 
 Argmin/max
 ----------
@@ -620,6 +622,69 @@ def memoize_method(method: F) -> F:
     """
 
     return memoize_on_first_arg(method, intern("_memoize_dic_"+method.__name__))
+
+
+class keyed_memoize_on_first_arg:  # noqa: N801
+    """Like :func:`memoize_method`, but for functions that take the object
+    in which memoization information is stored as first argument.
+
+    Supports cache deletion via ``function_name.clear_cache(self)``.
+
+    :arg key: A function receiving the same arguments as the decorated function
+        which computes and returns the cache key.
+
+    .. versionadded :: 2020.3
+    """
+
+    def __init__(self, key, cache_dict_name=None):
+        self.key = key
+        self.cache_dict_name = cache_dict_name
+
+    def _default_cache_dict_name(self, function):
+        return intern("_memoize_dic_"
+                + function.__module__ + function.__name__)
+
+    def __call__(self, function):
+        cache_dict_name = self.cache_dict_name
+        key = self.key
+
+        if cache_dict_name is None:
+            cache_dict_name = self._default_cache_dict_name(function)
+
+        def wrapper(obj, *args, **kwargs):
+            cache_key = key(*args, **kwargs)
+
+            try:
+                return getattr(obj, cache_dict_name)[cache_key]
+            except AttributeError:
+                result = function(obj, *args, **kwargs)
+                setattr(obj, cache_dict_name, {cache_key: result})
+                return result
+            except KeyError:
+                result = function(obj, *args, **kwargs)
+                getattr(obj, cache_dict_name)[cache_key] = result
+                return result
+
+        def clear_cache(obj):
+            delattr(obj, cache_dict_name)
+
+        from functools import update_wrapper
+        new_wrapper = update_wrapper(wrapper, function)
+        new_wrapper.clear_cache = clear_cache
+
+        return new_wrapper
+
+
+class keyed_memoize_method(keyed_memoize_on_first_arg):  # noqa: N801
+    """Supports cache deletion via ``method_name.clear_cache(self)``.
+
+    :arg key: A function receiving the same arguments as the decorated function
+        which computes and returns the cache key.
+
+    .. versionadded :: 2020.3
+    """
+    def _default_cache_dict_name(self, function):
+        return intern("_memoize_dic_" + function.__name__)
 
 
 def memoize_method_with_uncached(uncached_args=None, uncached_kwargs=None):
