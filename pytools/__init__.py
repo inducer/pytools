@@ -1326,12 +1326,12 @@ def enumerate_basic_directions(dimensions):
 # {{{ index mangling
 
 def get_read_from_map_from_permutation(original, permuted):
-    """With a permutation given by C{original} and C{permuted},
-    generate a list C{rfm} of indices such that
-    C{permuted[i] == original[rfm[i]]}.
+    """With a permutation given by *original* and *permuted*,
+    generate a list *rfm* of indices such that
+    ``permuted[i] == original[rfm[i]]``.
 
     Requires that the permutation can be inferred from
-    C{original} and C{permuted}.
+    *original* and *permuted*.
 
     .. doctest ::
 
@@ -1353,17 +1353,17 @@ def get_read_from_map_from_permutation(original, permuted):
 
 
 def get_write_to_map_from_permutation(original, permuted):
-    """With a permutation given by C{original} and C{permuted},
-    generate a list C{wtm} of indices such that
-    C{permuted[wtm[i]] == original[i]}.
+    """With a permutation given by *original* and *permuted*,
+    generate a list *wtm* of indices such that
+    ``permuted[wtm[i]] == original[i]``.
 
     Requires that the permutation can be inferred from
-    C{original} and C{permuted}.
+    *original* and *permuted*.
 
-    .. doctest::
+    .. doctest ::
 
-        >>> for p1 in generate_permutations(range(5)):
-        ...     for p2 in generate_permutations(range(5)):
+        >>> for p1 in generate_permutations(list(range(5))):
+        ...     for p2 in generate_permutations(list(range(5))):
         ...         wtm = get_write_to_map_from_permutation(p1, p2)
         ...         p2a = [0] * len(p2)
         ...         for i, oi in enumerate(p1):
