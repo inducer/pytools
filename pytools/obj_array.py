@@ -23,7 +23,9 @@ THE SOFTWARE.
 """
 
 import numpy as np
-from pytools import my_decorator as decorator, MovedFunctionDeprecationWrapper
+from warnings import warn
+from pytools import my_decorator as decorator
+
 
 __doc__ = """
 Handling :mod:`numpy` Object Arrays
@@ -38,19 +40,108 @@ Creation
 --------
 
 .. autofunction:: make_obj_array
+.. autofunction:: flat_obj_array
 
 Mapping
 -------
 
+.. autofunction:: oarray_vectorize
+.. autofunction:: oarray_vectorize_n_args
 """
 
 
-    else:
-        return 1
+def make_obj_array(res_list):
+    result = np.empty((len(res_list),), dtype=object)
+    result[:] = res_list
+    return result
 
 
+def obj_array_to_hashable(f):
+    if isinstance(f, np.ndarray) and f.dtype.char == "O":
+        return tuple(f)
     else:
+        return f
+
+
+def flat_obj_array(*args):
+    res_list = []
+    for arg in args:
+        if isinstance(arg, list):
+            res_list.extend(arg)
+
+        # Only flatten genuine, non-subclassed object arrays.
+        elif type(arg) == np.ndarray:
+            res_list.extend(arg.flat)
+
+        else:
+            res_list.append(arg)
+
+    return make_obj_array(res_list)
+
+
+def oarray_vectorize(f, ary):
+    """Apply the function *f* to all entries of the object array *ary*.
+    Return an object array of the same shape consisting of the return
+    values.
+    If *ary* is not an object array, return ``f(ary)``.
+    """
+
+    if isinstance(ary, np.ndarray) and ary.dtype.char == "O":
+        result = np.empty_like(ary)
+        for i in np.ndindex(ary.shape):
+            result[i] = f(ary[i])
         return result
+    else:
+        return f(ary)
+
+
+oarray_vectorized = decorator(oarray_vectorize)
+
+
+def rec_oarray_vectorize(f, ary):
+    """Apply the function *f* to all entries of the object array *ary*.
+    Return an object array of the same shape consisting of the return
+    values.
+    If the elements of *ary* are further object arrays, recurse
+    until non-object-arrays are found and then apply *f* to those
+    entries.
+    If *ary* is not an object array, return ``f(ary)``.
+    """
+    if isinstance(ary, np.ndarray) and ary.dtype.char == "O":
+        result = np.empty_like(ary)
+        for i in np.ndindex(ary.shape):
+            result[i] = rec_oarray_vectorize(f, ary[i])
+        return result
+    else:
+        return f(ary)
+
+
+rec_oarray_vectorized = decorator(rec_oarray_vectorize)
+
+
+def oarray_vectorize_n_args(f, *args):
+    oarray_arg_indices = []
+    for i, arg in enumerate(args):
+        if isinstance(arg, np.ndarray) and arg.dtype.char == "O":
+            oarray_arg_indices.append(i)
+
+    if not oarray_arg_indices:
+        return f(*args)
+
+    leading_oa_index = oarray_arg_indices[0]
+
+    template_ary = args[leading_oa_index]
+    result = np.empty_like(template_ary)
+    new_args = list(args)
+    for i in np.ndindex(template_ary.shape):
+        for arg_i in oarray_arg_indices:
+            new_args[arg_i] = args[arg_i][i]
+        result[i] = f(*new_args)
+    return result
+
+
+oarray_vectorize_n_args = decorator(oarray_vectorize_n_args)
+
 
 # {{{ workarounds for https://github.com/numpy/numpy/issues/1740
 
