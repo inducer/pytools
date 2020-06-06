@@ -95,6 +95,14 @@ def obj_array_to_hashable(f):
 
 
 def flat_obj_array(*args):
+    """Return a one-dimensional flattened object array consisting of
+    elements obtained by 'flattening' *args* as follows:
+
+    - The first axis of any non-subclassed object arrays will be flattened
+      into the result.
+    - Instances of :class:`list` will be flattened into the result.
+    - Any other type will appear in the list as-is.
+    """
     res_list = []
     for arg in args:
         if isinstance(arg, list):
