@@ -170,7 +170,7 @@ rec_obj_array_vectorized = decorator(rec_obj_array_vectorize)
 
 def obj_array_vectorize_n_args(f, *args):
     """Apply the function *f* elementwise to all entries of any
-    object arrays in *args*. All such ojbect arrays are expected
+    object arrays in *args*. All such object arrays are expected
     to have the same shape (but this is not checked).
     Equivalent to an appropriately-looped execution of::
 
@@ -204,7 +204,7 @@ def obj_array_vectorize_n_args(f, *args):
     return result
 
 
-obj_array_vectorize_n_args = decorator(obj_array_vectorize_n_args)
+obj_array_vectorized_n_args = decorator(obj_array_vectorize_n_args)
 
 
 # {{{ workarounds for https://github.com/numpy/numpy/issues/1740
