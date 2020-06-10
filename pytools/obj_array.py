@@ -83,7 +83,12 @@ def make_obj_array(res_list):
     can be undesirable.
     """
     result = np.empty((len(res_list),), dtype=object)
-    result[:] = res_list
+
+    # 'result[:] = res_list' may look tempting, however:
+    # https://github.com/numpy/numpy/issues/16564
+    for idx in range(len(res_list)):
+        result[idx] = res_list[idx]
+
     return result
 
 

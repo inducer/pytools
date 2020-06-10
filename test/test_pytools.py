@@ -261,6 +261,30 @@ def test_natsorted():
     assert natsorted([10, 1, 9], key=lambda d: "x%d" % d) == [1, 9, 10]
 
 
+# {{{ object array iteration behavior
+
+class FakeArray:
+    nopes = 0
+
+    def __len__(self):
+        FakeArray.nopes += 1
+        return 10
+
+    def __getitem__(self, idx):
+        FakeArray.nopes += 1
+        if idx > 10:
+            raise IndexError()
+
+
+def test_make_obj_array_iteration():
+    from pytools.obj_array import make_obj_array
+    make_obj_array([FakeArray()])
+
+    assert FakeArray.nopes == 0, FakeArray.nopes
+
+# }}}
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
