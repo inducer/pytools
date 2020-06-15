@@ -371,7 +371,8 @@ as_oarray_func = decorator(with_object_array_or_scalar)
 
 
 def with_object_array_or_scalar_n_args(f, *args):
-    warn("with_object_array_or_scalar is deprecated and will go away in 2022, "
+    warn("with_object_array_or_scalar_n_args is deprecated and "
+            "will go away in 2022, "
             "use obj_array_vectorize_n_args", DeprecationWarning, stacklevel=2)
 
     oarray_arg_indices = []
