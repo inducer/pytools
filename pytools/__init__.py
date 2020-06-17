@@ -798,18 +798,22 @@ def memoize_method_nested(inner):
 
 class memoize_in(object):  # noqa
     """Adds a cache to a function nested inside a method. The cache is attached
-    to *object*.
+    to *container*.
 
-    Requires Python 2.5 or newer.
+    .. versionchanged :: 2020.3
+
+        *identifier* no longer needs to be a :class:`str`,
+        but it needs to be hashable.
     """
 
     def __init__(self, container, identifier):
-        key = "_pytools_memoize_in_dict_for_"+identifier
         try:
-            self.cache_dict = getattr(container, key)
+            memoize_in_dict = container._pytools_memoize_in_dict
         except AttributeError:
-            self.cache_dict = {}
-            setattr(container, key, self.cache_dict)
+            memoize_in_dict = {}
+            container._pytools_memoize_in_dict = memoize_in_dict
+
+        self.cache_dict = memoize_in_dict.setdefault(identifier, {})
 
     def __call__(self, inner):
         from functools import wraps
