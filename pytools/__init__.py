@@ -798,7 +798,7 @@ def memoize_method_nested(inner):
 
 class memoize_in(object):  # noqa
     """Adds a cache to a function nested inside a method. The cache is attached
-    to *object*.
+    to *container*.
 
     .. versionchanged :: 2020.3
 
