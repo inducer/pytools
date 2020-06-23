@@ -24,7 +24,6 @@ setup(name="pytools",
           'License :: OSI Approved :: MIT License',
           'Natural Language :: English',
           'Programming Language :: Python',
-          'Programming Language :: Python',
           'Programming Language :: Python :: 3',
           'Programming Language :: Python :: 3.6',
           'Programming Language :: Python :: 3.7',
@@ -36,7 +35,8 @@ setup(name="pytools",
           'Topic :: Utilities',
           ],
 
-      python_requires="~=3.6",
+      python_requires='~=3.6',
+
       install_requires=[
           "decorator>=3.2.0",
           "appdirs>=1.4.0",
