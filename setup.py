@@ -35,6 +35,8 @@ setup(name="pytools",
           'Topic :: Utilities',
           ],
 
+      python_requires='~=3.6',
+
       install_requires=[
           "decorator>=3.2.0",
           "appdirs>=1.4.0",
