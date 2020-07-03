@@ -404,26 +404,26 @@ as_oarray_func_n_args = decorator(with_object_array_or_scalar_n_args)
 
 
 def oarray_real(ary):
-    warn("orarray_real is deprecated and will go away in 2022, "
-            "use obj_rarray_real", DeprecationWarning, stacklevel=2)
+    warn("oarray_real is deprecated and will go away in 2022, "
+            "use obj_array_real", DeprecationWarning, stacklevel=2)
     return obj_array_real(ary)
 
 
 def oarray_imag(ary):
-    warn("orarray_imag is deprecated and will go away in 2022, "
-            "use obj_rarray_imag", DeprecationWarning, stacklevel=2)
+    warn("oarray_imag is deprecated and will go away in 2022, "
+            "use obj_array_imag", DeprecationWarning, stacklevel=2)
     return obj_array_imag(ary)
 
 
 def oarray_real_copy(ary):
-    warn("orarray_real_copy is deprecated and will go away in 2022, "
-            "use obj_rarray_real_copy", DeprecationWarning, stacklevel=2)
+    warn("oarray_real_copy is deprecated and will go away in 2022, "
+            "use obj_array_real_copy", DeprecationWarning, stacklevel=2)
     return obj_array_real_copy(ary)
 
 
 def oarray_imag_copy(ary):
-    warn("orarray_imag_copy is deprecated and will go away in 2022, "
-            "use obj_rarray_imag_copy", DeprecationWarning, stacklevel=2)
+    warn("oarray_imag_copy is deprecated and will go away in 2022, "
+            "use obj_array_imag_copy", DeprecationWarning, stacklevel=2)
     return obj_array_imag_copy(ary)
 
 # }}}
