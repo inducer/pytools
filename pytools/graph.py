@@ -178,7 +178,7 @@ class CycleError(Exception):
         self.node = node
 
 
-def compute_topological_order(graph):
+def compute_topological_order(graph, key=None):
     """Compute a toplogical order of nodes in a directed graph.
 
     :arg graph: A :class:`collections.abc.Mapping` representing a directed
@@ -186,16 +186,23 @@ def compute_topological_order(graph):
         graph, and this key maps to a :class:`collections.abc.Iterable` of
         nodes that are connected to the node by outgoing edges.
 
+    :arg key: A custom key function may be supplied to determine the order in
+        break-even cases. If provided the nodes of the graph must be comparable
+        and hashable.
+
     :returns: A :class:`list` representing a valid topological ordering of the
         nodes in the directed graph.
 
     .. versionadded:: 2020.2
     """
+    from heapq import heappop, heappush
 
     # find a valid ordering of graph nodes
     reverse_order = []
     visited = set()
     visiting = set()
+    heap = []
+    nodes_in_heap = set()
 
     # go through each node
     for root in graph:
@@ -232,7 +239,38 @@ def compute_topological_order(graph):
                 # so either this is a leaf or all children have been visited
                 visiting.remove(node)
                 visited.add(node)
-                reverse_order.append(node)
+
+                if key is None:
+                    reverse_order.append(node)
+                else:
+                    # {{{ move every 'u' from heap to reverse_order s.t. 'node'->'u'
+
+                    nodes_to_move = set(graph.get(node, ())) & nodes_in_heap
+
+                    while nodes_to_move:
+                        node_to_move = nodes_to_move.pop()
+
+                        while True:
+                            _, popped_node = heappop(heap)
+                            reverse_order.append(popped_node)
+                            nodes_to_move.discard(popped_node)
+                            nodes_in_heap.remove(popped_node)
+                            if popped_node == node_to_move:
+                                break
+
+                    # }}}
+
+                    # {{{ push 'node' to 'heap
+
+                    nodes_in_heap.add(node)
+                    heappush(heap, (key(node), node))
+
+                    # }}}
+
+    # pop any nodes left in the heap
+    while heap:
+        _, popped_node = heappop(heap)
+        reverse_order.append(popped_node)
 
     return list(reversed(reverse_order))
 

@@ -222,6 +222,24 @@ def test_induced_subgraph():
     assert subgraph == expected_subgraph
 
 
+def test_prioritzed_topological_sort():
+
+    from pytools.graph import compute_topological_order
+
+    priorities = {'a': 1, 'b': 2, 'c': 3, 'e': 4, 'd': 1}
+    dag = {
+            'a': ['b', 'c'],
+            'b': [],
+            'c': ['d', 'e'],
+            'd': [],
+            'e': []}
+
+    def key(u):
+        return priorities[u]
+
+    assert compute_topological_order(dag, key=key) == ['a', 'c', 'e', 'b', 'd']
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
