@@ -35,6 +35,7 @@ Graph Algorithms
 .. autofunction:: compute_sccs
 .. autoclass:: CycleError
 .. autofunction:: compute_topological_order
+.. autofunction:: compute_topological_order_v2
 .. autofunction:: compute_transitive_closure
 .. autofunction:: contains_cycle
 .. autofunction:: compute_induced_subgraph
@@ -178,7 +179,7 @@ class CycleError(Exception):
         self.node = node
 
 
-def compute_topological_order(graph, key=None):
+def compute_topological_order(graph):
     """Compute a toplogical order of nodes in a directed graph.
 
     :arg graph: A :class:`collections.abc.Mapping` representing a directed
@@ -186,23 +187,16 @@ def compute_topological_order(graph, key=None):
         graph, and this key maps to a :class:`collections.abc.Iterable` of
         nodes that are connected to the node by outgoing edges.
 
-    :arg key: A custom key function may be supplied to determine the order in
-        break-even cases. If provided the nodes of the graph must be comparable
-        and hashable.
-
     :returns: A :class:`list` representing a valid topological ordering of the
         nodes in the directed graph.
 
     .. versionadded:: 2020.2
     """
-    from heapq import heappop, heappush
 
     # find a valid ordering of graph nodes
     reverse_order = []
     visited = set()
     visiting = set()
-    heap = []
-    nodes_in_heap = set()
 
     # go through each node
     for root in graph:
@@ -239,40 +233,77 @@ def compute_topological_order(graph, key=None):
                 # so either this is a leaf or all children have been visited
                 visiting.remove(node)
                 visited.add(node)
-
-                if key is None:
-                    reverse_order.append(node)
-                else:
-                    # {{{ move every 'u' from heap to reverse_order s.t. 'node'->'u'
-
-                    nodes_to_move = set(graph.get(node, ())) & nodes_in_heap
-
-                    while nodes_to_move:
-                        node_to_move = nodes_to_move.pop()
-
-                        while True:
-                            _, popped_node = heappop(heap)
-                            reverse_order.append(popped_node)
-                            nodes_to_move.discard(popped_node)
-                            nodes_in_heap.remove(popped_node)
-                            if popped_node == node_to_move:
-                                break
-
-                    # }}}
-
-                    # {{{ push 'node' to 'heap
-
-                    nodes_in_heap.add(node)
-                    heappush(heap, (key(node), node))
-
-                    # }}}
-
-    # pop any nodes left in the heap
-    while heap:
-        _, popped_node = heappop(heap)
-        reverse_order.append(popped_node)
+                reverse_order.append(node)
 
     return list(reversed(reverse_order))
+
+
+def compute_topological_order_v2(graph, key=None):
+    """Compute a toplogical order of nodes in a directed graph.
+
+    :arg graph: A :class:`collections.abc.Mapping` representing a directed
+        graph. The dictionary contains one key representing each node in the
+        graph, and this key maps to a :class:`collections.abc.Iterable` of its
+        successor nodes.
+
+    :arg key: A custom key function may be supplied to determine the order in
+        break-even cases.
+
+    :returns: A :class:`list` representing a valid topological ordering of the
+        nodes in the directed graph.
+
+    .. note::
+
+        * Has stricter requirements on the provided *graph* than
+          :func:`pytools.graph.compute_topological_order`: it requires the
+          keys of the mapping *graph* to be hashable and inequality comparable.
+        * Implements Kahn's algorithm.
+    """
+    if key is None:
+        def key(x):
+            # all nodes have the same keys when not provided
+            return 0
+
+    from heapq import heapify, heappop, heappush
+
+    order = []
+
+    # {{{ compute nodes_to_num_predecessors
+
+    nodes_to_num_predecessors = {node: 0 for node in graph}
+
+    for node in graph:
+        for child in graph[node]:
+            nodes_to_num_predecessors[child] += 1
+
+    # }}}
+
+    # heap: list of pairs of the form (key(n), n) where 'n' is a node in
+    # 'graph' with no predecessor. Nodes with no predecessors are the
+    # schedulable candidates.
+    heap = [(key(n), n) for n, num_preds in nodes_to_num_predecessors.items()
+            if num_preds == 0]
+    heapify(heap)
+
+    while heap:
+        # pick the node with least key
+        _, node_to_be_scheduled = heappop(heap)
+        order.append(node_to_be_scheduled)
+
+        # discard 'node_to_be_scheduled' from the predecessors of its
+        # successors since it's been scheduled
+        for child in graph[node_to_be_scheduled]:
+            nodes_to_num_predecessors[child] -= 1
+            if nodes_to_num_predecessors[child] == 0:
+                heappush(heap, (key(child), child))
+
+    if len(order) != len(graph):
+        # any node which has a predecessor left is a part of a cycle
+        raise CycleError(next(iter(n for n, num_preds in
+            nodes_to_num_predecessors.items() if num_preds != 0)))
+
+    return order
+
 
 # }}}
 
