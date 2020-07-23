@@ -224,9 +224,9 @@ def test_induced_subgraph():
 
 def test_prioritzed_topological_sort_examples():
 
-    from pytools.graph import compute_topological_order
+    from pytools.graph import compute_topological_order_v2
 
-    priorities = {'a': 1, 'b': 2, 'c': 3, 'e': 4, 'd': 1}
+    keys = {'a': 4, 'b': 3, 'c': 2, 'e': 1, 'd': 4}
     dag = {
             'a': ['b', 'c'],
             'b': [],
@@ -234,12 +234,10 @@ def test_prioritzed_topological_sort_examples():
             'd': [],
             'e': []}
 
-    def key(u):
-        return priorities[u]
+    assert compute_topological_order_v2(dag, key=keys.get) == [
+            'a', 'c', 'e', 'b', 'd']
 
-    assert compute_topological_order(dag, key=key) == ['a', 'c', 'e', 'b', 'd']
-
-    priorities = {'a': 0, 'b': 5, 'c': 6, 'd': 7}
+    keys = {'a': 7, 'b': 2, 'c': 1, 'd': 0}
     dag = {
             'd': set('c'),
             'b': set('a'),
@@ -247,13 +245,13 @@ def test_prioritzed_topological_sort_examples():
             'c': set('a'),
             }
 
-    assert compute_topological_order(dag, key=priorities.get) == ['d', 'c', 'b', 'a']
+    assert compute_topological_order_v2(dag, key=keys.get) == ['d', 'c', 'b', 'a']
 
 
 def test_prioritzed_topological_sort():
 
     import random
-    from pytools.graph import compute_topological_order
+    from pytools.graph import compute_topological_order_v2
     rng = random.Random(0)
 
     def generate_random_graph(nnodes):
@@ -274,8 +272,8 @@ def test_prioritzed_topological_sort():
         for rev_dep in rev_dep_graph[i]:
             dep_graph[rev_dep].add(i)
 
-    priority = [rng.random() for _ in range(nnodes)]
-    topo_order = compute_topological_order(rev_dep_graph, key=priority.__getitem__)
+    keys = [rng.random() for _ in range(nnodes)]
+    topo_order = compute_topological_order_v2(rev_dep_graph, key=keys.__getitem__)
 
     for scheduled_node in topo_order:
         nodes_with_no_deps = set(node for node, deps in dep_graph.items()
@@ -284,8 +282,8 @@ def test_prioritzed_topological_sort():
         # check whether the order is a valid topological order
         assert scheduled_node in nodes_with_no_deps
         # check whether priorites are upheld
-        assert priority[scheduled_node] == max(priority[node] for node in
-                nodes_with_no_deps)
+        assert keys[scheduled_node] == min(
+                keys[node] for node in nodes_with_no_deps)
 
         # 'scheduled_node' is scheduled => no longer a dependency
         dep_graph.pop(scheduled_node)
