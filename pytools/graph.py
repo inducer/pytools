@@ -247,7 +247,8 @@ def compute_topological_order_v2(graph, key=None):
         successor nodes.
 
     :arg key: A custom key function may be supplied to determine the order in
-        break-even cases.
+        break-even cases. Expects a function of one argument that is used to
+        extract a comparison key from each node of the *graph*.
 
     :returns: A :class:`list` representing a valid topological ordering of the
         nodes in the directed graph.
