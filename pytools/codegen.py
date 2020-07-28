@@ -53,11 +53,11 @@ class CodeGenerator(object):
         self.preamble = []
         self.code = []
         self.level = 0
-        self.indent = 4
+        self.indent_amount = 4
 
     def extend(self, sub_generator: CodeGenerator) -> None:
         for line in sub_generator.code:
-            self.code.append(" "*(self.indent*self.level) + line)
+            self.code.append(" "*(self.indent_amount*self.level) + line)
 
     def get(self) -> str:
         result = "\n".join(self.code)
@@ -76,7 +76,7 @@ class CodeGenerator(object):
                 s = remove_common_indentation(s)
 
             for line in s.split("\n"):
-                self.code.append(" "*(self.indent*self.level) + line)
+                self.code.append(" "*(self.indent_amount*self.level) + line)
 
     def indent(self) -> None:
         self.level += 1
