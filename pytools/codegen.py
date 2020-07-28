@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 __copyright__ = "Copyright (C) 2009-2013 Andreas Kloeckner"
 
 __license__ = """
@@ -55,7 +53,7 @@ class CodeGenerator(object):
         self.level = 0
         self.indent_amount = 4
 
-    def extend(self, sub_generator: CodeGenerator) -> None:
+    def extend(self, sub_generator: "CodeGenerator") -> None:
         for line in sub_generator.code:
             self.code.append(" "*(self.indent_amount*self.level) + line)
 
