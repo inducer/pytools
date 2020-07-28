@@ -27,6 +27,9 @@ from types import FunctionType, ModuleType
 
 import six
 
+from pytools.codegen import CodeGenerator as CodeGeneratorBase
+from pytools.codegen import Indentation, remove_common_indentation  # noqa
+
 
 try:
     from importlib.util import MAGIC_NUMBER as BYTECODE_VERSION
@@ -36,57 +39,7 @@ except ImportError:
     BYTECODE_VERSION = imp.get_magic()
 
 
-# loosely based on
-# http://effbot.org/zone/python-code-generator.htm
-
-class Indentation(object):
-    def __init__(self, generator):
-        self.generator = generator
-
-    def __enter__(self):
-        self.generator.indent()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.generator.dedent()
-
-
-class PythonCodeGenerator(object):
-    def __init__(self):
-        self.preamble = []
-        self.code = []
-        self.level = 0
-
-    def extend(self, sub_generator):
-        for line in sub_generator.code:
-            self.code.append(" "*(4*self.level) + line)
-
-    def get(self):
-        result = "\n".join(self.code)
-        if self.preamble:
-            result = "\n".join(self.preamble) + "\n" + result
-        return result
-
-    def add_to_preamble(self, s):
-        self.preamble.append(s)
-
-    def __call__(self, s):
-        if not s.strip():
-            self.code.append("")
-        else:
-            if "\n" in s:
-                s = remove_common_indentation(s)
-
-            for line in s.split("\n"):
-                self.code.append(" "*(4*self.level) + line)
-
-    def indent(self):
-        self.level += 1
-
-    def dedent(self):
-        if self.level == 0:
-            raise RuntimeError("internal error in python code generator")
-        self.level -= 1
-
+class PythonCodeGenerator(CodeGeneratorBase):
     def get_module(self, name="<generated code>"):
         result_dict = {}
         source_text = self.get()
@@ -203,35 +156,6 @@ class PicklableFunction(object):
 
     def __setstate__(self, obj):
         self._initialize(obj["module"], obj["name"])
-
-# }}}
-
-
-# {{{ remove common indentation
-
-def remove_common_indentation(code, require_leading_newline=True):
-    if "\n" not in code:
-        return code
-
-    if require_leading_newline and not code.startswith("\n"):
-        return code
-
-    lines = code.split("\n")
-    while lines[0].strip() == "":
-        lines.pop(0)
-    while lines[-1].strip() == "":
-        lines.pop(-1)
-
-    if lines:
-        base_indent = 0
-        while lines[0][base_indent] in " \t":
-            base_indent += 1
-
-        for line in lines[1:]:
-            if line[:base_indent].strip():
-                raise ValueError("inconsistent indentation")
-
-    return "\n".join(line[base_indent:] for line in lines)
 
 # }}}
 

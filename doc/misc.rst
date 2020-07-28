@@ -20,10 +20,15 @@ and say::
 User-visible changes
 ====================
 
+Version 2020.4
+--------------
+
 .. note::
 
     This version is currently under development. You can get snapshots from
     Pytools's `git repository <https://github.com/inducer/pytools>`_
+
+* :mod:`pytools.codegen` was added.
 
 Version 2020.3
 --------------
