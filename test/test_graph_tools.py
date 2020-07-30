@@ -224,7 +224,7 @@ def test_induced_subgraph():
 
 def test_prioritzed_topological_sort_examples():
 
-    from pytools.graph import compute_topological_order_v2
+    from pytools.graph import compute_topological_order
 
     keys = {'a': 4, 'b': 3, 'c': 2, 'e': 1, 'd': 4}
     dag = {
@@ -234,7 +234,7 @@ def test_prioritzed_topological_sort_examples():
             'd': [],
             'e': []}
 
-    assert compute_topological_order_v2(dag, key=keys.get) == [
+    assert compute_topological_order(dag, key=keys.get) == [
             'a', 'c', 'e', 'b', 'd']
 
     keys = {'a': 7, 'b': 2, 'c': 1, 'd': 0}
@@ -245,13 +245,13 @@ def test_prioritzed_topological_sort_examples():
             'c': set('a'),
             }
 
-    assert compute_topological_order_v2(dag, key=keys.get) == ['d', 'c', 'b', 'a']
+    assert compute_topological_order(dag, key=keys.get) == ['d', 'c', 'b', 'a']
 
 
 def test_prioritzed_topological_sort():
 
     import random
-    from pytools.graph import compute_topological_order_v2
+    from pytools.graph import compute_topological_order
     rng = random.Random(0)
 
     def generate_random_graph(nnodes):
@@ -266,14 +266,14 @@ def test_prioritzed_topological_sort():
 
     nnodes = rng.randint(40, 100)
     rev_dep_graph = generate_random_graph(nnodes)
-    dep_graph = dict((i, set()) for i in range(nnodes))
+    dep_graph = {i: set() for i in range(nnodes)}
 
     for i in range(nnodes):
         for rev_dep in rev_dep_graph[i]:
             dep_graph[rev_dep].add(i)
 
     keys = [rng.random() for _ in range(nnodes)]
-    topo_order = compute_topological_order_v2(rev_dep_graph, key=keys.__getitem__)
+    topo_order = compute_topological_order(rev_dep_graph, key=keys.__getitem__)
 
     for scheduled_node in topo_order:
         nodes_with_no_deps = set(node for node, deps in dep_graph.items()
