@@ -180,6 +180,13 @@ class CycleError(Exception):
 
 
 class HeapEntry:
+    """
+    Helper class to compare associated keys while comparing the elements in
+    heap operations.
+
+    Only needs to define :func:`pytools.graph.__lt__` according to
+    <https://github.com/python/cpython/blob/8d21aa21f2cbc6d50aab3f420bb23be1d081dac4/Lib/heapq.py#L135-L138>.
+    """
     def __init__(self, node, key):
         self.node = node
         self.key = key
