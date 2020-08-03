@@ -222,6 +222,78 @@ def test_induced_subgraph():
     assert subgraph == expected_subgraph
 
 
+def test_prioritzed_topological_sort_examples():
+
+    from pytools.graph import compute_topological_order
+
+    keys = {'a': 4, 'b': 3, 'c': 2, 'e': 1, 'd': 4}
+    dag = {
+            'a': ['b', 'c'],
+            'b': [],
+            'c': ['d', 'e'],
+            'd': [],
+            'e': []}
+
+    assert compute_topological_order(dag, key=keys.get) == [
+            'a', 'c', 'e', 'b', 'd']
+
+    keys = {'a': 7, 'b': 2, 'c': 1, 'd': 0}
+    dag = {
+            'd': set('c'),
+            'b': set('a'),
+            'a': set(),
+            'c': set('a'),
+            }
+
+    assert compute_topological_order(dag, key=keys.get) == ['d', 'c', 'b', 'a']
+
+
+def test_prioritzed_topological_sort():
+
+    import random
+    from pytools.graph import compute_topological_order
+    rng = random.Random(0)
+
+    def generate_random_graph(nnodes):
+        graph = dict((i, set()) for i in range(nnodes))
+        for i in range(nnodes):
+            # to avoid cycles only consider edges node_i->node_j where j > i.
+            for j in range(i+1, nnodes):
+                # Edge probability 4/n: Generates decently interesting inputs.
+                if rng.randint(0, nnodes - 1) <= 2:
+                    graph[i].add(j)
+        return graph
+
+    nnodes = rng.randint(40, 100)
+    rev_dep_graph = generate_random_graph(nnodes)
+    dep_graph = {i: set() for i in range(nnodes)}
+
+    for i in range(nnodes):
+        for rev_dep in rev_dep_graph[i]:
+            dep_graph[rev_dep].add(i)
+
+    keys = [rng.random() for _ in range(nnodes)]
+    topo_order = compute_topological_order(rev_dep_graph, key=keys.__getitem__)
+
+    for scheduled_node in topo_order:
+        nodes_with_no_deps = set(node for node, deps in dep_graph.items()
+                    if len(deps) == 0)
+
+        # check whether the order is a valid topological order
+        assert scheduled_node in nodes_with_no_deps
+        # check whether priorites are upheld
+        assert keys[scheduled_node] == min(
+                keys[node] for node in nodes_with_no_deps)
+
+        # 'scheduled_node' is scheduled => no longer a dependency
+        dep_graph.pop(scheduled_node)
+
+        for node, deps in dep_graph.items():
+            deps.discard(scheduled_node)
+
+    assert len(dep_graph) == 0
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])

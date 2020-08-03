@@ -35,6 +35,7 @@ Graph Algorithms
 .. autofunction:: compute_sccs
 .. autoclass:: CycleError
 .. autofunction:: compute_topological_order
+.. autofunction:: compute_topological_order_v2
 .. autofunction:: compute_transitive_closure
 .. autofunction:: contains_cycle
 .. autofunction:: compute_induced_subgraph
@@ -178,63 +179,92 @@ class CycleError(Exception):
         self.node = node
 
 
-def compute_topological_order(graph):
-    """Compute a toplogical order of nodes in a directed graph.
+class HeapEntry:
+    """
+    Helper class to compare associated keys while comparing the elements in
+    heap operations.
+
+    Only needs to define :func:`pytools.graph.__lt__` according to
+    <https://github.com/python/cpython/blob/8d21aa21f2cbc6d50aab3f420bb23be1d081dac4/Lib/heapq.py#L135-L138>.
+    """
+    def __init__(self, node, key):
+        self.node = node
+        self.key = key
+
+    def __lt__(self, other):
+        return self.key < other.key
+
+
+def compute_topological_order(graph, key=None):
+    """Compute a topological order of nodes in a directed graph.
 
     :arg graph: A :class:`collections.abc.Mapping` representing a directed
         graph. The dictionary contains one key representing each node in the
-        graph, and this key maps to a :class:`collections.abc.Iterable` of
-        nodes that are connected to the node by outgoing edges.
+        graph, and this key maps to a :class:`collections.abc.Iterable` of its
+        successor nodes.
+
+    :arg key: A custom key function may be supplied to determine the order in
+        break-even cases. Expects a function of one argument that is used to
+        extract a comparison key from each node of the *graph*.
 
     :returns: A :class:`list` representing a valid topological ordering of the
         nodes in the directed graph.
 
+    .. note::
+
+        * Requires the keys of the mapping *graph* to be hashable.
+        * Implements `Kahn's algorithm <https://w.wiki/YDy>`__.
+
     .. versionadded:: 2020.2
     """
+    if key is None:
+        def key(x):
+            # all nodes have the same keys when not provided
+            return 0
 
-    # find a valid ordering of graph nodes
-    reverse_order = []
-    visited = set()
-    visiting = set()
+    from heapq import heapify, heappop, heappush
 
-    # go through each node
-    for root in graph:
+    order = []
 
-        if root in visited:
-            # already encountered root as someone else's child
-            # and processed it at that time
-            continue
+    # {{{ compute nodes_to_num_predecessors
 
-        stack = [(root, iter(graph[root]))]
-        visiting.add(root)
+    nodes_to_num_predecessors = {node: 0 for node in graph}
 
-        while stack:
-            node, children = stack.pop()
+    for node in graph:
+        for child in graph[node]:
+            nodes_to_num_predecessors[child] = (
+                    nodes_to_num_predecessors.get(child, 0) + 1)
 
-            for child in children:
-                # note: each iteration removes child from children
-                if child in visiting:
-                    raise CycleError(child)
+    # }}}
 
-                if child in visited:
-                    continue
+    total_num_nodes = len(nodes_to_num_predecessors)
 
-                visiting.add(child)
+    # heap: list of instances of HeapEntry(n) where 'n' is a node in
+    # 'graph' with no predecessor. Nodes with no predecessors are the
+    # schedulable candidates.
+    heap = [HeapEntry(n, key(n))
+            for n, num_preds in nodes_to_num_predecessors.items()
+            if num_preds == 0]
+    heapify(heap)
 
-                # put (node, remaining children) back on stack
-                stack.append((node, children))
+    while heap:
+        # pick the node with least key
+        node_to_be_scheduled = heappop(heap).node
+        order.append(node_to_be_scheduled)
 
-                # put (child, grandchildren) on stack
-                stack.append((child, iter(graph.get(child, ()))))
-                break
-            else:
-                # loop did not break,
-                # so either this is a leaf or all children have been visited
-                visiting.remove(node)
-                visited.add(node)
-                reverse_order.append(node)
+        # discard 'node_to_be_scheduled' from the predecessors of its
+        # successors since it's been scheduled
+        for child in graph.get(node_to_be_scheduled, ()):
+            nodes_to_num_predecessors[child] -= 1
+            if nodes_to_num_predecessors[child] == 0:
+                heappush(heap, HeapEntry(child, key(child)))
 
-    return list(reversed(reverse_order))
+    if len(order) != total_num_nodes:
+        # any node which has a predecessor left is a part of a cycle
+        raise CycleError(next(iter(n for n, num_preds in
+            nodes_to_num_predecessors.items() if num_preds != 0)))
+
+    return order
 
 # }}}
 
