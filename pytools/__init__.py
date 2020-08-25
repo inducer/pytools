@@ -1527,16 +1527,19 @@ class Table:
         .. doctest ::
 
             >>> tbl = Table(alignments=['l', 'r'])
-            >>> tbl.add_row([1, 2])
+            >>> tbl.add_row([1, '|'])
             >>> tbl.add_row([10, 20])
             >>> s = tbl.github_markdown().splitlines()
-            >>> assert s[0] == "1  |  2"
+            >>> assert s[0] == "1  | \|"
             >>> assert s[1] == ":--|---:"
             >>> assert s[2] == "10 | 20"
 
         """
-        columns = len(self.rows[0])
-        col_widths = [max(len(row[i]) for row in self.rows)
+        # Pipe symbols ('|') must be replaced
+        rows = [[w.replace('|', '\\|') for w in r] for r in self.rows]
+
+        columns = len(rows[0])
+        col_widths = [max(len(row[i]) for row in rows)
                       for i in range(columns)]
 
         alignments = self.alignments
@@ -1549,7 +1552,7 @@ class Table:
             else cell.ljust(col_width) if align == "l"
             else cell.rjust(col_width)
             for cell, col_width, align in zip(row, col_widths, alignments)])
-            for row in self.rows]
+            for row in rows]
         lines[1:1] = ["|".join(
             ":" + "-" * (col_width - 1 + (i > 0)) + ":" if align == "c"
             else ":" + "-" * (col_width + (i > 0)) if align == "l"
