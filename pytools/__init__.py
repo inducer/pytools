@@ -1513,6 +1513,21 @@ class Table:
         return "\n".join(lines)
 
     def github_markdown(self):
+        """Returns a string representation of the table formatted as
+        GitHub-Flavored Markdown.
+        https://docs.github.com/en/github/writing-on-github/organizing-information-with-tables
+
+        .. doctest ::
+
+            >>> tbl = Table(alignments=['l', 'r'])
+            >>> tbl.add_row([1, 2])
+            >>> tbl.add_row([10, 20])
+            >>> s = tbl.github_markdown().splitlines()
+            >>> assert s[0] == "1  |  2"
+            >>> assert s[1] == ":--|---:"
+            >>> assert s[2] == "10 | 20"
+
+        """
         columns = len(self.rows[0])
         col_widths = [max(len(row[i]) for row in self.rows)
                       for i in range(columns)]
