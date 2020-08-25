@@ -1530,7 +1530,7 @@ class Table:
             >>> tbl.add_row([1, '|'])
             >>> tbl.add_row([10, 20])
             >>> s = tbl.github_markdown().splitlines()
-            >>> assert s[0] == "1  | \|"
+            >>> assert s[0] == "1  | \\|"
             >>> assert s[1] == ":--|---:"
             >>> assert s[2] == "10 | 20"
 
@@ -1571,7 +1571,6 @@ class Table:
         writer.writerows(self.rows)
 
         return output.getvalue().rstrip('\n')
-
 
     def latex(self, skip_lines=0, hline_after=None):
         if hline_after is None:
