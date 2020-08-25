@@ -1489,10 +1489,12 @@ class Table:
     .. automethod:: add_row
     .. automethod:: __str__
     .. automethod:: latex
+    .. automethod:: github_markdown
     """
 
-    def __init__(self):
+    def __init__(self, alignments=['l', 'r']):
         self.rows = []
+        self.alignments = alignments
 
     def add_row(self, row):
         self.rows.append([str(i) for i in row])
@@ -1507,6 +1509,28 @@ class Table:
             for row in self.rows]
         lines[1:1] = ["+".join("-" * (col_width + 1 + (i > 0))
             for i, col_width in enumerate(col_widths))]
+
+        return "\n".join(lines)
+
+    def github_markdown(self):
+        columns = len(self.rows[0])
+        col_widths = [max(len(row[i]) for row in self.rows)
+                      for i in range(columns)]
+
+        alignments = self.alignments
+        # If not all alignments were specified, extend alignments with the
+        # last alignment specified:
+        alignments += self.alignments[-1] * (columns - len(self.alignments))
+
+        lines = [" | ".join([cell.center(col_width) if align == 'c'
+            else cell.ljust(col_width) if align == 'l' else cell.rjust(col_width)
+            for cell, col_width, align in zip(row, col_widths, alignments)])
+            for row in self.rows]
+        lines[1:1] = ["|".join(":" + "-" * (col_width - 1 + (i > 0)) + ":"
+            if align == 'c'
+            else ':' + "-" * (col_width + (i > 0)) if align == 'l'
+            else "-" * (col_width + (i > 0)) + ":"
+            for i, (col_width, align) in enumerate(zip(col_widths, alignments)))]
 
         return "\n".join(lines)
 
