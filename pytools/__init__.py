@@ -1522,13 +1522,15 @@ class Table:
         # last alignment specified:
         alignments += self.alignments[-1] * (columns - len(self.alignments))
 
-        lines = [" | ".join([cell.center(col_width) if align == 'c'
-            else cell.ljust(col_width) if align == 'l' else cell.rjust(col_width)
+        lines = [" | ".join([
+            cell.center(col_width) if align == "c"
+            else cell.ljust(col_width) if align == "l"
+            else cell.rjust(col_width)
             for cell, col_width, align in zip(row, col_widths, alignments)])
             for row in self.rows]
-        lines[1:1] = ["|".join(":" + "-" * (col_width - 1 + (i > 0)) + ":"
-            if align == 'c'
-            else ':' + "-" * (col_width + (i > 0)) if align == 'l'
+        lines[1:1] = ["|".join(
+            ":" + "-" * (col_width - 1 + (i > 0)) + ":" if align == "c"
+            else ":" + "-" * (col_width + (i > 0)) if align == "l"
             else "-" * (col_width + (i > 0)) + ":"
             for i, (col_width, align) in enumerate(zip(col_widths, alignments)))]
 
