@@ -1561,6 +1561,18 @@ class Table:
 
         return "\n".join(lines)
 
+    def csv(self):
+        """Returns a string containing a CSV representation of the table."""
+        import csv
+        import io
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerows(self.rows)
+
+        return output.getvalue().rstrip('\n')
+
+
     def latex(self, skip_lines=0, hline_after=None):
         if hline_after is None:
             hline_after = []
