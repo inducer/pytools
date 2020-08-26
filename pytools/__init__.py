@@ -153,6 +153,17 @@ Sorting in natural order
 
 .. autofunction:: natorder
 .. autofunction:: natsorted
+
+Type Variables Used
+-------------------
+
+.. class:: T
+
+    Any type.
+
+.. class:: F
+
+    Any callable.
 """
 
 # {{{ type variables
