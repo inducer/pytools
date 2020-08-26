@@ -131,7 +131,7 @@ def obj_array_vectorize(f, ary):
 
     .. note ::
 
-        This function exists because :func:`numpy.vectorize` suffers from the same
+        This function exists because :class:`numpy.vectorize` suffers from the same
         issue described under :func:`make_obj_array`.
     """
 
@@ -158,7 +158,7 @@ def rec_obj_array_vectorize(f, ary):
 
     .. note ::
 
-        This function exists because :func:`numpy.vectorize` suffers from the same
+        This function exists because :class:`numpy.vectorize` suffers from the same
         issue described under :func:`make_obj_array`.
     """
     if isinstance(ary, np.ndarray) and ary.dtype.char == "O":
@@ -186,7 +186,7 @@ def obj_array_vectorize_n_args(f, *args):
 
     .. note ::
 
-        This function exists because :func:`numpy.vectorize` suffers from the same
+        This function exists because :class:`numpy.vectorize` suffers from the same
         issue described under :func:`make_obj_array`.
     """
     oarray_arg_indices = []
