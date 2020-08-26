@@ -35,7 +35,6 @@ Graph Algorithms
 .. autofunction:: compute_sccs
 .. autoclass:: CycleError
 .. autofunction:: compute_topological_order
-.. autofunction:: compute_topological_order_v2
 .. autofunction:: compute_transitive_closure
 .. autofunction:: contains_cycle
 .. autofunction:: compute_induced_subgraph
