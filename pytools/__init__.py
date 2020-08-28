@@ -1487,11 +1487,10 @@ class Table:
     """An ASCII table generator.
 
     :arg alignments: List of alignments of each column ('l', 'c', or 'r',
-        for left, center, and right alignment, respectively). Currently only used
-        by the `github_markdown` output formatter. Columns which have no alignment
-        specifier will use the last specified alignment. For example, with
-        `alignments=['l', 'r']`, the third and all following columns will use 'r'
-        alignment.
+        for left, center, and right alignment, respectively). Columns which
+        have no alignment specifier will use the last specified alignment. For
+        example, with `alignments=['l', 'r']`, the third and all following
+        columns will use 'r' alignment.
 
     .. automethod:: add_row
     .. automethod:: __str__
