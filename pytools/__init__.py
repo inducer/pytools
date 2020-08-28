@@ -1561,16 +1561,31 @@ class Table:
 
         return "\n".join(lines)
 
-    def csv(self):
-        """Returns a string containing a CSV representation of the table."""
+    def csv(self, dialect='excel', **fmtparams):
+        """Returns a string containing a CSV representation of the table.
+
+        .. doctest ::
+
+            >>> tbl = Table()
+            >>> tbl.add_row([1, ","])
+            >>> tbl.add_row([10, 20])
+            >>> print(tbl.csv())
+            1,","
+            10,20
+        """
+
         import csv
         import io
 
+        # Default is '\r\n'
+        if not 'lineterminator' in fmtparams:
+            fmtparams['lineterminator'] = '\n'
+
         output = io.StringIO()
-        writer = csv.writer(output)
+        writer = csv.writer(output, dialect, **fmtparams)
         writer.writerows(self.rows)
 
-        return output.getvalue().rstrip('\n')
+        return output.getvalue().rstrip(fmtparams['lineterminator'])
 
     def latex(self, skip_lines=0, hline_after=None):
         if hline_after is None:
