@@ -1510,12 +1510,35 @@ class Table:
         self.rows.append([str(i) for i in row])
 
     def __str__(self):
+        """
+        Returns a string representation of the table.
+
+        .. doctest ::
+
+            >>> tbl = Table(alignments=['l', 'r', 'l'])
+            >>> tbl.add_row([1, '|'])
+            >>> tbl.add_row([10, '20||'])
+            >>> print(tbl)
+            1  |    |
+            ---+------
+            10 | 20||
+
+        """
+
         columns = len(self.rows[0])
         col_widths = [max(len(row[i]) for row in self.rows)
                       for i in range(columns)]
 
-        lines = [" | ".join([cell.ljust(col_width)
-            for cell, col_width in zip(row, col_widths)])
+        alignments = self.alignments
+        # If not all alignments were specified, extend alignments with the
+        # last alignment specified:
+        alignments += self.alignments[-1] * (columns - len(self.alignments))
+
+        lines = [" | ".join([
+            cell.center(col_width) if align == "c"
+            else cell.ljust(col_width) if align == "l"
+            else cell.rjust(col_width)
+            for cell, col_width, align in zip(row, col_widths, alignments)])
             for row in self.rows]
         lines[1:1] = ["+".join("-" * (col_width + 1 + (i > 0))
             for i, col_width in enumerate(col_widths))]
@@ -1529,15 +1552,15 @@ class Table:
 
         .. doctest ::
 
-            >>> tbl = Table(alignments=['l', 'r'])
+            >>> tbl = Table(alignments=['l', 'r', 'l'])
             >>> tbl.add_row([1, '|'])
-            >>> tbl.add_row([10, 20])
-            >>> s = tbl.github_markdown().splitlines()
-            >>> assert s[0] == "1  | \\|"
-            >>> assert s[1] == ":--|---:"
-            >>> assert s[2] == "10 | 20"
+            >>> tbl.add_row([10, '20||'])
+            >>> print(tbl.github_markdown())
+            1  |     \|
+            :--|-------:
+            10 | 20\|\|
 
-        """
+        """  # noqa: W605
         # Pipe symbols ('|') must be replaced
         rows = [[w.replace('|', '\\|') for w in r] for r in self.rows]
 
