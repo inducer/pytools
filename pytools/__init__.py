@@ -1499,9 +1499,12 @@ class Table:
     .. automethod:: github_markdown
     """
 
-    def __init__(self, alignments=['l', 'r']):
+    def __init__(self, alignments=None):
         self.rows = []
-        self.alignments = alignments
+        if alignments is not None:
+            self.alignments = alignments
+        else:
+            self.alignments = ['l']
 
     def add_row(self, row):
         self.rows.append([str(i) for i in row])
