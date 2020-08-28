@@ -1578,7 +1578,7 @@ class Table:
         import io
 
         # Default is '\r\n'
-        if not 'lineterminator' in fmtparams:
+        if 'lineterminator' not in fmtparams:
             fmtparams['lineterminator'] = '\n'
 
         output = io.StringIO()
