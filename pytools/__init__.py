@@ -1597,8 +1597,9 @@ class Table:
 
         return "\n".join(lines)
 
-    def csv(self, dialect='excel', **fmtparams):
+    def csv(self, dialect='excel', csv_kwargs=None):
         """Returns a string containing a CSV representation of the table.
+        The `dialect` and `csv_kwargs` parameters are passed to :func:`csv.writer`.
 
         .. doctest ::
 
@@ -1613,15 +1614,18 @@ class Table:
         import csv
         import io
 
+        if csv_kwargs is None:
+            csv_kwargs = {}
+
         # Default is '\r\n'
-        if 'lineterminator' not in fmtparams:
-            fmtparams['lineterminator'] = '\n'
+        if 'lineterminator' not in csv_kwargs:
+            csv_kwargs['lineterminator'] = '\n'
 
         output = io.StringIO()
-        writer = csv.writer(output, dialect, **fmtparams)
+        writer = csv.writer(output, dialect, **csv_kwargs)
         writer.writerows(self.rows)
 
-        return output.getvalue().rstrip(fmtparams['lineterminator'])
+        return output.getvalue().rstrip(csv_kwargs['lineterminator'])
 
     def latex(self, skip_lines=0, hline_after=None):
         if hline_after is None:
