@@ -1599,7 +1599,9 @@ class Table:
 
     def csv(self, dialect='excel', csv_kwargs=None):
         """Returns a string containing a CSV representation of the table.
-        The `dialect` and `csv_kwargs` parameters are passed to :func:`csv.writer`.
+
+        :arg dialect: String passed to :func:`csv.writer`.
+        :arg csv_kwargs: Dict of arguments passed to :func:`csv.writer`.
 
         .. doctest ::
 
