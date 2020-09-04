@@ -105,3 +105,5 @@ your time series data, for example:
 - Make a scatterplot correlating memory transfer amounts and simulation time
 
 .. automodule:: pytools.log
+
+.. no-doctest
