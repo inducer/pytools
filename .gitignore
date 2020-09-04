@@ -14,3 +14,5 @@ distribute*tar.gz
 
 .cache
 .mypy_cache
+
+*.dat

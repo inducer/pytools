@@ -1,4 +1,4 @@
-Python 3:
+Pytest:
   script:
   - py_version=3
   - export EXTRA_INSTALL="numpy"
@@ -11,6 +11,18 @@ Python 3:
   artifacts:
     reports:
       junit: test/pytest.xml
+
+Examples:
+  script: |
+    EXTRA_INSTALL="numpy pymbolic"
+    curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/ci-support.sh
+    . ./ci-support.sh
+    build_py_project_in_venv
+    run_examples
+  tags:
+  - python3
+  except:
+  - tags
 
 Flake8:
   script:
