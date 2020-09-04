@@ -1,6 +1,60 @@
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
+"""
+Log Quantity Abstract Interfaces
+--------------------------------
+
+.. autoclass:: LogQuantity
+.. autoclass:: PostLogQuantity
+.. autoclass:: MultiLogQuantity
+.. autoclass:: MultiPostLogQuantity
+
+Log Manager
+-----------
+
+.. autoclass:: LogManager
+.. autofunction:: add_run_info
+
+Built-in Log General-Purpose Quantities
+---------------------------------------
+.. autoclass:: IntervalTimer
+.. autoclass:: LogUpdateDuration
+.. autoclass:: EventCounter
+.. autoclass:: TimestepCounter
+.. autoclass:: StepToStepDuration
+.. autoclass:: TimestepDuration
+.. autoclass:: CPUTime
+.. autoclass:: ETA
+.. autofunction:: add_general_quantities
+
+Built-in Log Simulation-Related Quantities
+------------------------------------------
+.. autoclass:: SimulationTime
+.. autoclass:: Timestep
+.. autofunction:: set_dt
+.. autofunction:: add_simulation_quantities
+"""
+
+__copyright__ = "Copyright (C) 2009-2013 Andreas Kloeckner"
+
+__license__ = """
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+"""
+
 
 import logging
 import six
@@ -30,7 +84,12 @@ def time():
 # {{{ abstract logging interface
 
 class LogQuantity(object):
-    """A source of loggable scalars."""
+    """A source of loggable scalars.
+
+    .. automethod:: __init__
+    .. automethod:: tick
+    .. automethod:: __call__
+    """
 
     sort_weight = 0
 
@@ -57,8 +116,12 @@ class LogQuantity(object):
 
 
 class PostLogQuantity(LogQuantity):
-    """A source of loggable scalars."""
+    """A source of loggable scalars.
 
+    .. automethod:: __init__
+    .. automethod:: tick
+    .. automethod:: prepare_for_tick
+    """
     sort_weight = 0
 
     def prepare_for_tick(self):
@@ -264,10 +327,10 @@ def _set_up_schema(db_conn):
 
 
 class LogManager(object):
-    """A parallel-capable diagnostic time-series logging facility.
-    It is meant to log data from a computation, with certain log
-    quantities available before a cycle, and certain other ones
-    afterwards. A timeline of invocations looks as follows::
+    """A distributed-memory-capable diagnostic time-series logging facility.
+    It is meant to log data from a computation, with certain log quantities
+    available before a cycle, and certain other ones afterwards. A timeline of
+    invocations looks as follows::
 
         tick_before()
         compute...
@@ -294,8 +357,32 @@ class LogManager(object):
     If MPI parallelism is used, the "head rank" below always refers to
     rank 0.
 
-    Command line tools called :command:`runalyzer` and :command:`logtool`
-    (deprecated) are available for looking at the data in a saved log.
+    Command line tools called :command:`runalyzer` (in the `datapyle package
+    <https://github.com/inducer/datapyle>`__) are available for looking at the
+    data in a saved log.
+
+    .. automethod:: __init__
+    .. automethod:: save
+    .. automethod:: close
+
+    .. rubric:: Data retrieval
+
+    .. automethod:: get_table
+    .. automethod:: get_warnings
+    .. automethod:: get_expr_dataset
+    .. automethod:: get_joint_dataset
+
+    .. rubric:: Configuration
+
+    .. automethod:: capture_warnings
+    .. automethod:: add_watches
+    .. automethod:: set_constant
+    .. automethod:: add_quantity
+
+    .. rubric:: Time Loop
+
+    .. automethod:: tick_before
+    .. automethod:: tick_after
     """
 
     def __init__(self, filename=None, mode="r", mpi_comm=None, capture_warnings=True,
@@ -307,7 +394,7 @@ class LogManager(object):
         :param mode: One of "w", "r" for write, read. "w" assumes that the
           database is initially empty. May also be "wu" to indicate that
           a unique filename should be chosen automatically.
-        :arg mpi_comm: A :mod:`mpi4py.MPI.Comm`. If given, logs are
+        :arg mpi_comm: A `mpi4py.MPI.Comm`. If given, logs are
             periodically synchronized to the head node, which then writes them
             out to disk.
         :param capture_warnings: Tap the Python warnings facility and save warnings
@@ -693,12 +780,12 @@ class LogManager(object):
     def get_expr_dataset(self, expression, description=None, unit=None):
         """Prepare a time-series dataset for a given expression.
 
-        @arg expression: A C{pymbolic} expression that may involve
+        :arg expression: A :mod:`pymbolic` expression that may involve
           the time-series variables and the constants in this :class:`LogManager`.
           If there is data from multiple ranks for a quantity occuring in
           this expression, an aggregator may have to be specified.
-        @return: C{(description, unit, table)}, where C{table}
-          is a list of tuples C{(tick_nbr, value)}.
+        :returns: ``(description, unit, table)``, where *table*
+          is a list of tuples ``(tick_nbr, value)``.
 
         Aggregators are specified as follows:
         - C{qty.min}, C{qty.max}, C{qty.avg}, C{qty.sum}, C{qty.norm2}
@@ -747,13 +834,13 @@ class LogManager(object):
     def get_joint_dataset(self, expressions):
         """Return a joint data set for a list of expressions.
 
-        @arg expressions: a list of either strings representing
+        :arg expressions: a list of either strings representing
           expressions directly, or triples (descr, unit, expr).
           In the former case, the description and the unit are
           found automatically, if possible. In the latter case,
           they are used as specified.
-        @return: A triple C{(descriptions, units, table)}, where
-        C{table} is a a list of C{[(tstep, (val_expr1, val_expr2,...)...]}.
+        :returns: A triple ``(descriptions, units, table)``, where
+            *table* is a a list of C{[(tstep, (val_expr1, val_expr2,...)...]}.
         """
 
         # dubs is a list of (desc, unit, table) triples as
@@ -811,7 +898,7 @@ class LogManager(object):
         outf.close()
 
     def plot_matplotlib(self, expr_x, expr_y):
-        from pylab import xlabel, ylabel, plot
+        from matplotlib.pyplot import xlabel, ylabel, plot
 
         (data_x, descr_x, unit_x), (data_y, descr_y, unit_y) = \
                 self.get_plot_data(expr_x, expr_y)
@@ -966,13 +1053,25 @@ class _SubTimer:
         del self.start_time
         return self
 
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
+
     def submit(self):
         self.itimer.add_time(self.elapsed)
         del self.elapsed
 
 
 class IntervalTimer(PostLogQuantity):
-    """Records elapsed times."""
+    """Records elapsed times supplied by the user either through
+    sub-timers, or by explicitly calling :meth:`add_time`.
+
+    .. automethod:: __init__
+    .. automethod:: start_sub_timer
+    .. automethod:: add_time
+    """
 
     def __init__(self, name, description=None):
         LogQuantity.__init__(self, name, "s", description)
@@ -992,7 +1091,10 @@ class IntervalTimer(PostLogQuantity):
 
 
 class LogUpdateDuration(LogQuantity):
-    """Records how long the last :meth:`LogManager.tick` invocation took."""
+    """Records how long the last log update in :class:`LogManager` took.
+
+    .. automethod:: __init__
+    """
 
     # FIXME this is off by one tick
 
@@ -1005,7 +1107,12 @@ class LogUpdateDuration(LogQuantity):
 
 
 class EventCounter(PostLogQuantity):
-    """Counts events signaled by :meth:`add`."""
+    """Counts events signaled by :meth:`add`.
+
+    .. automethod:: __init__
+    .. automethod:: add
+    .. automethod:: transfer
+    """
 
     def __init__(self, name="interval", description=None):
         PostLogQuantity.__init__(self, name, "1", description)
@@ -1039,7 +1146,7 @@ def time_and_count_function(f, timer, counter=None, increment=1):
 
 
 class TimestepCounter(LogQuantity):
-    """Counts the number of times :meth:`LogManager.tick` is called."""
+    """Counts the number of times :class:`LogManager` ticks."""
 
     def __init__(self, name="step"):
         LogQuantity.__init__(self, name, "1", "Timesteps")
@@ -1055,6 +1162,8 @@ class StepToStepDuration(PostLogQuantity):
     """Records the CPU time between invocations of
     :meth:`LogManager.tick_before` and
     :meth:`LogManager.tick_after`.
+
+    .. automethod:: __init__
     """
 
     def __init__(self, name="t_2step"):
@@ -1077,6 +1186,8 @@ class TimestepDuration(PostLogQuantity):
     """Records the CPU time between the starts of time steps.
     :meth:`LogManager.tick_before` and
     :meth:`LogManager.tick_after`.
+
+    .. automethod:: __init__
     """
 
     # We would like to run last, so that if log gathering takes any
@@ -1098,7 +1209,10 @@ class TimestepDuration(PostLogQuantity):
 
 
 class CPUTime(LogQuantity):
-    """Records (monotonically increasing) CPU time."""
+    """Records (monotonically increasing) CPU time.
+
+    .. automethod:: __init__
+    """
     def __init__(self, name="t_cpu"):
         LogQuantity.__init__(self, name, "s", "Wall time")
 
@@ -1109,7 +1223,10 @@ class CPUTime(LogQuantity):
 
 
 class ETA(LogQuantity):
-    """Records an estimate of how long the computation will still take."""
+    """Records an estimate of how long the computation will still take.
+
+    .. automethod:: __init__
+    """
     def __init__(self, total_steps, name="t_eta"):
         LogQuantity.__init__(self, name, "s", "Estimated remaining duration")
 
@@ -1128,7 +1245,7 @@ class ETA(LogQuantity):
 
 
 def add_general_quantities(mgr):
-    """Add generally applicable :class:`LogQuantity` objects to C{mgr}."""
+    """Add generally applicable :class:`LogQuantity` objects to *mgr*."""
 
     mgr.add_quantity(TimestepDuration())
     mgr.add_quantity(StepToStepDuration())

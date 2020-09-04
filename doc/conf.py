@@ -36,6 +36,7 @@ extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode']
+autoclass_content = "class"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -176,8 +177,7 @@ texinfo_documents = [
 
 
 intersphinx_mapping = {
-        'http://docs.python.org/dev': None,
-        'http://docs.scipy.org/doc/numpy/': None,
-        }
-
-
+    "https://docs.python.org/3": None,
+    "https://numpy.org/doc/stable": None,
+    "https://documen.tician.de/pymbolic/": None,
+    }
