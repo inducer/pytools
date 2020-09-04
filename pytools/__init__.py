@@ -1597,6 +1597,38 @@ class Table:
 
         return "\n".join(lines)
 
+    def csv(self, dialect='excel', csv_kwargs=None):
+        """Returns a string containing a CSV representation of the table.
+
+        :arg dialect: String passed to :func:`csv.writer`.
+        :arg csv_kwargs: Dict of arguments passed to :func:`csv.writer`.
+
+        .. doctest ::
+
+            >>> tbl = Table()
+            >>> tbl.add_row([1, ","])
+            >>> tbl.add_row([10, 20])
+            >>> print(tbl.csv())
+            1,","
+            10,20
+        """
+
+        import csv
+        import io
+
+        if csv_kwargs is None:
+            csv_kwargs = {}
+
+        # Default is '\r\n'
+        if 'lineterminator' not in csv_kwargs:
+            csv_kwargs['lineterminator'] = '\n'
+
+        output = io.StringIO()
+        writer = csv.writer(output, dialect, **csv_kwargs)
+        writer.writerows(self.rows)
+
+        return output.getvalue().rstrip(csv_kwargs['lineterminator'])
+
     def latex(self, skip_lines=0, hline_after=None):
         if hline_after is None:
             hline_after = []
