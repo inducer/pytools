@@ -226,26 +226,26 @@ def test_prioritzed_topological_sort_examples():
 
     from pytools.graph import compute_topological_order
 
-    keys = {'a': 4, 'b': 3, 'c': 2, 'e': 1, 'd': 4}
+    keys = {"a": 4, "b": 3, "c": 2, "e": 1, "d": 4}
     dag = {
-            'a': ['b', 'c'],
-            'b': [],
-            'c': ['d', 'e'],
-            'd': [],
-            'e': []}
+            "a": ["b", "c"],
+            "b": [],
+            "c": ["d", "e"],
+            "d": [],
+            "e": []}
 
     assert compute_topological_order(dag, key=keys.get) == [
-            'a', 'c', 'e', 'b', 'd']
+            "a", "c", "e", "b", "d"]
 
-    keys = {'a': 7, 'b': 2, 'c': 1, 'd': 0}
+    keys = {"a": 7, "b": 2, "c": 1, "d": 0}
     dag = {
-            'd': set('c'),
-            'b': set('a'),
-            'a': set(),
-            'c': set('a'),
+            "d": set("c"),
+            "b": set("a"),
+            "a": set(),
+            "c": set("a"),
             }
 
-    assert compute_topological_order(dag, key=keys.get) == ['d', 'c', 'b', 'a']
+    assert compute_topological_order(dag, key=keys.get) == ["d", "c", "b", "a"]
 
 
 def test_prioritzed_topological_sort():

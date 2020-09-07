@@ -63,12 +63,12 @@ import six
 
 def _resolve_name(name, package, level):
     """Return the absolute name of the module to be imported."""
-    if not hasattr(package, 'rindex'):
+    if not hasattr(package, "rindex"):
         raise ValueError("'package' not set to a string")
     dot = len(package)
     for _ in six.moves.xrange(level, 1, -1):
         try:
-            dot = package.rindex('.', 0, dot)
+            dot = package.rindex(".", 0, dot)
         except ValueError:
             raise ValueError("attempted relative import beyond top-level "
                              "package")
@@ -81,12 +81,12 @@ def import_module(name, package=None):
     specifies the package to use as the anchor point from which to resolve the
     relative import to an absolute import.
     """
-    if name.startswith('.'):
+    if name.startswith("."):
         if not package:
             raise TypeError("relative imports require the 'package' argument")
         level = 0
         for character in name:
-            if character != '.':
+            if character != ".":
                 break
             level += 1
         name = _resolve_name(name[level:], package, level)

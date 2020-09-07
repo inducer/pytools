@@ -249,7 +249,7 @@ class KeyBuilder(object):
     if sys.version_info >= (3,):
         @staticmethod
         def update_for_str(key_hash, key):
-            key_hash.update(key.encode('utf8'))
+            key_hash.update(key.encode("utf8"))
 
         @staticmethod
         def update_for_bytes(key_hash, key):
@@ -261,7 +261,7 @@ class KeyBuilder(object):
 
         @staticmethod
         def update_for_unicode(key_hash, key):
-            key_hash.update(key.encode('utf8'))
+            key_hash.update(key.encode("utf8"))
 
     def update_for_tuple(self, key_hash, key):
         for obj_i in key:
@@ -274,11 +274,11 @@ class KeyBuilder(object):
     @staticmethod
     def update_for_NoneType(key_hash, key):  # noqa
         del key
-        key_hash.update("<None>".encode('utf8'))
+        key_hash.update("<None>".encode("utf8"))
 
     @staticmethod
     def update_for_dtype(key_hash, key):
-        key_hash.update(key.str.encode('utf8'))
+        key_hash.update(key.str.encode("utf8"))
 
     # }}}
 

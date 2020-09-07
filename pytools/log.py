@@ -284,7 +284,7 @@ def _get_unique_id():
         rng = Random()
         rng.seed()
         for i in range(20):
-            checksum.update(str(rng.randrange(1 << 30)).encode('utf-32'))
+            checksum.update(str(rng.randrange(1 << 30)).encode("utf-32"))
         return checksum.hexdigest()
     else:
         return uuid1().hex
