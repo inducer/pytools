@@ -169,7 +169,7 @@ Type Variables Used
 # {{{ type variables
 
 T = TypeVar("T")
-F = TypeVar('F', bound=Callable[..., Any])
+F = TypeVar("F", bound=Callable[..., Any])
 
 # }}}
 
@@ -341,7 +341,7 @@ class Record(RecordWithoutPickling):
 
 
 class ImmutableRecordWithoutPickling(RecordWithoutPickling):
-    "Hashable record. Does not explicitly enforce immutability."
+    """Hashable record. Does not explicitly enforce immutability."""
     def __init__(self, *args, **kwargs):
         RecordWithoutPickling.__init__(self, *args, **kwargs)
         self._cached_hash = None
@@ -523,7 +523,7 @@ def memoize(*args: F, **kwargs: Any) -> F:
         which computes and returns the cache key.
     """
 
-    use_kw = bool(kwargs.pop('use_kwargs', False))
+    use_kw = bool(kwargs.pop("use_kwargs", False))
 
     default_key_func: Optional[Callable[..., Any]]
 
@@ -1514,7 +1514,7 @@ class Table:
         if alignments is not None:
             self.alignments = alignments
         else:
-            self.alignments = ['l']
+            self.alignments = ["l"]
 
     def add_row(self, row):
         self.rows.append([str(i) for i in row])
@@ -1572,7 +1572,7 @@ class Table:
 
         """  # noqa: W605
         # Pipe symbols ('|') must be replaced
-        rows = [[w.replace('|', '\\|') for w in r] for r in self.rows]
+        rows = [[w.replace("|", "\\|") for w in r] for r in self.rows]
 
         columns = len(rows[0])
         col_widths = [max(len(row[i]) for row in rows)
@@ -1597,7 +1597,7 @@ class Table:
 
         return "\n".join(lines)
 
-    def csv(self, dialect='excel', csv_kwargs=None):
+    def csv(self, dialect="excel", csv_kwargs=None):
         """Returns a string containing a CSV representation of the table.
 
         :arg dialect: String passed to :func:`csv.writer`.
@@ -1619,15 +1619,15 @@ class Table:
         if csv_kwargs is None:
             csv_kwargs = {}
 
-        # Default is '\r\n'
-        if 'lineterminator' not in csv_kwargs:
-            csv_kwargs['lineterminator'] = '\n'
+        # Default is "\r\n"
+        if "lineterminator" not in csv_kwargs:
+            csv_kwargs["lineterminator"] = "\n"
 
         output = io.StringIO()
         writer = csv.writer(output, dialect, **csv_kwargs)
         writer.writerows(self.rows)
 
-        return output.getvalue().rstrip(csv_kwargs['lineterminator'])
+        return output.getvalue().rstrip(csv_kwargs["lineterminator"])
 
     def latex(self, skip_lines=0, hline_after=None):
         if hline_after is None:
@@ -1706,13 +1706,13 @@ def word_wrap(text, width, wrap_using="\n"):
     breaks are posix newlines (``\n``).
     """
     space_or_break = [" ", wrap_using]
-    return reduce(lambda line, word: '%s%s%s' %
+    return reduce(lambda line, word: "%s%s%s" %
             (line,
-                space_or_break[(len(line)-line.rfind('\n')-1
-                    + len(word.split('\n', 1)[0])
+                space_or_break[(len(line)-line.rfind("\n")-1
+                    + len(word.split("\n", 1)[0])
                     >= width)],
                     word),
-            text.split(' ')
+            text.split(" ")
             )
 
 # }}}
@@ -1723,9 +1723,9 @@ def word_wrap(text, width, wrap_using="\n"):
 def _exec_arg(arg, execenv):
     import os
     if os.access(arg, os.F_OK):
-        exec(compile(open(arg, "r"), arg, 'exec'), execenv)
+        exec(compile(open(arg, "r"), arg, "exec"), execenv)
     else:
-        exec(compile(arg, "<command line>", 'exec'), execenv)
+        exec(compile(arg, "<command line>", "exec"), execenv)
 
 
 class CPyUserInterface(object):
@@ -2187,14 +2187,14 @@ def find_git_revision(tree_root):  # pylint: disable=too-many-locals
     # https://github.com/numpy/numpy/blob/055ce3e90b50b5f9ef8cf1b8641c42e391f10735/setup.py#L70-L92
     import os
     env = {}
-    for k in ['SYSTEMROOT', 'PATH', 'HOME']:
+    for k in ["SYSTEMROOT", "PATH", "HOME"]:
         v = os.environ.get(k)
         if v is not None:
             env[k] = v
     # LANGUAGE is used on win32
-    env['LANGUAGE'] = 'C'
-    env['LANG'] = 'C'
-    env['LC_ALL'] = 'C'
+    env["LANGUAGE"] = "C"
+    env["LANG"] = "C"
+    env["LC_ALL"] = "C"
 
     from subprocess import Popen, PIPE, STDOUT
     p = Popen(["git", "rev-parse", "HEAD"], shell=False,

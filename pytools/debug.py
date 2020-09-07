@@ -147,7 +147,7 @@ def refdebug(obj, top_level=True, exclude=()):  # noqa: E501  pylint:disable=too
 
 def get_shell_hist_filename():
     import os
-    _home = os.environ.get('HOME', '/')
+    _home = os.environ.get("HOME", "/")
     return os.path.join(_home, ".pytools-debug-shell-history")
 
 
