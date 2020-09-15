@@ -788,9 +788,9 @@ class LogManager(object):
           is a list of tuples ``(tick_nbr, value)``.
 
         Aggregators are specified as follows:
-        - C{qty.min}, C{qty.max}, C{qty.avg}, C{qty.sum}, C{qty.norm2}
-        - C{qty[rank_nbr]}
-        - C{qty.loc}
+        - ``qty.min``, ``qty.max``, ``qty.avg``, ``qty.sum``, ``qty.norm2``
+        - ``qty[rank_nbr]``
+        - ``qty.loc``
         """
 
         parsed = self._parse_expr(expression)
@@ -840,7 +840,7 @@ class LogManager(object):
           found automatically, if possible. In the latter case,
           they are used as specified.
         :returns: A triple ``(descriptions, units, table)``, where
-            *table* is a a list of C{[(tstep, (val_expr1, val_expr2,...)...]}.
+            *table* is a a list of ``[(tstep, (val_expr1, val_expr2,...)...]``.
         """
 
         # dubs is a list of (desc, unit, table) triples as
@@ -1276,7 +1276,7 @@ class Timestep(SimulationLogQuantity):
 
 
 def set_dt(mgr, dt):
-    """Set the simulation timestep on :class:`LogManager` C{mgr} to C{dt}."""
+    """Set the simulation timestep on :class:`LogManager` *mgr* to *dt*."""
 
     for gd_lst in [mgr.before_gather_descriptors,
             mgr.after_gather_descriptors]:
