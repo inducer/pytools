@@ -166,12 +166,8 @@ class ItemDirManager(CleanupBase):
                 raise
 
     def mkdir(self):
-        from os import mkdir
-        try:
-            mkdir(self.path)
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
+        from os import makedirs
+        makedirs(self.path, exist_ok=True)
 
     def clean_up(self):
         pass
@@ -432,7 +428,7 @@ class _PersistentDictBase(object):
             import appdirs
             container_dir = join(
                     appdirs.user_cache_dir("pytools", "pytools"),
-                    "pdict-v2-%s-py%s" % (
+                    "pdict-v3-%s-py%s" % (
                         identifier,
                         ".".join(str(i) for i in sys.version_info),))
 
@@ -468,7 +464,14 @@ class _PersistentDictBase(object):
 
     def _item_dir(self, hexdigest_key):
         from os.path import join
-        return join(self.container_dir, hexdigest_key)
+        # Some file systems limit the number of directories in a directory.
+        # For ext4, that limit appears to be 64K for example.
+        # This doesn't solve that problem, but it makes it much less likely
+
+        return join(self.container_dir,
+                hexdigest_key[:3],
+                hexdigest_key[3:6],
+                hexdigest_key[6:])
 
     def _key_file(self, hexdigest_key):
         from os.path import join
