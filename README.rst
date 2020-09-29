@@ -29,3 +29,6 @@ Links:
 * `Documentation <https://documen.tician.de/pytools>`_
 
 * `Github <https://github.com/inducer/pytools>`_
+
+* ``pytools.log`` has been spun out into a separate project,
+  `logpyle <https://github.com/illinois-ceesd/logpyle>`__.
