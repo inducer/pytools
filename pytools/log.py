@@ -5,4 +5,4 @@ warn("pytools.log was moved to https://github.com/illinois-ceesd/logpyle/. "
         "'pip install logpyle', and change your imports from 'pytools.log' "
         "to 'logpyle'.", DeprecationWarning)
 
-from logpyle import *  # noqa
+from logpyle import *  # noqa  # pylint: disable=import-error
