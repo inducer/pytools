@@ -10,7 +10,6 @@ Welcome to pytools's documentation!
     persistent_dict
     graph
     codegen
-    log
     misc
 
 Indices and tables
