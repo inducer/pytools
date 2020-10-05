@@ -2,9 +2,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import (Tuple, Any, FrozenSet)
 
-
-
 # {{{ dotted name
+
 
 class DottedName:
     """
@@ -42,11 +41,13 @@ class DottedName:
                              "start with double underscores")
         return cls(name_parts)
 
+
 # }}}
 
 # {{{ tag
 
 tag_dataclass = dataclass(init=True, eq=True, frozen=True, repr=True)
+
 
 @tag_dataclass
 class Tag:
