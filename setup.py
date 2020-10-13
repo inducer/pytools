@@ -21,7 +21,7 @@ requirements = [
           "numpy>=1.6.0",
           ]
 
-if version[0] == 3 and version[1] = 6:
+if version[0] == 3 and version[1] == 6:
     requirements.append("dataclasses")
 
 setup(name="pytools",
