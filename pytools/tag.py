@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import (Tuple, Any, FrozenSet)
+from typing import Tuple, Any, FrozenSet
 
 # {{{ dotted name
 
