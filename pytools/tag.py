@@ -58,7 +58,7 @@ class DottedName:
         self.name_parts = name_parts
 
     @classmethod
-    def from_class(cls, argcls: Any) -> DottedName:
+    def from_class(cls, argcls: Any) -> "DottedName":
         name_parts = tuple(
                 [str(part) for part in argcls.__module__.split(".")]
                 + [str(argcls.__name__)])
