@@ -22,7 +22,7 @@ requirements = [
           ]
 
 if version[0] == 3 and version[1] == 6:
-    requirements.append("dataclasses")
+    requirements.append("dataclasses>=0.7")
 
 setup(name="pytools",
       version=ver_dic["VERSION_TEXT"],
