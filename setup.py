@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from setuptools import setup
+import sys
 
 ver_dic = {}
 version_file = open("pytools/version.py")
@@ -11,6 +12,17 @@ finally:
     version_file.close()
 
 exec(compile(version_file_contents, "pytools/version.py", "exec"), ver_dic)
+
+version = sys.version_info
+requirements = [
+          "decorator>=3.2.0",
+          "appdirs>=1.4.0",
+          "six>=1.8.0",
+          "numpy>=1.6.0",
+          ]
+
+if version[0] == 3 and version[1] = 6:
+    requirements.append("dataclasses")
 
 setup(name="pytools",
       version=ver_dic["VERSION_TEXT"],
@@ -37,12 +49,7 @@ setup(name="pytools",
 
       python_requires="~=3.6",
 
-      install_requires=[
-          "decorator>=3.2.0",
-          "appdirs>=1.4.0",
-          "six>=1.8.0",
-          "numpy>=1.6.0",
-          ],
+      install_requires=requirements,
 
       package_data={"pytools": ["py.typed"]},
 
