@@ -89,3 +89,5 @@ class UniqueTag(Tag):
 TagsType = FrozenSet[Tag]
 
 # }}}
+
+# vim: foldmethod=marker
