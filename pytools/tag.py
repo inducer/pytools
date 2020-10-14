@@ -30,7 +30,6 @@ THE SOFTWARE.
 # {{{ docs
 
 __doc__ = """
-.. currentmodule:: pytools
 
 Tag Interface
 ---------------
@@ -42,8 +41,6 @@ Supporting Functionality
 ------------------------
 
 .. autoclass:: DottedName
-
-.. currentmodule:: pytools.tag
 
 Aliases
 -------
