@@ -44,7 +44,7 @@ Mypy:
 
 Pylint:
   script:
-  - EXTRA_INSTALL="pymbolic matplotlib"
+  - EXTRA_INSTALL="pymbolic"
   - py_version=3
   - curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/prepare-and-run-pylint.sh
   - . ./prepare-and-run-pylint.sh "$CI_PROJECT_NAME" test/test_*.py
