@@ -120,6 +120,11 @@ Name generation
 .. autofunction:: generate_numbered_unique_names
 .. autoclass:: UniqueNameGenerator
 
+Deprecation Warnings
+--------------------
+
+.. autofunction:: deprecate_keyword
+
 Functions for dealing with (large) auxiliary files
 --------------------------------------------------
 
