@@ -43,8 +43,6 @@ Supporting Functionality
 
 .. autoclass:: DottedName
 
-.. currentmodule:: pytools.tag
-
 Aliases
 -------
 
