@@ -41,7 +41,8 @@ Supporting Functionality
 ------------------------
 
 .. autoclass:: DottedName
-
+"""
+"""
 Aliases
 -------
 
@@ -116,7 +117,7 @@ tag_dataclass = dataclass(init=True, eq=True, frozen=True, repr=True)
 class Tag:
     """
     Generic metadata, applied to, among other things,
-    instances of :class:`Array`.
+    pytato Arrays.
 
     .. attribute:: tag_name
 
