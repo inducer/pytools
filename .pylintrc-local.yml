@@ -1,3 +1,6 @@
 - arg: ignore
   val:
     - mpiwrap.py
+- arg: ignored-modules
+  val:
+  - matplotlib
