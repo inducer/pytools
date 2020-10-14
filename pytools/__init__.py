@@ -26,7 +26,7 @@ THE SOFTWARE.
 """
 
 
-from functools import reduce
+from functools import reduce, wraps
 import operator
 import sys
 import logging
@@ -120,6 +120,11 @@ Name generation
 .. autofunction:: generate_numbered_unique_names
 .. autoclass:: UniqueNameGenerator
 
+Deprecation Warnings
+--------------------
+
+.. autofunction:: deprecate_keyword
+
 Functions for dealing with (large) auxiliary files
 --------------------------------------------------
 
@@ -170,6 +175,69 @@ Type Variables Used
 
 T = TypeVar("T")
 F = TypeVar("F", bound=Callable[..., Any])
+
+# }}}
+
+
+# {{{ code maintenance
+
+class MovedFunctionDeprecationWrapper:
+    def __init__(self, f, deadline=None):
+        if deadline is None:
+            deadline = "the future"
+
+        self.f = f
+        self.deadline = deadline
+
+    def __call__(self, *args, **kwargs):
+        from warnings import warn
+        warn(f"This function is deprecated and will go away in {self.deadline}. "
+            f"Use {self.f.__module}.{self.f.__name__} instead.",
+            DeprecationWarning, stacklevel=2)
+
+        return self.f(*args, **kwargs)
+
+
+def deprecate_keyword(oldkey: str,
+        newkey: Optional[str] = None, *,
+        deadline: Optional[str] = None):
+    """Decorator used to deprecate function keyword arguments.
+
+    :arg oldkey: deprecated argument name.
+    :arg newkey: new argument name that serves the same purpose, if any.
+    :arg deadline: expected time frame for the removal of the deprecated argument.
+    """
+    from warnings import warn
+
+    if deadline is None:
+        deadline = "the future"
+
+    def wrapper(func):
+        @wraps(func)
+        def inner_wrapper(*args, **kwargs):
+            if oldkey in kwargs:
+                if newkey is None:
+                    warn(f"The '{oldkey}' keyword is deprecated and will "
+                            f"go away in {deadline}.",
+                            DeprecationWarning, stacklevel=2)
+                else:
+                    warn(f"The '{oldkey}' keyword is deprecated and will "
+                            f"go away in {deadline}. "
+                            f"Use '{newkey}' instead.",
+                            DeprecationWarning, stacklevel=2)
+
+                    if newkey in kwargs:
+                        raise ValueError(f"Cannot use '{oldkey}' "
+                                f"and '{newkey}' in the same call.")
+
+                    kwargs[newkey] = kwargs[oldkey]
+                    del kwargs[oldkey]
+
+            return func(*args, **kwargs)
+
+        return inner_wrapper
+
+    return wrapper
 
 # }}}
 
@@ -778,7 +846,6 @@ def memoize_method_nested(inner):
             "Use @memoize_in(self, 'identifier') instead", DeprecationWarning,
             stacklevel=2)
 
-    from functools import wraps
     cache_dict_name = intern("_memoize_inner_dic_%s_%s_%d"
             % (inner.__name__, inner.__code__.co_filename,
                 inner.__code__.co_firstlineno))
@@ -827,8 +894,6 @@ class memoize_in(object):  # noqa
         self.cache_dict = memoize_in_dict.setdefault(identifier, {})
 
     def __call__(self, inner):
-        from functools import wraps
-
         @wraps(inner)
         def new_inner(*args):
             try:
@@ -1461,23 +1526,6 @@ def get_write_to_map_from_permutation(original, permuted):
 
     assert len(where_in_permuted) == len(permuted)
     return tuple(where_in_permuted[oi] for oi in original)
-
-# }}}
-
-
-# {{{ code maintenance
-
-class MovedFunctionDeprecationWrapper:
-    def __init__(self, f):
-        self.f = f
-
-    def __call__(self, *args, **kwargs):
-        from warnings import warn
-        warn("This function is deprecated. Use %s.%s instead." % (
-            self.f.__module__, self.f.__name__),
-            DeprecationWarning, stacklevel=2)
-
-        return self.f(*args, **kwargs)
 
 # }}}
 
