@@ -30,7 +30,6 @@ THE SOFTWARE.
 # {{{ docs
 
 __doc__ = """
-.. currentmodule:: pytools
 
 Tag Interface
 ---------------
