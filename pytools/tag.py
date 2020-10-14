@@ -41,8 +41,7 @@ Supporting Functionality
 ------------------------
 
 .. autoclass:: DottedName
-"""
-"""
+
 Aliases
 -------
 
