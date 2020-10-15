@@ -111,11 +111,6 @@ class Tag:
     Positional arguments are not allowed.
 
    .. automethod:: __repr__
-
-   .. note::
-
-       This mirrors the tagging scheme that :mod:`loopy`
-       is headed towards.
     """
 
     @property
