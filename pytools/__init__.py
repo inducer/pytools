@@ -1049,7 +1049,7 @@ def partition2(iterable):
     return part_true, part_false
 
 
-def product(iterable):
+def product(iterable: Iterable[Any]) -> Any:
     from operator import mul
     return reduce(mul, iterable, 1)
 
