@@ -42,24 +42,6 @@ Supporting Functionality
 
 .. autoclass:: DottedName
 
-Aliases
--------
-
-(This section exists because Sphinx, our documentation tool, can't (yet)
-canonicalize type references. Once Sphinx 4.0 is released, we should use the
-``:canonical:`` option here.)
-
-.. class:: DottedName
-
-    Should be referenced as :class:`pytools.DottedName`.
-
-.. class:: Tag
-
-    Should be referenced as :class:`pytools.Tag`.
-
-.. class:: UniqueTag
-
-    Should be referenced as :class:`pytools.UniqueTag`.
 """
 
 # }}}
