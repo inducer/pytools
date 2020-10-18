@@ -192,7 +192,7 @@ class MovedFunctionDeprecationWrapper:
     def __call__(self, *args, **kwargs):
         from warnings import warn
         warn(f"This function is deprecated and will go away in {self.deadline}. "
-            f"Use {self.f.__module__}.{self.f.__name__} instead.",
+            f"Use {self.f.__module}.{self.f.__name__} instead.",
             DeprecationWarning, stacklevel=2)
 
         return self.f(*args, **kwargs)
