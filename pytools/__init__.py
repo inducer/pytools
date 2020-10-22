@@ -2208,8 +2208,13 @@ def download_from_web_if_not_present(url, local_name=None):
         local_name = basename(url)
 
     if not exists(local_name):
-        from six.moves.urllib.request import urlopen
-        with urlopen(url) as inf:
+        from pytools.version import VERSION_TEXT
+        from urllib.request import Request, urlopen
+        req = Request(url, headers={
+            "User-Agent": f"pytools/{VERSION_TEXT}"
+            })
+
+        with urlopen(req) as inf:
             contents = inf.read()
 
             with open(local_name, "wb") as outf:
