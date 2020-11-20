@@ -34,6 +34,7 @@ __doc__ = """
 Tag Interface
 ---------------
 
+.. autoclass:: Taggable
 .. autoclass:: Tag
 .. autoclass:: UniqueTag
 
@@ -92,6 +93,29 @@ class DottedName:
 # {{{ tag
 
 tag_dataclass = dataclass(init=True, eq=True, frozen=True, repr=True)
+
+@tag_dataclass
+class Taggable:
+    """
+    Parent class for objects with a `tags` attribute.
+
+    .. attribute:: tags
+        
+        An instance of or a data structure containing instances of :class:`Tag`
+    .. automethod:: __repr__
+    """
+    def __init__(self, tags=None):
+        self._tags=tags
+
+    @property
+    def tags(self):
+        return self._tags
+
+    
+    @tags.setter
+    def tags(self, tags):
+        self._tags = tags
+    
 
 
 @tag_dataclass
