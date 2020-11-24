@@ -102,7 +102,6 @@ class Taggable:
     .. attribute:: tags
 
         A :class:`frozenset` of :class:`Tag` instances
-    .. automethod:: __repr__
     """
     def __init__(self, tags=None):
         self._tags = tags
