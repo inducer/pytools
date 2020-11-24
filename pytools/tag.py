@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Tuple, Any, FrozenSet, Union
+from typing import Tuple, Any, FrozenSet, Union, Iterable
 
 __copyright__ = """
 Copyright (C) 2020 Andreas Kloeckner
@@ -27,7 +27,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-# {{{ docs
+ # {{{ docs
 
 __doc__ = """
 
@@ -48,7 +48,7 @@ Supporting Functionality
 #  }}}
 
 
-# {{{ dotted name
+#  {{{ dotted name
 
 class DottedName:
     """
@@ -127,7 +127,7 @@ class UniqueTag(Tag):
 
 
 TagsType = FrozenSet[Tag]
-TagOrTagsType = Union[TagsType, Tag]
+TagOrIterableType = Union[Iterable[Tag], Tag]
 
 
 class Taggable:
@@ -140,7 +140,7 @@ class Taggable:
 
     .. versionadded:: 2020.4.4
     """
-    def __init__(self, tags: TagOrTagsType = frozenset()):
+    def __init__(self, tags: TagOrIterableType = frozenset()):
         self._tags = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
         self._check_uniqueness()
 
@@ -152,7 +152,7 @@ class Taggable:
                     raise ValueError("A tag is not unique.")
 
     @property
-    def tags(self):
+    def tags(self) -> TagsType:
         return self._tags
 
     def copy(self, tags=frozenset()):
@@ -162,7 +162,7 @@ class Taggable:
         """
         raise NotImplementedError("The copy function is not implemented.")
 
-    def tagged(self, tags: TagOrTagsType):
+    def tagged(self, tags: TagOrIterableType) -> "Taggable":
         """
         Return a copy of *self* with the specified
         tag or tags unioned. If *tags* is a :class:`pytools.tag.UniqueTag`
@@ -177,7 +177,8 @@ class Taggable:
         cpy = self.copy(tags=union_tags)
         return cpy
 
-    def without_tags(self, tags: TagOrTagsType, verify_existence: bool = True):
+    def without_tags(self, 
+            tags: TagOrIterableType, verify_existence: bool = True) -> "Taggable":
         """
         Return a copy of *self* without the specified tags.
         `self.copy(tags=<NEW VALUE>)` is implemented.
