@@ -147,17 +147,15 @@ class Taggable:
 
     def tagged(self, tags: TagOrTagsType):
         """
-        Return a copy of this instance with the specified
-        tags added. Assumes this object can call
+        Return a copy of *self* with the specified
+        tag or tags unioned. Assumes this object can call
         `self.copy(tags=<NEW VALUE>)`.
 
         :arg tags: An instance of :class:`Tag` or
         an iterable with instances therein.
         """
         new_tags = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
-        union_tags = self.tags.union(new_tags)
-
-        return self.copy(tags=union_tags)  # type: ignore  # pylint:disable=no-member
+        return self.copy(tags=self.tags | new_tags)  # type: ignore  # pylint:disable=no-member
 
 
 # }}}
