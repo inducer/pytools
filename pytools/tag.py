@@ -157,7 +157,7 @@ class Taggable:
         new_tags = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
         union_tags = self.tags.union(new_tags)
 
-        return self.copy(tags=union_tags)  # noqa  # pylint:disable=no-member
+        return self.copy(tags=union_tags)  # type: ignore  # pylint:disable=no-member
 
 
 # }}}
