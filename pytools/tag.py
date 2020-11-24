@@ -148,7 +148,7 @@ class Taggable:
         for tag1 in unique_tags:
             for tag2 in unique_tags:
                 if tag1 is not tag2 and isinstance(tag1, type(tag2)):
-                    raise Exception("A tag is not unique.")
+                    raise ValueError("A tag is not unique.")
 
     @property
     def tags(self):
@@ -159,7 +159,7 @@ class Taggable:
         Return a copy of *self* with the specified
         tag or tags unioned. If *tags* is a :class:`pytools.tag.UniqueTag`
         and other tags of this type are already present, an error is raised
-        Assumes this object can call `self.copy(tags=<NEW VALUE>)`.
+        Assumes *self* can call `self.copy(tags=<NEW VALUE>)`.
 
         :arg tags: An instance of :class:`Tag` or
         an iterable with instances therein.
@@ -170,6 +170,25 @@ class Taggable:
         cpy._check_uniqueness()
         return cpy
 
+    def without_tags(self, tags: TagOrTagType, verify_existence: bool = True):
+        """
+        Return a copy of *self* without the specified tags. Assumes *self*
+        can call `self.copy(tags=<NEW VALUE>)`.
+
+        :arg tags: An instance of :class:`Tag` or an iterable with instances
+        therein.
+        :arg verify_existence: If set
+        to `True`, this method raises an exception if not all tags specified
+        for removal are present in the original set of tags. Default `True`
+        """
+        to_remove = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
+        new_tags = self.tags - tags
+        
+        # Could use set operations to obtain the actual tags if that is worthwhile
+        if verify_existence and len(new_tags) > len(self.tags) - len(to_remove):
+            raise ValueError(f"A tag to be removed was not present.")
+
+        return self.copy(tags=new_tags)
 
 # }}}
 
