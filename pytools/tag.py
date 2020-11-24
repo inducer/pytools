@@ -137,7 +137,7 @@ class Taggable:
     .. attribute:: tags
 
         A :class:`frozenset` of :class:`Tag` instances
-    
+
     .. versionadded:: 2020.4.4
     """
     def __init__(self, tags: TagOrTagsType = frozenset()):
@@ -155,26 +155,32 @@ class Taggable:
     def tags(self):
         return self._tags
 
+    def copy(self, tags=frozenset()):
+        """
+        Returns of copy of *self* with the specified tags. This method
+        should be overridden by subclasses.
+        """
+        raise NotImplementedError("The copy function is not implemented.")
+
     def tagged(self, tags: TagOrTagsType):
         """
         Return a copy of *self* with the specified
         tag or tags unioned. If *tags* is a :class:`pytools.tag.UniqueTag`
         and other tags of this type are already present, an error is raised
-        Assumes *self* can call `self.copy(tags=<NEW VALUE>)`.
+        Assumes `self.copy(tags=<NEW VALUE>)` is implemented.
 
         :arg tags: An instance of :class:`Tag` or
         an iterable with instances therein.
         """
         new_tags = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
         union_tags = self.tags | new_tags
-        cpy = self.copy(tags=union_tags)  # type: ignore  # pylint:disable=no-member
-        cpy._check_uniqueness()
+        cpy = self.copy(tags=union_tags)
         return cpy
 
     def without_tags(self, tags: TagOrTagsType, verify_existence: bool = True):
         """
-        Return a copy of *self* without the specified tags. Assumes *self*
-        can call `self.copy(tags=<NEW VALUE>)`.
+        Return a copy of *self* without the specified tags.
+        `self.copy(tags=<NEW VALUE>)` is implemented.
 
         :arg tags: An instance of :class:`Tag` or an iterable with instances
         therein.
@@ -188,7 +194,7 @@ class Taggable:
         if verify_existence and len(new_tags) > len(self.tags) - len(to_remove):
             raise ValueError("A tag to be removed was not present.")
 
-        return self.copy(tags=new_tags)  # type: ignore  # pylint:disable=no-member
+        return self.copy(tags=new_tags)
 
 # }}}
 
