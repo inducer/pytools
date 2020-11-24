@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Tuple, Any, FrozenSet
+from typing import Tuple, Any, FrozenSet, Union
 
 __copyright__ = """
 Copyright (C) 2020 Andreas Kloeckner
@@ -45,10 +45,10 @@ Supporting Functionality
 
 """
 
-# }}}
+#  }}}
 
 
-# {{{ dotted name
+ # {{{ dotted name
 
 
 class DottedName:
@@ -103,18 +103,14 @@ class Taggable:
 
         A :class:`frozenset` of :class:`Tag` instances
     """
-    def __init__(self, tags=frozenset()):
-
-        if isinstance(tags, Tag):
-            tags = [tags]
-        
-        self._tags = frozenset(tags)
+    def __init__(self, tags: TagOrTagsType = frozenset()):
+        self_tags = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
 
     @property
     def tags(self):
         return self._tags
 
-    def tagged(self, tags):
+    def tagged(self, tags: TagOrTagsType):
         """
         Return a copy of this instance with the specified 
         tags added. Assumes this object can call 
@@ -164,6 +160,7 @@ class UniqueTag(Tag):
 
 
 TagsType = FrozenSet[Tag]
+TagOrTagsType = Union(TagsType, Tag)
 
 # }}}
 
