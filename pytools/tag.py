@@ -95,38 +95,6 @@ class DottedName:
 tag_dataclass = dataclass(init=True, eq=True, frozen=True, repr=True)
 
 
-class Taggable:
-    """
-    Parent class for objects with a `tags` attribute.
-
-    .. attribute:: tags
-
-        A :class:`frozenset` of :class:`Tag` instances
-    """
-    def __init__(self, tags: TagOrTagsType = frozenset()):
-        self_tags = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
-
-    @property
-    def tags(self):
-        return self._tags
-
-    def tagged(self, tags: TagOrTagsType):
-        """
-        Return a copy of this instance with the specified 
-        tags added. Assumes this object can call 
-        `self.copy(tags=<NEW VALUE>)`.
-
-        :arg tags: An instance of :class:`Tag` or
-        an iterable with instances therein.
-        """ 
-        if isinstance(tags, Tag):
-            tags = [tags]
-        new_tags = frozenset(tags)
-        union_tags = self.tags.union(new_tags)
-
-        return self.copy(tags=union_tags)
-
-
 @tag_dataclass
 class Tag:
     """
@@ -161,6 +129,39 @@ class UniqueTag(Tag):
 
 TagsType = FrozenSet[Tag]
 TagOrTagsType = Union(TagsType, Tag)
+
+
+class Taggable:
+    """
+    Parent class for objects with a `tags` attribute.
+
+    .. attribute:: tags
+
+        A :class:`frozenset` of :class:`Tag` instances
+    """
+    def __init__(self, tags: TagOrTagsType = frozenset()):
+        self_tags = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
+
+    @property
+    def tags(self):
+        return self._tags
+
+    def tagged(self, tags: TagOrTagsType):
+        """
+        Return a copy of this instance with the specified
+        tags added. Assumes this object can call
+        `self.copy(tags=<NEW VALUE>)`.
+
+        :arg tags: An instance of :class:`Tag` or
+        an iterable with instances therein.
+        """
+        if isinstance(tags, Tag):
+            tags = [tags]
+        new_tags = frozenset(tags)
+        union_tags = self.tags.union(new_tags)
+
+        return self.copy(tags=union_tags)
+
 
 # }}}
 
