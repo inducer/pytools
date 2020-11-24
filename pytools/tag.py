@@ -137,6 +137,8 @@ class Taggable:
     .. attribute:: tags
 
         A :class:`frozenset` of :class:`Tag` instances
+    
+    .. versionadded:: 2020.4.4
     """
     def __init__(self, tags: TagOrTagsType = frozenset()):
         self._tags = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
