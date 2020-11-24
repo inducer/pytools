@@ -102,7 +102,7 @@ class Taggable:
 
     .. attribute:: tags
 
-        An instance of or a data structure containing instances of :class:`Tag`
+        A :class:`frozenset` of :class:`Tag` instances
     .. automethod:: __repr__
     """
     def __init__(self, tags=None):
