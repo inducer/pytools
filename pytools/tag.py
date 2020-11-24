@@ -170,7 +170,7 @@ class Taggable:
         cpy._check_uniqueness()
         return cpy
 
-    def without_tags(self, tags: TagOrTagType, verify_existence: bool = True):
+    def without_tags(self, tags: TagOrTagsType, verify_existence: bool = True):
         """
         Return a copy of *self* without the specified tags. Assumes *self*
         can call `self.copy(tags=<NEW VALUE>)`.
@@ -183,12 +183,12 @@ class Taggable:
         """
         to_remove = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
         new_tags = self.tags - tags
-        
+
         # Could use set operations to obtain the actual tags if that is worthwhile
         if verify_existence and len(new_tags) > len(self.tags) - len(to_remove):
-            raise ValueError(f"A tag to be removed was not present.")
+            raise ValueError("A tag to be removed was not present.")
 
-        return self.copy(tags=new_tags)
+        return self.copy(tags=new_tags)  # type: ignore  # pylint:disable=no-member
 
 # }}}
 
