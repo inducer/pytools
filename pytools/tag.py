@@ -139,7 +139,7 @@ class Taggable:
         A :class:`frozenset` of :class:`Tag` instances
     """
     def __init__(self, tags: TagOrTagsType = frozenset()):
-        self.tags = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
+        self._tags = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
 
     @property
     def tags(self):
@@ -159,7 +159,7 @@ class Taggable:
         new_tags = frozenset(tags)
         union_tags = self.tags.union(new_tags)
 
-        return self.copy(tags=union_tags)
+        return self.copy(tags=union_tags) # noqa: E1101
 
 
 # }}}
