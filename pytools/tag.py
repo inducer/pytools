@@ -127,7 +127,7 @@ class UniqueTag(Tag):
 
 
 TagsType = FrozenSet[Tag]
-TagOrTagsType = Union(TagsType, Tag)
+TagOrTagsType = Union[TagsType, Tag]
 
 
 class Taggable:
@@ -138,7 +138,7 @@ class Taggable:
 
         A :class:`frozenset` of :class:`Tag` instances
     """
-    def __init__(self, tags: Union(FrozenSet[Tag], Tag) = frozenset()):
+    def __init__(self, tags: TagOrTagsType = frozenset()):
         self._tags = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
 
     @property
