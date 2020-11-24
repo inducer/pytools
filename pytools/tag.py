@@ -103,16 +103,32 @@ class Taggable:
 
         A :class:`frozenset` of :class:`Tag` instances
     """
-    def __init__(self, tags=None):
-        self._tags = tags
+    def __init__(self, tags=frozenset()):
+
+        if isinstance(tags, Tag):
+            tags = [tags]
+        
+        self._tags = frozenset(tags)
 
     @property
     def tags(self):
         return self._tags
 
-    @tags.setter
-    def tags(self, tags):
-        self._tags = tags
+    def tagged(self, tags):
+        """
+        Return a copy of this instance with the specified 
+        tags added. Assumes this object can call 
+        `self.copy(tags=<NEW VALUE>)`.
+
+        :arg tags: An instance of :class:`Tag` or
+        an iterable with instances therein.
+        """ 
+        if isinstance(tags, Tag):
+            tags = [tags]
+        new_tags = frozenset(tags)
+        union_tags = self.tags.union(new_tags)
+
+        return self.copy(tags=union_tags)
 
 
 @tag_dataclass
