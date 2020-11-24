@@ -183,7 +183,6 @@ class Taggable:
         to_remove = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
         new_tags = self.tags - tags
 
-        # Could use set operations to obtain the actual tags if that is worthwhile
         if verify_existence and len(new_tags) > len(self.tags) - len(to_remove):
             raise ValueError("A tag to be removed was not present.")
 
