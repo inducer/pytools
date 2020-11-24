@@ -159,7 +159,7 @@ class Taggable:
         new_tags = frozenset(tags)
         union_tags = self.tags.union(new_tags)
 
-        return self.copy(tags=union_tags) # noqa: E1101
+        return self.copy(tags=union_tags)  # noqa: E1101
 
 
 # }}}
