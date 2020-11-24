@@ -144,7 +144,6 @@ class Taggable:
 
     def _check_uniqueness(self):
         unique_tags = {tag for tag in self.tags if isinstance(tag, UniqueTag)}
-        print(unique_tags)
         for tag1 in unique_tags:
             for tag2 in unique_tags:
                 if tag1 is not tag2 and isinstance(tag1, type(tag2)):
