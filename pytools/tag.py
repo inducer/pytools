@@ -190,10 +190,10 @@ class Taggable:
         for removal are present in the original set of tags. Default `True`
         """
         to_remove = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
-        new_tags = self.tags - tags
+        new_tags = self.tags - to_remove
 
         if verify_existence and len(new_tags) > len(self.tags) - len(to_remove):
-            raise ValueError("A tag to be removed was not present.")
+            raise ValueError("A tag specified for removal was not present.")
 
         return self.copy(tags=new_tags)
 
