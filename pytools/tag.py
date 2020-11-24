@@ -140,22 +140,35 @@ class Taggable:
     """
     def __init__(self, tags: TagOrTagsType = frozenset()):
         self._tags = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
+        self._check_uniqueness()
+
+    def _check_uniqueness(self):
+        unique_tags = { tag for tag in self.tags if isinstance(tag, UniqueTag) }
+        print(unique_tags)
+        for tag1 in unique_tags:
+            for tag2 in unique_tags:
+                if not tag1 is tag2 and isinstance(tag1, type(tag2)):
+                    raise Exception("A tag is not unique.")          
 
     @property
     def tags(self):
-        return self._tags
+        return self._tags 
 
     def tagged(self, tags: TagOrTagsType):
         """
         Return a copy of *self* with the specified
-        tag or tags unioned. Assumes this object can call
-        `self.copy(tags=<NEW VALUE>)`.
+        tag or tags unioned. If *tags* is a :class:`pytools.tag.UniqueTag`
+        and other tags of this type are already present, an error is raised
+        Assumes this object can call `self.copy(tags=<NEW VALUE>)`.
 
         :arg tags: An instance of :class:`Tag` or
         an iterable with instances therein.
         """
         new_tags = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
-        return self.copy(tags=self.tags | new_tags)  # type: ignore  # pylint:disable=no-member
+        union_tags = self.tags | new_tags
+        cpy = self.copy(tags=union_tags)  # type: ignore  # pylint:disable=no-member
+        cpy._check_uniqueness()
+        return cpy
 
 
 # }}}
