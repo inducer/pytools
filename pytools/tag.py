@@ -154,9 +154,7 @@ class Taggable:
         :arg tags: An instance of :class:`Tag` or
         an iterable with instances therein.
         """
-        if isinstance(tags, Tag):
-            tags = [tags]
-        new_tags = frozenset(tags)
+        new_tags = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
         union_tags = self.tags.union(new_tags)
 
         return self.copy(tags=union_tags)  # noqa  # pylint:disable=no-member
