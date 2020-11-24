@@ -27,7 +27,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
- # {{{ docs
+# {{{ docs
 
 __doc__ = """
 
@@ -177,7 +177,7 @@ class Taggable:
         cpy = self.copy(tags=union_tags)
         return cpy
 
-    def without_tags(self, 
+    def without_tags(self,
             tags: TagOrIterableType, verify_existence: bool = True) -> "Taggable":
         """
         Return a copy of *self* without the specified tags.
