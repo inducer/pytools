@@ -95,7 +95,6 @@ class DottedName:
 tag_dataclass = dataclass(init=True, eq=True, frozen=True, repr=True)
 
 
-@tag_dataclass
 class Taggable:
     """
     Parent class for objects with a `tags` attribute.
