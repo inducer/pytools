@@ -143,16 +143,16 @@ class Taggable:
         self._check_uniqueness()
 
     def _check_uniqueness(self):
-        unique_tags = { tag for tag in self.tags if isinstance(tag, UniqueTag) }
+        unique_tags = {tag for tag in self.tags if isinstance(tag, UniqueTag)}
         print(unique_tags)
         for tag1 in unique_tags:
             for tag2 in unique_tags:
-                if not tag1 is tag2 and isinstance(tag1, type(tag2)):
-                    raise Exception("A tag is not unique.")          
+                if tag1 is not tag2 and isinstance(tag1, type(tag2)):
+                    raise Exception("A tag is not unique.")
 
     @property
     def tags(self):
-        return self._tags 
+        return self._tags
 
     def tagged(self, tags: TagOrTagsType):
         """
