@@ -48,8 +48,7 @@ Supporting Functionality
 #  }}}
 
 
- # {{{ dotted name
-
+# {{{ dotted name
 
 class DottedName:
     """
@@ -140,7 +139,7 @@ class Taggable:
         A :class:`frozenset` of :class:`Tag` instances
     """
     def __init__(self, tags: TagOrTagsType = frozenset()):
-        self_tags = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
+        self.tags = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
 
     @property
     def tags(self):
