@@ -128,7 +128,7 @@ class UniqueTag(Tag):
 
 TagsType = FrozenSet[Tag]
 TagOrIterableType = Union[Iterable[Tag], Tag]
-T_co = TypeVar('T_co', bound='Taggable')
+T_co = TypeVar("T_co", bound="Taggable")
 
 
 class Taggable():
