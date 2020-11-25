@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-from typing import (Tuple, Any, FrozenSet, Union, Iterable,
-        Generic, TypeVar)
+from typing import Tuple, Any, FrozenSet, Union, Iterable, TypeVar
 
 __copyright__ = """
 Copyright (C) 2020 Andreas Kloeckner
@@ -129,7 +128,8 @@ class UniqueTag(Tag):
 
 TagsType = FrozenSet[Tag]
 TagOrIterableType = Union[Iterable[Tag], Tag]
-T_co = TypeVar('T_co', bound="Taggable")
+T_co = TypeVar('T_co', bound='Taggable')
+
 
 class Taggable():
     """
@@ -156,7 +156,7 @@ class Taggable():
     def tags(self) -> TagsType:
         return self._tags
 
-    def copy(self, tags=frozenset()):
+    def copy(self: T_co, tags=frozenset()) -> T_co:
         """
         Returns of copy of *self* with the specified tags. This method
         should be overridden by subclasses.
