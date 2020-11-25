@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import Tuple, Any, FrozenSet, Union, Iterable
+from typing import (Tuple, Any, FrozenSet, Union, Iterable,
+        Generic, TypeVar)
 
 __copyright__ = """
 Copyright (C) 2020 Andreas Kloeckner
@@ -128,9 +129,9 @@ class UniqueTag(Tag):
 
 TagsType = FrozenSet[Tag]
 TagOrIterableType = Union[Iterable[Tag], Tag]
+T_co = TypeVar('T_co', bound="Taggable")
 
-
-class Taggable:
+class Taggable():
     """
     Parent class for objects with a `tags` attribute.
 
@@ -162,7 +163,7 @@ class Taggable:
         """
         raise NotImplementedError("The copy function is not implemented.")
 
-    def tagged(self, tags: TagOrIterableType) -> "Taggable":
+    def tagged(self: T_co, tags: TagOrIterableType) -> T_co:
         """
         Return a copy of *self* with the specified
         tag or tags unioned. If *tags* is a :class:`pytools.tag.UniqueTag`
@@ -177,8 +178,8 @@ class Taggable:
         cpy = self.copy(tags=union_tags)
         return cpy
 
-    def without_tags(self,
-            tags: TagOrIterableType, verify_existence: bool = True) -> "Taggable":
+    def without_tags(self: T_co,
+            tags: TagOrIterableType, verify_existence: bool = True) -> T_co:
         """
         Return a copy of *self* without the specified tags.
         `self.copy(tags=<NEW VALUE>)` is implemented.
