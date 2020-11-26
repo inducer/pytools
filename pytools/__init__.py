@@ -1614,9 +1614,9 @@ class Table:
             >>> tbl.add_row([1, '|'])
             >>> tbl.add_row([10, '20||'])
             >>> print(tbl.github_markdown())
-            1  |     \|
+            1  |     \\|
             :--|-------:
-            10 | 20\|\|
+            10 | 20\\|\\|
 
         """  # noqa: W605
         # Pipe symbols ('|') must be replaced
