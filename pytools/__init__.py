@@ -1604,7 +1604,7 @@ class Table:
         return "\n".join(lines)
 
     def github_markdown(self):
-        """Returns a string representation of the table formatted as
+        r"""Returns a string representation of the table formatted as
         `GitHub-Flavored Markdown.
         <https://docs.github.com/en/github/writing-on-github/organizing-information-with-tables>`__
 
