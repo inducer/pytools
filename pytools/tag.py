@@ -142,7 +142,12 @@ class Taggable():
     .. versionadded:: 2020.4.4
     """
     def __init__(self, tags: TagOrIterableType = frozenset()):
-        self._tags = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
+        if isinstance(tags, Tag):
+            self._tags = frozenset([tags])
+        elif tags == None:
+            self._tags = frozenset()
+        else:
+            self._tags = frozenset(tags)
         self._check_uniqueness()
 
     def _check_uniqueness(self):
@@ -156,7 +161,7 @@ class Taggable():
     def tags(self) -> TagsType:
         return self._tags
 
-    def copy(self: T_co, tags=frozenset()) -> T_co:
+    def copy(self: T_co, tags: TagsType = frozenset()) -> T_co:
         """
         Returns of copy of *self* with the specified tags. This method
         should be overridden by subclasses.
