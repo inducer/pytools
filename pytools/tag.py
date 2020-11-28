@@ -144,7 +144,7 @@ class Taggable():
     def __init__(self, tags: TagOrIterableType = frozenset()):
         if isinstance(tags, Tag):
             self._tags = frozenset([tags])
-        elif tags == None:
+        elif tags is None:
             self._tags = frozenset()
         else:
             self._tags = frozenset(tags)
