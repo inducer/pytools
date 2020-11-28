@@ -127,7 +127,7 @@ class UniqueTag(Tag):
 
 
 TagsType = FrozenSet[Tag]
-TagOrIterableType = Union[Iterable[Tag], Tag]
+TagOrIterableType = Union[Iterable[Tag], Tag, None]
 T_co = TypeVar("T_co", bound="Taggable")
 
 
@@ -178,7 +178,12 @@ class Taggable():
         :arg tags: An instance of :class:`Tag` or
         an iterable with instances therein.
         """
-        new_tags = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
+        if isinstance(tags, Tag):
+            new_tags = frozenset([tags])
+        elif tags is None:
+            new_tags = frozenset()
+        else:
+            new_tags = frozenset(tags)
         union_tags = self.tags | new_tags
         cpy = self.copy(tags=union_tags)
         return cpy
@@ -195,7 +200,12 @@ class Taggable():
         to `True`, this method raises an exception if not all tags specified
         for removal are present in the original set of tags. Default `True`
         """
-        to_remove = frozenset([tags]) if isinstance(tags, Tag) else frozenset(tags)
+        if isinstance(tags, Tag):
+            to_remove = frozenset([tags])
+        elif tags is None:
+            to_remove = frozenset()
+        else:
+            to_remove = frozenset(tags)
         new_tags = self.tags - to_remove
 
         if verify_existence and len(new_tags) > len(self.tags) - len(to_remove):
