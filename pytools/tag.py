@@ -5,6 +5,7 @@ __copyright__ = """
 Copyright (C) 2020 Andreas Kloeckner
 Copyright (C) 2020 Matt Wala
 Copyright (C) 2020 Xiaoyu Wei
+Copyright (C) 2020 Nicholas Christensen
 """
 
 __license__ = """
