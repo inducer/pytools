@@ -141,7 +141,7 @@ class Taggable():
 
     .. versionadded:: 2020.4.4
     """
-    def __init__(self, tags: TagOrIterableType = frozenset()):
+    def __init__(self, tags: TagOrIterableType = None):
         if isinstance(tags, Tag):
             self._tags = frozenset([tags])
         elif tags is None:
@@ -161,7 +161,7 @@ class Taggable():
     def tags(self) -> TagsType:
         return self._tags
 
-    def copy(self: T_co, tags: TagsType = frozenset()) -> T_co:
+    def copy(self: T_co, tags: TagsType = None, **kwargs: Any) -> T_co:
         """
         Returns of copy of *self* with the specified tags. This method
         should be overridden by subclasses.
