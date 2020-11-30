@@ -139,6 +139,10 @@ class Taggable():
 
         A :class:`frozenset` of :class:`Tag` instances
 
+    .. method:: copy
+    .. method:: tagged
+    .. method:: without_tags
+
     .. versionadded:: 2020.4.4
     """
     def __init__(self, tags: TagOrIterableType = None):
