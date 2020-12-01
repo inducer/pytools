@@ -148,11 +148,11 @@ class Taggable():
     """
     def __init__(self, tags: TagOrIterableType = None):
         if isinstance(tags, Tag):
-            self._tags = frozenset([tags])
+            self.tags = frozenset([tags])
         elif tags is None:
-            self._tags = frozenset()
+            self.tags = frozenset()
         else:
-            self._tags = frozenset(tags)
+            self.tags = frozenset(tags)
         self._check_uniqueness()
 
     def _check_uniqueness(self):
@@ -162,9 +162,9 @@ class Taggable():
                 if tag1 is not tag2 and isinstance(tag1, type(tag2)):
                     raise ValueError("A tag is not unique.")
 
-    @property
-    def tags(self) -> TagsType:
-        return self._tags
+    #@property
+    #def tags(self) -> TagsType:
+    #    return self._tags
 
     def copy(self: T_co, **kwargs: Any) -> T_co:
         """
