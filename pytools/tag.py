@@ -146,6 +146,7 @@ class Taggable():
 
     .. versionadded:: 2020.4.4
     """
+
     def __init__(self, tags: TagOrIterableType = None):
         if isinstance(tags, Tag):
             self.tags = frozenset([tags])
