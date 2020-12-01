@@ -162,10 +162,6 @@ class Taggable():
                 if tag1 is not tag2 and isinstance(tag1, type(tag2)):
                     raise ValueError("A tag is not unique.")
 
-    #@property
-    #def tags(self) -> TagsType:
-    #    return self._tags
-
     def copy(self: T_co, **kwargs: Any) -> T_co:
         """
         Returns of copy of *self* with the specified tags. This method
