@@ -12,6 +12,8 @@ Welcome to pytools's documentation!
     tag
     codegen
     misc
+    🚀 Github <https://github.com/inducer/pytools>
+    💾 Download Releases <https://pypi.python.org/pypi/pytools>
 
 Indices and tables
 ==================

@@ -90,23 +90,14 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "alabaster"
+html_theme = "furo"
 
 html_theme_options = {
-        "extra_nav_links": {
-            "🚀 Github": "https://github.com/inducer/pytools",
-            "💾 Download Releases": "https://pypi.python.org/pypi/pytools",
-            }
+        #"extra_nav_links": {
+        #    "🚀 Github": "https://github.com/inducer/pytools",
+        #    "💾 Download Releases": "https://pypi.python.org/pypi/pytools",
+        #    }
         }
-
-html_sidebars = {
-    "**": [
-        "about.html",
-        "navigation.html",
-        "relations.html",
-        "searchbox.html",
-    ]
-}
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
