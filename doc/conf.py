@@ -93,10 +93,6 @@ todo_include_todos = False
 html_theme = "furo"
 
 html_theme_options = {
-        #"extra_nav_links": {
-        #    "🚀 Github": "https://github.com/inducer/pytools",
-        #    "💾 Download Releases": "https://pypi.python.org/pypi/pytools",
-        #    }
         }
 
 # Theme options are theme-specific and customize the look and feel of a theme
