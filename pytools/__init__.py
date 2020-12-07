@@ -1,7 +1,6 @@
 # pylint:  disable=too-many-lines
 # (Yes, it has a point!)
 
-from __future__ import division, absolute_import, print_function
 
 __copyright__ = "Copyright (C) 2009-2013 Andreas Kloeckner"
 
@@ -34,8 +33,7 @@ from typing import (
         Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, TypeVar)
 
 
-import six
-from six.moves import range, zip, intern, input
+from sys import intern
 
 
 decorator_module = __import__("decorator", level=0)
@@ -306,7 +304,7 @@ def norm_p(iterable, p):
     return sum(i**p for i in iterable)**(1/p)
 
 
-class Norm(object):
+class Norm:
     def __init__(self, p):
         self.p = p
 
@@ -320,7 +318,7 @@ class Norm(object):
 
 # {{{ record
 
-class RecordWithoutPickling(object):
+class RecordWithoutPickling:
     """An aggregate of named sub-variables. Assumes that each record sub-type
     will be individually derived from this class.
     """
@@ -341,7 +339,7 @@ class RecordWithoutPickling(object):
         if valuedict is not None:
             kwargs.update(valuedict)
 
-        for key, value in six.iteritems(kwargs):
+        for key, value in kwargs.items():
             if key not in exclude:
                 fields.add(key)
                 setattr(self, key, value)
@@ -359,9 +357,9 @@ class RecordWithoutPickling(object):
         return self.__class__(**self.get_copy_kwargs(**kwargs))
 
     def __repr__(self):
-        return "%s(%s)" % (
+        return "{}({})".format(
                 self.__class__.__name__,
-                ", ".join("%s=%r" % (fld, getattr(self, fld))
+                ", ".join("{}={!r}".format(fld, getattr(self, fld))
                     for fld in self.__class__.fields
                     if hasattr(self, fld)))
 
@@ -377,7 +375,7 @@ class RecordWithoutPickling(object):
         # This method is implemented to avoid pylint 'no-member' errors for
         # attribute access.
         raise AttributeError(
-                "'%s' object has no attribute '%s'" % (
+                "'{}' object has no attribute '{}'".format(
                     self.__class__.__name__, name))
 
 
@@ -385,10 +383,10 @@ class Record(RecordWithoutPickling):
     __slots__: List[str] = []
 
     def __getstate__(self):
-        return dict(
-                (key, getattr(self, key))
+        return {
+                key: getattr(self, key)
                 for key in self.__class__.fields
-                if hasattr(self, key))
+                if hasattr(self, key)}
 
     def __setstate__(self, valuedict):
         try:
@@ -396,7 +394,7 @@ class Record(RecordWithoutPickling):
         except AttributeError:
             self.__class__.fields = fields = set()
 
-        for key, value in six.iteritems(valuedict):
+        for key, value in valuedict.items():
             fields.add(key)
             setattr(self, key, value)
 
@@ -429,7 +427,7 @@ class ImmutableRecord(ImmutableRecordWithoutPickling, Record):
 # }}}
 
 
-class Reference(object):
+class Reference:
     def __init__(self, value):
         self.value = value
 
@@ -442,7 +440,7 @@ class Reference(object):
         self.value = value
 
 
-class FakeList(object):
+class FakeList:
     def __init__(self, f, length):
         self._Length = length
         self._Function = f
@@ -460,7 +458,7 @@ class FakeList(object):
 
 # {{{ dependent dictionary ----------------------------------------------------
 
-class DependentDictionary(object):
+class DependentDictionary:
     def __init__(self, f, start=None):
         if start is None:
             start = {}
@@ -491,13 +489,13 @@ class DependentDictionary(object):
         return list(self._Dictionary.keys())
 
     def iteritems(self):
-        return six.iteritems(self._Dictionary)
+        return self._Dictionary.items()
 
     def iterkeys(self):
-        return six.iterkeys(self._Dictionary)
+        return self._Dictionary.keys()
 
     def itervalues(self):
-        return six.itervalues(self._Dictionary)
+        return self._Dictionary.values()
 
 # }}}
 
@@ -597,7 +595,7 @@ def memoize(*args: F, **kwargs: Any) -> F:
 
     if use_kw:
         def default_key_func(*inner_args, **inner_kwargs):  # noqa pylint:disable=function-redefined
-            return inner_args, frozenset(six.iteritems(inner_kwargs))
+            return inner_args, frozenset(inner_kwargs.items())
     else:
         default_key_func = None
 
@@ -653,7 +651,7 @@ def memoize(*args: F, **kwargs: Any) -> F:
 FunctionValueCache = memoize
 
 
-class _HasKwargs(object):
+class _HasKwargs:
     pass
 
 
@@ -670,7 +668,7 @@ def memoize_on_first_arg(function, cache_dict_name=None):
 
     def wrapper(obj, *args, **kwargs):
         if kwargs:
-            key = (_HasKwargs, frozenset(six.iteritems(kwargs))) + args
+            key = (_HasKwargs, frozenset(kwargs.items())) + args
         else:
             key = args
 
@@ -804,7 +802,7 @@ def memoize_method_with_uncached(uncached_args=None, uncached_kwargs=None):
                     cache_kwargs.pop(name, None)
 
                 key = (
-                        (_HasKwargs, frozenset(six.iteritems(cache_kwargs)))
+                        (_HasKwargs, frozenset(cache_kwargs.items()))
                         + cache_args)
             else:
                 key = cache_args
@@ -874,7 +872,7 @@ def memoize_method_nested(inner):
     return new_inner
 
 
-class memoize_in(object):  # noqa
+class memoize_in:  # noqa
     """Adds a cache to a function nested inside a method. The cache is attached
     to *container*.
 
@@ -942,7 +940,7 @@ def monkeypatch_class(_name, bases, namespace):
 
     assert len(bases) == 1, "Exactly one base class required"
     base = bases[0]
-    for name, value in six.iteritems(namespace):
+    for name, value in namespace.items():
         if name != "__metaclass__":
             setattr(base, name, value)
     return base
@@ -990,8 +988,7 @@ def flatten(iterable):
     Example: Turn [[a,b,c],[d,e,f]] into [a,b,c,d,e,f].
     """
     for sublist in iterable:
-        for j in sublist:
-            yield j
+        yield from sublist
 
 
 def general_sum(sequence):
@@ -1054,13 +1051,9 @@ def product(iterable: Iterable[Any]) -> Any:
     return reduce(mul, iterable, 1)
 
 
-all = six.moves.builtins.all  # pylint: disable=redefined-builtin
-any = six.moves.builtins.any  # pylint: disable=redefined-builtin
-
-
 def reverse_dictionary(the_dict):
     result = {}
-    for key, value in six.iteritems(the_dict):
+    for key, value in the_dict.items():
         if value in result:
             raise RuntimeError(
                     "non-reversible mapping, duplicate key '%s'" % value)
@@ -1491,8 +1484,8 @@ def get_read_from_map_from_permutation(original, permuted):
             "removed in 2019", DeprecationWarning, stacklevel=2)
 
     assert len(original) == len(permuted)
-    where_in_original = dict(
-            (original[i], i) for i in range(len(original)))
+    where_in_original = {
+            original[i]: i for i in range(len(original))}
     assert len(where_in_original) == len(original)
     return tuple(where_in_original[pi] for pi in permuted)
 
@@ -1521,8 +1514,8 @@ def get_write_to_map_from_permutation(original, permuted):
 
     assert len(original) == len(permuted)
 
-    where_in_permuted = dict(
-            (permuted[i], i) for i in range(len(permuted)))
+    where_in_permuted = {
+            permuted[i]: i for i in range(len(permuted))}
 
     assert len(where_in_permuted) == len(permuted)
     return tuple(where_in_permuted[oi] for oi in original)
@@ -1727,9 +1720,9 @@ def string_histogram(  # pylint: disable=too-many-arguments,too-many-locals
             full = int(floor(scaled))
             eighths = int(ceil((scaled-full)*8))
             if eighths:
-                return full*six.unichr(0x2588) + six.unichr(0x2588+(8-eighths))
+                return full*chr(0x2588) + chr(0x2588+(8-eighths))
             else:
-                return full*six.unichr(0x2588)
+                return full*chr(0x2588)
     else:
         def format_bar(cnt):
             return int(ceil(cnt*width/max_count))*"#"
@@ -1771,12 +1764,12 @@ def word_wrap(text, width, wrap_using="\n"):
 def _exec_arg(arg, execenv):
     import os
     if os.access(arg, os.F_OK):
-        exec(compile(open(arg, "r"), arg, "exec"), execenv)
+        exec(compile(open(arg), arg, "exec"), execenv)
     else:
         exec(compile(arg, "<command line>", "exec"), execenv)
 
 
-class CPyUserInterface(object):
+class CPyUserInterface:
     class Parameters(Record):
         pass
 
@@ -1800,14 +1793,14 @@ class CPyUserInterface(object):
         print()
         print("The following variables are recognized:")
         for v in sorted(self.variables):
-            print("  %s = %s" % (v, self.variables[v]))
+            print("  {} = {}".format(v, self.variables[v]))
             if v in self.doc:
                 print("    %s" % self.doc[v])
 
         print()
         print("The following constants are supplied:")
         for c in sorted(self.constants):
-            print("  %s = %s" % (c, self.constants[c]))
+            print("  {} = {}".format(c, self.constants[c]))
             if c in self.doc:
                 print("    %s" % self.doc[c])
 
@@ -1840,7 +1833,7 @@ class CPyUserInterface(object):
                         "(user variables must start with 'user_' or '_')"
                         % added_key)
 
-        result = self.Parameters(dict((key, execenv[key]) for key in self.variables))
+        result = self.Parameters({key: execenv[key] for key in self.variables})
         self.validate(result)
         return result
 
@@ -1852,7 +1845,7 @@ class CPyUserInterface(object):
 
 # {{{ debugging
 
-class StderrToStdout(object):
+class StderrToStdout:
     def __enter__(self):
         # pylint: disable=attribute-defined-outside-init
         self.stderr_backup = sys.stderr
@@ -1882,17 +1875,17 @@ def typedump(val, max_seq=5, special_handlers=None):
         if isinstance(val, dict):
             return "{%s}" % (
                     ", ".join(
-                        "%r: %s" % (str(k), typedump(v))
-                        for k, v in six.iteritems(val)))
+                        "{!r}: {}".format(str(k), typedump(v))
+                        for k, v in val.items()))
 
         try:
             if len(val) > max_seq:
-                return "%s(%s,...)" % (
+                return "{}({},...)".format(
                         type(val).__name__,
                         ",".join(typedump(x, max_seq, special_handlers)
                             for x in val[:max_seq]))
             else:
-                return "%s(%s)" % (
+                return "{}({})".format(
                         type(val).__name__,
                         ",".join(typedump(x, max_seq, special_handlers)
                             for x in val))
@@ -1922,7 +1915,7 @@ def invoke_editor(s, filename="edit.txt", descr="the file"):
         input("Edit %s at %s now, then hit [Enter]:"
                 % (descr, full_name))
 
-    inf = open(full_name, "r")
+    inf = open(full_name)
     result = inf.read()
     inf.close()
 
@@ -1933,7 +1926,7 @@ def invoke_editor(s, filename="edit.txt", descr="the file"):
 
 # {{{ progress bars
 
-class ProgressBar(object):  # pylint: disable=too-many-instance-attributes
+class ProgressBar:  # pylint: disable=too-many-instance-attributes
     """
     .. automethod:: draw
     .. automethod:: progress
@@ -1981,7 +1974,7 @@ class ProgressBar(object):  # pylint: disable=too-many-instance-attributes
             else:
                 eta_str = "?"
 
-            sys.stderr.write("%-20s [%s] ETA %s\r" % (
+            sys.stderr.write("{:<20} [{}] ETA {}\r".format(
                 self.description,
                 squares*"#"+(self.length-squares)*" ",
                 eta_str))
@@ -2014,7 +2007,7 @@ class ProgressBar(object):  # pylint: disable=too-many-instance-attributes
 def assert_not_a_file(name):
     import os
     if os.access(name, os.F_OK):
-        raise IOError("file `%s' already exists" % name)
+        raise OSError("file `%s' already exists" % name)
 
 
 def add_python_path_relative_to_script(rel_path):
@@ -2104,7 +2097,7 @@ generate_unique_possibilities = MovedFunctionDeprecationWrapper(
         generate_unique_names)
 
 
-class UniqueNameGenerator(object):
+class UniqueNameGenerator:
     """
     .. automethod:: is_name_conflicting
     .. automethod:: add_name
@@ -2169,7 +2162,7 @@ class UniqueNameGenerator(object):
 
 # {{{ recursion limit
 
-class MinRecursionLimit(object):
+class MinRecursionLimit:
     def __init__(self, min_rec_limit):
         self.min_rec_limit = min_rec_limit
 
@@ -2255,8 +2248,7 @@ def find_git_revision(tree_root):  # pylint: disable=too-many-locals
               cwd=tree_root, env=env)
     (git_rev, _) = p.communicate()
 
-    if sys.version_info >= (3,):
-        git_rev = git_rev.decode()
+    git_rev = git_rev.decode()
 
     git_rev = git_rev.rstrip()
 
@@ -2304,7 +2296,7 @@ def reshaped_view(a, newshape):
 SUPPORTS_PROCESS_TIME = (sys.version_info >= (3, 3))
 
 
-class ProcessTimer(object):
+class ProcessTimer:
     """Measures elapsed wall time and process time.
 
     .. automethod:: __enter__
@@ -2355,7 +2347,7 @@ class ProcessTimer(object):
 
 # {{{ log utilities
 
-class ProcessLogger(object):  # pylint: disable=too-many-instance-attributes
+class ProcessLogger:  # pylint: disable=too-many-instance-attributes
     """Logs the completion time of a (presumably) lengthy process to :mod:`logging`.
     Only uses a high log level if the process took perceptible time.
 
@@ -2468,7 +2460,7 @@ class DebugProcessLogger(ProcessLogger):
     default_noisy_level = logging.DEBUG
 
 
-class log_process(object):  # noqa: N801
+class log_process:  # noqa: N801
     """A decorator that uses :class:`ProcessLogger` to log data about calls
     to the wrapped function.
     """

@@ -1,11 +1,8 @@
-from __future__ import absolute_import, division, with_statement
-
 import shutil
 import sys  # noqa
 import tempfile
 
 import pytest
-from six.moves import range, zip
 
 from pytools.persistent_dict import (CollisionWarning, NoSuchEntryError,
         PersistentDict, ReadOnlyEntryError, WriteOncePersistentDict)
@@ -13,7 +10,7 @@ from pytools.persistent_dict import (CollisionWarning, NoSuchEntryError,
 
 # {{{ type for testing
 
-class PDictTestingKeyOrValue(object):
+class PDictTestingKeyOrValue:
 
     def __init__(self, val, hash_key=None):
         self.val = val
@@ -34,8 +31,8 @@ class PDictTestingKeyOrValue(object):
         key_builder.rec(key_hash, self.hash_key)
 
     def __repr__(self):
-        return "PDictTestingKeyOrValue(val=%r,hash_key=%r)" % (
-                (self.val, self.hash_key))
+        return "PDictTestingKeyOrValue(val={!r},hash_key={!r})".format(
+                self.val, self.hash_key)
 
     __str__ = __repr__
 

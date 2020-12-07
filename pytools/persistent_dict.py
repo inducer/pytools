@@ -1,6 +1,5 @@
 """Generic persistent, concurrent dictionary-like facility."""
 
-from __future__ import division, with_statement, absolute_import
 
 __copyright__ = """
 Copyright (C) 2011,2014 Andreas Kloeckner
@@ -41,8 +40,6 @@ import shutil
 import sys
 import errno
 
-import six
-
 logger = logging.getLogger(__name__)
 
 __doc__ = """
@@ -75,7 +72,7 @@ def _make_dir_recursively(dir_):
 
 
 def update_checksum(checksum, obj):
-    if isinstance(obj, six.text_type):
+    if isinstance(obj, str):
         checksum.update(obj.encode("utf8"))
     else:
         checksum.update(obj)
@@ -83,7 +80,7 @@ def update_checksum(checksum, obj):
 
 # {{{ cleanup managers
 
-class CleanupBase(object):
+class CleanupBase:
     pass
 
 
@@ -174,7 +171,7 @@ class ItemDirManager(CleanupBase):
 
 # {{{ key generation
 
-class KeyBuilder(object):
+class KeyBuilder:
     def rec(self, key_hash, key):
         digest = None
 
@@ -243,22 +240,13 @@ class KeyBuilder(object):
     def update_for_float(key_hash, key):
         key_hash.update(repr(key).encode("utf8"))
 
-    if sys.version_info >= (3,):
-        @staticmethod
-        def update_for_str(key_hash, key):
-            key_hash.update(key.encode("utf8"))
+    @staticmethod
+    def update_for_str(key_hash, key):
+        key_hash.update(key.encode("utf8"))
 
-        @staticmethod
-        def update_for_bytes(key_hash, key):
-            key_hash.update(key)
-    else:
-        @staticmethod
-        def update_for_str(key_hash, key):
-            key_hash.update(key)
-
-        @staticmethod
-        def update_for_unicode(key_hash, key):
-            key_hash.update(key.encode("utf8"))
+    @staticmethod
+    def update_for_bytes(key_hash, key):
+        key_hash.update(key)
 
     def update_for_tuple(self, key_hash, key):
         for obj_i in key:
@@ -271,7 +259,7 @@ class KeyBuilder(object):
     @staticmethod
     def update_for_NoneType(key_hash, key):  # noqa
         del key
-        key_hash.update("<None>".encode("utf8"))
+        key_hash.update(b"<None>")
 
     @staticmethod
     def update_for_dtype(key_hash, key):
@@ -292,7 +280,7 @@ class KeyBuilder(object):
 
 # {{{ lru cache
 
-class _LinkedList(object):
+class _LinkedList:
     """The list operates on nodes of the form [value, leftptr, rightpr]. To create a
     node of this form you can use `LinkedList.new_node().`
 
@@ -423,7 +411,7 @@ class CollisionWarning(UserWarning):
     pass
 
 
-class _PersistentDictBase(object):
+class _PersistentDictBase:
     def __init__(self, identifier, key_builder=None, container_dir=None):
         self.identifier = identifier
 
@@ -437,9 +425,9 @@ class _PersistentDictBase(object):
             import appdirs
             container_dir = join(
                     appdirs.user_cache_dir("pytools", "pytools"),
-                    "pdict-v3-%s-py%s" % (
+                    "pdict-v3-{}-py{}".format(
                         identifier,
-                        ".".join(str(i) for i in sys.version_info),))
+                        ".".join(str(i) for i in sys.version_info)))
 
         self.container_dir = container_dir
 
@@ -461,13 +449,13 @@ class _PersistentDictBase(object):
 
     @staticmethod
     def _read(path):
-        from six.moves.cPickle import load
+        from pickle import load
         with open(path, "rb") as inf:
             return load(inf)
 
     @staticmethod
     def _write(path, value):
-        from six.moves.cPickle import dump, HIGHEST_PROTOCOL
+        from pickle import dump, HIGHEST_PROTOCOL
         with open(path, "wb") as outf:
             dump(value, outf, protocol=HIGHEST_PROTOCOL)
 

@@ -1,5 +1,3 @@
-from __future__ import division, with_statement
-
 __copyright__ = "Copyright (C) 2009-2013 Andreas Kloeckner"
 
 __license__ = """
@@ -25,18 +23,11 @@ THE SOFTWARE.
 import marshal
 from types import FunctionType, ModuleType
 
-import six
-
 from pytools.codegen import CodeGenerator as CodeGeneratorBase
 from pytools.codegen import Indentation, remove_common_indentation  # noqa
 
 
-try:
-    from importlib.util import MAGIC_NUMBER as BYTECODE_VERSION
-except ImportError:
-    # Pre-3.4
-    import imp
-    BYTECODE_VERSION = imp.get_magic()
+from importlib.util import MAGIC_NUMBER as BYTECODE_VERSION
 
 
 class PythonCodeGenerator(CodeGeneratorBase):
@@ -58,7 +49,7 @@ class PythonFunctionGenerator(PythonCodeGenerator):
         PythonCodeGenerator.__init__(self)
         self.name = name
 
-        self("def %s(%s):" % (name, ", ".join(args)))
+        self("def {}({}):".format(name, ", ".join(args)))
         self.indent()
 
     def get_function(self):
@@ -80,7 +71,7 @@ def _get_empty_module_dict():
 _empty_module_dict = _get_empty_module_dict()
 
 
-class PicklableModule(object):
+class PicklableModule:
     def __init__(self, mod_globals):
         self.mod_globals = mod_globals
 
@@ -89,7 +80,7 @@ class PicklableModule(object):
         functions = {}
         modules = {}
 
-        for k, v in six.iteritems(self.mod_globals):
+        for k, v in self.mod_globals.items():
             if isinstance(v, FunctionType):
                 functions[k] = (
                         v.__name__,
@@ -119,11 +110,11 @@ class PicklableModule(object):
         mod_globals = _empty_module_dict.copy()
         mod_globals.update(nondefault_globals)
 
-        from pytools.importlib_backport import import_module
-        for k, mod_name in six.iteritems(modules):
+        from importlib import import_module
+        for k, mod_name in modules.items():
             mod_globals[k] = import_module(mod_name)
 
-        for k, (name, code_bytes, argdefs) in six.iteritems(functions):
+        for k, (name, code_bytes, argdefs) in functions.items():
             f = FunctionType(
                     marshal.loads(code_bytes), mod_globals, name=name,
                     argdefs=argdefs)
@@ -136,7 +127,7 @@ class PicklableModule(object):
 
 # {{{ picklable function
 
-class PicklableFunction(object):
+class PicklableFunction:
     """Convience class wrapping a function in a :class:`PicklableModule`.
     """
 

@@ -1,7 +1,4 @@
-from __future__ import absolute_import
 import numpy as np
-from six.moves import range
-from six.moves import zip
 
 
 # {{{ eoc estimation --------------------------------------------------------------
@@ -22,7 +19,7 @@ def estimate_order_of_convergence(abscissae, errors):
     return 10**coefficients[-1], coefficients[-2]
 
 
-class EOCRecorder(object):
+class EOCRecorder:
     def __init__(self):
         self.history = []
 
@@ -74,7 +71,7 @@ class EOCRecorder(object):
             tbl.add_row((absc_str, err_str, eoc_str))
 
         if len(self.history) > 1:
-            return "%s\n\nOverall EOC: %s" % (str(tbl),
+            return "{}\n\nOverall EOC: {}".format(str(tbl),
                     self.estimate_order_of_convergence()[0, 1])
         else:
             return str(tbl)
@@ -85,20 +82,20 @@ class EOCRecorder(object):
     def write_gnuplot_file(self, filename):
         outfile = open(filename, "w")
         for absc, err in self.history:
-            outfile.write("%f %f\n" % (absc, err))
+            outfile.write(f"{absc:f} {err:f}\n")
         result = self.estimate_order_of_convergence()
         const = result[0, 0]
         order = result[0, 1]
         outfile.write("\n")
         for absc, err in self.history:
-            outfile.write("%f %f\n" % (absc, const * absc**(-order)))
+            outfile.write("{:f} {:f}\n".format(absc, const * absc**(-order)))
 
 # }}}
 
 
 # {{{ p convergence verifier
 
-class PConvergenceVerifier(object):
+class PConvergenceVerifier:
     def __init__(self):
         self.orders = []
         self.errors = []

@@ -1,5 +1,3 @@
-from __future__ import division, absolute_import, print_function
-
 __copyright__ = """
 Copyright (C) 2009-2013 Andreas Kloeckner
 Copyright (C) 2020 Matt Wala
@@ -74,7 +72,7 @@ def a_star(  # pylint: disable=too-many-locals
             else:
                 return 0
 
-    class AStarNode(object):
+    class AStarNode:
         __slots__ = ["state", "parent", "path_cost"]
 
         def __init__(self, state, parent, path_cost):

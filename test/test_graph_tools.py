@@ -9,7 +9,7 @@ def test_compute_sccs():
     rng = random.Random(0)
 
     def generate_random_graph(nnodes):
-        graph = dict((i, set()) for i in range(nnodes))
+        graph = {i: set() for i in range(nnodes)}
         for i in range(nnodes):
             for j in range(nnodes):
                 # Edge probability 2/n: Generates decently interesting inputs.
@@ -82,16 +82,16 @@ def test_transitive_closure():
 
     # simple test
     graph = {
-        1: set([2, ]),
-        2: set([3, ]),
-        3: set([4, ]),
+        1: {2},
+        2: {3},
+        3: {4},
         4: set(),
         }
 
     expected_closure = {
-        1: set([2, 3, 4, ]),
-        2: set([3, 4, ]),
-        3: set([4, ]),
+        1: {2, 3, 4},
+        2: {3, 4},
+        3: {4},
         4: set(),
         }
 
@@ -101,25 +101,25 @@ def test_transitive_closure():
 
     # test with branches that reconnect
     graph = {
-        1: set([2, ]),
+        1: {2},
         2: set(),
-        3: set([1, ]),
-        4: set([1, ]),
-        5: set([6, 7, ]),
-        6: set([7, ]),
-        7: set([1, ]),
-        8: set([3, 4, ]),
+        3: {1},
+        4: {1},
+        5: {6, 7},
+        6: {7},
+        7: {1},
+        8: {3, 4},
         }
 
     expected_closure = {
-        1: set([2, ]),
+        1: {2},
         2: set(),
-        3: set([1, 2, ]),
-        4: set([1, 2, ]),
-        5: set([1, 2, 6, 7, ]),
-        6: set([1, 2, 7, ]),
-        7: set([1, 2, ]),
-        8: set([1, 2, 3, 4, ]),
+        3: {1, 2},
+        4: {1, 2},
+        5: {1, 2, 6, 7},
+        6: {1, 2, 7},
+        7: {1, 2},
+        8: {1, 2, 3, 4},
         }
 
     closure = compute_transitive_closure(graph)
@@ -128,17 +128,17 @@ def test_transitive_closure():
 
     # test with cycles
     graph = {
-        1: set([2, ]),
-        2: set([3, ]),
-        3: set([4, ]),
-        4: set([1, ]),
+        1: {2},
+        2: {3},
+        3: {4},
+        4: {1},
         }
 
     expected_closure = {
-        1: set([1, 2, 3, 4, ]),
-        2: set([1, 2, 3, 4, ]),
-        3: set([1, 2, 3, 4, ]),
-        4: set([1, 2, 3, 4, ]),
+        1: {1, 2, 3, 4},
+        2: {1, 2, 3, 4},
+        3: {1, 2, 3, 4},
+        4: {1, 2, 3, 4},
         }
 
     closure = compute_transitive_closure(graph)
@@ -151,43 +151,43 @@ def test_graph_cycle_finder():
     from pytools.graph import contains_cycle
 
     graph = {
-        "a": set(["b", "c"]),
-        "b": set(["d", "e"]),
-        "c": set(["d", "f"]),
+        "a": {"b", "c"},
+        "b": {"d", "e"},
+        "c": {"d", "f"},
         "d": set(),
         "e": set(),
-        "f": set(["g", ]),
+        "f": {"g"},
         "g": set(),
         }
 
     assert not contains_cycle(graph)
 
     graph = {
-        "a": set(["b", "c"]),
-        "b": set(["d", "e"]),
-        "c": set(["d", "f"]),
+        "a": {"b", "c"},
+        "b": {"d", "e"},
+        "c": {"d", "f"},
         "d": set(),
         "e": set(),
-        "f": set(["g", ]),
-        "g": set(["a", ]),
+        "f": {"g"},
+        "g": {"a"},
         }
 
     assert contains_cycle(graph)
 
     graph = {
-        "a": set(["a", "c"]),
-        "b": set(["d", "e"]),
-        "c": set(["d", "f"]),
+        "a": {"a", "c"},
+        "b": {"d", "e"},
+        "c": {"d", "f"},
         "d": set(),
         "e": set(),
-        "f": set(["g", ]),
+        "f": {"g"},
         "g": set(),
         }
 
     assert contains_cycle(graph)
 
     graph = {
-        "a": set(["a"]),
+        "a": {"a"},
         }
 
     assert contains_cycle(graph)
@@ -198,22 +198,22 @@ def test_induced_subgraph():
     from pytools.graph import compute_induced_subgraph
 
     graph = {
-        "a": set(["b", "c"]),
-        "b": set(["d", "e"]),
-        "c": set(["d", "f"]),
+        "a": {"b", "c"},
+        "b": {"d", "e"},
+        "c": {"d", "f"},
         "d": set(),
         "e": set(),
-        "f": set(["g", ]),
-        "g": set(["h", "i", "j"]),
+        "f": {"g"},
+        "g": {"h", "i", "j"},
         }
 
-    node_subset = set(["b", "c", "e", "f", "g"])
+    node_subset = {"b", "c", "e", "f", "g"}
 
     expected_subgraph = {
-        "b": set(["e", ]),
-        "c": set(["f", ]),
+        "b": {"e"},
+        "c": {"f"},
         "e": set(),
-        "f": set(["g", ]),
+        "f": {"g"},
         "g": set(),
         }
 
@@ -255,7 +255,7 @@ def test_prioritzed_topological_sort():
     rng = random.Random(0)
 
     def generate_random_graph(nnodes):
-        graph = dict((i, set()) for i in range(nnodes))
+        graph = {i: set() for i in range(nnodes)}
         for i in range(nnodes):
             # to avoid cycles only consider edges node_i->node_j where j > i.
             for j in range(i+1, nnodes):
@@ -276,8 +276,8 @@ def test_prioritzed_topological_sort():
     topo_order = compute_topological_order(rev_dep_graph, key=keys.__getitem__)
 
     for scheduled_node in topo_order:
-        nodes_with_no_deps = set(node for node, deps in dep_graph.items()
-                    if len(deps) == 0)
+        nodes_with_no_deps = {node for node, deps in dep_graph.items()
+                    if len(deps) == 0}
 
         # check whether the order is a valid topological order
         assert scheduled_node in nodes_with_no_deps

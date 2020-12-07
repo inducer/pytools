@@ -1,8 +1,4 @@
-from __future__ import absolute_import, print_function
 import sys
-
-import six
-from six.moves import input
 
 from pytools import memoize
 
@@ -104,7 +100,7 @@ def refdebug(obj, top_level=True, exclude=()):  # noqa: E501  pylint:disable=too
             print("%d/%d: " % (idx, len(reflist)), id(r), type(r), s)
 
             if isinstance(r, dict):
-                for k, v in six.iteritems(r):
+                for k, v in r.items():
                     if v is obj:
                         print("...referred to from key", k)
 

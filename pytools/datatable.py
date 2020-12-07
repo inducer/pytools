@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-
-import six
-from six.moves import range, zip
-
 from pytools import Record
 
 
@@ -26,8 +21,8 @@ class DataTable:
             self.data = column_data
 
         self.column_names = column_names
-        self.column_indices = dict(
-                (colname, i) for i, colname in enumerate(column_names))
+        self.column_indices = {
+                colname: i for i, colname in enumerate(column_names)}
 
         if len(self.column_indices) != len(self.column_names):
             raise RuntimeError("non-unique column names encountered")
@@ -63,7 +58,7 @@ class DataTable:
     def insert(self, **kwargs):
         values = [None for i in range(len(self.column_names))]
 
-        for key, val in six.iteritems(kwargs):
+        for key, val in kwargs.items():
             values[self.column_indices[key]] = val
 
         self.insert_row(tuple(values))
@@ -83,7 +78,7 @@ class DataTable:
 
         criteria = tuple(
                 (self.column_indices[key], value)
-                for key, value in six.iteritems(kwargs))
+                for key, value in kwargs.items())
 
         result_data = []
 

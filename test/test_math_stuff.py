@@ -1,7 +1,3 @@
-from __future__ import division
-from __future__ import absolute_import
-
-
 def test_variance():
     data = [4, 7, 13, 16]
 
