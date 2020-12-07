@@ -68,9 +68,9 @@ This module also provides a disk-backed dictionary that uses persistent hashing.
 def _make_dir_recursively(dir_):
     try:
         os.makedirs(dir_)
-    except OSError as e:
+    except OSError as ex:
         from errno import EEXIST
-        if e.errno != EEXIST:
+        if ex.errno != EEXIST:
             raise
 
 
