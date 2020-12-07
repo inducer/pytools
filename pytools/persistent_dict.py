@@ -28,6 +28,7 @@ THE SOFTWARE.
 """
 
 import logging
+import hashlib
 
 try:
     import collections.abc as abc
@@ -62,14 +63,6 @@ This module also provides a disk-backed dictionary that uses persistent hashing.
 .. autoclass:: PersistentDict
 .. autoclass:: WriteOncePersistentDict
 """
-
-try:
-    import hashlib
-    new_hash = hashlib.sha256
-except ImportError:
-    # for Python << 2.5
-    import sha
-    new_hash = sha.new
 
 
 def _make_dir_recursively(dir_):
@@ -196,7 +189,7 @@ class KeyBuilder(object):
             except AttributeError:
                 pass
             else:
-                inner_key_hash = new_hash()
+                inner_key_hash = hashlib.sha256()
                 method(inner_key_hash, self)
                 digest = inner_key_hash.digest()
 
@@ -206,7 +199,7 @@ class KeyBuilder(object):
             except AttributeError:
                 pass
             else:
-                inner_key_hash = new_hash()
+                inner_key_hash = hashlib.sha256()
                 method(inner_key_hash, key)
                 digest = inner_key_hash.digest()
 
@@ -225,7 +218,7 @@ class KeyBuilder(object):
         key_hash.update(digest)
 
     def __call__(self, key):
-        key_hash = new_hash()
+        key_hash = hashlib.sha256()
         self.rec(key_hash, key)
         return key_hash.hexdigest()
 
