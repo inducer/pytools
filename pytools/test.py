@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 try:
     from py.test import mark as mark_test  # pylint:disable=unused-import
 except ImportError:

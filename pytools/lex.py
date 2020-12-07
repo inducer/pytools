@@ -1,7 +1,4 @@
-from __future__ import absolute_import
-from __future__ import print_function
 import re
-import six
 
 
 class RuleError(RuntimeError):
@@ -40,7 +37,7 @@ class ParseError(RuntimeError):
                            self.string[self.Token[2]:self.Token[2]+20])
 
 
-class RE(object):
+class RE:
     def __init__(self, s, flags=0):
         self.Content = s
         self.RE = re.compile(s, flags)
@@ -74,7 +71,7 @@ def _matches_rule(rule, s, start, rule_dict, debug=False):
                 return my_match_length, None
         return 0, None
 
-    elif isinstance(rule, six.string_types):
+    elif isinstance(rule, str):
         return _matches_rule(rule_dict[rule], s, start, rule_dict, debug)
 
     elif isinstance(rule, RE):
@@ -105,7 +102,7 @@ def lex(lex_table, s, debug=False, match_objects=False):
     return result
 
 
-class LexIterator(object):
+class LexIterator:
     def __init__(self, lexed, raw_str, lex_index=0):
         self.lexed = lexed
         self.raw_string = raw_str

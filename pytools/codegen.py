@@ -37,7 +37,7 @@ from typing import Any, List
 # loosely based on
 # http://effbot.org/zone/python-code-generator.htm
 
-class CodeGenerator(object):
+class CodeGenerator:
     """Language-agnostic functionality for source code generation.
 
     .. automethod:: extend
@@ -85,7 +85,7 @@ class CodeGenerator(object):
         self.level -= 1
 
 
-class Indentation(object):
+class Indentation:
     """A context manager for indentation for use with :class:`CodeGenerator`.
 
     .. attribute:: generator

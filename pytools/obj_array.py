@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division
-
 __copyright__ = "Copyright (C) 2009-2020 Andreas Kloeckner"
 
 __license__ = """
@@ -336,7 +334,7 @@ def setify_field(f):
     if is_obj_array(f):
         return set(f)
     else:
-        return set([f])
+        return {f}
 
 
 def cast_field(field, dtype):

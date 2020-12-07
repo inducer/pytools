@@ -5,14 +5,13 @@ parent process.
 
 Since none of this is MPI-specific, it got parked in pytools.
 """
-from __future__ import absolute_import
 
 
 class ExecError(OSError):
     pass
 
 
-class DirectForker(object):
+class DirectForker:
     def __init__(self):
         self.apids = {}
         self.count = 0
@@ -77,7 +76,7 @@ class DirectForker(object):
 
 def _send_packet(sock, data):
     from struct import pack
-    from six.moves.cPickle import dumps
+    from pickle import dumps
 
     packet = dumps(data)
 
@@ -92,7 +91,7 @@ def _recv_packet(sock, who="Process", partner="other end"):
 
     if len(size_bytes) < size_bytes_size:
         from warnings import warn
-        warn("%s exiting upon apparent death of %s" % (who, partner))
+        warn(f"{who} exiting upon apparent death of {partner}")
 
         raise SystemExit
 
@@ -102,7 +101,7 @@ def _recv_packet(sock, who="Process", partner="other end"):
     while len(packet) < size:
         packet += sock.recv(size)
 
-    from six.moves.cPickle import loads
+    from pickle import loads
     return loads(packet)
 
 
@@ -147,7 +146,7 @@ def _fork_server(sock):
     os._exit(0)  # pylint:disable=protected-access
 
 
-class IndirectForker(object):
+class IndirectForker:
     def __init__(self, server_pid, sock):
         self.server_pid = server_pid
         self.socket = sock
