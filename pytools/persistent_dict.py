@@ -194,11 +194,19 @@ class KeyBuilder(object):
                 digest = inner_key_hash.digest()
 
         if digest is None:
+            tname = type(key).__name__
+            method = None
             try:
-                method = getattr(self, "update_for_"+type(key).__name__)
+                method = getattr(self, "update_for_"+tname)
             except AttributeError:
-                pass
-            else:
+                # Handling numpy >= 1.20, for which
+                # type(np.dtype("float32")) -> "dtype[float32]"
+                if tname.startswith("dtype[") and "numpy" in sys.modules:
+                    import numpy as np
+                    if isinstance(key, np.dtype):
+                        method = self.update_for_specific_dtype
+
+            if method is not None:
                 inner_key_hash = hashlib.sha256()
                 method(inner_key_hash, key)
                 digest = inner_key_hash.digest()
@@ -267,6 +275,14 @@ class KeyBuilder(object):
 
     @staticmethod
     def update_for_dtype(key_hash, key):
+        key_hash.update(key.str.encode("utf8"))
+
+    # Handling numpy >= 1.20, for which
+    # type(np.dtype("float32")) -> "dtype[float32]"
+    # Introducing this method allows subclasses to specially handle all those
+    # dtypes.
+    @staticmethod
+    def update_for_specific_dtype(key_hash, key):
         key_hash.update(key.str.encode("utf8"))
 
     # }}}
