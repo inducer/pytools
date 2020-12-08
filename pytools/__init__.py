@@ -31,6 +31,7 @@ import sys
 import logging
 from typing import (
         Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, TypeVar)
+import builtins
 
 
 from sys import intern
@@ -38,6 +39,11 @@ from sys import intern
 
 decorator_module = __import__("decorator", level=0)
 my_decorator = decorator_module.decorator
+
+# These are deprecated and will go away in 2022.
+all = builtins.all
+any = builtins.any
+
 
 __doc__ = """
 A Collection of Utilities
