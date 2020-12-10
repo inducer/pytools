@@ -257,7 +257,7 @@ class ToPythonObjectMapper(Transformer):
         (key, val), = kwarg.items()
         if key in kwargs:
             # FIXME: This should probably be GrammarError
-            raise ValueError("keyword argument '{key}' repeated")
+            raise ValueError(f"keyword argument '{key}' repeated")
 
         updated_kwargs = kwargs.copy()
         updated_kwargs[key] = val
