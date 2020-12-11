@@ -167,7 +167,6 @@ class Taggable():
         # replicate the (multiple)-inheritance hierarchy with sets to make
         # that workable. As long as the number of tags is small this should
         # not be costly.
-        print("here")
         for tag1 in unique_tags:
             for tag2 in unique_tags:
                 if tag1 is not tag2 and isinstance(tag1, type(tag2)):
