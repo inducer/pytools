@@ -285,6 +285,71 @@ def test_make_obj_array_iteration():
 # }}}
 
 
+def test_tag():
+    from pytools.tag import Taggable, Tag, UniqueTag
+
+    # Need a subclass that defines the copy function in order to test.
+    class TaggableWithCopy(Taggable):
+
+        def copy(self, **kwargs):
+            return TaggableWithCopy(kwargs["tags"])
+
+    class UniqueTagChild(UniqueTag):
+        pass
+
+    class UniqueTagChildChild(UniqueTagChild):
+        pass
+
+    class TagChild(Tag):
+        pass
+
+    tag1 = UniqueTagChild()
+    tag2 = UniqueTagChildChild()
+    tag3 = Tag()
+    tag4 = TagChild()
+
+    # Test uniqueness check
+    t = None
+    try:
+        # This should throw and exception
+        t = TaggableWithCopy((tag1, tag2, tag3, tag4))
+    except ValueError:
+        pass
+    finally:
+        assert t is None
+
+    # Instantiate
+    t1 = TaggableWithCopy([tag2, tag3, tag3])
+    assert t1.tags == frozenset((tag2, tag3))
+
+    # Test tagged()
+    t2 = t1.tagged(tag4)
+    print(t2.tags)
+    assert t2.tags == frozenset((tag2, tag3, tag4))
+
+    t3 = None
+    try:
+        # This should throw an exception
+        t3 = t1.tagged(tag1)
+    except ValueError:
+        pass
+    finally:
+        assert t3 is None
+
+    # Test without_tags()
+    t4 = t2.without_tags(tag4)
+    assert t4.tags == t1.tags
+
+    t5 = None
+    try:
+        # This should throw an exception
+        t5 = t4.without_tags(tag4)
+    except ValueError:
+        pass
+    finally:
+        assert t5 is None
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
