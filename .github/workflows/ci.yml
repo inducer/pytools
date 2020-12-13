@@ -67,6 +67,13 @@ jobs:
                 python-version: ${{ matrix.python-version }}
         -   name: "Main Script"
             run: |
+                # untested, causes import error with Pytest >= 6.2.0
+                # AK, 2020-12-13
+                rm pytools/mpiwrap.py
+                # just a forwarding sim, causes import error with Pytest >= 6.2.0
+                # AK, 2020-12-13
+                rm pytools/log.py
+
                 EXTRA_INSTALL="numpy"
                 curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/build-and-test-py-project.sh
                 . ./build-and-test-py-project.sh
