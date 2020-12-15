@@ -144,7 +144,7 @@ class Taggable():
     .. method:: tagged
     .. method:: without_tags
 
-    .. versionadded:: 2020.4.4
+    .. versionadded:: 2020.4.5
     """
 
     def __init__(self, tags: TagOrIterableType = None):
