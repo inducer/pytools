@@ -309,7 +309,7 @@ def test_tag():
     # Test uniqueness check
     t = None
     try:
-        # This should throw and exception
+        # This should throw an exception
         t = TaggableWithCopy((tag1, tag2, tag3, tag4))
     except ValueError:
         pass
