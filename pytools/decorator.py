@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 # Python decorator module
 # by Michele Simionato
 # http://www.phyast.pitt.edu/~micheles/python/

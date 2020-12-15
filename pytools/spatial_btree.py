@@ -1,6 +1,3 @@
-from __future__ import division, absolute_import
-from six.moves import range
-
 import numpy as np
 
 
@@ -138,19 +135,18 @@ class SpatialBinaryTreeBucket:
                 else:
                     bucket = bucket[1]
 
-            for result in bucket.generate_matches(point):
-                yield result
+            yield from bucket.generate_matches(point)
 
         # Perform linear search.
         for el, _ in self.elements:
             yield el
 
     def visualize(self, file):
-        file.write("%f %f\n" % (self.bottom_left[0], self.bottom_left[1]))
-        file.write("%f %f\n" % (self.top_right[0], self.bottom_left[1]))
-        file.write("%f %f\n" % (self.top_right[0], self.top_right[1]))
-        file.write("%f %f\n" % (self.bottom_left[0], self.top_right[1]))
-        file.write("%f %f\n\n" % (self.bottom_left[0], self.bottom_left[1]))
+        file.write("{:f} {:f}\n".format(self.bottom_left[0], self.bottom_left[1]))
+        file.write("{:f} {:f}\n".format(self.top_right[0], self.bottom_left[1]))
+        file.write("{:f} {:f}\n".format(self.top_right[0], self.top_right[1]))
+        file.write("{:f} {:f}\n".format(self.bottom_left[0], self.top_right[1]))
+        file.write("{:f} {:f}\n\n".format(self.bottom_left[0], self.bottom_left[1]))
         if self.buckets:
             for i in self.all_buckets:
                 i.visualize(file)

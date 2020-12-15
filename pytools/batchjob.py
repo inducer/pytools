@@ -1,7 +1,3 @@
-from __future__ import absolute_import
-import six
-
-
 def _cp(src, dest):
     from pytools import assert_not_a_file
     assert_not_a_file(dest)
@@ -22,7 +18,7 @@ def get_timestamp():
     return datetime.now().strftime("%Y-%m-%d-%H%M%S")
 
 
-class BatchJob(object):
+class BatchJob:
     def __init__(self, moniker, main_file, aux_files=(), timestamp=None):
         import os
         import os.path
@@ -65,7 +61,7 @@ class BatchJob(object):
         setup.close()
 
 
-class INHERIT(object):  # noqa
+class INHERIT:  # noqa
     pass
 
 
@@ -80,11 +76,11 @@ class GridEngineJob(BatchJob):
 
         from os import getenv
         env = dict(env)
-        for var, value in six.iteritems(env):
+        for var, value in env.items():
             if value is INHERIT:
                 value = getenv(var)
 
-            args += ["-v", "%s=%s" % (var, value)]
+            args += ["-v", f"{var}={value}"]
 
         if memory_megs is not None:
             args.extend(["-l", "mem=%d" % memory_megs])
@@ -111,11 +107,11 @@ class PBSJob(BatchJob):
         from os import getenv
 
         env = dict(env)
-        for var, value in six.iteritems(env):
+        for var, value in env.items():
             if value is INHERIT:
                 value = getenv(var)
 
-            args += ["-v", "%s=%s" % (var, value)]
+            args += ["-v", f"{var}={value}"]
 
         args.extend(extra_args)
 
@@ -147,11 +143,11 @@ class ConstructorPlaceholder:
         return self.kwargs[name]
 
     def __str__(self):
-        return "%s(%s)" % (self.classname,
+        return "{}({})".format(self.classname,
                 ",".join(
                     [str(arg) for arg in self.args]
-                    + ["%s=%s" % (kw, repr(val))
-                        for kw, val in six.iteritems(self.kwargs)]
+                    + ["{}={}".format(kw, repr(val))
+                        for kw, val in self.kwargs.items()]
                     )
                 )
     __repr__ = __str__

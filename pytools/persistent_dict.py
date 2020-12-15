@@ -1,6 +1,5 @@
 """Generic persistent, concurrent dictionary-like facility."""
 
-from __future__ import division, with_statement, absolute_import
 
 __copyright__ = """
 Copyright (C) 2011,2014 Andreas Kloeckner
@@ -28,6 +27,7 @@ THE SOFTWARE.
 """
 
 import logging
+import hashlib
 
 try:
     import collections.abc as abc
@@ -39,8 +39,6 @@ import os
 import shutil
 import sys
 import errno
-
-import six
 
 logger = logging.getLogger(__name__)
 
@@ -63,26 +61,18 @@ This module also provides a disk-backed dictionary that uses persistent hashing.
 .. autoclass:: WriteOncePersistentDict
 """
 
-try:
-    import hashlib
-    new_hash = hashlib.sha256
-except ImportError:
-    # for Python << 2.5
-    import sha
-    new_hash = sha.new
-
 
 def _make_dir_recursively(dir_):
     try:
         os.makedirs(dir_)
-    except OSError as e:
+    except OSError as ex:
         from errno import EEXIST
-        if e.errno != EEXIST:
+        if ex.errno != EEXIST:
             raise
 
 
 def update_checksum(checksum, obj):
-    if isinstance(obj, six.text_type):
+    if isinstance(obj, str):
         checksum.update(obj.encode("utf8"))
     else:
         checksum.update(obj)
@@ -90,7 +80,7 @@ def update_checksum(checksum, obj):
 
 # {{{ cleanup managers
 
-class CleanupBase(object):
+class CleanupBase:
     pass
 
 
@@ -181,7 +171,7 @@ class ItemDirManager(CleanupBase):
 
 # {{{ key generation
 
-class KeyBuilder(object):
+class KeyBuilder:
     def rec(self, key_hash, key):
         digest = None
 
@@ -196,17 +186,25 @@ class KeyBuilder(object):
             except AttributeError:
                 pass
             else:
-                inner_key_hash = new_hash()
+                inner_key_hash = hashlib.sha256()
                 method(inner_key_hash, self)
                 digest = inner_key_hash.digest()
 
         if digest is None:
+            tname = type(key).__name__
+            method = None
             try:
-                method = getattr(self, "update_for_"+type(key).__name__)
+                method = getattr(self, "update_for_"+tname)
             except AttributeError:
-                pass
-            else:
-                inner_key_hash = new_hash()
+                # Handling numpy >= 1.20, for which
+                # type(np.dtype("float32")) -> "dtype[float32]"
+                if tname.startswith("dtype[") and "numpy" in sys.modules:
+                    import numpy as np
+                    if isinstance(key, np.dtype):
+                        method = self.update_for_specific_dtype
+
+            if method is not None:
+                inner_key_hash = hashlib.sha256()
                 method(inner_key_hash, key)
                 digest = inner_key_hash.digest()
 
@@ -225,7 +223,7 @@ class KeyBuilder(object):
         key_hash.update(digest)
 
     def __call__(self, key):
-        key_hash = new_hash()
+        key_hash = hashlib.sha256()
         self.rec(key_hash, key)
         return key_hash.hexdigest()
 
@@ -242,22 +240,13 @@ class KeyBuilder(object):
     def update_for_float(key_hash, key):
         key_hash.update(repr(key).encode("utf8"))
 
-    if sys.version_info >= (3,):
-        @staticmethod
-        def update_for_str(key_hash, key):
-            key_hash.update(key.encode("utf8"))
+    @staticmethod
+    def update_for_str(key_hash, key):
+        key_hash.update(key.encode("utf8"))
 
-        @staticmethod
-        def update_for_bytes(key_hash, key):
-            key_hash.update(key)
-    else:
-        @staticmethod
-        def update_for_str(key_hash, key):
-            key_hash.update(key)
-
-        @staticmethod
-        def update_for_unicode(key_hash, key):
-            key_hash.update(key.encode("utf8"))
+    @staticmethod
+    def update_for_bytes(key_hash, key):
+        key_hash.update(key)
 
     def update_for_tuple(self, key_hash, key):
         for obj_i in key:
@@ -270,10 +259,18 @@ class KeyBuilder(object):
     @staticmethod
     def update_for_NoneType(key_hash, key):  # noqa
         del key
-        key_hash.update("<None>".encode("utf8"))
+        key_hash.update(b"<None>")
 
     @staticmethod
     def update_for_dtype(key_hash, key):
+        key_hash.update(key.str.encode("utf8"))
+
+    # Handling numpy >= 1.20, for which
+    # type(np.dtype("float32")) -> "dtype[float32]"
+    # Introducing this method allows subclasses to specially handle all those
+    # dtypes.
+    @staticmethod
+    def update_for_specific_dtype(key_hash, key):
         key_hash.update(key.str.encode("utf8"))
 
     # }}}
@@ -283,7 +280,7 @@ class KeyBuilder(object):
 
 # {{{ lru cache
 
-class _LinkedList(object):
+class _LinkedList:
     """The list operates on nodes of the form [value, leftptr, rightpr]. To create a
     node of this form you can use `LinkedList.new_node().`
 
@@ -414,7 +411,7 @@ class CollisionWarning(UserWarning):
     pass
 
 
-class _PersistentDictBase(object):
+class _PersistentDictBase:
     def __init__(self, identifier, key_builder=None, container_dir=None):
         self.identifier = identifier
 
@@ -428,9 +425,9 @@ class _PersistentDictBase(object):
             import appdirs
             container_dir = join(
                     appdirs.user_cache_dir("pytools", "pytools"),
-                    "pdict-v3-%s-py%s" % (
+                    "pdict-v3-{}-py{}".format(
                         identifier,
-                        ".".join(str(i) for i in sys.version_info),))
+                        ".".join(str(i) for i in sys.version_info)))
 
         self.container_dir = container_dir
 
@@ -452,13 +449,13 @@ class _PersistentDictBase(object):
 
     @staticmethod
     def _read(path):
-        from six.moves.cPickle import load
+        from pickle import load
         with open(path, "rb") as inf:
             return load(inf)
 
     @staticmethod
     def _write(path, value):
-        from six.moves.cPickle import dump, HIGHEST_PROTOCOL
+        from pickle import dump, HIGHEST_PROTOCOL
         with open(path, "wb") as outf:
             dump(value, outf, protocol=HIGHEST_PROTOCOL)
 
