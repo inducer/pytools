@@ -306,18 +306,37 @@ def test_tag():
     tag3 = Tag()
     tag4 = TagChild()
 
+    # Should only succeed if tags is a FrozenSet of Tags
+    t = None
+    try:
+        # This should throw an exception
+        t = TaggableWithCopy(tags=[tag1, tag2, tag3, tag4])
+    except AssertionError:
+        pass
+    finally:
+        assert t is None
+
+    t = None
+    try:
+        # This should throw an exception
+        t = TaggableWithCopy(tags=frozenset((1, tag2, tag3, tag4)))
+    except AssertionError:
+        pass
+    finally:
+        assert t is None
+
     # Test uniqueness check
     t = None
     try:
         # This should throw an exception
-        t = TaggableWithCopy((tag1, tag2, tag3, tag4))
+        t = TaggableWithCopy(tags=frozenset((tag1, tag2, tag3, tag4)))
     except ValueError:
         pass
     finally:
         assert t is None
 
     # Instantiate
-    t1 = TaggableWithCopy([tag2, tag3, tag3])
+    t1 = TaggableWithCopy(frozenset([tag2, tag3, tag3]))
     assert t1.tags == frozenset((tag2, tag3))
 
     # Test tagged()

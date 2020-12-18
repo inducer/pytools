@@ -147,8 +147,12 @@ class Taggable:
     .. versionadded:: 2020.4.5
     """
 
-    def __init__(self, tags: TagOrIterableType = None):
-        self.tags = self._normalize_input(tags)
+    def __init__(self, tags: TagsType = frozenset()):
+        # For performance we assert rather than
+        # normalize the input.
+        assert isinstance(tags, FrozenSet)
+        assert all(isinstance(tag, Tag) for tag in tags)
+        self.tags = tags
         self._check_uniqueness()
 
     def _normalize_input(self, tags: TagOrIterableType) -> TagsType:
