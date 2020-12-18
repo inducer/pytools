@@ -162,7 +162,7 @@ class Taggable():
 
     def _check_uniqueness(self):
         unique_tags = {tag for tag in self.tags if isinstance(tag, UniqueTag)}
-        # Note: this is an O(n^2) algorithm but the alternative, use of
+        # Note: this is an O(n^2) algorithm, but the alternative, use of
         # set intersections, is complicated by inheritance. One may need to
         # replicate the (multiple)-inheritance hierarchy with sets to make
         # that workable. As long as the number of tags is small this should
