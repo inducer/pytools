@@ -132,7 +132,7 @@ TagOrIterableType = Union[Iterable[Tag], Tag, None]
 T_co = TypeVar("T_co", bound="Taggable")
 
 
-class Taggable():
+class Taggable:
     """
     Parent class for objects with a `tags` attribute.
 
