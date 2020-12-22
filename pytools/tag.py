@@ -167,21 +167,21 @@ class Taggable:
     def _check_uniqueness(self):
         class_set = set()
 
-        def _check_recursively(inClass, class_set):
+        def _check_recursively(in_class, class_set):
 
             # Termination condition
-            if issubclass(inClass, UniqueTag) and inClass is not UniqueTag:
-                if inClass in class_set:
+            if issubclass(in_class, UniqueTag) and in_class is not UniqueTag:
+                if in_class in class_set:
                     error_string = ("Two or more Tags are instances of {}."
                     " A Taggable object can only instantiate with one"
                     " instance of each UniqueTag sub-class.").format(
-                        inClass.__name__)
+                        in_class.__name__)
                     raise ValueError(error_string)
                 else:
-                    class_set.add(inClass)
+                    class_set.add(in_class)
 
                 # Recurse to all superclasses
-                for c in inClass.__bases__:
+                for c in in_class.__bases__:
                     _check_recursively(c, class_set)
 
         for tag in self.tags:
