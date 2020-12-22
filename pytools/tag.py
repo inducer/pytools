@@ -165,20 +165,27 @@ class Taggable:
         return t
 
     def _check_uniqueness(self):
-        unique_tags = {tag for tag in self.tags if isinstance(tag, UniqueTag)}
-        # Note: this is an O(n^2) algorithm, but the alternative, use of
-        # set intersections, is complicated by inheritance. One may need to
-        # replicate the (multiple)-inheritance hierarchy with sets to make
-        # that workable. As long as the number of tags is small this should
-        # not be costly.
-        for tag1 in unique_tags:
-            for tag2 in unique_tags:
-                if tag1 is not tag2 and isinstance(tag1, type(tag2)):
+        classSet = set()
+
+        def _check_recursively(inClass, classSet):
+            
+            # Termination condition
+            if issubclass(inClass, UniqueTag) and inClass is not UniqueTag:
+                if inClass in classSet:
                     error_string = ("Two or more Tags are instances of {}."
                     " A Taggable object can only instantiate with one"
                     " instance of each UniqueTag sub-class.").format(
-                        type(tag2).__name__)
+                        inClass.__name__)
                     raise ValueError(error_string)
+                else:
+                    classSet.add(inClass)
+
+                # Recurse to all superclasses
+                for c in inClass.__bases__:
+                    _check_recursively(c, classSet)
+
+        for tag in self.tags:
+            _check_recursively(type(tag), classSet)
 
     def copy(self: T_co, **kwargs: Any) -> T_co:
         """
