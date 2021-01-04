@@ -128,8 +128,12 @@ class Tag:
 
 class UniqueTag(Tag):
     """
-    Only one instance of this type of tag may be assigned
-    to a single tagged object.
+    Parent class intended for subclassing.
+
+    Each instance of :class:`Taggable` may have no more than one
+    instance of each subclass of :class:`UniqueTag` in its
+    set of `tags`. Multiple `UniqueTag` instances of
+    different subclasses are allowed.
     """
     pass
 
