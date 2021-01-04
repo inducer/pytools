@@ -301,12 +301,16 @@ def test_tag():
     class TagChild(Tag):
         pass
 
+    class UniqueTagChild2(UniqueTag):
+        pass
+
     tag1 = UniqueTagChild()
     tag2 = UniqueTagChildChild()
     tag3 = Tag()
     tag4 = TagChild()
+    tag5 = UniqueTagChild2()
 
-    # Should only succeed if tags is a FrozenSet of Tags
+    # Test that instantiation fails if tags is not a FrozenSet of Tags
     t = None
     try:
         # This should throw an exception
@@ -316,6 +320,7 @@ def test_tag():
     finally:
         assert t is None
 
+    # Test that instantiation fails if tags is not a FrozenSet of Tags
     t = None
     try:
         # This should throw an exception
@@ -325,7 +330,8 @@ def test_tag():
     finally:
         assert t is None
 
-    # Test uniqueness check
+    # Test that instantiation fails if there are multiple instances
+    # of the same UniqueTag subclass
     t = None
     try:
         # This should throw an exception
@@ -335,15 +341,18 @@ def test_tag():
     finally:
         assert t is None
 
-    # Instantiate
-    t1 = TaggableWithCopy(frozenset([tag2, tag3, tag3]))
-    assert t1.tags == frozenset((tag2, tag3))
+    # Test that instantiation succeeds if there are multiple instances
+    # of UniqueTag of different subclasses.
+    t1 = TaggableWithCopy(frozenset([tag2, tag5, tag3, tag3]))
+    assert t1.tags == frozenset((tag2, tag5, tag3))
 
-    # Test tagged()
+    # Test tagged() function
     t2 = t1.tagged(tag4)
     print(t2.tags)
-    assert t2.tags == frozenset((tag2, tag3, tag4))
+    assert t2.tags == frozenset((tag2, tag5, tag3, tag4))
 
+    # Test that tagged() fails if a UniqueTag of the same subclass
+    # is alredy present
     t3 = None
     try:
         # This should throw an exception
@@ -353,10 +362,11 @@ def test_tag():
     finally:
         assert t3 is None
 
-    # Test without_tags()
+    # Test without_tags() function
     t4 = t2.without_tags(tag4)
     assert t4.tags == t1.tags
 
+    # Test that without_tags() fails if the tag is not present.
     t5 = None
     try:
         # This should throw an exception
