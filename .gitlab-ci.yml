@@ -7,7 +7,7 @@ Pytest:
     # AK, 2020-12-13
     rm pytools/log.py
 
-    export EXTRA_INSTALL="numpy"
+    export EXTRA_INSTALL="numpy lark-parser"
     curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/build-and-test-py-project.sh
     . ./build-and-test-py-project.sh
   tags:

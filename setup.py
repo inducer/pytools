@@ -42,9 +42,11 @@ setup(name="pytools",
           "appdirs>=1.4.0",
           "numpy>=1.6.0",
           "dataclasses>=0.7;python_version<='3.6'",
-          "Mako",
-          "lark-parser",
           ],
+
+      extras_require={
+          "tag_parsing": ["lark-parser"],
+          },
 
       package_data={"pytools": ["py.typed"]},
 
