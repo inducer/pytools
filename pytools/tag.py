@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import Tuple, Any, FrozenSet
 import importlib
 from lark import Lark, Transformer
-from mako.template import Template
 
 __copyright__ = """
 Copyright (C) 2020 Andreas Kloeckner
@@ -138,12 +137,9 @@ TagsType = FrozenSet[Tag]
 
 # {{{ parse
 
-def build_tag_grammar(shortcuts):
-    tag_grammar_tmplt = """
-    tag: tag_class "(" params ")" -> map_tag
-    % if shortcuts:
-       | SHORTCUT                 -> map_shortcut
-    % endif
+TAG_GRAMMAR = """
+    tag: tag_class "(" params ")" -> map_tag_from_python_class
+       | SHORTCUT                 -> map_tag_from_shortcut
 
     params:                       -> map_empty_args_params
           | args                  -> map_args_only_params
@@ -168,18 +164,16 @@ def build_tag_grammar(shortcuts):
           | module "." name       -> map_nested_module
 
     name: CNAME                   -> map_name
+    SHORTCUT: "." ("_"|LETTER) ("_"|LETTER|DIGIT|".")*
 
-    % if shortcuts:
-    SHORTCUT: (${" | ".join('"' + name + '"' for name in shortcuts)})
-    % endif
-
-    %%import common.INT
-    %%import common.ESCAPED_STRING
-    %%import common.CNAME
-    %%import common.WS
-    %%ignore WS
-    """
-    return Template(tag_grammar_tmplt).render(shortcuts=shortcuts).replace("%%", "%")
+    %import common.INT
+    %import common.ESCAPED_STRING
+    %import common.DIGIT
+    %import common.LETTER
+    %import common.CNAME
+    %import common.WS
+    %ignore WS
+"""
 
 
 class CallParams:
@@ -195,9 +189,10 @@ class ToPythonObjectMapper(Transformer):
     """
     Map a parsed tree to pythonic objects.
     """
-    def __init__(self, shortcuts):
+    def __init__(self, shortcuts, caller_globals):
         super().__init__()
         self.shortcuts = shortcuts
+        self.caller_globals = caller_globals
 
     def _call_userfunc(self, tree, new_children=None):
         # Assumes tree is already transformed
@@ -210,8 +205,11 @@ class ToPythonObjectMapper(Transformer):
             # flatten the args
             return f(*children)
 
-    def map_tag(self, cls, params):
-        return cls(*params.args, **params.kwargs)
+    def map_tag_from_python_class(self, cls, params):
+        try:
+            return cls(*params.args, **params.kwargs)
+        except TypeError as e:
+            raise TypeError(f"Error while instantiating '{cls.__name__}': {e}")
 
     def map_empty_args_params(self):
         return CallParams((), {})
@@ -229,7 +227,10 @@ class ToPythonObjectMapper(Transformer):
         return tok.value
 
     def map_top_level_module(self, modulename):
-        return importlib.import_module(modulename)
+        try:
+            return self.caller_globals[modulename]
+        except KeyError:
+            return importlib.import_module(modulename)
 
     def map_nested_module(self, module, child):
         return getattr(module, child)
@@ -256,24 +257,25 @@ class ToPythonObjectMapper(Transformer):
         assert len(kwarg) == 1
         (key, val), = kwarg.items()
         if key in kwargs:
-            # FIXME: This should probably be GrammarError
             raise ValueError(f"keyword argument '{key}' repeated")
 
         updated_kwargs = kwargs.copy()
         updated_kwargs[key] = val
         return updated_kwargs
 
-    def map_shortcut(self, name):
-        return self.shortcuts[name.value]
+    def map_tag_from_shortcut(self, name):
+        name = name[1:]  # remove the starting "."
+        return self.shortcuts[name]
 
 
 def parse_tag(tag_text, shortcuts={}):
     """
     Parses a :class:`Tag` from a provided dotted name.
     """
-    tag_grammar = build_tag_grammar(shortcuts)
-    parser = Lark(tag_grammar, start="tag")
-    tag = ToPythonObjectMapper(shortcuts).transform(parser.parse(tag_text))
+    import inspect
+    caller_globals = inspect.currentframe().f_back.f_globals
+    parser = Lark(TAG_GRAMMAR, start="tag")
+    tag = ToPythonObjectMapper(shortcuts, caller_globals).transform(parser.parse(tag_text))
 
     return tag
 
