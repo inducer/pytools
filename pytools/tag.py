@@ -275,7 +275,8 @@ def parse_tag(tag_text, shortcuts={}):
     import inspect
     caller_globals = inspect.currentframe().f_back.f_globals
     parser = Lark(TAG_GRAMMAR, start="tag")
-    tag = ToPythonObjectMapper(shortcuts, caller_globals).transform(parser.parse(tag_text))
+    tag = ToPythonObjectMapper(shortcuts, caller_globals).transform(
+            parser.parse(tag_text))
 
     return tag
 
