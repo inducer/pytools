@@ -345,6 +345,12 @@ def test_tag():
         assert t is None
 
     # Test that instantiation succeeds if there are multiple instances
+    # Tag subclasses.
+    t1 = TaggableWithCopy(frozenset([unique_tag_child_child, tag,
+                                    tag_child]))
+    assert t1.tags == frozenset((unique_tag_child_child, tag_child, tag))
+
+    # Test that instantiation succeeds if there are multiple instances
     # of UniqueTag of different subclasses.
     t1 = TaggableWithCopy(frozenset([unique_tag_child_child, unique_tag_child2, tag,
                                     tag]))
