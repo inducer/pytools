@@ -304,17 +304,18 @@ def test_tag():
     class UniqueTagChild2(UniqueTag):
         pass
 
-    tag1 = UniqueTagChild()
-    tag2 = UniqueTagChildChild()
-    tag3 = Tag()
-    tag4 = TagChild()
-    tag5 = UniqueTagChild2()
+    unique_tag_child = UniqueTagChild()
+    unique_tag_child_child = UniqueTagChildChild()
+    tag = Tag()
+    tag_child = TagChild()
+    unique_tag_child2 = UniqueTagChild2()
 
     # Test that instantiation fails if tags is not a FrozenSet of Tags
     t = None
     try:
         # This should throw an exception
-        t = TaggableWithCopy(tags=[tag1, tag2, tag3, tag4])
+        t = TaggableWithCopy(tags=[unique_tag_child, unique_tag_child_child, tag,
+                                tag_child])
     except AssertionError:
         pass
     finally:
@@ -324,7 +325,8 @@ def test_tag():
     t = None
     try:
         # This should throw an exception
-        t = TaggableWithCopy(tags=frozenset((1, tag2, tag3, tag4)))
+        t = TaggableWithCopy(tags=frozenset((1, unique_tag_child_child, tag,
+                                tag_child)))
     except AssertionError:
         pass
     finally:
@@ -335,7 +337,8 @@ def test_tag():
     t = None
     try:
         # This should throw an exception
-        t = TaggableWithCopy(tags=frozenset((tag1, tag2, tag3, tag4)))
+        t = TaggableWithCopy(tags=frozenset((unique_tag_child,
+                                unique_tag_child_child, tag, tag_child)))
     except ValueError:
         pass
     finally:
@@ -343,34 +346,36 @@ def test_tag():
 
     # Test that instantiation succeeds if there are multiple instances
     # of UniqueTag of different subclasses.
-    t1 = TaggableWithCopy(frozenset([tag2, tag5, tag3, tag3]))
-    assert t1.tags == frozenset((tag2, tag5, tag3))
+    t1 = TaggableWithCopy(frozenset([unique_tag_child_child, unique_tag_child2, tag,
+                                    tag]))
+    assert t1.tags == frozenset((unique_tag_child_child, unique_tag_child2, tag))
 
     # Test tagged() function
-    t2 = t1.tagged(tag4)
+    t2 = t1.tagged(tag_child)
     print(t2.tags)
-    assert t2.tags == frozenset((tag2, tag5, tag3, tag4))
+    assert t2.tags == frozenset((unique_tag_child_child, unique_tag_child2, tag,
+                                tag_child))
 
     # Test that tagged() fails if a UniqueTag of the same subclass
     # is alredy present
     t3 = None
     try:
         # This should throw an exception
-        t3 = t1.tagged(tag1)
+        t3 = t1.tagged(unique_tag_child)
     except ValueError:
         pass
     finally:
         assert t3 is None
 
     # Test without_tags() function
-    t4 = t2.without_tags(tag4)
+    t4 = t2.without_tags(tag_child)
     assert t4.tags == t1.tags
 
     # Test that without_tags() fails if the tag is not present.
     t5 = None
     try:
         # This should throw an exception
-        t5 = t4.without_tags(tag4)
+        t5 = t4.without_tags(tag_child)
     except ValueError:
         pass
     finally:
