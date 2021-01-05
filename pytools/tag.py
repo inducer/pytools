@@ -128,12 +128,12 @@ class Tag:
 
 class UniqueTag(Tag):
     """
-    Parent class intended for subclassing.
+    A superclass for tags that are unique on each `Taggable`.
 
     Each instance of :class:`Taggable` may have no more than one
     instance of each subclass of :class:`UniqueTag` in its
     set of `tags`. Multiple `UniqueTag` instances of
-    different subclasses are allowed.
+    different (immediate) subclasses are allowed.
     """
     pass
 
