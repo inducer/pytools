@@ -284,7 +284,7 @@ def test_make_obj_array_iteration():
 
 
 def test_tag():
-    from pytools.tag import Taggable, Tag, UniqueTag
+    from pytools.tag import Taggable, Tag, UniqueTag, NonUniqueTagError
 
     # Need a subclass that defines the copy function in order to test.
     class TaggableWithCopy(Taggable):
@@ -311,38 +311,20 @@ def test_tag():
     unique_tag_child2 = UniqueTagChild2()
 
     # Test that instantiation fails if tags is not a FrozenSet of Tags
-    t = None
-    try:
-        # This should throw an exception
-        t = TaggableWithCopy(tags=[unique_tag_child, unique_tag_child_child, tag,
+    with pytest.raises(AssertionError):
+        TaggableWithCopy(tags=[unique_tag_child, unique_tag_child_child, tag,
                                 tag_child])
-    except AssertionError:
-        pass
-    finally:
-        assert t is None
 
     # Test that instantiation fails if tags is not a FrozenSet of Tags
-    t = None
-    try:
-        # This should throw an exception
-        t = TaggableWithCopy(tags=frozenset((1, unique_tag_child_child, tag,
+    with pytest.raises(AssertionError):
+        TaggableWithCopy(tags=frozenset((1, unique_tag_child_child, tag,
                                 tag_child)))
-    except AssertionError:
-        pass
-    finally:
-        assert t is None
 
     # Test that instantiation fails if there are multiple instances
     # of the same UniqueTag subclass
-    t = None
-    try:
-        # This should throw an exception
-        t = TaggableWithCopy(tags=frozenset((unique_tag_child,
+    with pytest.raises(NonUniqueTagError):
+        TaggableWithCopy(tags=frozenset((unique_tag_child,
                                 unique_tag_child_child, tag, tag_child)))
-    except ValueError:
-        pass
-    finally:
-        assert t is None
 
     # Test that instantiation succeeds if there are multiple instances
     # Tag subclasses.
@@ -364,28 +346,16 @@ def test_tag():
 
     # Test that tagged() fails if a UniqueTag of the same subclass
     # is alredy present
-    t3 = None
-    try:
-        # This should throw an exception
-        t3 = t1.tagged(unique_tag_child)
-    except ValueError:
-        pass
-    finally:
-        assert t3 is None
+    with pytest.raises(NonUniqueTagError):
+        t1.tagged(unique_tag_child)
 
     # Test without_tags() function
     t4 = t2.without_tags(tag_child)
     assert t4.tags == t1.tags
 
     # Test that without_tags() fails if the tag is not present.
-    t5 = None
-    try:
-        # This should throw an exception
-        t5 = t4.without_tags(tag_child)
-    except ValueError:
-        pass
-    finally:
-        assert t5 is None
+    with pytest.raises(ValueError):
+        t4.without_tags(tag_child)
 
 
 if __name__ == "__main__":
