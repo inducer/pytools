@@ -45,6 +45,7 @@ Supporting Functionality
 ------------------------
 
 .. autoclass:: DottedName
+.. autoclass:: NonUniqueTagError
 
 """
 
@@ -158,6 +159,15 @@ def _immediate_unique_tag_descendants(cls):
         return result
 
 
+class NonUniqueTagError(ValueError):
+    """
+    Raised when a :class:`Taggable` object is instantiated with more
+    than one :class:`UniqueTag` instances of the same subclass in
+    its set of tags.
+    """
+    pass
+
+
 class Taggable:
     """
     Parent class for objects with a `tags` attribute.
@@ -197,7 +207,7 @@ class Taggable:
                     type(tag))
             intersection = unique_tag_descendants & tag_unique_tag_descendants
             if intersection:
-                raise ValueError("Multiple tags are direct subclasses of "
+                raise NonUniqueTagError("Multiple tags are direct subclasses of "
                         "the following UniqueTag(s): "
                         f"{', '.join(d.__name__ for d in intersection)}")
             else:
