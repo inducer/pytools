@@ -354,8 +354,7 @@ def test_tag():
     t2 = t1.tagged(red_ribbon)
     print(t2.tags)
     assert t2.tags == frozenset((reserve_best_in_show_ribbon, best_in_class_ribbon,
-                                blue_ribbon,
-                                red_ribbon))
+                                blue_ribbon, red_ribbon))
 
     # Test that tagged() fails if a UniqueTag of the same subclass
     # is alredy present
