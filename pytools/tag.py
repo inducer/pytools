@@ -180,7 +180,7 @@ class Taggable:
     .. method:: tagged
     .. method:: without_tags
 
-    .. versionadded:: 2020.4.5
+    .. versionadded:: 2021.1
     """
 
     def __init__(self, tags: TagsType = frozenset()):
