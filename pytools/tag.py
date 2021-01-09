@@ -129,7 +129,7 @@ class Tag:
 
 class UniqueTag(Tag):
     """
-    A superclass for tags that are unique on each `Taggable`.
+    A superclass for tags that are unique on each :class:`Taggable`.
 
     Each instance of :class:`Taggable` may have no more than one
     instance of each subclass of :class:`UniqueTag` in its
