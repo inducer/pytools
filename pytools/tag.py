@@ -191,7 +191,7 @@ class Taggable:
         self.tags = tags
         self._check_uniqueness()
 
-    def _normalize_input(self, tags: TagOrIterableType) -> TagsType:
+    def _normalize_tags(self, tags: TagOrIterableType) -> TagsType:
         if isinstance(tags, Tag):
             t = frozenset([tags])
         elif tags is None:
@@ -230,7 +230,7 @@ class Taggable:
         :arg tags: An instance of :class:`Tag` or
         an iterable with instances therein.
         """
-        new_tags = self._normalize_input(tags)
+        new_tags = self._normalize_tags(tags)
         union_tags = self.tags | new_tags
         cpy = self.copy(tags=union_tags)
         return cpy
@@ -248,7 +248,7 @@ class Taggable:
         for removal are present in the original set of tags. Default `True`
         """
 
-        to_remove = self._normalize_input(tags)
+        to_remove = self._normalize_tags(tags)
         new_tags = self.tags - to_remove
         if verify_existence and len(new_tags) > len(self.tags) - len(to_remove):
             raise ValueError("A tag specified for removal was not present.")
