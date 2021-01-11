@@ -283,6 +283,93 @@ def test_make_obj_array_iteration():
 # }}}
 
 
+def test_tag():
+    from pytools.tag import Taggable, Tag, UniqueTag, NonUniqueTagError
+
+    # Need a subclass that defines the copy function in order to test.
+    class TaggableWithCopy(Taggable):
+
+        def copy(self, **kwargs):
+            return TaggableWithCopy(kwargs["tags"])
+
+    class FairRibbon(Tag):
+        pass
+
+    class BlueRibbon(FairRibbon):
+        pass
+
+    class RedRibbon(FairRibbon):
+        pass
+
+    class ShowRibbon(FairRibbon, UniqueTag):
+        pass
+
+    class BestInShowRibbon(ShowRibbon):
+        pass
+
+    class ReserveBestInShowRibbon(ShowRibbon):
+        pass
+
+    class BestInClassRibbon(FairRibbon, UniqueTag):
+        pass
+
+    best_in_show_ribbon = BestInShowRibbon()
+    reserve_best_in_show_ribbon = ReserveBestInShowRibbon()
+    blue_ribbon = BlueRibbon()
+    red_ribbon = RedRibbon()
+    best_in_class_ribbon = BestInClassRibbon()
+
+    # Test that instantiation fails if tags is not a FrozenSet of Tags
+    with pytest.raises(AssertionError):
+        TaggableWithCopy(tags=[best_in_show_ribbon, reserve_best_in_show_ribbon,
+                            blue_ribbon, red_ribbon])
+
+    # Test that instantiation fails if tags is not a FrozenSet of Tags
+    with pytest.raises(AssertionError):
+        TaggableWithCopy(tags=frozenset((1, reserve_best_in_show_ribbon, blue_ribbon,
+                                red_ribbon)))
+
+    # Test that instantiation fails if there are multiple instances
+    # of the same UniqueTag subclass
+    with pytest.raises(NonUniqueTagError):
+        TaggableWithCopy(tags=frozenset((best_in_show_ribbon,
+                            reserve_best_in_show_ribbon, blue_ribbon, red_ribbon)))
+
+    # Test that instantiation succeeds if there are multiple instances
+    # Tag subclasses.
+    t1 = TaggableWithCopy(frozenset([reserve_best_in_show_ribbon, blue_ribbon,
+                                    red_ribbon]))
+    assert t1.tags == frozenset((reserve_best_in_show_ribbon, red_ribbon,
+                                    blue_ribbon))
+
+    # Test that instantiation succeeds if there are multiple instances
+    # of UniqueTag of different subclasses.
+    t1 = TaggableWithCopy(frozenset([reserve_best_in_show_ribbon,
+                            best_in_class_ribbon, blue_ribbon,
+                                    blue_ribbon]))
+    assert t1.tags == frozenset((reserve_best_in_show_ribbon, best_in_class_ribbon,
+                                blue_ribbon))
+
+    # Test tagged() function
+    t2 = t1.tagged(red_ribbon)
+    print(t2.tags)
+    assert t2.tags == frozenset((reserve_best_in_show_ribbon, best_in_class_ribbon,
+                                blue_ribbon, red_ribbon))
+
+    # Test that tagged() fails if a UniqueTag of the same subclass
+    # is alredy present
+    with pytest.raises(NonUniqueTagError):
+        t1.tagged(best_in_show_ribbon)
+
+    # Test without_tags() function
+    t4 = t2.without_tags(red_ribbon)
+    assert t4.tags == t1.tags
+
+    # Test that without_tags() fails if the tag is not present.
+    with pytest.raises(ValueError):
+        t4.without_tags(red_ribbon)
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
