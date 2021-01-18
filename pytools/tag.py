@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import Tuple, Any, FrozenSet, Union, Iterable, TypeVar
 import importlib
 
-from lark import Lark, Transformer
 from pytools import memoize
 
 __copyright__ = """
@@ -274,7 +273,7 @@ class CallParams:
         self.kwargs = kwargs
 
 
-class ToPythonObjectMapper(Transformer):
+class ToPythonObjectMapper:
     """
     Map a parsed tree to pythonic objects.
     """
@@ -357,14 +356,27 @@ class ToPythonObjectMapper(Transformer):
         return self.shortcuts[name]
 
 
+@memoize
+def construct_parser():
+    from lark import Lark
+    return Lark.open("tags.lark", rel_to=__file__, parser="lalr", start="tag",
+            cache=True)
+
+
 def parse_tag(tag_text, shortcuts={}):
     """
     Parses a :class:`Tag` from a provided dotted name.
     """
     import inspect
+    from lark import Transformer
+
+    class ToPythonObjectMapperMixin(ToPythonObjectMapper, Transformer):
+        pass
+
+    parser = construct_parser()
+
     caller_globals = inspect.currentframe().f_back.f_globals
-    parser = Lark.open("tags.lark", rel_to=__file__, parser="lalr", start="tag")
-    tag = ToPythonObjectMapper(shortcuts, caller_globals).transform(
+    tag = ToPythonObjectMapperMixin(shortcuts, caller_globals).transform(
             parser.parse(tag_text))
 
     return tag
