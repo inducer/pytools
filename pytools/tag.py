@@ -282,17 +282,6 @@ class ToPythonObjectMapper:
         self.shortcuts = shortcuts
         self.caller_globals = caller_globals
 
-    def _call_userfunc(self, tree, new_children=None):
-        # Assumes tree is already transformed
-        children = new_children if new_children is not None else tree.children
-        try:
-            f = getattr(self, tree.data)
-        except AttributeError:
-            return self.__default__(tree.data, children, tree.meta)
-        else:
-            # flatten the args
-            return f(*children)
-
     def map_tag_from_python_class(self, cls, params):
         try:
             return cls(*params.args, **params.kwargs)
@@ -371,7 +360,19 @@ def parse_tag(tag_text, shortcuts={}):
     from lark import Transformer
 
     class ToPythonObjectMapperMixin(ToPythonObjectMapper, Transformer):
-        pass
+        def _call_userfunc(self, tree, new_children=None):
+            """
+            Flattens the arguments before feeding to the mapper methods.
+            """
+            # Assumes tree is already transformed
+            children = new_children if new_children is not None else tree.children
+            try:
+                f = getattr(self, tree.data)
+            except AttributeError:
+                return self.__default__(tree.data, children, tree.meta)
+            else:
+                # flatten the args
+                return f(*children)
 
     parser = construct_parser()
 
