@@ -3,3 +3,5 @@ include LICENSE
 include doc/*rst
 include doc/Makefile
 include doc/conf.py
+
+include pytools/*.lark

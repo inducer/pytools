@@ -265,45 +265,6 @@ class Taggable:
 
 # {{{ parse
 
-TAG_GRAMMAR = """
-    tag: tag_class "(" params ")" -> map_tag_from_python_class
-       | SHORTCUT                 -> map_tag_from_shortcut
-
-    params:                       -> map_empty_args_params
-          | args                  -> map_args_only_params
-          | kwargs                -> map_kwargs_only_params
-          | args "," kwargs       -> map_args_kwargs_params
-
-    ?kwargs: kwarg
-           | kwargs "," kwarg     -> map_kwargs
-
-    args: arg                     -> map_singleton_args
-        | args "," arg            -> map_args
-
-    kwarg: name "=" arg           -> map_kwarg
-
-    ?arg: tag
-        | INT                     -> map_int
-        | ESCAPED_STRING          -> map_string
-
-    tag_class: module "." name    -> map_tag_class
-
-    module: name                  -> map_top_level_module
-          | module "." name       -> map_nested_module
-
-    name: CNAME                   -> map_name
-    SHORTCUT: "." ("_"|LETTER) ("_"|LETTER|DIGIT|".")*
-
-    %import common.INT
-    %import common.ESCAPED_STRING
-    %import common.DIGIT
-    %import common.LETTER
-    %import common.CNAME
-    %import common.WS
-    %ignore WS
-"""
-
-
 class CallParams:
     """
     Intermediate data structure for :class:`ToPythonObjectMapper`.
@@ -402,7 +363,7 @@ def parse_tag(tag_text, shortcuts={}):
     """
     import inspect
     caller_globals = inspect.currentframe().f_back.f_globals
-    parser = Lark(TAG_GRAMMAR, start="tag")
+    parser = Lark.open("tags.lark", rel_to=__file__, parser="lalr", start="tag")
     tag = ToPythonObjectMapper(shortcuts, caller_globals).transform(
             parser.parse(tag_text))
 
