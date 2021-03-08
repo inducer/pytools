@@ -397,7 +397,9 @@ def test_unordered_hash():
     import random
     import hashlib
 
-    lst = [random.randbytes(20) for _ in range(200)]
+    # FIXME: Use randbytes once >=3.9 is OK
+    lst = [bytes([random.randrange(256) for _ in range(20)])
+            for _ in range(200)]
     lorig = lst[:]
     random.shuffle(lst)
 
