@@ -173,6 +173,22 @@ class ItemDirManager(CleanupBase):
 # {{{ key generation
 
 class KeyBuilder:
+    """A (stateless) object that computes hashes of objects fed to it. Subclassing
+    this class permits customizing the computation of hash keys.
+
+    .. automethod:: __call__
+    .. automethod:: rec
+    .. staticmethod:: new_hash()
+
+        Return a new hash instance following the protocol of the ones
+        from :mod:`hashlib`. This will permit switching to different
+        hash algorithms in the future. Subclasses are expected to use
+        this to create new hashes. Not doing so is deprecated and
+        may stop working as early as 2022.
+
+        .. versionadded:: 2021.1.3
+    """
+
     # this exists so that we can (conceivably) switch algorithms at some point
     # down the road
     new_hash = hashlib.sha256
