@@ -2618,8 +2618,8 @@ def unordered_hash(hash_constructor, iterable):
     depends on the entries of *iterable*, but not their order. If *hash*
     is the instance returned by evaluating ``hash_constructor()``, then
     the each entry *i* of the iterable must permit ``hash.upate(i)`` to
-    succeed. An example of *hash_constructor* is :class:`hashlib.sha256`.
-    ``hash.digest_size`` must also be defined.
+    succeed. An example of *hash_constructor* is ``hashlib.sha256``
+    from :mod:`hashlib`.  ``hash.digest_size`` must also be defined.
 
     .. warning::
 
