@@ -25,6 +25,7 @@ THE SOFTWARE.
 """
 
 
+import re
 from functools import reduce, wraps
 import operator
 import sys
@@ -162,6 +163,11 @@ Sorting in natural order
 
 .. autofunction:: natorder
 .. autofunction:: natsorted
+
+Backports of newer Python functionality
+---------------------------------------
+
+.. autofunction:: resolve_name
 
 Type Variables Used
 -------------------
@@ -2539,6 +2545,62 @@ def natsorted(iterable, key=None, reverse=False):
     if key is None:
         key = lambda x: x
     return sorted(iterable, key=lambda y: natorder(key(y)), reverse=reverse)
+
+# }}}
+
+
+# {{{ resolve_name
+
+# https://github.com/python/cpython/commit/1ed61617a4a6632905ad6a0b440cd2cafb8b6414
+
+_DOTTED_WORDS = r"[a-z_]\w*(\.[a-z_]\w*)*"
+_NAME_PATTERN = re.compile(f"^({_DOTTED_WORDS})(:({_DOTTED_WORDS})?)?$", re.I)
+del _DOTTED_WORDS
+
+
+def resolve_name(name):
+    """A backport of :func:`pkgutil.resolve_name` (added in Python 3.9).
+
+    .. versionadded:: 2021.1.2
+    """
+    # Delete the tail of the function and deprecate this once we require Python 3.9.
+    if sys.version_info >= (3, 9):
+        # use the official version
+        import pkgutil
+        return pkgutil.resolve_name(name)  # pylint: disable=no-member
+
+    import importlib
+
+    m = _NAME_PATTERN.match(name)
+    if not m:
+        raise ValueError(f"invalid format: {name!r}")
+    groups = m.groups()
+    if groups[2]:
+        # there is a colon - a one-step import is all that's needed
+        mod = importlib.import_module(groups[0])
+        parts = groups[3].split(".") if groups[3] else []
+    else:
+        # no colon - have to iterate to find the package boundary
+        parts = name.split(".")
+        modname = parts.pop(0)
+        # first part *must* be a module/package.
+        mod = importlib.import_module(modname)
+        while parts:
+            p = parts[0]
+            s = f"{modname}.{p}"
+            try:
+                mod = importlib.import_module(s)
+                parts.pop(0)
+                modname = s
+            except ImportError:
+                break
+    # if we reach this point, mod is the module, already imported, and
+    # parts is the list of parts in the object hierarchy to be traversed, or
+    # an empty list if just the module is wanted.
+    result = mod
+    for p in parts:
+        result = getattr(result, p)
+    return result
 
 # }}}
 
