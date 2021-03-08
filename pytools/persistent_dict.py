@@ -263,14 +263,21 @@ class KeyBuilder:
 
     @staticmethod
     def update_for_int(key_hash, key):
-        key_hash.update(str(key).encode("utf8"))
+        sz = 8
+        while True:
+            try:
+                key_hash.update(key.to_bytes(sz, byteorder="little", signed=True))
+                return
+            except OverflowError:
+                sz *= 2
 
-    update_for_long = update_for_int
-    update_for_bool = update_for_int
+    @staticmethod
+    def update_for_bool(key_hash, key):
+        key_hash.update(str(key).encode("utf8"))
 
     @staticmethod
     def update_for_float(key_hash, key):
-        key_hash.update(repr(key).encode("utf8"))
+        key_hash.update(key.hex().encode("utf8"))
 
     @staticmethod
     def update_for_str(key_hash, key):
