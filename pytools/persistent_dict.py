@@ -194,6 +194,16 @@ class KeyBuilder:
     new_hash = hashlib.sha256
 
     def rec(self, key_hash, key):
+        """
+        :arg key_hash: the hash object to be updated with the hash of *key*.
+        :arg key: the (immutable) Python object to be hashed.
+        :returns: the updated *key_hash*
+
+        .. versionchanged:: 2021.2
+
+            Now returns the updated *key_hash*.
+        """
+
         digest = None
 
         try:
@@ -242,6 +252,7 @@ class KeyBuilder:
                 pass
 
         key_hash.update(digest)
+        return key_hash
 
     def __call__(self, key):
         key_hash = self.new_hash()
