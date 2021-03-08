@@ -469,7 +469,7 @@ class _PersistentDictBase:
             import appdirs
             container_dir = join(
                     appdirs.user_cache_dir("pytools", "pytools"),
-                    "pdict-v3-{}-py{}".format(
+                    "pdict-v4-{}-py{}".format(
                         identifier,
                         ".".join(str(i) for i in sys.version_info)))
 
