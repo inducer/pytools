@@ -173,6 +173,10 @@ class ItemDirManager(CleanupBase):
 # {{{ key generation
 
 class KeyBuilder:
+    # this exists so that we can (conceivably) switch algorithms at some point
+    # down the road
+    new_hash = hashlib.sha256
+
     def rec(self, key_hash, key):
         digest = None
 
@@ -187,7 +191,7 @@ class KeyBuilder:
             except AttributeError:
                 pass
             else:
-                inner_key_hash = hashlib.sha256()
+                inner_key_hash = self.new_hash()
                 method(inner_key_hash, self)
                 digest = inner_key_hash.digest()
 
@@ -205,7 +209,7 @@ class KeyBuilder:
                         method = self.update_for_specific_dtype
 
             if method is not None:
-                inner_key_hash = hashlib.sha256()
+                inner_key_hash = self.new_hash()
                 method(inner_key_hash, key)
                 digest = inner_key_hash.digest()
 
@@ -224,7 +228,7 @@ class KeyBuilder:
         key_hash.update(digest)
 
     def __call__(self, key):
-        key_hash = hashlib.sha256()
+        key_hash = self.new_hash()
         self.rec(key_hash, key)
         return key_hash.hexdigest()
 
