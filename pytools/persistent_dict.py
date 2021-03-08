@@ -292,8 +292,13 @@ class KeyBuilder:
             self.rec(key_hash, obj_i)
 
     def update_for_frozenset(self, key_hash, key):
-        for set_key in sorted(key):
-            self.rec(key_hash, set_key)
+        from pytools import unordered_hash
+
+        self.rec(key_hash,
+                unordered_hash(
+                    self.new_hash,
+                    (self.rec(self.new_hash(), key_i).digest() for key_i in key)
+                    ).digest())
 
     @staticmethod
     def update_for_NoneType(key_hash, key):  # noqa
