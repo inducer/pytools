@@ -58,7 +58,8 @@ def test_persistent_dict_storage_and_lookup():
                     for i in range(n))
 
         keys = [
-                (randrange(2000), rand_str(), None, SomeTag(rand_str()))
+                (randrange(2000)-1000, rand_str(), None, SomeTag(rand_str()),
+                    frozenset({"abc", 123}))
                 for i in range(20)]
         values = [randrange(2000) for i in range(20)]
 
