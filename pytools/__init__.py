@@ -169,6 +169,11 @@ Backports of newer Python functionality
 
 .. autofunction:: resolve_name
 
+Hashing
+-------
+
+.. autofunction:: unordered_hash
+
 Type Variables Used
 -------------------
 
@@ -2601,6 +2606,37 @@ def resolve_name(name):
     for p in parts:
         result = getattr(result, p)
     return result
+
+# }}}
+
+
+# {{{ unordered_hash
+
+def unordered_hash(hash_constructor, iterable):
+    """Using a hash algorithm given by the parameter-less constructor
+    *hash_constructor*, return a hash object whose internal state
+    depends on the entries of *iterable*, but not their order. If *hash*
+    is the instance returned by evaluating ``hash_constructor()``, then
+    the each entry *i* of the iterable must permit ``hash.upate(i)`` to
+    succeed. An example of *hash_constructor* is :class:`hashlib.sha256`.
+    ``hash.digest_size`` must also be defined.
+
+    .. warning::
+
+        The construction used in this function is likely not cryptographically
+        secure. Do not use this function in a security-relevant context.
+
+    .. versionadded:: 2021.2
+    """
+    h_int = 0
+    for i in iterable:
+        h_i = hash_constructor()
+        h_i.update(i)
+        h_int = h_int ^ int.from_bytes(h_i.digest(), sys.byteorder)
+
+    h = hash_constructor()
+    h.update(h_int.to_bytes(h.digest_size, sys.byteorder))
+    return h
 
 # }}}
 

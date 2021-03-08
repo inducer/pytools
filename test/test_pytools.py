@@ -370,6 +370,26 @@ def test_tag():
         t4.without_tags(red_ribbon)
 
 
+def test_unordered_hash():
+    import random
+    import hashlib
+
+    lst = [random.randbytes(20) for _ in range(200)]
+    lorig = lst[:]
+    random.shuffle(lst)
+
+    from pytools import unordered_hash
+    assert (unordered_hash(hashlib.sha256, lorig).digest()
+            == unordered_hash(hashlib.sha256, lst).digest())
+    assert (unordered_hash(hashlib.sha256, lorig).digest()
+            == unordered_hash(hashlib.sha256, lorig).digest())
+    assert (unordered_hash(hashlib.sha256, lorig).digest()
+            != unordered_hash(hashlib.sha256, lorig[:-1]).digest())
+    lst[0] = b"aksdjfla;sdfjafd"
+    assert (unordered_hash(hashlib.sha256, lorig).digest()
+            != unordered_hash(hashlib.sha256, lst).digest())
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
