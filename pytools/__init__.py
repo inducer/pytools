@@ -675,8 +675,9 @@ def memoize_on_first_arg(function, cache_dict_name=None):
     """
 
     if cache_dict_name is None:
-        cache_dict_name = intern("_memoize_dic_"
-                + function.__module__ + function.__name__)
+        cache_dict_name = intern(
+                f"_memoize_dic_{function.__module__}{function.__name__}"
+                )
 
     def wrapper(obj, *args, **kwargs):
         if kwargs:
@@ -688,7 +689,7 @@ def memoize_on_first_arg(function, cache_dict_name=None):
             return getattr(obj, cache_dict_name)[key]
         except AttributeError:
             result = function(obj, *args, **kwargs)
-            setattr(obj, cache_dict_name, {key: result})
+            object.__setattr__(obj, cache_dict_name, {key: result})
             return result
         except KeyError:
             result = function(obj, *args, **kwargs)
@@ -696,7 +697,7 @@ def memoize_on_first_arg(function, cache_dict_name=None):
             return result
 
     def clear_cache(obj):
-        delattr(obj, cache_dict_name)
+        object.__delattr__(obj, cache_dict_name)
 
     from functools import update_wrapper
     new_wrapper = update_wrapper(wrapper, function)
@@ -707,9 +708,15 @@ def memoize_on_first_arg(function, cache_dict_name=None):
 
 def memoize_method(method: F) -> F:
     """Supports cache deletion via ``method_name.clear_cache(self)``.
+
+    .. versionchanged:: 2021.2
+
+        Can memoize methods on classes that do not allow setting attributes
+        (e.g. by overwritting ``__setattr__``).
     """
 
-    return memoize_on_first_arg(method, intern("_memoize_dic_"+method.__name__))
+    return memoize_on_first_arg(method,
+            intern(f"_memoize_dic_{method.__name__}"))
 
 
 class keyed_memoize_on_first_arg:  # noqa: N801
@@ -729,8 +736,7 @@ class keyed_memoize_on_first_arg:  # noqa: N801
         self.cache_dict_name = cache_dict_name
 
     def _default_cache_dict_name(self, function):
-        return intern("_memoize_dic_"
-                + function.__module__ + function.__name__)
+        return intern(f"_memoize_dic_{function.__module__}{function.__name__}")
 
     def __call__(self, function):
         cache_dict_name = self.cache_dict_name
@@ -746,7 +752,7 @@ class keyed_memoize_on_first_arg:  # noqa: N801
                 return getattr(obj, cache_dict_name)[cache_key]
             except AttributeError:
                 result = function(obj, *args, **kwargs)
-                setattr(obj, cache_dict_name, {cache_key: result})
+                object.__setattr__(obj, cache_dict_name, {cache_key: result})
                 return result
             except KeyError:
                 result = function(obj, *args, **kwargs)
@@ -754,7 +760,7 @@ class keyed_memoize_on_first_arg:  # noqa: N801
                 return result
 
         def clear_cache(obj):
-            delattr(obj, cache_dict_name)
+            object.__delattr__(obj, cache_dict_name)
 
         from functools import update_wrapper
         new_wrapper = update_wrapper(wrapper, function)
@@ -770,9 +776,14 @@ class keyed_memoize_method(keyed_memoize_on_first_arg):  # noqa: N801
         which computes and returns the cache key.
 
     .. versionadded :: 2020.3
+
+    .. versionchanged:: 2021.2
+
+        Can memoize methods on classes that do not allow setting attributes
+        (e.g. by overwritting ``__setattr__``).
     """
     def _default_cache_dict_name(self, function):
-        return intern("_memoize_dic_" + function.__name__)
+        return intern(f"_memoize_dic_{function.__name__}")
 
 
 def memoize_method_with_uncached(uncached_args=None, uncached_kwargs=None):
@@ -797,7 +808,7 @@ def memoize_method_with_uncached(uncached_args=None, uncached_kwargs=None):
     uncached_kwargs = list(uncached_kwargs)
 
     def parametrized_decorator(method):
-        cache_dict_name = intern("_memoize_dic_"+method.__name__)
+        cache_dict_name = intern(f"_memoize_dic_{method.__name__}")
 
         def wrapper(self, *args, **kwargs):
             cache_args = list(args)
@@ -823,7 +834,7 @@ def memoize_method_with_uncached(uncached_args=None, uncached_kwargs=None):
                 return getattr(self, cache_dict_name)[key]
             except AttributeError:
                 result = method(self, *args, **kwargs)
-                setattr(self, cache_dict_name, {key: result})
+                object.__setattr__(self, cache_dict_name, {key: result})
                 return result
             except KeyError:
                 result = method(self, *args, **kwargs)
@@ -831,7 +842,7 @@ def memoize_method_with_uncached(uncached_args=None, uncached_kwargs=None):
                 return result
 
         def clear_cache(self):
-            delattr(self, cache_dict_name)
+            object.__delattr__(self, cache_dict_name)
 
         if sys.version_info >= (2, 5):
             from functools import update_wrapper
