@@ -173,7 +173,37 @@ class ItemDirManager(CleanupBase):
 # {{{ key generation
 
 class KeyBuilder:
+    """A (stateless) object that computes hashes of objects fed to it. Subclassing
+    this class permits customizing the computation of hash keys.
+
+    .. automethod:: __call__
+    .. automethod:: rec
+    .. staticmethod:: new_hash()
+
+        Return a new hash instance following the protocol of the ones
+        from :mod:`hashlib`. This will permit switching to different
+        hash algorithms in the future. Subclasses are expected to use
+        this to create new hashes. Not doing so is deprecated and
+        may stop working as early as 2022.
+
+        .. versionadded:: 2021.2
+    """
+
+    # this exists so that we can (conceivably) switch algorithms at some point
+    # down the road
+    new_hash = hashlib.sha256
+
     def rec(self, key_hash, key):
+        """
+        :arg key_hash: the hash object to be updated with the hash of *key*.
+        :arg key: the (immutable) Python object to be hashed.
+        :returns: the updated *key_hash*
+
+        .. versionchanged:: 2021.2
+
+            Now returns the updated *key_hash*.
+        """
+
         digest = None
 
         try:
@@ -187,7 +217,7 @@ class KeyBuilder:
             except AttributeError:
                 pass
             else:
-                inner_key_hash = hashlib.sha256()
+                inner_key_hash = self.new_hash()
                 method(inner_key_hash, self)
                 digest = inner_key_hash.digest()
 
@@ -205,7 +235,7 @@ class KeyBuilder:
                         method = self.update_for_specific_dtype
 
             if method is not None:
-                inner_key_hash = hashlib.sha256()
+                inner_key_hash = self.new_hash()
                 method(inner_key_hash, key)
                 digest = inner_key_hash.digest()
 
@@ -222,9 +252,10 @@ class KeyBuilder:
                 pass
 
         key_hash.update(digest)
+        return key_hash
 
     def __call__(self, key):
-        key_hash = hashlib.sha256()
+        key_hash = self.new_hash()
         self.rec(key_hash, key)
         return key_hash.hexdigest()
 
@@ -232,14 +263,21 @@ class KeyBuilder:
 
     @staticmethod
     def update_for_int(key_hash, key):
-        key_hash.update(str(key).encode("utf8"))
+        sz = 8
+        while True:
+            try:
+                key_hash.update(key.to_bytes(sz, byteorder="little", signed=True))
+                return
+            except OverflowError:
+                sz *= 2
 
-    update_for_long = update_for_int
-    update_for_bool = update_for_int
+    @staticmethod
+    def update_for_bool(key_hash, key):
+        key_hash.update(str(key).encode("utf8"))
 
     @staticmethod
     def update_for_float(key_hash, key):
-        key_hash.update(repr(key).encode("utf8"))
+        key_hash.update(key.hex().encode("utf8"))
 
     @staticmethod
     def update_for_str(key_hash, key):
@@ -254,8 +292,11 @@ class KeyBuilder:
             self.rec(key_hash, obj_i)
 
     def update_for_frozenset(self, key_hash, key):
-        for set_key in sorted(key):
-            self.rec(key_hash, set_key)
+        from pytools import unordered_hash
+
+        unordered_hash(
+            key_hash,
+            (self.rec(self.new_hash(), key_i).digest() for key_i in key))
 
     @staticmethod
     def update_for_NoneType(key_hash, key):  # noqa
@@ -426,7 +467,7 @@ class _PersistentDictBase:
             import appdirs
             container_dir = join(
                     appdirs.user_cache_dir("pytools", "pytools"),
-                    "pdict-v3-{}-py{}".format(
+                    "pdict-v4-{}-py{}".format(
                         identifier,
                         ".".join(str(i) for i in sys.version_info)))
 

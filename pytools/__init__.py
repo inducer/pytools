@@ -169,6 +169,11 @@ Backports of newer Python functionality
 
 .. autofunction:: resolve_name
 
+Hashing
+-------
+
+.. autofunction:: unordered_hash
+
 Type Variables Used
 -------------------
 
@@ -2612,6 +2617,51 @@ def resolve_name(name):
     for p in parts:
         result = getattr(result, p)
     return result
+
+# }}}
+
+
+# {{{ unordered_hash
+
+def unordered_hash(hash_instance, iterable, hash_constructor=None):
+    """Using a hash algorithm given by the parameter-less constructor
+    *hash_constructor*, return a hash object whose internal state
+    depends on the entries of *iterable*, but not their order. If *hash*
+    is the instance returned by evaluating ``hash_constructor()``, then
+    the each entry *i* of the iterable must permit ``hash.upate(i)`` to
+    succeed. An example of *hash_constructor* is ``hashlib.sha256``
+    from :mod:`hashlib`.  ``hash.digest_size`` must also be defined.
+    If *hash_constructor* is not provided, ``hash_instance.name`` is
+    used to deduce it.
+
+    :returns: the updated *hash_instance*.
+
+    .. warning::
+
+        The construction used in this function is likely not cryptographically
+        secure. Do not use this function in a security-relevant context.
+
+    .. versionadded:: 2021.2
+    """
+
+    if hash_constructor is None:
+        from functools import partial
+        import hashlib
+        hash_constructor = partial(hashlib.new, hash_instance.name)
+
+    h_int = 0
+    for i in iterable:
+        h_i = hash_constructor()
+        h_i.update(i)
+        # Using sys.byteorder (for efficiency) here technically makes the
+        # hash system-dependent (which it should not be), however the
+        # effect of this is undone by the to_bytes conversion below, while
+        # left invariant by the intervening XOR operations (which do not
+        # mix adjacent bits).
+        h_int = h_int ^ int.from_bytes(h_i.digest(), sys.byteorder)
+
+    hash_instance.update(h_int.to_bytes(hash_instance.digest_size, sys.byteorder))
+    return hash_instance
 
 # }}}
 
