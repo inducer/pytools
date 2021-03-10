@@ -2632,6 +2632,11 @@ def unordered_hash(hash_constructor, iterable):
     for i in iterable:
         h_i = hash_constructor()
         h_i.update(i)
+        # Using sys.byteorder (for efficiency) here technically makes the
+        # hash system-dependent (which it should not be), however the
+        # effect of this is undone by the to_bytes conversion below, while
+        # left invariant by the intervening XOR operations (which do not
+        # mix adjacent bits).
         h_int = h_int ^ int.from_bytes(h_i.digest(), sys.byteorder)
 
     h = hash_constructor()
