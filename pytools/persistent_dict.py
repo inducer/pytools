@@ -186,7 +186,7 @@ class KeyBuilder:
         this to create new hashes. Not doing so is deprecated and
         may stop working as early as 2022.
 
-        .. versionadded:: 2021.1.3
+        .. versionadded:: 2021.2
     """
 
     # this exists so that we can (conceivably) switch algorithms at some point
