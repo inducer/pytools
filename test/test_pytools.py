@@ -446,15 +446,15 @@ def test_unordered_hash():
     random.shuffle(lst)
 
     from pytools import unordered_hash
-    assert (unordered_hash(hashlib.sha256, lorig).digest()
-            == unordered_hash(hashlib.sha256, lst).digest())
-    assert (unordered_hash(hashlib.sha256, lorig).digest()
-            == unordered_hash(hashlib.sha256, lorig).digest())
-    assert (unordered_hash(hashlib.sha256, lorig).digest()
-            != unordered_hash(hashlib.sha256, lorig[:-1]).digest())
+    assert (unordered_hash(hashlib.sha256(), lorig).digest()
+            == unordered_hash(hashlib.sha256(), lst).digest())
+    assert (unordered_hash(hashlib.sha256(), lorig).digest()
+            == unordered_hash(hashlib.sha256(), lorig).digest())
+    assert (unordered_hash(hashlib.sha256(), lorig).digest()
+            != unordered_hash(hashlib.sha256(), lorig[:-1]).digest())
     lst[0] = b"aksdjfla;sdfjafd"
-    assert (unordered_hash(hashlib.sha256, lorig).digest()
-            != unordered_hash(hashlib.sha256, lst).digest())
+    assert (unordered_hash(hashlib.sha256(), lorig).digest()
+            != unordered_hash(hashlib.sha256(), lst).digest())
 
 
 if __name__ == "__main__":

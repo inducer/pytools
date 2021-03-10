@@ -2623,7 +2623,7 @@ def resolve_name(name):
 
 # {{{ unordered_hash
 
-def unordered_hash(hash_constructor, iterable):
+def unordered_hash(hash_instance, iterable, hash_constructor=None):
     """Using a hash algorithm given by the parameter-less constructor
     *hash_constructor*, return a hash object whose internal state
     depends on the entries of *iterable*, but not their order. If *hash*
@@ -2631,6 +2631,10 @@ def unordered_hash(hash_constructor, iterable):
     the each entry *i* of the iterable must permit ``hash.upate(i)`` to
     succeed. An example of *hash_constructor* is ``hashlib.sha256``
     from :mod:`hashlib`.  ``hash.digest_size`` must also be defined.
+    If *hash_constructor* is not provided, ``hash_instance.name`` is
+    used to deduce it.
+
+    :returns: the updated *hash_instance*.
 
     .. warning::
 
@@ -2639,6 +2643,12 @@ def unordered_hash(hash_constructor, iterable):
 
     .. versionadded:: 2021.2
     """
+
+    if hash_constructor is None:
+        from functools import partial
+        import hashlib
+        hash_constructor = partial(hashlib.new, hash_instance.name)
+
     h_int = 0
     for i in iterable:
         h_i = hash_constructor()
@@ -2650,9 +2660,8 @@ def unordered_hash(hash_constructor, iterable):
         # mix adjacent bits).
         h_int = h_int ^ int.from_bytes(h_i.digest(), sys.byteorder)
 
-    h = hash_constructor()
-    h.update(h_int.to_bytes(h.digest_size, sys.byteorder))
-    return h
+    hash_instance.update(h_int.to_bytes(hash_instance.digest_size, sys.byteorder))
+    return hash_instance
 
 # }}}
 
