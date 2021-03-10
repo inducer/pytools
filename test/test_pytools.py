@@ -131,6 +131,48 @@ def test_memoize_keyfunc():
     assert count[0] == 2
 
 
+def test_memoize_frozen():
+    from dataclasses import dataclass
+    from pytools import memoize_method
+
+    # {{{ check frozen dataclass
+
+    @dataclass(frozen=True)
+    class FrozenDataclass:
+        value: int
+
+        @memoize_method
+        def double_value(self):
+            return 2 * self.value
+
+    c = FrozenDataclass(10)
+    assert c.double_value() == 20
+    c.double_value.clear_cache(c)       # pylint: disable=no-member
+
+    # }}}
+
+    # {{{ check class with no setattr
+
+    class FrozenClass:
+        value: int
+
+        def __init__(self, value):
+            object.__setattr__(self, "value", value)
+
+        def __setattr__(self, key, value):
+            raise AttributeError(f"cannot set attribute {key}")
+
+        @memoize_method
+        def double_value(self):
+            return 2 * self.value
+
+    c = FrozenClass(10)
+    assert c.double_value() == 20
+    c.double_value.clear_cache(c)       # pylint: disable=no-member
+
+    # }}}
+
+
 @pytest.mark.parametrize("dims", [2, 3])
 def test_spatial_btree(dims, do_plot=False):
     pytest.importorskip("numpy")
