@@ -4,6 +4,7 @@ import tempfile
 
 import pytest
 
+from pytools.tag import Tag, tag_dataclass
 from pytools.persistent_dict import (CollisionWarning, NoSuchEntryError,
         PersistentDict, ReadOnlyEntryError, WriteOncePersistentDict)
 
@@ -39,6 +40,11 @@ class PDictTestingKeyOrValue:
 # }}}
 
 
+@tag_dataclass
+class SomeTag(Tag):
+    value: str
+
+
 def test_persistent_dict_storage_and_lookup():
     try:
         tmpdir = tempfile.mkdtemp()
@@ -51,7 +57,10 @@ def test_persistent_dict_storage_and_lookup():
                     chr(65+randrange(26))
                     for i in range(n))
 
-        keys = [(randrange(2000), rand_str(), None) for i in range(20)]
+        keys = [
+                (randrange(2000)-1000, rand_str(), None, SomeTag(rand_str()),
+                    frozenset({"abc", 123}))
+                for i in range(20)]
         values = [randrange(2000) for i in range(20)]
 
         d = dict(list(zip(keys, values)))

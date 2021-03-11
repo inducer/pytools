@@ -25,6 +25,7 @@ THE SOFTWARE.
 """
 
 
+import re
 from functools import reduce, wraps
 import operator
 import sys
@@ -162,6 +163,16 @@ Sorting in natural order
 
 .. autofunction:: natorder
 .. autofunction:: natsorted
+
+Backports of newer Python functionality
+---------------------------------------
+
+.. autofunction:: resolve_name
+
+Hashing
+-------
+
+.. autofunction:: unordered_hash
 
 Type Variables Used
 -------------------
@@ -669,8 +680,9 @@ def memoize_on_first_arg(function, cache_dict_name=None):
     """
 
     if cache_dict_name is None:
-        cache_dict_name = intern("_memoize_dic_"
-                + function.__module__ + function.__name__)
+        cache_dict_name = intern(
+                f"_memoize_dic_{function.__module__}{function.__name__}"
+                )
 
     def wrapper(obj, *args, **kwargs):
         if kwargs:
@@ -682,7 +694,7 @@ def memoize_on_first_arg(function, cache_dict_name=None):
             return getattr(obj, cache_dict_name)[key]
         except AttributeError:
             result = function(obj, *args, **kwargs)
-            setattr(obj, cache_dict_name, {key: result})
+            object.__setattr__(obj, cache_dict_name, {key: result})
             return result
         except KeyError:
             result = function(obj, *args, **kwargs)
@@ -690,7 +702,7 @@ def memoize_on_first_arg(function, cache_dict_name=None):
             return result
 
     def clear_cache(obj):
-        delattr(obj, cache_dict_name)
+        object.__delattr__(obj, cache_dict_name)
 
     from functools import update_wrapper
     new_wrapper = update_wrapper(wrapper, function)
@@ -701,9 +713,15 @@ def memoize_on_first_arg(function, cache_dict_name=None):
 
 def memoize_method(method: F) -> F:
     """Supports cache deletion via ``method_name.clear_cache(self)``.
+
+    .. versionchanged:: 2021.2
+
+        Can memoize methods on classes that do not allow setting attributes
+        (e.g. by overwritting ``__setattr__``).
     """
 
-    return memoize_on_first_arg(method, intern("_memoize_dic_"+method.__name__))
+    return memoize_on_first_arg(method,
+            intern(f"_memoize_dic_{method.__name__}"))
 
 
 class keyed_memoize_on_first_arg:  # noqa: N801
@@ -723,8 +741,7 @@ class keyed_memoize_on_first_arg:  # noqa: N801
         self.cache_dict_name = cache_dict_name
 
     def _default_cache_dict_name(self, function):
-        return intern("_memoize_dic_"
-                + function.__module__ + function.__name__)
+        return intern(f"_memoize_dic_{function.__module__}{function.__name__}")
 
     def __call__(self, function):
         cache_dict_name = self.cache_dict_name
@@ -740,7 +757,7 @@ class keyed_memoize_on_first_arg:  # noqa: N801
                 return getattr(obj, cache_dict_name)[cache_key]
             except AttributeError:
                 result = function(obj, *args, **kwargs)
-                setattr(obj, cache_dict_name, {cache_key: result})
+                object.__setattr__(obj, cache_dict_name, {cache_key: result})
                 return result
             except KeyError:
                 result = function(obj, *args, **kwargs)
@@ -748,7 +765,7 @@ class keyed_memoize_on_first_arg:  # noqa: N801
                 return result
 
         def clear_cache(obj):
-            delattr(obj, cache_dict_name)
+            object.__delattr__(obj, cache_dict_name)
 
         from functools import update_wrapper
         new_wrapper = update_wrapper(wrapper, function)
@@ -764,9 +781,14 @@ class keyed_memoize_method(keyed_memoize_on_first_arg):  # noqa: N801
         which computes and returns the cache key.
 
     .. versionadded :: 2020.3
+
+    .. versionchanged:: 2021.2
+
+        Can memoize methods on classes that do not allow setting attributes
+        (e.g. by overwritting ``__setattr__``).
     """
     def _default_cache_dict_name(self, function):
-        return intern("_memoize_dic_" + function.__name__)
+        return intern(f"_memoize_dic_{function.__name__}")
 
 
 def memoize_method_with_uncached(uncached_args=None, uncached_kwargs=None):
@@ -791,7 +813,7 @@ def memoize_method_with_uncached(uncached_args=None, uncached_kwargs=None):
     uncached_kwargs = list(uncached_kwargs)
 
     def parametrized_decorator(method):
-        cache_dict_name = intern("_memoize_dic_"+method.__name__)
+        cache_dict_name = intern(f"_memoize_dic_{method.__name__}")
 
         def wrapper(self, *args, **kwargs):
             cache_args = list(args)
@@ -817,7 +839,7 @@ def memoize_method_with_uncached(uncached_args=None, uncached_kwargs=None):
                 return getattr(self, cache_dict_name)[key]
             except AttributeError:
                 result = method(self, *args, **kwargs)
-                setattr(self, cache_dict_name, {key: result})
+                object.__setattr__(self, cache_dict_name, {key: result})
                 return result
             except KeyError:
                 result = method(self, *args, **kwargs)
@@ -825,7 +847,7 @@ def memoize_method_with_uncached(uncached_args=None, uncached_kwargs=None):
                 return result
 
         def clear_cache(self):
-            delattr(self, cache_dict_name)
+            object.__delattr__(self, cache_dict_name)
 
         if sys.version_info >= (2, 5):
             from functools import update_wrapper
@@ -2539,6 +2561,107 @@ def natsorted(iterable, key=None, reverse=False):
     if key is None:
         key = lambda x: x
     return sorted(iterable, key=lambda y: natorder(key(y)), reverse=reverse)
+
+# }}}
+
+
+# {{{ resolve_name
+
+# https://github.com/python/cpython/commit/1ed61617a4a6632905ad6a0b440cd2cafb8b6414
+
+_DOTTED_WORDS = r"[a-z_]\w*(\.[a-z_]\w*)*"
+_NAME_PATTERN = re.compile(f"^({_DOTTED_WORDS})(:({_DOTTED_WORDS})?)?$", re.I)
+del _DOTTED_WORDS
+
+
+def resolve_name(name):
+    """A backport of :func:`pkgutil.resolve_name` (added in Python 3.9).
+
+    .. versionadded:: 2021.1.2
+    """
+    # Delete the tail of the function and deprecate this once we require Python 3.9.
+    if sys.version_info >= (3, 9):
+        # use the official version
+        import pkgutil
+        return pkgutil.resolve_name(name)  # pylint: disable=no-member
+
+    import importlib
+
+    m = _NAME_PATTERN.match(name)
+    if not m:
+        raise ValueError(f"invalid format: {name!r}")
+    groups = m.groups()
+    if groups[2]:
+        # there is a colon - a one-step import is all that's needed
+        mod = importlib.import_module(groups[0])
+        parts = groups[3].split(".") if groups[3] else []
+    else:
+        # no colon - have to iterate to find the package boundary
+        parts = name.split(".")
+        modname = parts.pop(0)
+        # first part *must* be a module/package.
+        mod = importlib.import_module(modname)
+        while parts:
+            p = parts[0]
+            s = f"{modname}.{p}"
+            try:
+                mod = importlib.import_module(s)
+                parts.pop(0)
+                modname = s
+            except ImportError:
+                break
+    # if we reach this point, mod is the module, already imported, and
+    # parts is the list of parts in the object hierarchy to be traversed, or
+    # an empty list if just the module is wanted.
+    result = mod
+    for p in parts:
+        result = getattr(result, p)
+    return result
+
+# }}}
+
+
+# {{{ unordered_hash
+
+def unordered_hash(hash_instance, iterable, hash_constructor=None):
+    """Using a hash algorithm given by the parameter-less constructor
+    *hash_constructor*, return a hash object whose internal state
+    depends on the entries of *iterable*, but not their order. If *hash*
+    is the instance returned by evaluating ``hash_constructor()``, then
+    the each entry *i* of the iterable must permit ``hash.upate(i)`` to
+    succeed. An example of *hash_constructor* is ``hashlib.sha256``
+    from :mod:`hashlib`.  ``hash.digest_size`` must also be defined.
+    If *hash_constructor* is not provided, ``hash_instance.name`` is
+    used to deduce it.
+
+    :returns: the updated *hash_instance*.
+
+    .. warning::
+
+        The construction used in this function is likely not cryptographically
+        secure. Do not use this function in a security-relevant context.
+
+    .. versionadded:: 2021.2
+    """
+
+    if hash_constructor is None:
+        from functools import partial
+        import hashlib
+        hash_constructor = partial(hashlib.new, hash_instance.name)
+
+    h_int = 0
+    for i in iterable:
+        h_i = hash_constructor()
+        h_i.update(i)
+        # Using sys.byteorder (for efficiency) here technically makes the
+        # hash system-dependent (which it should not be), however the
+        # effect of this is undone by the to_bytes conversion below, while
+        # left invariant by the intervening XOR operations (which do not
+        # mix adjacent bits).
+        h_int = h_int ^ int.from_bytes(h_i.digest(), sys.byteorder)
+
+    hash_instance.update(h_int.to_bytes(hash_instance.digest_size, sys.byteorder))
+    return hash_instance
 
 # }}}
 

@@ -126,6 +126,17 @@ class Tag:
     def tag_name(self) -> DottedName:
         return DottedName.from_class(type(self))
 
+    def update_persistent_hash(self, key_hash, key_builder):
+        key_builder.rec(key_hash, self.__class__.__qualname__)
+
+        from dataclasses import fields
+        # Fields are ordered consistently, so ordered hashing is OK.
+        #
+        # No need to dispatch to superclass: fields() automatically gives us
+        # fields from the entire class hierarchy.
+        for f in fields(self):
+            key_builder.rec(key_hash, getattr(self, f.name))
+
 # }}}
 
 

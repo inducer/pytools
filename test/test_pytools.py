@@ -1,3 +1,26 @@
+__copyright__ = "Copyright (C) 2009-2021 Andreas Kloeckner"
+
+__license__ = """
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+"""
+
+
 import sys
 import pytest
 
@@ -129,6 +152,48 @@ def test_memoize_keyfunc():
     assert f(1, (2,)) == 2
     assert f(2, j=(2, 3)) == 4
     assert count[0] == 2
+
+
+def test_memoize_frozen():
+    from dataclasses import dataclass
+    from pytools import memoize_method
+
+    # {{{ check frozen dataclass
+
+    @dataclass(frozen=True)
+    class FrozenDataclass:
+        value: int
+
+        @memoize_method
+        def double_value(self):
+            return 2 * self.value
+
+    c = FrozenDataclass(10)
+    assert c.double_value() == 20
+    c.double_value.clear_cache(c)       # pylint: disable=no-member
+
+    # }}}
+
+    # {{{ check class with no setattr
+
+    class FrozenClass:
+        value: int
+
+        def __init__(self, value):
+            object.__setattr__(self, "value", value)
+
+        def __setattr__(self, key, value):
+            raise AttributeError(f"cannot set attribute {key}")
+
+        @memoize_method
+        def double_value(self):
+            return 2 * self.value
+
+    c = FrozenClass(10)
+    assert c.double_value() == 20
+    c.double_value.clear_cache(c)       # pylint: disable=no-member
+
+    # }}}
 
 
 @pytest.mark.parametrize("dims", [2, 3])
@@ -368,6 +433,28 @@ def test_tag():
     # Test that without_tags() fails if the tag is not present.
     with pytest.raises(ValueError):
         t4.without_tags(red_ribbon)
+
+
+def test_unordered_hash():
+    import random
+    import hashlib
+
+    # FIXME: Use randbytes once >=3.9 is OK
+    lst = [bytes([random.randrange(256) for _ in range(20)])
+            for _ in range(200)]
+    lorig = lst[:]
+    random.shuffle(lst)
+
+    from pytools import unordered_hash
+    assert (unordered_hash(hashlib.sha256(), lorig).digest()
+            == unordered_hash(hashlib.sha256(), lst).digest())
+    assert (unordered_hash(hashlib.sha256(), lorig).digest()
+            == unordered_hash(hashlib.sha256(), lorig).digest())
+    assert (unordered_hash(hashlib.sha256(), lorig).digest()
+            != unordered_hash(hashlib.sha256(), lorig[:-1]).digest())
+    lst[0] = b"aksdjfla;sdfjafd"
+    assert (unordered_hash(hashlib.sha256(), lorig).digest()
+            != unordered_hash(hashlib.sha256(), lst).digest())
 
 
 if __name__ == "__main__":
