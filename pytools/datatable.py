@@ -1,6 +1,10 @@
 from pytools import Record
 
 
+__doc__ = """
+.. autoclass:: DataTable
+"""
+
 class Row(Record):
     pass
 
