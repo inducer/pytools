@@ -27,7 +27,7 @@ class DataTable:
 
         :arg column_names: An indexable of column name strings.
         :arg column_data: None or a list of tuples of the same length as
-         C{column_names} indicating an initial set of data.
+             *column_names* indicating an initial set of data.
         """
         if column_data is None:
             self.data = []
