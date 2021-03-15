@@ -2,6 +2,9 @@ from pytools import Record
 
 
 __doc__ = """
+An in-memory relational database table
+======================================
+
 .. autoclass:: DataTable
 """
 
@@ -11,14 +14,20 @@ class Row(Record):
 
 
 class DataTable:
-    """An in-memory relational database table."""
+    """An in-memory relational database table.
+
+    .. automethod:: __init__
+    .. automethod:: copy
+    .. automethod:: deep_copy
+    .. automethod:: join
+    """
 
     def __init__(self, column_names, column_data=None):
         """Construct a new table, with the given C{column_names}.
 
-        @arg column_names: An indexable of column name strings.
-        @arg column_data: None or a list of tuples of the same length as
-          C{column_names} indicating an initial set of data.
+        :arg column_names: An indexable of column name strings.
+        :arg column_data: None or a list of tuples of the same length as
+         C{column_names} indicating an initial set of data.
         """
         if column_data is None:
             self.data = []
