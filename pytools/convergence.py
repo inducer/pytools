@@ -30,6 +30,11 @@ class EOCRecorder:
         abscissae = np.array([a for a, e in self.history])
         errors = np.array([e for a, e in self.history])
 
+        # NOTE: in case any of the errors are exactly 0.0, which
+        # can give NaNs in `estimate_order_of_convergence`
+        emax = np.amax(errors)
+        errors += (1 if emax == 0 else emax) * np.finfo(errors.dtype).eps
+
         size = len(abscissae)
         if gliding_mean is None:
             gliding_mean = size
