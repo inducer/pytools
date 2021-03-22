@@ -2423,7 +2423,11 @@ class ProcessLogger:  # pylint: disable=too-many-instance-attributes
             # Can happen, e.g., if pudb is controlling the console.
             use_late_start_logging = False
         else:
-            use_late_start_logging = sys.stdin.isatty()
+            if sys.stdin.closed:
+                # cannot query stdin.isatty() if stdin's closed
+                use_late_start_logging = False
+            else:
+                use_late_start_logging = sys.stdin.isatty()
 
         import os
         if os.environ.get("PYTOOLS_LOG_NO_THREADS", ""):
