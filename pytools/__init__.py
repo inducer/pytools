@@ -697,12 +697,11 @@ def memoize_on_first_arg(function, cache_dict_name=None):
         except KeyError:
             attribute_error = False
 
+        result = function(obj, *args, **kwargs)
         if attribute_error:
-            result = function(obj, *args, **kwargs)
             object.__setattr__(obj, cache_dict_name, {key: result})
             return result
         else:
-            result = function(obj, *args, **kwargs)
             getattr(obj, cache_dict_name)[key] = result
             return result
 
