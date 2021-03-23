@@ -779,7 +779,10 @@ class keyed_memoize_on_first_arg:  # noqa: N801
 
 
 class keyed_memoize_method(keyed_memoize_on_first_arg):  # noqa: N801
-    """Supports cache deletion via ``method_name.clear_cache(self)``.
+    """Like :class:`memoize_method`, but additionally uses a function *key* to
+    compute the key under which the function result is stored.
+
+    Supports cache deletion via ``method_name.clear_cache(self)``.
 
     :arg key: A function receiving the same arguments as the decorated function
         which computes and returns the cache key.
