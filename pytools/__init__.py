@@ -734,16 +734,16 @@ class keyed_memoize_on_first_arg:  # noqa: N801
 
     Supports cache deletion via ``function_name.clear_cache(self)``.
 
-    .. automethod:: __init__
+    :arg key: A function receiving the same arguments as the decorated function
+        which computes and returns the cache key.
+    :arg cache_dict_name: The name of the `dict` attribute in the instance
+        used to hold the cache.
+
     .. versionadded :: 2020.3
     """
 
     def __init__(self, key, cache_dict_name=None):
         """
-        :arg key: A function receiving the same arguments as the decorated function
-            which computes and returns the cache key.
-        :arg cache_dict_name: The name of the `dict` attribute in the instance
-            used to hold the cache.
         """
 
         self.key = key
@@ -893,8 +893,6 @@ class memoize_in:  # noqa
         Can now use instances of classes as *container* that do not allow
         setting attributes (e.g. by overwritting ``__setattr__``),
         e.g. frozen :mod:`dataclasses`.
-
-    .. automethod:: __init__
     """
 
     def __init__(self, container, identifier):
