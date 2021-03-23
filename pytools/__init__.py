@@ -928,6 +928,14 @@ class memoize_in:  # noqa
 
         *identifier* no longer needs to be a :class:`str`,
         but it needs to be hashable.
+
+    .. versionchanged:: 2021.2.1
+
+        Can now use instances of classes as *container* that do not allow
+        setting attributes (e.g. by overwritting ``__setattr__``),
+        e.g. frozen :mod:`dataclasses`.
+
+    .. automethod:: __init__
     """
 
     def __init__(self, container, identifier):
@@ -935,7 +943,8 @@ class memoize_in:  # noqa
             memoize_in_dict = container._pytools_memoize_in_dict
         except AttributeError:
             memoize_in_dict = {}
-            container._pytools_memoize_in_dict = memoize_in_dict
+            object.__setattr__(container, "_pytools_memoize_in_dict",
+                    memoize_in_dict)
 
         self.cache_dict = memoize_in_dict.setdefault(identifier, {})
 
