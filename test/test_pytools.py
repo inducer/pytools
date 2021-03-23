@@ -72,8 +72,8 @@ def test_memoize_method_with_uncached():
     sc.f.clear_cache(sc)  # pylint: disable=no-member
 
 
-def test_memoize_method_nested():
-    from pytools import memoize_method_nested
+def test_memoize_in():
+    from pytools import memoize_in
 
     class SomeClass:
         def __init__(self):
@@ -81,7 +81,7 @@ def test_memoize_method_nested():
 
         def f(self):
 
-            @memoize_method_nested
+            @memoize_in(self, (SomeClass.f,))
             def inner(x):
                 self.run_count += 1
                 return 2*x
