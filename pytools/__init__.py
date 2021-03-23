@@ -871,47 +871,6 @@ def memoize_method_with_uncached(uncached_args=None, uncached_kwargs=None):
     return parametrized_decorator
 
 
-def memoize_method_nested(inner):
-    """Adds a cache to a function nested inside a method. The cache is attached
-    to *memoize_cache_context* (if it exists) or *self* in the outer (method)
-    namespace.
-
-    Requires Python 2.5 or newer.
-    """
-
-    from warnings import warn
-    warn("memoize_method_nested is deprecated and will go away in 2021. "
-            "Use @memoize_in(self, 'identifier') instead", DeprecationWarning,
-            stacklevel=2)
-
-    cache_dict_name = intern("_memoize_inner_dic_%s_%s_%d"
-            % (inner.__name__, inner.__code__.co_filename,
-                inner.__code__.co_firstlineno))
-
-    from inspect import currentframe
-    outer_frame = currentframe().f_back
-    cache_context = outer_frame.f_locals.get("memoize_cache_context")
-    if cache_context is None:
-        cache_context = outer_frame.f_locals.get("self")
-
-    try:
-        cache_dict = getattr(cache_context, cache_dict_name)
-    except AttributeError:
-        cache_dict = {}
-        setattr(cache_context, cache_dict_name, cache_dict)
-
-    @wraps(inner)
-    def new_inner(*args):
-        try:
-            return cache_dict[args]
-        except KeyError:
-            result = inner(*args)
-            cache_dict[args] = result
-            return result
-
-    return new_inner
-
-
 class memoize_in:  # noqa
     """Adds a cache to the function it decorates. The cache is attached
     to *container* and must be uniquely specified by *identifier* (i.e.
