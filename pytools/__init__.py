@@ -721,7 +721,7 @@ def memoize_method(method: F) -> F:
     .. versionchanged:: 2021.2
 
         Can memoize methods on classes that do not allow setting attributes
-        (e.g. by overwritting ``__setattr__``).
+        (e.g. by overwritting ``__setattr__``), e.g. frozen :mod:`dataclasses`.
     """
 
     return memoize_on_first_arg(method,
@@ -789,7 +789,7 @@ class keyed_memoize_method(keyed_memoize_on_first_arg):  # noqa: N801
     .. versionchanged:: 2021.2
 
         Can memoize methods on classes that do not allow setting attributes
-        (e.g. by overwritting ``__setattr__``).
+        (e.g. by overwritting ``__setattr__``), e.g. frozen :mod:`dataclasses`.
     """
     def _default_cache_dict_name(self, function):
         return intern(f"_memoize_dic_{function.__name__}")
