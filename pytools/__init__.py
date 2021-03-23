@@ -871,7 +871,7 @@ def memoize_method_with_uncached(uncached_args=None, uncached_kwargs=None):
 class memoize_in:  # noqa
     """Adds a cache to the function it decorates. The cache is attached
     to *container* and must be uniquely specified by *identifier* (i.e.
-    all fucntions using the same *container* and *identifier* will be using
+    all functions using the same *container* and *identifier* will be using
     the same cache). The decorated function may only receive positional
     arguments.
 
