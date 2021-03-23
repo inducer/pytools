@@ -948,8 +948,6 @@ class keyed_memoize_in:  # noqa
     """
 
     def __init__(self, container, identifier, key):
-        """
-        """
         try:
             memoize_in_dict = container._pytools_keyed_memoize_in_dict
         except AttributeError:
