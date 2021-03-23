@@ -743,9 +743,6 @@ class keyed_memoize_on_first_arg:  # noqa: N801
     """
 
     def __init__(self, key, cache_dict_name=None):
-        """
-        """
-
         self.key = key
         self.cache_dict_name = cache_dict_name
 
