@@ -734,13 +734,18 @@ class keyed_memoize_on_first_arg:  # noqa: N801
 
     Supports cache deletion via ``function_name.clear_cache(self)``.
 
-    :arg key: A function receiving the same arguments as the decorated function
-        which computes and returns the cache key.
-
+    .. automethod:: __init__
     .. versionadded :: 2020.3
     """
 
     def __init__(self, key, cache_dict_name=None):
+        """
+        :arg key: A function receiving the same arguments as the decorated function
+            which computes and returns the cache key.
+        :arg cache_dict_name: The name of the `dict` attribute in the instance
+            used to hold the cache.
+        """
+
         self.key = key
         self.cache_dict_name = cache_dict_name
 
