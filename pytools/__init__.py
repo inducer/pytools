@@ -941,15 +941,14 @@ class keyed_memoize_in:  # noqa
     """Like :class:`memoize_in`, but additionally uses a function *key* to
     compute the key under which the function result is memoized.
 
-    .. versionadded :: 2021.2.1
+    :arg key: A function receiving the same arguments as the decorated function
+        which computes and returns the cache key.
 
-    .. automethod:: __init__
+    .. versionadded :: 2021.2.1
     """
 
     def __init__(self, container, identifier, key):
         """
-        :arg key: A function receiving the same arguments as the decorated function
-            which computes and returns the cache key.
         """
         try:
             memoize_in_dict = container._pytools_keyed_memoize_in_dict
