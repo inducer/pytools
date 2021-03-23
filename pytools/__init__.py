@@ -905,8 +905,16 @@ def memoize_method_nested(inner):
 
 
 class memoize_in:  # noqa
-    """Adds a cache to a function nested inside a method. The cache is attached
-    to *container*.
+    """Adds a cache to the function it decorates. The cache is attached
+    to *container* and must be uniquely specified by *identifier* (i.e.
+    all fucntions using the same *container* and *identifier* will be using
+    the same cache). The decorated function may only receive positional
+    arguments.
+
+    .. note::
+
+        This function works well on nested functions, which
+        do not have stable global identifiers.
 
     .. versionchanged :: 2020.3
 
