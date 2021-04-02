@@ -219,7 +219,6 @@ def obj_array_vectorized_n_args(f):
     return f
 
 
-
 # {{{ workarounds for https://github.com/numpy/numpy/issues/1740
 
 def obj_array_real(ary):
