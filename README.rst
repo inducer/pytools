@@ -19,7 +19,6 @@ nonetheless, here's what's on offer:
 * A ton of small tool functions such as `len_iterable`, `argmin`,
   tuple generation, permutation generation, ASCII table pretty printing,
   GvR's monkeypatch_xxx() hack, the elusive `flatten`, and much more.
-* Michele Simionato's decorator module
 * A time-series logging module, `pytools.log`.
 * Batch job submission, `pytools.batchjob`.
 * A lexer, `pytools.lex`.

@@ -38,7 +38,6 @@ setup(name="pytools",
       python_requires="~=3.6",
 
       install_requires=[
-          "decorator>=3.2.0",
           "appdirs>=1.4.0",
           "numpy>=1.6.0",
           "dataclasses>=0.7;python_version<='3.6'"
