@@ -120,6 +120,20 @@ def test_memoize():
     from pytools import memoize
     count = [0]
 
+    @memoize
+    def f(i, j):
+        count[0] += 1
+        return i + j
+
+    assert f(1, 2) == 3
+    assert f(1, 2) == 3
+    assert count[0] == 1
+
+
+def test_memoize_with_kwargs():
+    from pytools import memoize
+    count = [0]
+
     @memoize(use_kwargs=True)
     def f(i, j=1):
         count[0] += 1

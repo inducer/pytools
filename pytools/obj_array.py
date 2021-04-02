@@ -21,8 +21,8 @@ THE SOFTWARE.
 """
 
 import numpy as np
+from functools import partial, update_wrapper
 from warnings import warn
-from pytools import my_decorator as decorator
 
 
 __doc__ = """
@@ -142,7 +142,10 @@ def obj_array_vectorize(f, ary):
         return f(ary)
 
 
-obj_array_vectorized = decorator(obj_array_vectorize)
+def obj_array_vectorized(f):
+    wrapper = partial(obj_array_vectorize, f)
+    update_wrapper(wrapper, f)
+    return wrapper
 
 
 def rec_obj_array_vectorize(f, ary):
@@ -168,7 +171,10 @@ def rec_obj_array_vectorize(f, ary):
         return f(ary)
 
 
-rec_obj_array_vectorized = decorator(rec_obj_array_vectorize)
+def rec_obj_array_vectorized(f):
+    wrapper = partial(rec_obj_array_vectorized, f)
+    update_wrapper(wrapper, f)
+    return wrapper
 
 
 def obj_array_vectorize_n_args(f, *args):
@@ -207,7 +213,10 @@ def obj_array_vectorize_n_args(f, *args):
     return result
 
 
-obj_array_vectorized_n_args = decorator(obj_array_vectorize_n_args)
+def obj_array_vectorized_n_args(f):
+    wrapper = partial(obj_array_vectorize_n_args, f)
+    update_wrapper(wrapper, f)
+    return f
 
 
 # {{{ workarounds for https://github.com/numpy/numpy/issues/1740
@@ -365,7 +374,10 @@ def with_object_array_or_scalar(f, field, obj_array_only=False):
         return f(field)
 
 
-as_oarray_func = decorator(with_object_array_or_scalar)
+def as_oarray_func(f):
+    wrapper = partial(with_object_array_or_scalar, f)
+    update_wrapper(wrapper, f)
+    return wrapper
 
 
 def with_object_array_or_scalar_n_args(f, *args):
@@ -398,7 +410,10 @@ def with_object_array_or_scalar_n_args(f, *args):
         return f(*args)
 
 
-as_oarray_func_n_args = decorator(with_object_array_or_scalar_n_args)
+def as_oarray_func_n_args(f):
+    wrapper = partial(with_object_array_or_scalar_n_args, f)
+    update_wrapper(wrapper, f)
+    return wrapper
 
 
 def oarray_real(ary):

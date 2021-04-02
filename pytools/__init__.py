@@ -38,9 +38,6 @@ import builtins
 from sys import intern
 
 
-decorator_module = __import__("decorator", level=0)
-my_decorator = decorator_module.decorator
-
 # These are deprecated and will go away in 2022.
 all = builtins.all
 any = builtins.any
@@ -625,43 +622,48 @@ def memoize(*args: F, **kwargs: Any) -> F:
             % ", ".join(list(kwargs.keys())))
 
     if key_func is not None:
-        @my_decorator
-        def _deco(func, *args, **kwargs):
-            # by Michele Simionato
-            # http://www.phyast.pitt.edu/~micheles/python/
-            key = key_func(*args, **kwargs)
-            try:
-                return func._memoize_dic[key]  # pylint: disable=protected-access
-            except AttributeError:
-                # _memoize_dic doesn't exist yet.
-                result = func(*args, **kwargs)
-                func._memoize_dic = {key: result}  # pylint: disable=protected-access
-                return result
-            except KeyError:
-                result = func(*args, **kwargs)
-                func._memoize_dic[key] = result  # pylint: disable=protected-access
-                return result
+        def _decorator(func):
+            def wrapper(*args, **kwargs):
+                key = key_func(*args, **kwargs)
+                try:
+                    return func._memoize_dic[key]  # noqa: E501 # pylint: disable=protected-access
+                except AttributeError:
+                    # _memoize_dic doesn't exist yet.
+                    result = func(*args, **kwargs)
+                    func._memoize_dic = {key: result}  # noqa: E501 # pylint: disable=protected-access
+                    return result
+                except KeyError:
+                    result = func(*args, **kwargs)
+                    func._memoize_dic[key] = result  # noqa: E501 # pylint: disable=protected-access
+                    return result
+
+            from functools import update_wrapper
+            update_wrapper(wrapper, func)
+            return wrapper
+
     else:
-        @my_decorator
-        def _deco(func, *args):
-            # by Michele Simionato
-            # http://www.phyast.pitt.edu/~micheles/python/
-            try:
-                return func._memoize_dic[args]  # pylint: disable=protected-access
-            except AttributeError:
-                # _memoize_dic doesn't exist yet.
-                result = func(*args)
-                func._memoize_dic = {args: result}  # pylint:disable=protected-access
-                return result
-            except KeyError:
-                result = func(*args)
-                func._memoize_dic[args] = result  # pylint: disable=protected-access
-                return result
+        def _decorator(func):
+            def wrapper(*args):
+                try:
+                    return func._memoize_dic[args]  # noqa: E501 # pylint: disable=protected-access
+                except AttributeError:
+                    # _memoize_dic doesn't exist yet.
+                    result = func(*args)
+                    func._memoize_dic = {args: result}  # noqa: E501 # pylint:disable=protected-access
+                    return result
+                except KeyError:
+                    result = func(*args)
+                    func._memoize_dic[args] = result  # noqa: E501 # pylint: disable=protected-access
+                    return result
+
+            from functools import update_wrapper
+            update_wrapper(wrapper, func)
+            return wrapper
 
     if not args:
-        return _deco
+        return _decorator  # type: ignore
     if callable(args[0]) and len(args) == 1:
-        return _deco(args[0])
+        return _decorator(args[0])
     raise TypeError(
         "memoize received unexpected position arguments: %s" % args)
 
