@@ -172,7 +172,7 @@ def rec_obj_array_vectorize(f, ary):
 
 
 def rec_obj_array_vectorized(f):
-    wrapper = partial(rec_obj_array_vectorized, f)
+    wrapper = partial(rec_obj_array_vectorize, f)
     update_wrapper(wrapper, f)
     return wrapper
 
@@ -216,7 +216,7 @@ def obj_array_vectorize_n_args(f, *args):
 def obj_array_vectorized_n_args(f):
     wrapper = partial(obj_array_vectorize_n_args, f)
     update_wrapper(wrapper, f)
-    return f
+    return wrapper
 
 
 # {{{ workarounds for https://github.com/numpy/numpy/issues/1740
