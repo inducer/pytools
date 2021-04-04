@@ -429,7 +429,7 @@ def test_obj_array_vectorize(c=1):
     for func, nargs in [
             (vectorized_add_one, 1),
             (vectorized_two_add_one, 2),
-            # (adder.vectorized_add, 1),
+            (adder.vectorized_add, 1),
             ]:
         input_ary = [scalar_ary] * nargs
         result = func(*input_ary)
