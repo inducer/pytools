@@ -224,7 +224,7 @@ def obj_array_vectorized_n_args(f):
     # > Also notice that this transformation only happens for user-defined functions;
     # > other callable objects (and all non-callable objects) are retrieved
     # > without transformation.
-    
+
     def wrapper(*args):
         return obj_array_vectorize_n_args(f, *args)
 
