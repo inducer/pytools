@@ -2391,6 +2391,23 @@ class ProcessTimer:
             self.wall_elapsed = timeit.default_timer() - self.time_start
             self.process_elapsed = None
 
+    def __str__(self):
+        if self.process_elapsed is not None:
+            cpu = self.process_elapsed / self.wall_elapsed
+            return f"{self.wall_elapsed:.2f}s wall {cpu:.2f}x CPU"
+        else:
+            return f"{self.wall_elapsed:.2f}s wall"
+
+    def __repr__(self):
+        wall = self.wall_elapsed
+        process = self.process_elapsed
+
+        if self.process_elapsed is not None:
+            return (f"{type(self).__name__}"
+                    f"<wall_elapsed={wall!r}s, process_elapsed={process!r}s>")
+        else:
+            return f"{type(self).__name__}<wall_elapsed={wall!r}s>"
+
 # }}}
 
 
@@ -2481,20 +2498,13 @@ class ProcessLogger:  # pylint: disable=too-many-instance-attributes
         self.timer.done()
         self.is_done = True
 
-        wall_elapsed = self.timer.wall_elapsed
-        process_elapsed = self.timer.process_elapsed
-
         completion_level = (
                 self.noisy_level
-                if wall_elapsed > self.long_threshold_seconds
+                if self.timer.wall_elapsed > self.long_threshold_seconds
                 else self.silent_level)
 
-        if process_elapsed is not None:
-            msg = "%s: completed (%.2fs wall, %.1fx CPU)"
-            fmt_args = [self.description, wall_elapsed, process_elapsed/wall_elapsed]
-        else:
-            msg = "%s: completed (%f.2s wall)"
-            fmt_args = [self.description, wall_elapsed]
+        msg = "%s: completed (%s)"
+        fmt_args = [self.description, str(self.timer)]
 
         if extra_msg:
             msg += ": " + extra_msg
