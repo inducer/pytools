@@ -362,6 +362,86 @@ def test_make_obj_array_iteration():
 # }}}
 
 
+# {{{ test obj array vectorization and decorators
+
+def test_obj_array_vectorize(c=1):
+    np = pytest.importorskip("numpy")
+    la = pytest.importorskip("numpy.linalg")
+
+    # {{{ functions
+
+    import pytools.obj_array as obj
+
+    def add_one(ary):
+        assert ary.dtype.char != "O"
+        return ary + c
+
+    def two_add_one(x, y):
+        assert x.dtype.char != "O" and y.dtype.char != "O"
+        return x * y + c
+
+    @obj.obj_array_vectorized
+    def vectorized_add_one(ary):
+        assert ary.dtype.char != "O"
+        return ary + c
+
+    @obj.obj_array_vectorized_n_args
+    def vectorized_two_add_one(x, y):
+        assert x.dtype.char != "O" and y.dtype.char != "O"
+        return x * y + c
+
+    class Adder:
+        def __init__(self, c):
+            self.c = c
+
+        def add(self, ary):
+            assert ary.dtype.char != "O"
+            return ary + self.c
+
+        @obj.obj_array_vectorized_n_args
+        def vectorized_add(self, ary):
+            assert ary.dtype.char != "O"
+            return ary + self.c
+
+    adder = Adder(c)
+
+    # }}}
+
+    # {{{ check
+
+    scalar_ary = np.ones(42, dtype=np.float)
+    object_ary = obj.make_obj_array([scalar_ary, scalar_ary, scalar_ary])
+
+    for func, vectorizer, nargs in [
+            (add_one, obj.obj_array_vectorize, 1),
+            (two_add_one, obj.obj_array_vectorize_n_args, 2),
+            (adder.add, obj.obj_array_vectorize, 1),
+            ]:
+        input_ary = [scalar_ary] * nargs
+        result = vectorizer(func, *input_ary)
+        error = la.norm(result - c - 1)
+        print(error)
+
+        input_ary = [object_ary] * nargs
+        result = vectorizer(func, *input_ary)
+        error = 0
+
+    for func, nargs in [
+            (vectorized_add_one, 1),
+            (vectorized_two_add_one, 2),
+            (adder.vectorized_add, 1),
+            ]:
+        input_ary = [scalar_ary] * nargs
+        result = func(*input_ary)
+
+        input_ary = [object_ary] * nargs
+        result = func(*input_ary)
+
+    # }}}
+
+# }}}
+
+
 def test_tag():
     from pytools.tag import Taggable, Tag, UniqueTag, NonUniqueTagError
 

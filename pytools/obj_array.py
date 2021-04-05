@@ -172,7 +172,7 @@ def rec_obj_array_vectorize(f, ary):
 
 
 def rec_obj_array_vectorized(f):
-    wrapper = partial(rec_obj_array_vectorized, f)
+    wrapper = partial(rec_obj_array_vectorize, f)
     update_wrapper(wrapper, f)
     return wrapper
 
@@ -214,9 +214,24 @@ def obj_array_vectorize_n_args(f, *args):
 
 
 def obj_array_vectorized_n_args(f):
-    wrapper = partial(obj_array_vectorize_n_args, f)
+    # Unfortunately, this can't use partial(), as the callable returned by it
+    # will not be turned into a bound method upon attribute access.
+    # This may happen here, because the decorator *could* be used
+    # on methods, since it can "look past" the leading `self` argument.
+    # Only exactly function objects receive this treatment.
+    #
+    # Spec link:
+    # https://docs.python.org/3/reference/datamodel.html#the-standard-type-hierarchy
+    # (under "Instance Methods", quote as of Py3.9.4)
+    # > Also notice that this transformation only happens for user-defined functions;
+    # > other callable objects (and all non-callable objects) are retrieved
+    # > without transformation.
+
+    def wrapper(*args):
+        return obj_array_vectorize_n_args(f, *args)
+
     update_wrapper(wrapper, f)
-    return f
+    return wrapper
 
 
 # {{{ workarounds for https://github.com/numpy/numpy/issues/1740
