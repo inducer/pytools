@@ -214,10 +214,7 @@ def obj_array_vectorize_n_args(f, *args):
 
 
 def obj_array_vectorized_n_args(f):
-    def wrapper(*args, **kwargs):
-        if len(kwargs):
-            raise NotImplementedError("kwargs are not supported")
-
+    def wrapper(*args):
         return obj_array_vectorize_n_args(f, *args)
 
     update_wrapper(wrapper, f)
