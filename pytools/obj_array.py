@@ -214,6 +214,17 @@ def obj_array_vectorize_n_args(f, *args):
 
 
 def obj_array_vectorized_n_args(f):
+    # Unfortunately, this can't use partial(), as the callable returned by it
+    # will not be turned into a bound method upon attribute access.
+    # Only exactly function objects receive this treatment.
+    #
+    # Spec link:
+    # https://docs.python.org/3/reference/datamodel.html#the-standard-type-hierarchy
+    # (under "Instance Methods", quote as of Py3.9.4)
+    # > Also notice that this transformation only happens for user-defined functions;
+    # > other callable objects (and all non-callable objects) are retrieved
+    # > without transformation.
+    
     def wrapper(*args):
         return obj_array_vectorize_n_args(f, *args)
 
