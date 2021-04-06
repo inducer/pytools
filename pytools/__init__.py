@@ -142,11 +142,6 @@ Helpers for :mod:`numpy`
 Timing data
 -----------
 
-.. data:: SUPPORTS_PROCESS_TIME
-
-   A :class:`bool` indicating whether :class:`ProcessTimer` measures elapsed
-   process time (available on Python 3.3+).
-
 .. autoclass:: ProcessTimer
 
 Log utilities
@@ -2342,7 +2337,7 @@ def reshaped_view(a, newshape):
 
 # {{{ process timer
 
-SUPPORTS_PROCESS_TIME = (sys.version_info >= (3, 3))
+SUPPORTS_PROCESS_TIME = True
 
 
 class ProcessTimer:
@@ -2357,20 +2352,16 @@ class ProcessTimer:
     .. attribute:: wall_elapsed
     .. attribute:: process_elapsed
 
-        Only available in Python 3.3+.
-
     .. versionadded:: 2018.5
     """
 
     def __init__(self):
         import time
-        if SUPPORTS_PROCESS_TIME:
-            self.perf_counter_start = time.perf_counter()
-            self.process_time_start = time.process_time()
+        self.perf_counter_start = time.perf_counter()
+        self.process_time_start = time.process_time()
 
-        else:
-            import timeit
-            self.time_start = timeit.default_timer()
+        self.wall_elapsed = None
+        self.process_elapsed = None
 
     def __enter__(self):
         return self
@@ -2379,17 +2370,20 @@ class ProcessTimer:
         self.done()
 
     def done(self):
-        # pylint: disable=attribute-defined-outside-init
-
         import time
-        if SUPPORTS_PROCESS_TIME:
-            self.wall_elapsed = time.perf_counter() - self.perf_counter_start
-            self.process_elapsed = time.process_time() - self.process_time_start
+        self.wall_elapsed = time.perf_counter() - self.perf_counter_start
+        self.process_elapsed = time.process_time() - self.process_time_start
 
-        else:
-            import timeit
-            self.wall_elapsed = timeit.default_timer() - self.time_start
-            self.process_elapsed = None
+    def __str__(self):
+        cpu = self.process_elapsed / self.wall_elapsed
+        return f"{self.wall_elapsed:.2f}s wall {cpu:.2f}x CPU"
+
+    def __repr__(self):
+        wall = self.wall_elapsed
+        process = self.process_elapsed
+
+        return (f"{type(self).__name__}"
+                f"(wall_elapsed={wall!r}s, process_elapsed={process!r}s)")
 
 # }}}
 
@@ -2481,20 +2475,13 @@ class ProcessLogger:  # pylint: disable=too-many-instance-attributes
         self.timer.done()
         self.is_done = True
 
-        wall_elapsed = self.timer.wall_elapsed
-        process_elapsed = self.timer.process_elapsed
-
         completion_level = (
                 self.noisy_level
-                if wall_elapsed > self.long_threshold_seconds
+                if self.timer.wall_elapsed > self.long_threshold_seconds
                 else self.silent_level)
 
-        if process_elapsed is not None:
-            msg = "%s: completed (%.2fs wall, %.1fx CPU)"
-            fmt_args = [self.description, wall_elapsed, process_elapsed/wall_elapsed]
-        else:
-            msg = "%s: completed (%f.2s wall)"
-            fmt_args = [self.description, wall_elapsed]
+        msg = "%s: completed (%s)"
+        fmt_args = [self.description, str(self.timer)]
 
         if extra_msg:
             msg += ": " + extra_msg
