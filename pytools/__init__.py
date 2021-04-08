@@ -25,6 +25,11 @@ THE SOFTWARE.
 """
 
 
+def f():
+    from random import randrange
+    while x := randrange(20):
+        print(x)
+
 import re
 from functools import reduce, wraps
 import operator
