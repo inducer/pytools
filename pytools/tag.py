@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from typing import Tuple, Any, FrozenSet, Union, Iterable, TypeVar
+import importlib
+
 from pytools import memoize
 
 __copyright__ = """
@@ -40,6 +42,8 @@ Tag Interface
 .. autoclass:: Taggable
 .. autoclass:: Tag
 .. autoclass:: UniqueTag
+.. autoclass:: ToPythonObjectMapper
+.. autofunction:: parse_tag
 
 Supporting Functionality
 ------------------------
@@ -265,6 +269,129 @@ class Taggable:
             raise ValueError("A tag specified for removal was not present.")
 
         return self.copy(tags=new_tags)
+
+# }}}
+
+
+# {{{ parse
+
+class CallParams:
+    """
+    Intermediate data structure for :class:`ToPythonObjectMapper`.
+    """
+    def __init__(self, args, kwargs):
+        self.args = args
+        self.kwargs = kwargs
+
+
+class ToPythonObjectMapper:
+    """
+    Map a parsed tree to pythonic objects.
+    """
+    def __init__(self, shortcuts, caller_globals):
+        super().__init__()
+        self.shortcuts = shortcuts
+        self.caller_globals = caller_globals
+
+    def map_tag_from_python_class(self, cls, params):
+        try:
+            return cls(*params.args, **params.kwargs)
+        except TypeError as e:
+            raise TypeError(f"Error while instantiating '{cls.__name__}': {e}")
+
+    def map_empty_args_params(self):
+        return CallParams((), {})
+
+    def map_args_only_params(self, args):
+        return CallParams(args, {})
+
+    def map_kwargs_only_params(self, kwargs):
+        return CallParams((), kwargs)
+
+    def map_args_kwargs_params(self, args, kwargs):
+        return CallParams(args, kwargs)
+
+    def map_name(self, tok):
+        return tok.value
+
+    def map_top_level_module(self, modulename):
+        try:
+            return self.caller_globals[modulename]
+        except KeyError:
+            return importlib.import_module(modulename)
+
+    def map_nested_module(self, module, child):
+        return getattr(module, child)
+
+    def map_tag_class(self, module, classname):
+        return getattr(module, classname)
+
+    def map_string(self, text):
+        return str(text)
+
+    def map_int(self, text):
+        return int(text)
+
+    def map_singleton_args(self, arg):
+        return (arg,)
+
+    def map_args(self, args, arg):
+        return args + (arg,)
+
+    def map_kwarg(self, name, arg):
+        return {name: arg}
+
+    def map_kwargs(self, kwargs, kwarg):
+        assert len(kwarg) == 1
+        (key, val), = kwarg.items()
+        if key in kwargs:
+            raise ValueError(f"keyword argument '{key}' repeated")
+
+        updated_kwargs = kwargs.copy()
+        updated_kwargs[key] = val
+        return updated_kwargs
+
+    def map_tag_from_shortcut(self, name):
+        name = name[1:]  # remove the starting "."
+        return self.shortcuts[name]
+
+
+@memoize
+def construct_parser():
+    from lark import Lark
+    return Lark.open("tags.lark", rel_to=__file__, parser="lalr", start="tag",
+            cache=True)
+
+
+def parse_tag(tag_text, shortcuts={}):
+    """
+    Parses a :class:`Tag` from a provided dotted name.
+    """
+    import inspect
+    from lark import Transformer
+
+    class ToPythonObjectMapperMixin(ToPythonObjectMapper, Transformer):
+        def _call_userfunc(self, tree, new_children=None):
+            """
+            Flattens the arguments before feeding to the mapper methods.
+            """
+            # Assumes tree is already transformed
+            children = new_children if new_children is not None else tree.children
+            try:
+                f = getattr(self, tree.data)
+            except AttributeError:
+                return self.__default__(tree.data, children, tree.meta)
+            else:
+                # flatten the args
+                return f(*children)
+
+    parser = construct_parser()
+
+    caller_globals = inspect.currentframe().f_back.f_globals
+    tag = ToPythonObjectMapperMixin(shortcuts, caller_globals).transform(
+            parser.parse(tag_text))
+
+    return tag
 
 # }}}
 

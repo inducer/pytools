@@ -7,7 +7,7 @@ Pytest:
     # AK, 2020-12-13
     rm pytools/log.py
 
-    export EXTRA_INSTALL="numpy"
+    export EXTRA_INSTALL="numpy lark-parser"
     curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
     . ./build-and-test-py-project.sh
   tags:
@@ -50,7 +50,7 @@ Mypy:
 
 Pylint:
   script:
-  - EXTRA_INSTALL="pymbolic"
+  - EXTRA_INSTALL="pymbolic lark-parser"
   - py_version=3
   - curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-pylint.sh
   - . ./prepare-and-run-pylint.sh "$CI_PROJECT_NAME" test/test_*.py
@@ -61,7 +61,7 @@ Pylint:
 
 Documentation:
   script:
-  - EXTRA_INSTALL="numpy"
+  - EXTRA_INSTALL="numpy lark-parser"
   - curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/main/build-docs.sh
   - ". ./build-docs.sh"
   tags:

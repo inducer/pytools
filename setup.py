@@ -40,8 +40,12 @@ setup(name="pytools",
       install_requires=[
           "appdirs>=1.4.0",
           "numpy>=1.6.0",
-          "dataclasses>=0.7;python_version<='3.6'"
+          "dataclasses>=0.7;python_version<='3.6'",
           ],
+
+      extras_require={
+          "tag_parsing": ["lark-parser"],
+          },
 
       package_data={"pytools": ["py.typed"]},
 
