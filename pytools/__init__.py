@@ -701,7 +701,7 @@ def memoize_on_first_arg(function, cache_dict_name=None):
             return result
 
     def clear_cache(obj):
-        object.__delattr__("_memoize_on_first_arg_dict")
+        object.__delattr__(self, "_memoize_on_first_arg_dict")
 
     from functools import update_wrapper
     new_wrapper = update_wrapper(wrapper, function)
