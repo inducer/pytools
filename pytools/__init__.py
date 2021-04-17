@@ -732,7 +732,7 @@ def memoize_method(method: F) -> F:
 class keyed_memoize_on_first_arg:  # noqa: N801
     """Like :func:`memoize_on_first_arg`, but uses a user-supplied function
     for cache key computation.
-    
+
     Supports cache deletion via ``function_name.clear_cache(self)``.
 
     :arg key: A function receiving the same arguments as the decorated function
