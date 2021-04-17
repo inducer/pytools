@@ -671,6 +671,13 @@ def memoize_on_first_arg(function, cache_dict_name=None):
     in which do memoization information is stored as first argument.
 
     Supports cache deletion via ``function_name.clear_cache(self)``.
+
+    .. note::
+
+        If *function* is nested in another function, a separate cache
+        is created for each invocation of the surrounding function,
+        and use of the function in the cache key may keep references
+        to the nested function alive longer than desired.
     """
 
     if cache_dict_name is None:
@@ -723,9 +730,9 @@ def memoize_method(method: F) -> F:
 
 
 class keyed_memoize_on_first_arg:  # noqa: N801
-    """Like :func:`memoize_method`, but for functions that take the object
-    in which memoization information is stored as first argument.
-
+    """Like :func:`memoize_on_first_arg`, but uses a user-supplied function
+    for cache key computation.
+    
     Supports cache deletion via ``function_name.clear_cache(self)``.
 
     :arg key: A function receiving the same arguments as the decorated function
@@ -734,6 +741,13 @@ class keyed_memoize_on_first_arg:  # noqa: N801
         used to hold the cache.
 
     .. versionadded :: 2020.3
+
+    .. note::
+
+        If *function* is nested in another function, a separate cache
+        is created for each invocation of the surrounding function,
+        and use of the function in the cache key may keep references
+        to the nested function alive longer than desired.
     """
 
     def __init__(self, key, cache_dict_name=None):
