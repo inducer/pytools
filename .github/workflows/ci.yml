@@ -71,7 +71,7 @@ jobs:
                 # untested, causes import error with Pytest >= 6.2.0
                 # AK, 2020-12-13
                 rm pytools/mpiwrap.py
-                # just a forwarding sim, causes import error with Pytest >= 6.2.0
+                # just a forwarding shim, causes import error with Pytest >= 6.2.0
                 # AK, 2020-12-13
                 rm pytools/log.py
 
@@ -95,6 +95,37 @@ jobs:
     #            . ./ci-support.sh
     #            build_py_project_in_venv
     #            run_examples
+
+    downstream_tests:
+        strategy:
+            matrix:
+                downstream_project: [loopy, pytato]
+        name: Tests for downstream project ${{ matrix.downstream_project }}
+        runs-on: ubuntu-latest
+        steps:
+        -   uses: actions/checkout@v2
+        -   name: "Main Script"
+            env:
+                DOWNSTREAM_PROJECT: ${{ matrix.downstream_project }}
+            run: |
+                git clone "https://github.com/inducer/$DOWNSTREAM_PROJECT.git"
+                cd "$DOWNSTREAM_PROJECT"
+                echo "*** $DOWNSTREAM_PROJECT version: $(git rev-parse --short HEAD)"
+
+                sed -i "/egg=pytools/ c git+file://$(readlink -f ..)#egg=pytools" requirements.txt
+
+                # HACK: force overwrite even if it's already there (e.g. as a pyopencl dep)
+                sed -i '/egg=pytools/ s/^/-e/' requirements.txt
+
+                export CONDA_ENVIRONMENT=.test-conda-env-py3.yml
+
+                # Avoid slow or complicated tests in downstream projects
+                export PYTEST_ADDOPTS="-k 'not (slowtest or octave or mpi)'"
+
+                curl -L -O -k https://tiker.net/ci-support-v0
+                . ./ci-support-v0
+                build_py_project_in_conda_env
+                test_py_project
 
     docs:
         name: Documentation
