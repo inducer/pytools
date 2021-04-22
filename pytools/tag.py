@@ -236,6 +236,9 @@ class Taggable:
     """
 
     def __init__(self, tags: TagsType = frozenset()):
+        assert isinstance(tags, FrozenSet)
+        assert all(isinstance(tag, Tag) for tag in tags)
+        check_tag_uniqueness(tags)
         self.tags = tags
 
     def copy(self: T_co, **kwargs: Any) -> T_co:
