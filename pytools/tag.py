@@ -1,3 +1,29 @@
+"""
+
+Tag Interface
+---------------
+.. ``normalize_tags`` undocumented for now. (Not ready to commit.)
+
+.. autofunction:: check_tag_uniqueness
+.. autoclass:: Taggable
+.. autoclass:: Tag
+.. autoclass:: UniqueTag
+
+Supporting Functionality
+------------------------
+
+.. autoclass:: DottedName
+.. autoclass:: NonUniqueTagError
+
+
+Internal stuff that is only here because the documentation tool wants it
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. class:: T_co
+
+    A covariant type variable used in, e.g. :meth:`Taggable.copy`.
+"""
+
 from dataclasses import dataclass
 from typing import Tuple, Set, Any, FrozenSet, Union, Iterable, TypeVar
 from pytools import memoize
@@ -28,37 +54,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
-
-
-# {{{ docs
-
-__doc__ = """
-
-Tag Interface
----------------
-.. ``normalize_tags`` undocumented for now. (Not ready to commit.)
-
-.. autofunction:: check_tag_uniqueness
-.. autoclass:: Taggable
-.. autoclass:: Tag
-.. autoclass:: UniqueTag
-
-Supporting Functionality
-------------------------
-
-.. autoclass:: DottedName
-.. autoclass:: NonUniqueTagError
-
-
-Internal stuff that is only here because the documentation tool wants it
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. class:: T_co
-
-    A covariant type variable used in, e.g. :class:`Taggable.copy`.
-"""
-
-#  }}}
 
 
 #  {{{ dotted name
