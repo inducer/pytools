@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Tuple, Any, FrozenSet, Union, Iterable, TypeVar
+from typing import Tuple, Set, Any, FrozenSet, Union, Iterable, TypeVar
 from pytools import memoize
 
 __copyright__ = """
@@ -36,7 +36,9 @@ __doc__ = """
 
 Tag Interface
 ---------------
+.. ``normalize_tags`` undocumented for now. (Not ready to commit.)
 
+.. autofunction:: check_tag_uniqueness
 .. autoclass:: Taggable
 .. autoclass:: Tag
 .. autoclass:: UniqueTag
@@ -47,6 +49,13 @@ Supporting Functionality
 .. autoclass:: DottedName
 .. autoclass:: NonUniqueTagError
 
+
+Internal stuff that is only here because the documentation tool wants it
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. class:: T_co
+
+    A covariant type variable used in, e.g. :class:`Taggable.copy`.
 """
 
 #  }}}
@@ -157,7 +166,7 @@ TagOrIterableType = Union[Iterable[Tag], Tag, None]
 T_co = TypeVar("T_co", bound="Taggable")
 
 
-# {{{ taggable
+# {{{ UniqueTag rules checking
 
 @memoize
 def _immediate_unique_tag_descendants(cls):
@@ -179,6 +188,44 @@ class NonUniqueTagError(ValueError):
     pass
 
 
+def check_tag_uniqueness(tags: TagsType):
+    """Ensure that *tags* obeys the rules set forth in :class:`UniqueTag`.
+    If not, raise :exc:`NonUniqueTagError`. If any *tags* are not
+    subclasses of :class:`Tag`, a :exc:`TypeError` will be raised.
+
+    :returns: *tags*
+    """
+    unique_tag_descendants: Set[Tag] = set()
+    for tag in tags:
+        if not isinstance(tag, Tag):
+            raise TypeError(f"'{tag}' is not an instance of pytools.tag.Tag")
+        tag_unique_tag_descendants = _immediate_unique_tag_descendants(
+                type(tag))
+        intersection = unique_tag_descendants & tag_unique_tag_descendants
+        if intersection:
+            raise NonUniqueTagError("Multiple tags are direct subclasses of "
+                    "the following UniqueTag(s): "
+                    f"{', '.join(d.__name__ for d in intersection)}")
+        else:
+            unique_tag_descendants.update(tag_unique_tag_descendants)
+
+    return tags
+
+# }}}
+
+
+def normalize_tags(tags: TagOrIterableType) -> TagsType:
+    if isinstance(tags, Tag):
+        tags = frozenset([tags])
+    elif tags is None:
+        tags = frozenset()
+    else:
+        tags = frozenset(tags)
+    return tags
+
+
+# {{{ taggable
+
 class Taggable:
     """
     Parent class for objects with a `tags` attribute.
@@ -187,42 +234,30 @@ class Taggable:
 
         A :class:`frozenset` of :class:`Tag` instances
 
-    .. method:: copy
-    .. method:: tagged
-    .. method:: without_tags
+    .. automethod:: __init__
+
+    .. automethod:: copy
+    .. automethod:: tagged
+    .. automethod:: without_tags
 
     .. versionadded:: 2021.1
     """
 
+    # ReST references in docstrings must be fully qualified, as docstrings may
+    # be inherited and appear in different contexts.
+
     def __init__(self, tags: TagsType = frozenset()):
-        # For performance we assert rather than
-        # normalize the input.
-        assert isinstance(tags, FrozenSet)
-        assert all(isinstance(tag, Tag) for tag in tags)
+        """
+        Constructor for all objects that possess a `tags` attribute.
+
+        :arg tags: a :class:`frozenset` of :class:`~pytools.tag.Tag` objects.
+            Tags can be modified via the :meth:`~pytools.tag.Taggable.tagged` and
+            :meth:`~pytools.tag.Taggable.without_tags` routines. Input checking
+            of *tags* should be performed before creating a
+            :class:`~pytools.tag.Taggable` instance, using
+            :func:`~pytools.tag.check_tag_uniqueness`.
+        """
         self.tags = tags
-        self._check_uniqueness()
-
-    def _normalize_tags(self, tags: TagOrIterableType) -> TagsType:
-        if isinstance(tags, Tag):
-            t = frozenset([tags])
-        elif tags is None:
-            t = frozenset()
-        else:
-            t = frozenset(tags)
-        return t
-
-    def _check_uniqueness(self):
-        unique_tag_descendants = set()
-        for tag in self.tags:
-            tag_unique_tag_descendants = _immediate_unique_tag_descendants(
-                    type(tag))
-            intersection = unique_tag_descendants & tag_unique_tag_descendants
-            if intersection:
-                raise NonUniqueTagError("Multiple tags are direct subclasses of "
-                        "the following UniqueTag(s): "
-                        f"{', '.join(d.__name__ for d in intersection)}")
-            else:
-                unique_tag_descendants.update(tag_unique_tag_descendants)
 
     def copy(self: T_co, **kwargs: Any) -> T_co:
         """
@@ -239,12 +274,10 @@ class Taggable:
         Assumes `self.copy(tags=<NEW VALUE>)` is implemented.
 
         :arg tags: An instance of :class:`Tag` or
-        an iterable with instances therein.
+            an iterable with instances therein.
         """
-        new_tags = self._normalize_tags(tags)
-        union_tags = self.tags | new_tags
-        cpy = self.copy(tags=union_tags)
-        return cpy
+        return self.copy(
+                tags=check_tag_uniqueness(normalize_tags(tags) | self.tags))
 
     def without_tags(self: T_co,
             tags: TagOrIterableType, verify_existence: bool = True) -> T_co:
@@ -253,18 +286,18 @@ class Taggable:
         `self.copy(tags=<NEW VALUE>)` is implemented.
 
         :arg tags: An instance of :class:`Tag` or an iterable with instances
-        therein.
-        :arg verify_existence: If set
-        to `True`, this method raises an exception if not all tags specified
-        for removal are present in the original set of tags. Default `True`
+            therein.
+        :arg verify_existence: If set to `True`, this method raises
+            an exception if not all tags specified for removal are
+            present in the original set of tags. Default `True`.
         """
 
-        to_remove = self._normalize_tags(tags)
+        to_remove = normalize_tags(tags)
         new_tags = self.tags - to_remove
         if verify_existence and len(new_tags) > len(self.tags) - len(to_remove):
             raise ValueError("A tag specified for removal was not present.")
 
-        return self.copy(tags=new_tags)
+        return self.copy(tags=check_tag_uniqueness(new_tags))
 
 # }}}
 
