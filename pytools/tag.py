@@ -49,6 +49,13 @@ Supporting Functionality
 .. autoclass:: DottedName
 .. autoclass:: NonUniqueTagError
 
+
+Internal stuff that is only here because the documentation tool wants it
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. class:: T_co
+
+    A covariant type variable used in, e.g. :class:`Taggable.copy`.
 """
 
 #  }}}
