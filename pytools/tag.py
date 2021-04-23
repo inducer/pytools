@@ -183,12 +183,15 @@ class NonUniqueTagError(ValueError):
 
 def check_tag_uniqueness(tags: TagsType):
     """Ensure that *tags* obeys the rules set forth in :class:`UniqueTag`.
-    If not, raise :exc:`NonUniqueTagError`.
+    If not, raise :exc:`NonUniqueTagError`. If any *tags* are not
+    subclasses of :class:`Tag`, a :exc:`TypeError` will be raised.
 
     :returns: *tags*
     """
     unique_tag_descendants: Set[Tag] = set()
     for tag in tags:
+        if not isinstance(tag, Tag):
+            raise TypeError(f"'{tag}' is not an instance of pytools.tag.Tag")
         tag_unique_tag_descendants = _immediate_unique_tag_descendants(
                 type(tag))
         intersection = unique_tag_descendants & tag_unique_tag_descendants
@@ -211,10 +214,6 @@ def normalize_tags(tags: TagOrIterableType) -> TagsType:
         tags = frozenset()
     else:
         tags = frozenset(tags)
-
-    for tag in tags:
-        if not isinstance(tag, Tag):
-            raise TypeError(f"'{tag}' is not an instance of pytools.tag.Tag")
     return tags
 
 
@@ -228,17 +227,25 @@ class Taggable:
 
         A :class:`frozenset` of :class:`Tag` instances
 
-    .. method:: copy
-    .. method:: tagged
-    .. method:: without_tags
+    .. automethod:: __init__
+
+    .. automethod:: copy
+    .. automethod:: tagged
+    .. automethod:: without_tags
 
     .. versionadded:: 2021.1
     """
 
     def __init__(self, tags: TagsType = frozenset()):
-        assert isinstance(tags, FrozenSet)
-        assert all(isinstance(tag, Tag) for tag in tags)
-        check_tag_uniqueness(tags)
+        """
+        Constructor for all objects that possess a `tags` attribute.
+
+        :arg tags: a :class:`frozenset` of :class:`Tag` objects. Tags can
+            be modified via the :meth:`tagged` and :meth:`without_tags`
+            routines. Input checking of *tags* should be performed before
+            creating a :class:`Taggable` instance, using
+            :func:`check_tag_uniqueness`.
+        """
         self.tags = tags
 
     def copy(self: T_co, **kwargs: Any) -> T_co:
@@ -256,7 +263,7 @@ class Taggable:
         Assumes `self.copy(tags=<NEW VALUE>)` is implemented.
 
         :arg tags: An instance of :class:`Tag` or
-        an iterable with instances therein.
+            an iterable with instances therein.
         """
         return self.copy(
                 tags=check_tag_uniqueness(normalize_tags(tags) | self.tags))
@@ -268,10 +275,10 @@ class Taggable:
         `self.copy(tags=<NEW VALUE>)` is implemented.
 
         :arg tags: An instance of :class:`Tag` or an iterable with instances
-        therein.
-        :arg verify_existence: If set
-        to `True`, this method raises an exception if not all tags specified
-        for removal are present in the original set of tags. Default `True`
+            therein.
+        :arg verify_existence: If set to `True`, this method raises
+            an exception if not all tags specified for removal are
+            present in the original set of tags. Default `True`.
         """
 
         to_remove = normalize_tags(tags)
@@ -279,7 +286,7 @@ class Taggable:
         if verify_existence and len(new_tags) > len(self.tags) - len(to_remove):
             raise ValueError("A tag specified for removal was not present.")
 
-        return self.copy(tags=new_tags)
+        return self.copy(tags=check_tag_uniqueness(new_tags))
 
 # }}}
 
