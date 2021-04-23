@@ -36,7 +36,7 @@ __doc__ = """
 
 Tag Interface
 ---------------
-.. <!--``normalize_tags`` undocumented for now. (Not ready to commit.)-->
+.. ``normalize_tags`` undocumented for now. (Not ready to commit.)
 
 .. autofunction:: check_tag_uniqueness
 .. autoclass:: Taggable
