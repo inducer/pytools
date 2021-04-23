@@ -243,15 +243,19 @@ class Taggable:
     .. versionadded:: 2021.1
     """
 
+    # ReST references in docstrings must be fully qualified, as docstrings may
+    # be inherited and appear in different contexts.
+
     def __init__(self, tags: TagsType = frozenset()):
         """
         Constructor for all objects that possess a `tags` attribute.
 
-        :arg tags: a :class:`frozenset` of :class:`Tag` objects. Tags can
-            be modified via the :meth:`tagged` and :meth:`without_tags`
-            routines. Input checking of *tags* should be performed before
-            creating a :class:`Taggable` instance, using
-            :func:`check_tag_uniqueness`.
+        :arg tags: a :class:`frozenset` of :class:`~pytools.tag.Tag` objects.
+            Tags can be modified via the :meth:`~pytools.tag.Taggable.tagged` and
+            :meth:`~pytools.tag.Taggable.without_tags` routines. Input checking
+            of *tags* should be performed before creating a
+            :class:`~pytools.tag.Taggable` instance, using
+            :func:`~pytools.tag.check_tag_uniqueness`.
         """
         self.tags = tags
 
