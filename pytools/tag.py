@@ -273,7 +273,7 @@ class Taggable:
         and other tags of this type are already present, an error is raised
         Assumes `self.copy(tags=<NEW VALUE>)` is implemented.
 
-        :arg tags: An instance of :class:`Tag` or
+        :arg tags: An instance of :class:`~pytools.tag.Tag` or
             an iterable with instances therein.
         """
         return self.copy(
@@ -285,8 +285,8 @@ class Taggable:
         Return a copy of *self* without the specified tags.
         `self.copy(tags=<NEW VALUE>)` is implemented.
 
-        :arg tags: An instance of :class:`Tag` or an iterable with instances
-            therein.
+        :arg tags: An instance of :class:`~pytools.tag.Tag` or an iterable with
+            instances therein.
         :arg verify_existence: If set to `True`, this method raises
             an exception if not all tags specified for removal are
             present in the original set of tags. Default `True`.
