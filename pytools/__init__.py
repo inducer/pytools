@@ -2125,6 +2125,9 @@ def generate_unique_names(prefix):
         try_num += 1
 
 
+UNIQUE_NAME_GEN_COUNTER_RE = re.compile(r"^(?P<based_on>\w+)_(?P<counter>\d+)$")
+
+
 def generate_numbered_unique_names(
         prefix: str, num: Optional[int] = None) -> Iterable[Tuple[int, str]]:
     if num is None:
@@ -2188,6 +2191,17 @@ class UniqueNameGenerator:
         based_on = self.forced_prefix + based_on
 
         counter = self.prefix_to_counter.get(based_on, None)
+
+        # {{{ try to get counter from based_on if not already present
+
+        if counter is None:
+            counter_match = UNIQUE_NAME_GEN_COUNTER_RE.match(based_on)
+
+            if counter_match:
+                based_on = counter_match.groupdict()["based_on"]
+                counter = int(counter_match.groupdict()["counter"])
+
+        # }}}
 
         for counter, var_name in generate_numbered_unique_names(based_on, counter):
             if not self.is_name_conflicting(var_name):
