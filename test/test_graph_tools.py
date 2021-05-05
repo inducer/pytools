@@ -41,7 +41,7 @@ def test_compute_sccs():
                 assert set(result) == scc, (set(result), scc)
 
     for nnodes in range(10, 20):
-        for i in range(40):
+        for _ in range(40):
             graph = generate_random_graph(nnodes)
             verify_sccs(graph, compute_sccs(graph))
 
@@ -288,7 +288,7 @@ def test_prioritzed_topological_sort():
         # 'scheduled_node' is scheduled => no longer a dependency
         dep_graph.pop(scheduled_node)
 
-        for node, deps in dep_graph.items():
+        for deps in dep_graph.values():
             deps.discard(scheduled_node)
 
     assert len(dep_graph) == 0
