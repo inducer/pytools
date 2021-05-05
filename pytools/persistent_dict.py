@@ -541,7 +541,7 @@ class _PersistentDictBase:
 
             # This is here so we can step through equality comparison to
             # see what is actually non-equal.
-            stored_key == key  # pylint:disable=pointless-statement
+            stored_key == key  # pylint:disable=pointless-statement  # noqa: B015
             raise NoSuchEntryError(key)
 
     def __getitem__(self, key):

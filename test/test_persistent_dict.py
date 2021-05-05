@@ -63,7 +63,7 @@ def test_persistent_dict_storage_and_lookup():
                 for i in range(20)]
         values = [randrange(2000) for i in range(20)]
 
-        d = dict(list(zip(keys, values)))
+        d = dict(zip(keys, values))
 
         # {{{ check lookup
 
@@ -72,6 +72,7 @@ def test_persistent_dict_storage_and_lookup():
 
         for k, v in d.items():
             assert d[k] == pdict[k]
+            assert v == pdict[k]
 
         # }}}
 
@@ -82,16 +83,18 @@ def test_persistent_dict_storage_and_lookup():
 
         for k, v in d.items():
             assert d[k] + 1 == pdict[k]
+            assert v + 1 == pdict[k]
 
         # }}}
 
         # {{{ check store_if_not_present
 
-        for k, v in zip(keys, values):
+        for k, _ in zip(keys, values):
             pdict.store_if_not_present(k, d[k] + 2)
 
         for k, v in d.items():
             assert d[k] + 1 == pdict[k]
+            assert v + 1 == pdict[k]
 
         pdict.store_if_not_present(2001, 2001)
         assert pdict[2001] == 2001

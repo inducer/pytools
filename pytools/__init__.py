@@ -2203,7 +2203,7 @@ class UniqueNameGenerator:
 
         # }}}
 
-        for counter, var_name in generate_numbered_unique_names(based_on, counter):
+        for _, var_name in generate_numbered_unique_names(based_on, counter):
             if not self.is_name_conflicting(var_name):
                 break
 
