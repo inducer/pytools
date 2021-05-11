@@ -2178,7 +2178,8 @@ class UniqueNameGenerator:
         if self.is_name_conflicting(name):
             raise ValueError("name '%s' conflicts with existing names" % name)
         if not name.startswith(self.forced_prefix):
-            raise ValueError("name '%s' does not start with required prefix" % name)
+            raise ValueError("name '%s' does not start with required prefix '%s'"
+                             % (name, self.forced_prefix))
 
         self.existing_names.add(name)
         self._name_added(name)
