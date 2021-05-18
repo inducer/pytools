@@ -92,9 +92,7 @@ Permutations, Tuples, Integer sequences
 .. autofunction:: wandering_element
 .. autofunction:: generate_nonnegative_integer_tuples_below
 .. autofunction:: generate_nonnegative_integer_tuples_summing_to_at_most
-.. autofunction:: generate_all_nonnegative_integer_tuples
 .. autofunction:: generate_all_integer_tuples_below
-.. autofunction:: generate_all_integer_tuples
 .. autofunction:: generate_permutations
 .. autofunction:: generate_unique_permutations
 
@@ -1432,22 +1430,8 @@ def generate_nonnegative_integer_tuples_summing_to_at_most(n, length):
                 yield remainder + (i,)
 
 
-def generate_all_nonnegative_integer_tuples(length, least=0):
-    assert length >= 0
-    current_max = least
-    while True:
-        for max_pos in range(length):
-            for prebase in generate_nonnegative_integer_tuples_below(
-                    current_max, max_pos, least):
-                for postbase in generate_nonnegative_integer_tuples_below(
-                        current_max+1, length-max_pos-1, least):
-                    yield prebase + [current_max] + postbase
-        current_max += 1
-
-
 # backwards compatibility
 generate_positive_integer_tuples_below = generate_nonnegative_integer_tuples_below
-generate_all_positive_integer_tuples = generate_all_nonnegative_integer_tuples
 
 
 def _pos_and_neg_adaptor(tuple_iter):
@@ -1465,11 +1449,6 @@ def _pos_and_neg_adaptor(tuple_iter):
 def generate_all_integer_tuples_below(n, length, least_abs=0):
     return _pos_and_neg_adaptor(generate_nonnegative_integer_tuples_below(
         n, length, least_abs))
-
-
-def generate_all_integer_tuples(length, least_abs=0):
-    return _pos_and_neg_adaptor(generate_all_nonnegative_integer_tuples(
-        length, least_abs))
 
 
 def generate_permutations(original):
