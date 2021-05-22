@@ -68,4 +68,3 @@ intersphinx_mapping = {
     }
 
 autoclass_content = "class"
-autodoc_typehints = "description"
