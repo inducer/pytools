@@ -127,7 +127,8 @@ class Tag:
         return DottedName.from_class(type(self))
 
     def update_persistent_hash(self, key_hash, key_builder):
-        key_builder.rec(key_hash, self.__class__.__qualname__)
+        key_builder.rec(key_hash,
+                (self.__class__.__module__, self.__class__.__qualname__))
 
         from dataclasses import fields
         # Fields are ordered consistently, so ordered hashing is OK.
