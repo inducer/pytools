@@ -31,7 +31,10 @@ from importlib.util import MAGIC_NUMBER as BYTECODE_VERSION
 
 
 class PythonCodeGenerator(CodeGeneratorBase):
-    def get_module(self, name="<generated code>"):
+    def get_module(self, name=None):
+        if name is None:
+            name = "<generated code>"
+
         result_dict = {}
         source_text = self.get()
         exec(compile(
@@ -40,8 +43,8 @@ class PythonCodeGenerator(CodeGeneratorBase):
         result_dict["_MODULE_SOURCE_CODE"] = source_text
         return result_dict
 
-    def get_picklable_module(self):
-        return PicklableModule(self.get_module())
+    def get_picklable_module(self, name=None):
+        return PicklableModule(self.get_module(name=name))
 
 
 class PythonFunctionGenerator(PythonCodeGenerator):
@@ -52,11 +55,15 @@ class PythonFunctionGenerator(PythonCodeGenerator):
         self("def {}({}):".format(name, ", ".join(args)))
         self.indent()
 
+    @property
+    def _gen_filename(self):
+        return f"<generated code for '{self.name}'>"
+
     def get_function(self):
-        return self.get_module()[self.name]
+        return self.get_module(name=self._gen_filename)[self.name]
 
     def get_picklable_function(self):
-        module = self.get_picklable_module()
+        module = self.get_picklable_module(name=self._gen_filename)
         return PicklableFunction(module, self.name)
 
 
