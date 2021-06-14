@@ -20,6 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+import sys
 import marshal
 from types import FunctionType, ModuleType
 
@@ -144,7 +145,14 @@ class PicklableFunction:
     def _initialize(self, module, name):
         self.module = module
         self.name = name
-        self.__call__ = module.mod_globals[name]
+        if sys.version_info < (3, 9):
+            self.func = module.mod_globals[name]
+        else:
+            self.__call__ = module.mod_globals[name]
+
+    if sys.version_info < (3, 8):
+        def __call__(self, *args, **kwargs):  # pylint: disable=method-hidden
+            return self.func(*args, **kwargs)
 
     def __getstate__(self):
         return {"module": self.module, "name": self.name}
