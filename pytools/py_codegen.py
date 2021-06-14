@@ -144,10 +144,7 @@ class PicklableFunction:
     def _initialize(self, module, name):
         self.module = module
         self.name = name
-        self.func = module.mod_globals[name]
-
-    def __call__(self, *args, **kwargs):
-        return self.func(*args, **kwargs)
+        self.__call__ = module.mod_globals[name]
 
     def __getstate__(self):
         return {"module": self.module, "name": self.name}
