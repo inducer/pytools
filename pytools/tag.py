@@ -27,6 +27,7 @@ Internal stuff that is only here because the documentation tool wants it
 from dataclasses import dataclass
 from typing import Tuple, Set, Any, FrozenSet, Union, Iterable, TypeVar
 from pytools import memoize
+from abc import ABC, abstractmethod
 
 __copyright__ = """
 Copyright (C) 2020 Andreas Klöckner
@@ -222,7 +223,7 @@ def normalize_tags(tags: TagOrIterableType) -> TagsType:
 
 # {{{ taggable
 
-class Taggable:
+class Taggable(ABC):
     """
     Parent class for objects with a `tags` attribute.
 
@@ -255,12 +256,12 @@ class Taggable:
         """
         self.tags = tags
 
+    @abstractmethod
     def copy(self: T_co, **kwargs: Any) -> T_co:
         """
         Returns of copy of *self* with the specified tags. This method
         should be overridden by subclasses.
         """
-        raise NotImplementedError("The copy function is not implemented.")
 
     def tagged(self: T_co, tags: TagOrIterableType) -> T_co:
         """
