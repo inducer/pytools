@@ -25,8 +25,8 @@ Internal stuff that is only here because the documentation tool wants it
 """
 
 from dataclasses import dataclass
-from typing import Tuple, Set, Any, FrozenSet, Union, Iterable, TypeVar
-from pytools import memoize
+from typing import Tuple, Set, Any, FrozenSet, Union, Iterable, TypeVar, Type
+from pytools import memoize, memoize_method
 from abc import ABC, abstractmethod
 
 __copyright__ = """
@@ -236,6 +236,7 @@ class Taggable(ABC):
     .. automethod:: copy
     .. automethod:: tagged
     .. automethod:: without_tags
+    .. automethod:: tags_of_type
 
     .. versionadded:: 2021.1
     """
@@ -295,6 +296,15 @@ class Taggable(ABC):
             raise ValueError("A tag specified for removal was not present.")
 
         return self.copy(tags=check_tag_uniqueness(new_tags))
+
+    @memoize_method
+    def tags_of_type(self, tag_t: Type[Tag]) -> FrozenSet[Tag]:
+        """
+        Returns *self*'s tags of type *tag_t*.
+        """
+        return frozenset(tag
+                         for tag in self.tags
+                         if isinstance(tag, tag_t))
 
 # }}}
 
