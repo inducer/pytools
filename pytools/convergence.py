@@ -52,7 +52,7 @@ class EOCRecorder:
     def max_error(self):
         return max(err for absc, err in self.history)
 
-    def pretty_print(self,
+    def _to_table(self, *,
             abscissa_label="h",
             error_label="Error",
             gliding_mean=2,
@@ -75,11 +75,39 @@ class EOCRecorder:
 
             tbl.add_row((absc_str, err_str, eoc_str))
 
+        return tbl
+
+    def pretty_print(self, *,
+            abscissa_label="h",
+            error_label="Error",
+            gliding_mean=2,
+            abscissa_format="%s",
+            error_format="%s",
+            eoc_format="%s",
+            table_type="markdown"):
+        tbl = self._to_table(
+                abscissa_label=abscissa_label, error_label=error_label,
+                abscissa_format=abscissa_format,
+                error_format=error_format,
+                eoc_format=eoc_format,
+                gliding_mean=gliding_mean)
+
+        if table_type == "markdown":
+            tbl_str = tbl.github_markdown()
+        elif table_type == "latex":
+            tbl_str = tbl.latex()
+        elif table_type == "ascii":
+            tbl_str = str(tbl)
+        elif table_type == "csv":
+            tbl_str = tbl.csv()
+        else:
+            raise ValueError(f"unknown table type: {table_type}")
+
         if len(self.history) > 1:
-            return "{}\n\nOverall EOC: {}".format(str(tbl),
+            return "{}\n\nOverall EOC: {}".format(tbl_str,
                     self.estimate_order_of_convergence()[0, 1])
         else:
-            return str(tbl)
+            return tbl_str
 
     def __str__(self):
         return self.pretty_print()
