@@ -1569,8 +1569,9 @@ class Table:
 
     .. automethod:: add_row
     .. automethod:: __str__
-    .. automethod:: latex
     .. automethod:: github_markdown
+    .. automethod:: csv
+    .. automethod:: latex
     """
 
     def __init__(self, alignments=None):
@@ -1697,8 +1698,8 @@ class Table:
         if hline_after is None:
             hline_after = []
         lines = []
-        for row_nr, row in list(enumerate(self.rows))[skip_lines:]:
-            lines.append(" & ".join(row)+r" \\")
+        for row_nr, row in enumerate(self.rows[skip_lines:]):
+            lines.append(f"{' & '.join(row)} \\")
             if row_nr in hline_after:
                 lines.append(r"\hline")
 
