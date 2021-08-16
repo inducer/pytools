@@ -1695,11 +1695,29 @@ class Table:
         return output.getvalue().rstrip(csv_kwargs["lineterminator"])
 
     def latex(self, skip_lines=0, hline_after=None):
+        r"""Returns a string containing the rows of a LaTeX representation of
+        the table.
+
+        :arg skip_lines: number of lines to skip at the start of the table.
+        :arg hline_after: list of row indices after which to add an ``hline``
+            (the indices must subtract *skip_lines*, if non-zero).
+
+        .. doctest::
+
+            >>> tbl = Table()
+            >>> tbl.add_row([0, "skipped"])
+            >>> tbl.add_row([1, "apple"])
+            >>> tbl.add_row([2, "pear"])
+            >>> print(tbl.latex(skip_lines=1))
+            1 & apple \\
+            2 & pear \\
+        """
         if hline_after is None:
             hline_after = []
+
         lines = []
         for row_nr, row in enumerate(self.rows[skip_lines:]):
-            lines.append(f"{' & '.join(row)} \\")
+            lines.append(fr"{' & '.join(row)} \\")
             if row_nr in hline_after:
                 lines.append(r"\hline")
 
