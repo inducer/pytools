@@ -2,7 +2,10 @@
 # (Yes, it has a point!)
 
 
-__copyright__ = "Copyright (C) 2009-2013 Andreas Kloeckner"
+__copyright__ = """
+Copyright (C) 2009-2013 Andreas Kloeckner
+Copyright (C) 2020 Matt Wala
+"""
 
 __license__ = """
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -164,6 +167,11 @@ Hashing
 -------
 
 .. autofunction:: unordered_hash
+
+Sampling
+--------
+
+.. autofunction:: sphere_sample
 
 Type Variables Used
 -------------------
@@ -2668,6 +2676,47 @@ def unordered_hash(hash_instance, iterable, hash_constructor=None):
 
     hash_instance.update(h_int.to_bytes(hash_instance.digest_size, sys.byteorder))
     return hash_instance
+
+# }}}
+
+
+# {{{ sphere_sample
+
+def sphere_sample(npoints_approx, r=1):
+    """Generate points regularly distributed on a sphere.
+    Based on: https://www.cmu.edu/biolphys/deserno/pdf/sphere_equi.pdf
+    Returns an array of shape (npoints, 3). npoints does not generally equally
+    npoints_approx.
+    """
+
+    import numpy as np
+    points = []
+
+    count = 0
+    a = 4 * np.pi / npoints_approx
+    d = a ** 0.5
+    M_theta = int(np.ceil(np.pi / d))  # noqa: N806
+    d_theta = np.pi / M_theta
+    d_phi = a / d_theta
+
+    for m in range(M_theta):
+        theta = np.pi * (m + 0.5) / M_theta
+        M_phi = int(np.ceil((2 * np.pi * np.sin(theta) / d_phi)))  # noqa: N806
+        for n in range(M_phi):
+            phi = 2 * np.pi * n / M_phi
+            points.append([r * np.sin(theta) * np.cos(phi),
+                           r * np.sin(theta) * np.sin(phi),
+                           r * np.cos(theta)])
+            count += 1
+
+    # Add poles.
+    for i in range(3):
+        for sign in [-1, +1]:
+            pole = np.zeros(3)
+            pole[i] = r * sign
+            points.append(pole)
+
+    return np.array(points)
 
 # }}}
 
