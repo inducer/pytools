@@ -555,6 +555,61 @@ def test_unordered_hash():
             != unordered_hash(hashlib.sha256(), lst).digest())
 
 
+# {{{ sphere sampling
+
+@pytest.mark.parametrize("sampling", [
+    "equidistant", "fibonacci", "fibonacci_min", "fibonacci_avg",
+    ])
+def test_sphere_sampling(sampling, visualize=False):
+    from functools import partial
+    from pytools import sphere_sample_equidistant, sphere_sample_fibonacci
+
+    npoints = 128
+    radius = 1.5
+
+    if sampling == "equidistant":
+        sampling_func = partial(sphere_sample_equidistant, r=radius)
+    elif sampling == "fibonacci":
+        sampling_func = partial(
+                sphere_sample_fibonacci, r=radius, optimize=None)
+    elif sampling == "fibonacci_min":
+        sampling_func = partial(
+                sphere_sample_fibonacci, r=radius, optimize="minimum")
+    elif sampling == "fibonacci_avg":
+        sampling_func = partial(
+                sphere_sample_fibonacci, r=radius, optimize="average")
+    else:
+        raise ValueError(f"unknown sampling method: '{sampling}'")
+
+    import numpy as np
+    points = sampling_func(npoints)
+    assert np.all(np.linalg.norm(points, axis=0) < radius + 1.0e-15)
+
+    if not visualize:
+        return
+
+    import matplotlib.pyplot as plt
+    fig = plt.figure(figsize=(10, 10), dpi=300)
+    ax = fig.add_subplot(111, projection="3d")
+
+    import matplotlib.tri as mtri
+    theta = np.arctan2(np.sqrt(points[0]**2 + points[1]**2), points[2])
+    phi = np.arctan2(points[1], points[0])
+    triangles = mtri.Triangulation(theta, phi)
+
+    ax.plot_trisurf(points[0], points[1], points[2], triangles=triangles.triangles)
+    ax.set_xlim([-radius, radius])
+    ax.set_ylim([-radius, radius])
+    ax.set_zlim([-radius, radius])
+    ax.margins(0.05, 0.05, 0.05)
+
+    # plt.show()
+    fig.savefig(f"sphere_sampling_{sampling}")
+    plt.close(fig)
+
+# }}}
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
