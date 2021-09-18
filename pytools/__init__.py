@@ -37,7 +37,6 @@ from typing import (
         Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, TypeVar)
 import builtins
 
-
 from sys import intern
 
 
@@ -171,7 +170,8 @@ Hashing
 Sampling
 --------
 
-.. autofunction:: sphere_sample
+.. autofunction:: sphere_sample_equidistant
+.. autofunction:: sphere_sample_fibonacci
 
 Type Variables Used
 -------------------
@@ -256,7 +256,7 @@ def deprecate_keyword(oldkey: str,
 # }}}
 
 
-# {{{ math --------------------------------------------------------------------
+# {{{ math
 
 def delta(x, y):
     if x == y:
@@ -472,7 +472,7 @@ class FakeList:
             return self._Function(index)
 
 
-# {{{ dependent dictionary ----------------------------------------------------
+# {{{ dependent dictionary
 
 class DependentDictionary:
     def __init__(self, f, start=None):
@@ -1809,7 +1809,7 @@ def word_wrap(text, width, wrap_using="\n"):
 # }}}
 
 
-# {{{ command line interfaces -------------------------------------------------
+# {{{ command line interfaces
 
 def _exec_arg(arg, execenv):
     import os
@@ -2701,11 +2701,12 @@ def unordered_hash(hash_instance, iterable, hash_constructor=None):
 
 # {{{ sphere_sample
 
-def sphere_sample(npoints_approx, r=1):
-    """Generate points regularly distributed on a sphere.
-    Based on: https://www.cmu.edu/biolphys/deserno/pdf/sphere_equi.pdf
-    Returns an array of shape (npoints, 3). npoints does not generally equally
-    npoints_approx.
+def sphere_sample_equidistant(npoints_approx: int, r: float = 1.0):
+    """Generate points regularly distributed on a sphere
+    based on https://www.cmu.edu/biolphys/deserno/pdf/sphere_equi.pdf.
+
+    :returns: an :class:`~numpy.ndarray` of shape ``(3, npoints)``, where
+        ``npoints`` does not generally equal *npoints_approx*.
     """
 
     import numpy as np
@@ -2728,14 +2729,59 @@ def sphere_sample(npoints_approx, r=1):
                            r * np.cos(theta)])
             count += 1
 
-    # Add poles.
+    # add poles
     for i in range(3):
         for sign in [-1, +1]:
             pole = np.zeros(3)
             pole[i] = r * sign
             points.append(pole)
 
-    return np.array(points)
+    return np.array(points).T.copy()
+
+
+# NOTE: each tuple contains ``(epsilon, max_npoints)``
+_SPHERE_FIBONACCI_OFFSET = (
+        (0.33, 24), (1.33, 177), (3.33, 890),
+        (10, 11000), (27, 39000), (75, 600000), (214, float("inf")),
+        )
+
+
+def sphere_sample_fibonacci(
+        npoints: int, r: float = 1.0, *,
+        optimize: Optional[str] = None):
+    """Generate points on a sphere based on an offset Fibonacci lattice from [2]_.
+
+    .. [2] http://extremelearning.com.au/how-to-evenly-distribute-points-on-a-sphere-more-effectively-than-the-canonical-fibonacci-lattice/
+
+    :param optimize: takes the values: *None* to use the standard Fibonacci
+        lattice, ``"minimum"`` to minimize the nearest neighbor distances in the
+        lattice and ``"average"`` to minimize the average distances in the
+        lattice.
+
+    :returns: an :class:`~numpy.ndarray` of shape ``(3, npoints)``.
+    """     # noqa: E501
+
+    import numpy as np
+    if optimize is None:
+        epsilon = 0.5
+    elif optimize == "minimum":
+        epsilon, _ = next(o for o in _SPHERE_FIBONACCI_OFFSET if npoints < o[1])
+    elif optimize == "average":
+        epsilon = 0.36
+    else:
+        raise ValueError(f"unknown 'optimize' choice: '{optimize}'")
+
+    golden_ratio = (1 + np.sqrt(5)) / 2
+    n = np.arange(npoints)
+
+    phi = 2.0 * np.pi * n / golden_ratio
+    theta = np.arccos(1.0 - 2.0 * (n + epsilon) / (npoints + 2 * epsilon - 1))
+
+    return np.stack([
+        r * np.sin(theta) * np.cos(phi),
+        r * np.sin(theta) * np.sin(phi),
+        r * np.cos(theta)
+        ])
 
 # }}}
 
