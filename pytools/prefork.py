@@ -23,8 +23,7 @@ class DirectForker:
         try:
             return spcall(cmdline, cwd=cwd)
         except OSError as e:
-            raise ExecError("error invoking '%s': %s"
-                            % (" ".join(cmdline), e))
+            raise ExecError("error invoking '{}': {}".format(" ".join(cmdline), e))
 
     def call_async(self, cmdline, cwd=None):
         from subprocess import Popen
@@ -37,8 +36,7 @@ class DirectForker:
 
             return self.count
         except OSError as e:
-            raise ExecError("error invoking '%s': %s"
-                             % (" ".join(cmdline), e))
+            raise ExecError("error invoking '{}': {}".format(" ".join(cmdline), e))
 
     @staticmethod
     def call_capture_output(cmdline, cwd=None, error_on_nonzero=True):
@@ -50,14 +48,14 @@ class DirectForker:
             stdout_data, stderr_data = popen.communicate()
 
             if error_on_nonzero and popen.returncode:
-                raise ExecError("status %d invoking '%s': %s"
-                                % (popen.returncode, " ".join(cmdline),
-                                   stderr_data.decode("utf-8", errors="replace")))
+                raise ExecError("status {} invoking '{}': {}".format(
+                    popen.returncode,
+                    " ".join(cmdline),
+                    stderr_data.decode("utf-8", errors="replace")))
 
             return popen.returncode, stdout_data, stderr_data
         except OSError as e:
-            raise ExecError("error invoking '%s': %s"
-                            % (" ".join(cmdline), e))
+            raise ExecError("error invoking '{}': {}".format(" ".join(cmdline), e))
 
     def wait(self, aid):
         proc = self.apids.pop(aid)

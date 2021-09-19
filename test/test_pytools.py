@@ -335,7 +335,7 @@ def test_natsorted():
     assert natsorted(["x10", "x1", "x9"]) == ["x1", "x9", "x10"]
     assert natsorted(map(str, range(100))) == list(map(str, range(100)))
     assert natsorted(["x10", "x1", "x9"], reverse=True) == ["x10", "x9", "x1"]
-    assert natsorted([10, 1, 9], key=lambda d: "x%d" % d) == [1, 9, 10]
+    assert natsorted([10, 1, 9], key=lambda d: f"x{d}") == [1, 9, 10]
 
 
 # {{{ object array iteration behavior
