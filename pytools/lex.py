@@ -17,8 +17,8 @@ class InvalidTokenError(RuntimeError):
         self.index = str_index
 
     def __str__(self):
-        return "at index %d: ...%s..." % \
-               (self.index, self.string[self.index:self.index+20])
+        return "at index {}: ...{}...".format(
+                self.index, self.string[self.index:self.index+20])
 
 
 class ParseError(RuntimeError):
@@ -30,11 +30,11 @@ class ParseError(RuntimeError):
 
     def __str__(self):
         if self.Token is None:
-            return "%s at end of input" % self.message
+            return f"{self.message} at end of input"
         else:
-            return "%s at index %d: ...%s..." % \
-                   (self.message, self.Token[2],
-                           self.string[self.Token[2]:self.Token[2]+20])
+            return "{} at index {}: ...{}...".format(
+                    self.message, self.Token[2],
+                    self.string[self.Token[2]:self.Token[2]+20])
 
 
 class RE:
@@ -43,7 +43,7 @@ class RE:
         self.RE = re.compile(s, flags)
 
     def __repr__(self):
-        return "RE(%s)" % self.Content
+        return f"RE({self.Content})"
 
 
 def _matches_rule(rule, s, start, rule_dict, debug=False):
@@ -151,12 +151,10 @@ class LexIterator:
     def expected(self, what_expected):
         if self.is_at_end():
             self.raise_parse_error(
-                    "%s expected, end of input found instead" %
-                    what_expected)
+                    "{what_expected} expected, end of input found instead")
         else:
             self.raise_parse_error(
-                    "%s expected, %s found instead" %
-                    (what_expected, str(self.next_tag())))
+                    f"{what_expected} expected, {self.next_tag()} found instead")
 
     def expect_not_end(self):
         if self.is_at_end():

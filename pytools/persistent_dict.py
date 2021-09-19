@@ -121,13 +121,13 @@ class LockManager(CleanupBase):
 
             if attempts > 10:
                 from warnings import warn
-                warn("could not obtain lock--delete '%s' if necessary"
-                        % self.lock_file,
+                warn("could not obtain lock -- "
+                        f"delete '{self.lock_file}' if necessary",
                         stacklevel=1 + stacklevel)
             if attempts > 3 * 60:
                 raise RuntimeError("waited more than three minutes "
-                        "on the lock file '%s'"
-                        "--something is wrong" % self.lock_file)
+                        f"on the lock file '{self.lock_file}' "
+                        "-- something is wrong")
 
         cleanup_m.register(self)
 
@@ -240,8 +240,8 @@ class KeyBuilder:
                 digest = inner_key_hash.digest()
 
         if digest is None:
-            raise TypeError("unsupported type for persistent hash keying: %s"
-                    % type(key))
+            raise TypeError(
+                    f"unsupported type for persistent hash keying: {type(key)}")
 
         if not isinstance(key, type):
             try:
@@ -530,12 +530,11 @@ class _PersistentDictBase:
     def _collision_check(self, key, stored_key, _stacklevel):
         if stored_key != key:
             # Key collision, oh well.
-            self._warn("%s: key collision in cache at '%s' -- these are "
-                    "sufficiently unlikely that they're often "
-                    "indicative of a broken hash key implementation "
-                    "(that is not considering some elements relevant "
-                    "for equality comparison)"
-                    % (self.identifier, self.container_dir),
+            self._warn(f"{self.identifier}: key collision in cache at "
+                    f"'{self.container_dir}' -- these are sufficiently unlikely "
+                    "that they're often indicative of a broken hash key "
+                    "implementation (that is not considering some elements "
+                    "relevant for equality comparison)",
                     CollisionWarning,
                     1 + _stacklevel)
 
@@ -597,13 +596,14 @@ class WriteOncePersistentDict(_PersistentDictBase):
             attempts += 1
 
             if attempts > 10:
-                self._warn("waiting until unlocked--delete '%s' if necessary"
-                        % lock_file, stacklevel=1 + stacklevel)
+                self._warn(
+                        f"waiting until unlocked--delete '{lock_file}' if necessary",
+                        stacklevel=1 + stacklevel)
 
             if attempts > 3 * 60:
                 raise RuntimeError("waited more than three minutes "
-                        "on the lock file '%s'"
-                        "--something is wrong" % lock_file)
+                        f"on the lock file '{lock_file}'"
+                        "--something is wrong")
 
     def store(self, key, value, _skip_if_present=False, _stacklevel=0):
         hexdigest_key = self.key_builder(key)
@@ -681,12 +681,10 @@ class WriteOncePersistentDict(_PersistentDictBase):
         try:
             read_key = self._read(key_file)
         except Exception as e:
-            self._warn("pytools.persistent_dict.WriteOncePersistentDict(%s) "
-                    "encountered an invalid "
-                    "key file for key %s. Remove the directory "
-                    "'%s' if necessary. (caught: %s: %s)"
-                    % (self.identifier, hexdigest_key, item_dir,
-                        type(e).__name__, str(e)),
+            self._warn(f"{type(self).__name__}({self.identifier}) "
+                    f"encountered an invalid key file for key {hexdigest_key}. "
+                    f"Remove the directory '{item_dir}' if necessary. "
+                    f"(caught: {type(e).__name__}: {e})",
                     stacklevel=1 + _stacklevel)
             raise NoSuchEntryError(key)
 
@@ -702,11 +700,9 @@ class WriteOncePersistentDict(_PersistentDictBase):
         try:
             read_contents = self._read(contents_file)
         except Exception:
-            self._warn("pytools.persistent_dict.WriteOncePersistentDict(%s) "
-                    "encountered an invalid "
-                    "key file for key %s. Remove the directory "
-                    "'%s' if necessary."
-                    % (self.identifier, hexdigest_key, item_dir),
+            self._warn(f"{type(self).__name__}({self.identifier}) "
+                    f"encountered an invalid key file for key {hexdigest_key}. "
+                    f"Remove the directory '{item_dir}' if necessary.",
                     stacklevel=1 + _stacklevel)
             raise NoSuchEntryError(key)
 
@@ -801,10 +797,9 @@ class PersistentDict(_PersistentDictBase):
                     read_key = self._read(key_path)
                 except Exception:
                     item_dir_m.reset()
-                    self._warn("pytools.persistent_dict.PersistentDict(%s) "
-                            "encountered an invalid "
-                            "key file for key %s. Entry deleted."
-                            % (self.identifier, hexdigest_key),
+                    self._warn(f"{type(self).__name__}({self.identifier}) "
+                            "encountered an invalid key file for key "
+                            f"{hexdigest_key}. Entry deleted.",
                             stacklevel=1 + _stacklevel)
                     raise NoSuchEntryError(key)
 
@@ -821,10 +816,9 @@ class PersistentDict(_PersistentDictBase):
                     read_contents = self._read(value_path)
                 except Exception:
                     item_dir_m.reset()
-                    self._warn("pytools.persistent_dict.PersistentDict(%s) "
-                            "encountered an invalid "
-                            "key file for key %s. Entry deleted."
-                            % (self.identifier, hexdigest_key),
+                    self._warn(f"{type(self).__name__}({self.identifier}) "
+                            "encountered an invalid key file for key "
+                            f"{hexdigest_key}. Entry deleted.",
                             stacklevel=1 + _stacklevel)
                     raise NoSuchEntryError(key)
 
@@ -861,10 +855,9 @@ class PersistentDict(_PersistentDictBase):
                     read_key = self._read(key_file)
                 except Exception:
                     item_dir_m.reset()
-                    self._warn("pytools.persistent_dict.PersistentDict(%s) "
-                            "encountered an invalid "
-                            "key file for key %s. Entry deleted."
-                            % (self.identifier, hexdigest_key),
+                    self._warn(f"{type(self).__name__}({self.identifier}) "
+                            "encountered an invalid key file for key "
+                            f"{hexdigest_key}. Entry deleted",
                             stacklevel=1 + _stacklevel)
                     raise NoSuchEntryError(key)
 

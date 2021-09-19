@@ -110,9 +110,9 @@ class PicklableModule:
             raise ValueError("unknown version of PicklableModule")
 
         if magic != BYTECODE_VERSION:
-            raise ValueError("cannot unpickle function binary: "
-                    "incorrect magic value (got: %r, expected: %r)"
-                    % (magic, BYTECODE_VERSION))
+            raise ValueError(
+                    "cannot unpickle function binary: incorrect magic value "
+                    f"(got: {magic!r}, expected: {BYTECODE_VERSION!r})")
 
         mod_globals = _empty_module_dict.copy()
         mod_globals.update(nondefault_globals)
