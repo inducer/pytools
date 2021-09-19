@@ -121,7 +121,7 @@ class EOCRecorder:
         order = result[0, 1]
         outfile.write("\n")
         for absc, _err in self.history:
-            outfile.write("{:f} {:f}\n".format(absc, const * absc**(-order)))
+            outfile.write(f"{absc:f} {const * absc**(-order):f}\n")
 
 # }}}
 
