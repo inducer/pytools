@@ -146,7 +146,7 @@ class ConstructorPlaceholder:
         return "{}({})".format(self.classname,
                 ",".join(
                     [str(arg) for arg in self.args]
-                    + ["{}={}".format(kw, repr(val))
+                    + [f"{kw}={repr(val)}"
                         for kw, val in self.kwargs.items()]
                     )
                 )

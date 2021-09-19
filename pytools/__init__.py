@@ -375,7 +375,7 @@ class RecordWithoutPickling:
     def __repr__(self):
         return "{}({})".format(
                 self.__class__.__name__,
-                ", ".join("{}={!r}".format(fld, getattr(self, fld))
+                ", ".join(f"{fld}={getattr(self, fld)!r}"
                     for fld in self.__class__.fields
                     if hasattr(self, fld)))
 
@@ -1843,14 +1843,14 @@ class CPyUserInterface:
         print()
         print("The following variables are recognized:")
         for v in sorted(self.variables):
-            print("  {} = {}".format(v, self.variables[v]))
+            print(f"  {v} = {self.variables[v]}")
             if v in self.doc:
                 print("    %s" % self.doc[v])
 
         print()
         print("The following constants are supplied:")
         for c in sorted(self.constants):
-            print("  {} = {}".format(c, self.constants[c]))
+            print(f"  {c} = {self.constants[c]}")
             if c in self.doc:
                 print("    %s" % self.doc[c])
 
@@ -1925,7 +1925,7 @@ def typedump(val, max_seq=5, special_handlers=None):
         if isinstance(val, dict):
             return "{%s}" % (
                     ", ".join(
-                        "{!r}: {}".format(str(k), typedump(v))
+                        f"{str(k)!r}: {typedump(v)}"
                         for k, v in val.items()))
 
         try:
@@ -2721,7 +2721,7 @@ def sphere_sample_equidistant(npoints_approx: int, r: float = 1.0):
 
     for m in range(M_theta):
         theta = np.pi * (m + 0.5) / M_theta
-        M_phi = int(np.ceil((2 * np.pi * np.sin(theta) / d_phi)))  # noqa: N806
+        M_phi = int(np.ceil(2 * np.pi * np.sin(theta) / d_phi))  # noqa: N806
         for n in range(M_phi):
             phi = 2 * np.pi * n / M_phi
             points.append([r * np.sin(theta) * np.cos(phi),
