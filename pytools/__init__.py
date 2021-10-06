@@ -2165,6 +2165,7 @@ class UniqueNameGenerator:
             existing_names: Optional[Set[str]] = None,
             forced_prefix: str = ""):
         """
+        Create a new :class:`UniqueNameGenerator`.
 
         :arg existing_names: a :class:`set` of existing names that will be
             skipped when generating new names.
