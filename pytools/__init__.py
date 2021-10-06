@@ -2152,6 +2152,10 @@ generate_unique_possibilities = MovedFunctionDeprecationWrapper(
 
 class UniqueNameGenerator:
     """
+    Class that creates a new :class:`str` on each :meth:`__call__` that is
+    unique to the generator.
+
+    .. automethod:: __init__
     .. automethod:: is_name_conflicting
     .. automethod:: add_name
     .. automethod:: add_names
@@ -2160,6 +2164,12 @@ class UniqueNameGenerator:
     def __init__(self,
             existing_names: Optional[Set[str]] = None,
             forced_prefix: str = ""):
+        """
+
+        :arg existing_names: a :class:`set` of existing names that will be
+            skipped when generating new names.
+        :arg forced_prefix: all generated :class:`str` have this prefix.
+        """
         if existing_names is None:
             existing_names = set()
 
@@ -2168,6 +2178,7 @@ class UniqueNameGenerator:
         self.prefix_to_counter: Dict[str, int] = {}
 
     def is_name_conflicting(self, name: str) -> bool:
+        """Returns *True* if *name* conflicts with an existing :class:`str`."""
         return name in self.existing_names
 
     def _name_added(self, name: str) -> None:
@@ -2181,6 +2192,7 @@ class UniqueNameGenerator:
         pass
 
     def add_name(self, name: str) -> None:
+        """Add an existing name to the generator."""
         if self.is_name_conflicting(name):
             raise ValueError("name '%s' conflicts with existing names" % name)
         if not name.startswith(self.forced_prefix):
@@ -2191,10 +2203,12 @@ class UniqueNameGenerator:
         self._name_added(name)
 
     def add_names(self, names: Iterable[str]) -> None:
+        """Add multiple existing names to the generator."""
         for name in names:
             self.add_name(name)
 
     def __call__(self, based_on: str = "id") -> str:
+        """Returns a new unique name."""
         based_on = self.forced_prefix + based_on
 
         counter = self.prefix_to_counter.get(based_on, None)
@@ -2207,6 +2221,9 @@ class UniqueNameGenerator:
             if counter_match:
                 based_on = counter_match.groupdict()["based_on"]
                 counter = int(counter_match.groupdict()["counter"])
+
+            else:
+                counter = 0
 
         # }}}
 
