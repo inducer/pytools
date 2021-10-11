@@ -2524,17 +2524,22 @@ class DebugProcessLogger(ProcessLogger):
 class log_process:  # noqa: N801
     """A decorator that uses :class:`ProcessLogger` to log data about calls
     to the wrapped function.
+
+    .. automethod:: __init__
+    .. automethod:: __call__
     """
 
-    def __init__(self, logger, description=None):
+    def __init__(self, logger, description=None, long_threshold_seconds=None):
         self.logger = logger
         self.description = description
+        self.long_threshold_seconds = long_threshold_seconds
 
     def __call__(self, wrapped):
         def wrapper(*args, **kwargs):
             with ProcessLogger(
                     self.logger,
-                    self.description or wrapped.__name__):
+                    self.description or wrapped.__name__,
+                    long_threshold_seconds=self.long_threshold_seconds):
                 return wrapped(*args, **kwargs)
 
         from functools import update_wrapper
