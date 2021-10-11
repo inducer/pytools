@@ -2524,6 +2524,9 @@ class DebugProcessLogger(ProcessLogger):
 class log_process:  # noqa: N801
     """A decorator that uses :class:`ProcessLogger` to log data about calls
     to the wrapped function.
+
+    .. automethod:: __init__
+    .. automethod:: __call__
     """
 
     def __init__(self, logger, description=None, long_threshold_seconds=None):
