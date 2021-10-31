@@ -21,6 +21,11 @@ def estimate_order_of_convergence(abscissae, errors):
     return 10**coefficients[-1], coefficients[-2]
 
 
+def _is_number_like(x):
+    from numbers import Number
+    return isinstance(x, Number) or (isinstance(x, np.ndarray) and x.shape == ())
+
+
 class EOCRecorder:
     """
     .. automethod:: add_data_point
@@ -37,12 +42,11 @@ class EOCRecorder:
         self.history: List[Tuple[float, float]] = []
 
     def add_data_point(self, abscissa: float, error: float) -> None:
-        from numbers import Number
-        if not isinstance(abscissa, Number):
+        if not _is_number_like(abscissa):
             raise TypeError(
                     f"'abscissa' is not a number: '{type(abscissa).__name__}'")
 
-        if not isinstance(error, Number):
+        if not _is_number_like(error):
             raise TypeError(f"'error' is not a number: '{type(error).__name__}'")
 
         self.history.append((abscissa, error))
