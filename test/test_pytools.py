@@ -313,6 +313,8 @@ def test_eoc():
     from pytools.convergence import EOCRecorder
     eoc = EOCRecorder()
 
+    # {{{ test pretty_print
+
     for i in range(1, 8):
         eoc.add_data_point(1.0 / i, 10 ** (-i))
 
@@ -325,6 +327,30 @@ def test_eoc():
             error_format="%.5e",
             eoc_format="%5.2f")
     print(p)
+
+    # }}}
+
+    # {{{ test invalid inputs
+
+    import numpy as np
+
+    eoc = EOCRecorder()
+
+    # scalar inputs are fine
+    eoc.add_data_point(1, 1)
+    eoc.add_data_point(1.0, 1.0)
+    eoc.add_data_point(np.float32(1.0), 1.0)
+    eoc.add_data_point(np.array(3), 1.0)
+    eoc.add_data_point(1.0, np.array(3))
+
+    # non-scalar inputs are not fine though
+    with pytest.raises(TypeError):
+        eoc.add_data_point(np.array([3]), 1.0)
+
+    with pytest.raises(TypeError):
+        eoc.add_data_point(1.0, np.array([3]))
+
+    # }}}
 
 
 def test_natsorted():
