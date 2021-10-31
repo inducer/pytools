@@ -37,13 +37,14 @@ class EOCRecorder:
         self.history: List[Tuple[float, float]] = []
 
     def add_data_point(self, abscissa: float, error: float) -> None:
-        from numbers import Number
-        if not isinstance(abscissa, Number):
+        if not (np.isscalar(abscissa)
+                or (isinstance(abscissa, np.ndarray) and abscissa.shape == ())):
             raise TypeError(
-                    f"'abscissa' is not a number: '{type(abscissa).__name__}'")
+                    f"'abscissa' is not a scalar: '{type(abscissa).__name__}'")
 
-        if not isinstance(error, Number):
-            raise TypeError(f"'error' is not a number: '{type(error).__name__}'")
+        if not (np.isscalar(error)
+                or (isinstance(error, np.ndarray) and error.shape == ())):
+            raise TypeError(f"'error' is not a scalar: '{type(error).__name__}'")
 
         self.history.append((abscissa, error))
 
