@@ -1,3 +1,3 @@
 #! /bin/bash
 
-mypy pytools
+mypy --show-error-codes pytools
