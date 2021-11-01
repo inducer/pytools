@@ -464,7 +464,11 @@ class _PersistentDictBase:
 
         from os.path import join
         if container_dir is None:
-            import appdirs
+            try:
+                import platformdirs as appdirs
+            except ImportError:
+                import appdirs
+
             container_dir = join(
                     appdirs.user_cache_dir("pytools", "pytools"),
                     "pdict-v4-{}-py{}".format(
