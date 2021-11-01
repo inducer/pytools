@@ -22,10 +22,16 @@ Internal stuff that is only here because the documentation tool wants it
 .. class:: T_co
 
     A covariant type variable used in, e.g. :meth:`Taggable.copy`.
+
+
+.. class:: TagsOfTypeT
+
+    A type variable used in :meth:`Taggable.tags_of_type`.
 """
 
 from dataclasses import dataclass
-from typing import Tuple, Set, Any, FrozenSet, Union, Iterable, TypeVar, Type
+from typing import (Tuple, Set, Any, FrozenSet, Union, Iterable,  # noqa: F401
+                    TypeVar, Type)
 from pytools import memoize, memoize_method
 from abc import ABC, abstractmethod
 
@@ -161,6 +167,7 @@ class UniqueTag(Tag):
 TagsType = FrozenSet[Tag]
 TagOrIterableType = Union[Iterable[Tag], Tag, None]
 T_co = TypeVar("T_co", bound="Taggable")
+TagsOfTypeT = TypeVar("TagsOfTypeT", bound="Type[Tag]")
 
 
 # {{{ UniqueTag rules checking
@@ -298,11 +305,13 @@ class Taggable(ABC):
         return self.copy(tags=check_tag_uniqueness(new_tags))
 
     @memoize_method
-    def tags_of_type(self, tag_t: Type[Tag]) -> FrozenSet[Tag]:
+    def tags_of_type(self, tag_t: TagsOfTypeT) -> FrozenSet[TagsOfTypeT]:
         """
         Returns *self*'s tags of type *tag_t*.
         """
-        return frozenset(tag
+        # type-ignore reason: mypy can't tell the generator has elements of
+        # type 'TagsOfTypeT' (infers it as elements of type 'Tag')
+        return frozenset(tag  # type: ignore[misc]
                          for tag in self.tags
                          if isinstance(tag, tag_t))
 
