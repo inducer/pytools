@@ -34,7 +34,8 @@ import operator
 import sys
 import logging
 from typing import (
-        Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, TypeVar)
+        Any, Callable, Dict, Hashable, Iterable,
+        List, Optional, Set, Tuple, TypeVar)
 import builtins
 
 from sys import intern
@@ -896,7 +897,7 @@ class memoize_in:  # noqa
         e.g. frozen :mod:`dataclasses`.
     """
 
-    def __init__(self, container, identifier):
+    def __init__(self, container: Any, identifier: Hashable) -> None:
         try:
             memoize_in_dict = container._pytools_memoize_in_dict
         except AttributeError:
@@ -906,7 +907,7 @@ class memoize_in:  # noqa
 
         self.cache_dict = memoize_in_dict.setdefault(identifier, {})
 
-    def __call__(self, inner):
+    def __call__(self, inner: F) -> F:
         @wraps(inner)
         def new_inner(*args):
             try:
@@ -916,7 +917,10 @@ class memoize_in:  # noqa
                 self.cache_dict[args] = result
                 return result
 
-        return new_inner
+        # NOTE: mypy gets confused because it types `wraps` as
+        #   Callable[[VarArg(Any)], Any]
+        # which, for some reason, is not compatible with `F`
+        return new_inner                # type: ignore[return-value]
 
 
 class keyed_memoize_in:  # noqa
@@ -2710,7 +2714,7 @@ def sphere_sample_equidistant(npoints_approx: int, r: float = 1.0):
     """
 
     import numpy as np
-    points = []
+    points: List[np.ndarray] = []
 
     count = 0
     a = 4 * np.pi / npoints_approx
@@ -2724,9 +2728,11 @@ def sphere_sample_equidistant(npoints_approx: int, r: float = 1.0):
         M_phi = int(np.ceil(2 * np.pi * np.sin(theta) / d_phi))  # noqa: N806
         for n in range(M_phi):
             phi = 2 * np.pi * n / M_phi
-            points.append([r * np.sin(theta) * np.cos(phi),
-                           r * np.sin(theta) * np.sin(phi),
-                           r * np.cos(theta)])
+            points.append(np.array([
+                r * np.sin(theta) * np.cos(phi),
+                r * np.sin(theta) * np.sin(phi),
+                r * np.cos(theta)
+                ]))
             count += 1
 
     # add poles
