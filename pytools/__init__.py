@@ -34,7 +34,8 @@ import operator
 import sys
 import logging
 from typing import (
-        Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, TypeVar)
+        Any, Callable, Dict, Hashable, Iterable,
+        List, Optional, Set, Tuple, TypeVar)
 import builtins
 
 from sys import intern
@@ -375,7 +376,7 @@ class RecordWithoutPickling:
     def __repr__(self):
         return "{}({})".format(
                 self.__class__.__name__,
-                ", ".join("{}={!r}".format(fld, getattr(self, fld))
+                ", ".join(f"{fld}={getattr(self, fld)!r}"
                     for fld in self.__class__.fields
                     if hasattr(self, fld)))
 
@@ -619,8 +620,8 @@ def memoize(*args: F, **kwargs: Any) -> F:
 
     if kwargs:
         raise TypeError(
-            "memoize received unexpected keyword arguments: %s"
-            % ", ".join(list(kwargs.keys())))
+            "memoize received unexpected keyword arguments: {}".format(
+                ", ".join(kwargs.keys())))
 
     if key_func is not None:
         def _decorator(func):
@@ -666,7 +667,7 @@ def memoize(*args: F, **kwargs: Any) -> F:
     if callable(args[0]) and len(args) == 1:
         return _decorator(args[0])
     raise TypeError(
-        "memoize received unexpected position arguments: %s" % args)
+        f"memoize received unexpected position arguments: {args}")
 
 
 FunctionValueCache = memoize
@@ -896,7 +897,7 @@ class memoize_in:  # noqa
         e.g. frozen :mod:`dataclasses`.
     """
 
-    def __init__(self, container, identifier):
+    def __init__(self, container: Any, identifier: Hashable) -> None:
         try:
             memoize_in_dict = container._pytools_memoize_in_dict
         except AttributeError:
@@ -906,7 +907,7 @@ class memoize_in:  # noqa
 
         self.cache_dict = memoize_in_dict.setdefault(identifier, {})
 
-    def __call__(self, inner):
+    def __call__(self, inner: F) -> F:
         @wraps(inner)
         def new_inner(*args):
             try:
@@ -916,7 +917,10 @@ class memoize_in:  # noqa
                 self.cache_dict[args] = result
                 return result
 
-        return new_inner
+        # NOTE: mypy gets confused because it types `wraps` as
+        #   Callable[[VarArg(Any)], Any]
+        # which, for some reason, is not compatible with `F`
+        return new_inner                # type: ignore[return-value]
 
 
 class keyed_memoize_in:  # noqa
@@ -1009,9 +1013,11 @@ def negate_tuple(t1):
 
 
 def shift(vec, dist):
-    """Return a copy of C{vec} shifted by C{dist}.
+    """Return a copy of *vec* shifted by *dist* such that
 
-    @postcondition: C{shift(a, i)[j] == a[(i+j) % len(a)]}
+    .. code:: python
+
+        shift(a, i)[j] == a[(i+j) % len(a)]
     """
 
     result = vec[:]
@@ -1106,7 +1112,7 @@ def reverse_dictionary(the_dict):
     for key, value in the_dict.items():
         if value in result:
             raise RuntimeError(
-                    "non-reversible mapping, duplicate key '%s'" % value)
+                    f"non-reversible mapping, duplicate key '{value}'")
         result[value] = key
     return result
 
@@ -1161,7 +1167,7 @@ def find_max_where(predicate, prec=1e-5, initial_guess=1, fail_bound=1e38):
 
             if mag > fail_bound:
                 raise RuntimeError("predicate appears to be true "
-                        "everywhere, up to %g" % fail_bound)
+                        f"everywhere, up to {fail_bound:g}")
 
         lower_true = mag/2
         upper_false = mag
@@ -1779,7 +1785,7 @@ def string_histogram(  # pylint: disable=too-many-arguments,too-many-locals
 
     max_count = max(bins)
     total_count = sum(bins)
-    return "\n".join("%9g |%9d | %3.0f %% | %s" % (
+    return "\n".join("{:9g} |{:9d} | {:3.0f} % | {}".format(
         bin_start,
         bin_value,
         bin_value/total_count*100,
@@ -1797,14 +1803,15 @@ def word_wrap(text, width, wrap_using="\n"):
     breaks are posix newlines (``\n``).
     """
     space_or_break = [" ", wrap_using]
-    return reduce(lambda line, word: "%s%s%s" %
-            (line,
-                space_or_break[(len(line)-line.rfind("\n")-1
-                    + len(word.split("\n", 1)[0])
-                    >= width)],
-                    word),
-            text.split(" ")
-            )
+    return reduce(lambda line, word: "{}{}{}".format(
+        line,
+        space_or_break[(
+            len(line) - line.rfind("\n") - 1
+            + len(word.split("\n", 1)[0])
+            ) >= width],
+        word),
+        text.split(" ")
+        )
 
 # }}}
 
@@ -1833,7 +1840,7 @@ class CPyUserInterface:
         self.doc = doc
 
     def show_usage(self, progname):
-        print("usage: %s <FILE-OR-STATEMENTS>" % progname)
+        print(f"usage: {progname} <FILE-OR-STATEMENTS>")
         print()
         print("FILE-OR-STATEMENTS may either be Python statements of the form")
         print("'variable1 = value1; variable2 = value2' or the name of a file")
@@ -1843,16 +1850,16 @@ class CPyUserInterface:
         print()
         print("The following variables are recognized:")
         for v in sorted(self.variables):
-            print("  {} = {}".format(v, self.variables[v]))
+            print(f"  {v} = {self.variables[v]}")
             if v in self.doc:
-                print("    %s" % self.doc[v])
+                print(f"    {self.doc[v]}")
 
         print()
         print("The following constants are supplied:")
         for c in sorted(self.constants):
-            print("  {} = {}".format(c, self.constants[c]))
+            print(f"  {c} = {self.constants[c]}")
             if c in self.doc:
-                print("    %s" % self.doc[c])
+                print(f"    {self.doc[c]}")
 
     def gather(self, argv=None):
         if argv is None:
@@ -1879,9 +1886,8 @@ class CPyUserInterface:
                 - set(self.constants.keys())):
             if not (added_key.startswith("user_") or added_key.startswith("_")):
                 raise ValueError(
-                        "invalid setup key: '%s' "
-                        "(user variables must start with 'user_' or '_')"
-                        % added_key)
+                        f"invalid setup key: '{added_key}' "
+                        "(user variables must start with 'user_' or '_')")
 
         result = self.Parameters({key: execenv[key] for key in self.variables})
         self.validate(result)
@@ -1925,7 +1931,7 @@ def typedump(val, max_seq=5, special_handlers=None):
         if isinstance(val, dict):
             return "{%s}" % (
                     ", ".join(
-                        "{!r}: {}".format(str(k), typedump(v))
+                        f"{str(k)!r}: {typedump(v)}"
                         for k, v in val.items()))
 
         try:
@@ -1962,8 +1968,7 @@ def invoke_editor(s, filename="edit.txt", descr="the file"):
     else:
         print("(Set the EDITOR environment variable to be "
                 "dropped directly into an editor next time.)")
-        input("Edit %s at %s now, then hit [Enter]:"
-                % (descr, full_name))
+        input(f"Edit {descr} at {full_name} now, then hit [Enter]:")
 
     inf = open(full_name)
     result = inf.read()
@@ -2019,8 +2024,9 @@ class ProgressBar:  # pylint: disable=too-many-instance-attributes
                 self.speed_meas_start_done = self.done
 
             if self.time_per_step is not None:
-                eta_str = "%7.1fs " % max(
-                        0, (self.total-self.done) * self.time_per_step)
+                eta_str = "{:7.1f}s ".format(
+                        max(0, (self.total-self.done) * self.time_per_step)
+                        )
             else:
                 eta_str = "?"
 
@@ -2057,7 +2063,7 @@ class ProgressBar:  # pylint: disable=too-many-instance-attributes
 def assert_not_a_file(name):
     import os
     if os.access(name, os.F_OK):
-        raise OSError("file `%s' already exists" % name)
+        raise OSError(f"file `{name}' already exists")
 
 
 def add_python_path_relative_to_script(rel_path):
@@ -2086,17 +2092,8 @@ def common_dtype(dtypes, default=None):
 
 
 def to_uncomplex_dtype(dtype):
-    import numpy
-    if dtype == numpy.complex64:
-        return numpy.float32
-    elif dtype == numpy.complex128:
-        return numpy.float64
-    if dtype == numpy.float32:
-        return numpy.float32
-    elif dtype == numpy.float64:
-        return numpy.float64
-    else:
-        raise TypeError("unrecgonized dtype '%s'" % dtype)
+    import numpy as np
+    return np.array(1, dtype=dtype).real.dtype.type
 
 
 def match_precision(dtype, dtype_to_match):
@@ -2127,7 +2124,7 @@ def generate_unique_names(prefix):
 
     try_num = 0
     while True:
-        yield "%s_%d" % (prefix, try_num)
+        yield f"{prefix}_{try_num}"
         try_num += 1
 
 
@@ -2141,7 +2138,7 @@ def generate_numbered_unique_names(
         num = 0
 
     while True:
-        name = "%s_%d" % (prefix, num)
+        name = f"{prefix}_{num}"
         num += 1
         yield (num, name)
 
@@ -2195,10 +2192,12 @@ class UniqueNameGenerator:
     def add_name(self, name: str) -> None:
         """Add an existing name to the generator."""
         if self.is_name_conflicting(name):
-            raise ValueError("name '%s' conflicts with existing names" % name)
+            raise ValueError(f"name '{name}' conflicts with existing names")
+
         if not name.startswith(self.forced_prefix):
-            raise ValueError("name '%s' does not start with required prefix '%s'"
-                             % (name, self.forced_prefix))
+            raise ValueError(
+                    f"name '{name}' does not start with required prefix "
+                    f"'{self.forced_prefix}'")
 
         self.existing_names.add(name)
         self._name_added(name)
@@ -2523,7 +2522,7 @@ class ProcessLogger:  # pylint: disable=too-many-instance-attributes
         fmt_args = [self.description, str(self.timer)]
 
         if extra_msg:
-            msg += ": " + extra_msg
+            msg = f"{msg}: {extra_msg}"
             fmt_args.extend(extra_fmt_args)
 
         self.logger.log(completion_level, msg, *fmt_args)
@@ -2542,17 +2541,22 @@ class DebugProcessLogger(ProcessLogger):
 class log_process:  # noqa: N801
     """A decorator that uses :class:`ProcessLogger` to log data about calls
     to the wrapped function.
+
+    .. automethod:: __init__
+    .. automethod:: __call__
     """
 
-    def __init__(self, logger, description=None):
+    def __init__(self, logger, description=None, long_threshold_seconds=None):
         self.logger = logger
         self.description = description
+        self.long_threshold_seconds = long_threshold_seconds
 
     def __call__(self, wrapped):
         def wrapper(*args, **kwargs):
             with ProcessLogger(
                     self.logger,
-                    self.description or wrapped.__name__):
+                    self.description or wrapped.__name__,
+                    long_threshold_seconds=self.long_threshold_seconds):
                 return wrapped(*args, **kwargs)
 
         from functools import update_wrapper
@@ -2728,7 +2732,7 @@ def sphere_sample_equidistant(npoints_approx: int, r: float = 1.0):
     """
 
     import numpy as np
-    points = []
+    points: List[np.ndarray] = []
 
     count = 0
     a = 4 * np.pi / npoints_approx
@@ -2739,12 +2743,14 @@ def sphere_sample_equidistant(npoints_approx: int, r: float = 1.0):
 
     for m in range(M_theta):
         theta = np.pi * (m + 0.5) / M_theta
-        M_phi = int(np.ceil((2 * np.pi * np.sin(theta) / d_phi)))  # noqa: N806
+        M_phi = int(np.ceil(2 * np.pi * np.sin(theta) / d_phi))  # noqa: N806
         for n in range(M_phi):
             phi = 2 * np.pi * n / M_phi
-            points.append([r * np.sin(theta) * np.cos(phi),
-                           r * np.sin(theta) * np.sin(phi),
-                           r * np.cos(theta)])
+            points.append(np.array([
+                r * np.sin(theta) * np.cos(phi),
+                r * np.sin(theta) * np.sin(phi),
+                r * np.cos(theta)
+                ]))
             count += 1
 
     # add poles

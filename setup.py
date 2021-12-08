@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-# -*- coding: utf-8 -*-
 
 from setuptools import setup
 
@@ -15,7 +14,7 @@ exec(compile(version_file_contents, "pytools/version.py", "exec"), ver_dic)
 setup(name="pytools",
       version=ver_dic["VERSION_TEXT"],
       description="A collection of tools for Python",
-      long_description=open("README.rst", "r").read(),
+      long_description=open("README.rst").read(),
       classifiers=[
           "Development Status :: 4 - Beta",
           "Intended Audience :: Developers",
@@ -38,7 +37,7 @@ setup(name="pytools",
       python_requires="~=3.6",
 
       install_requires=[
-          "appdirs>=1.4.0",
+          "platformdirs>=2.2.0",
           "numpy>=1.6.0",
           "dataclasses>=0.7;python_version<='3.6'"
           ],

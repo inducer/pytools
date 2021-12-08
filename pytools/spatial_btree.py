@@ -142,11 +142,11 @@ class SpatialBinaryTreeBucket:
             yield el
 
     def visualize(self, file):
-        file.write("{:f} {:f}\n".format(self.bottom_left[0], self.bottom_left[1]))
-        file.write("{:f} {:f}\n".format(self.top_right[0], self.bottom_left[1]))
-        file.write("{:f} {:f}\n".format(self.top_right[0], self.top_right[1]))
-        file.write("{:f} {:f}\n".format(self.bottom_left[0], self.top_right[1]))
-        file.write("{:f} {:f}\n\n".format(self.bottom_left[0], self.bottom_left[1]))
+        file.write(f"{self.bottom_left[0]:f} {self.bottom_left[1]:f}\n")
+        file.write(f"{self.top_right[0]:f} {self.bottom_left[1]:f}\n")
+        file.write(f"{self.top_right[0]:f} {self.top_right[1]:f}\n")
+        file.write(f"{self.bottom_left[0]:f} {self.top_right[1]:f}\n")
+        file.write(f"{self.bottom_left[0]:f} {self.bottom_left[1]:f}\n\n")
         if self.buckets:
             for i in self.all_buckets:
                 i.visualize(file)

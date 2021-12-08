@@ -59,7 +59,7 @@ jobs:
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                python-version: ["3.6", "3.7", "3.8", "3.9", pypy3]
+                python-version: ["3.6", "3.8", "3.9", "3.x", pypy3]
         steps:
         -   uses: actions/checkout@v2
         -
@@ -108,11 +108,14 @@ jobs:
             env:
                 DOWNSTREAM_PROJECT: ${{ matrix.downstream_project }}
             run: |
+                curl -L -O -k https://tiker.net/ci-support-v0
+                . ./ci-support-v0
+
                 git clone "https://github.com/inducer/$DOWNSTREAM_PROJECT.git"
                 cd "$DOWNSTREAM_PROJECT"
                 echo "*** $DOWNSTREAM_PROJECT version: $(git rev-parse --short HEAD)"
 
-                sed -i "/egg=pytools/ c git+file://$(readlink -f ..)#egg=pytools" requirements.txt
+                edit_requirements_txt_for_downstream_in_subdir
 
                 # HACK: force overwrite even if it's already there (e.g. as a pyopencl dep)
                 sed -i '/egg=pytools/ s/^/-e/' requirements.txt
@@ -122,8 +125,6 @@ jobs:
                 # Avoid slow or complicated tests in downstream projects
                 export PYTEST_ADDOPTS="-k 'not (slowtest or octave or mpi)'"
 
-                curl -L -O -k https://tiker.net/ci-support-v0
-                . ./ci-support-v0
                 build_py_project_in_conda_env
                 test_py_project
 

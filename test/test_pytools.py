@@ -313,6 +313,8 @@ def test_eoc():
     from pytools.convergence import EOCRecorder
     eoc = EOCRecorder()
 
+    # {{{ test pretty_print
+
     for i in range(1, 8):
         eoc.add_data_point(1.0 / i, 10 ** (-i))
 
@@ -326,6 +328,30 @@ def test_eoc():
             eoc_format="%5.2f")
     print(p)
 
+    # }}}
+
+    # {{{ test invalid inputs
+
+    import numpy as np
+
+    eoc = EOCRecorder()
+
+    # scalar inputs are fine
+    eoc.add_data_point(1, 1)
+    eoc.add_data_point(1.0, 1.0)
+    eoc.add_data_point(np.float32(1.0), 1.0)
+    eoc.add_data_point(np.array(3), 1.0)
+    eoc.add_data_point(1.0, np.array(3))
+
+    # non-scalar inputs are not fine though
+    with pytest.raises(TypeError):
+        eoc.add_data_point(np.array([3]), 1.0)
+
+    with pytest.raises(TypeError):
+        eoc.add_data_point(1.0, np.array([3]))
+
+    # }}}
+
 
 def test_natsorted():
     from pytools import natsorted, natorder
@@ -335,7 +361,7 @@ def test_natsorted():
     assert natsorted(["x10", "x1", "x9"]) == ["x1", "x9", "x10"]
     assert natsorted(map(str, range(100))) == list(map(str, range(100)))
     assert natsorted(["x10", "x1", "x9"], reverse=True) == ["x10", "x9", "x1"]
-    assert natsorted([10, 1, 9], key=lambda d: "x%d" % d) == [1, 9, 10]
+    assert natsorted([10, 1, 9], key=lambda d: f"x{d}") == [1, 9, 10]
 
 
 # {{{ object array iteration behavior

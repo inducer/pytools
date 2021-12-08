@@ -40,10 +40,9 @@ class BatchJob:
 
         os.makedirs(self.path)
 
-        runscript = open("%s/run.sh" % self.path, "w")
+        runscript = open(f"{self.path}/run.sh", "w")
         import sys
-        runscript.write("%s %s setup.cpy"
-                % (sys.executable, main_file))
+        runscript.write(f"{sys.executable} {main_file} setup.cpy")
         runscript.close()
 
         from os.path import basename
@@ -83,13 +82,13 @@ class GridEngineJob(BatchJob):
             args += ["-v", f"{var}={value}"]
 
         if memory_megs is not None:
-            args.extend(["-l", "mem=%d" % memory_megs])
+            args.extend(["-l", f"mem={memory_megs}"])
 
         args.extend(extra_args)
 
         subproc = Popen(["qsub"] + args + ["run.sh"], cwd=self.path)
         if subproc.wait() != 0:
-            raise RuntimeError("Process submission of %s failed" % self.moniker)
+            raise RuntimeError(f"Process submission of {self.moniker} failed")
 
 
 class PBSJob(BatchJob):
@@ -102,7 +101,7 @@ class PBSJob(BatchJob):
             ]
 
         if memory_megs is not None:
-            args.extend(["-l", "pmem=%dmb" % memory_megs])
+            args.extend(["-l", f"pmem={memory_megs}mb"])
 
         from os import getenv
 
@@ -117,7 +116,7 @@ class PBSJob(BatchJob):
 
         subproc = Popen(["qsub"] + args + ["run.sh"], cwd=self.path)
         if subproc.wait() != 0:
-            raise RuntimeError("Process submission of %s failed" % self.moniker)
+            raise RuntimeError(f"Process submission of {self.moniker} failed")
 
 
 def guess_job_class():
@@ -146,7 +145,7 @@ class ConstructorPlaceholder:
         return "{}({})".format(self.classname,
                 ",".join(
                     [str(arg) for arg in self.args]
-                    + ["{}={}".format(kw, repr(val))
+                    + [f"{kw}={repr(val)}"
                         for kw, val in self.kwargs.items()]
                     )
                 )

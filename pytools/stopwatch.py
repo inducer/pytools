@@ -30,7 +30,7 @@ class Job:
         self.Name = name
         self.StopWatch = StopWatch().start()
         if self.is_visible():
-            print("%s..." % name)
+            print(f"{name}...")
 
     def done(self):
         elapsed = self.StopWatch.elapsed()

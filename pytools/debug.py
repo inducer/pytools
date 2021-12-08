@@ -22,7 +22,7 @@ def make_unique_filesystem_object(stem, extension="", directory="",
 
     i = 0
     while True:
-        fname = join(directory, "%s-%d%s" % (stem, i, extension))
+        fname = join(directory, f"{stem}-{i}{extension}")
         try:
             return creator(fname), fname
         except OSError:
@@ -97,7 +97,7 @@ def refdebug(obj, top_level=True, exclude=()):  # noqa: E501  pylint:disable=too
             else:
                 s = str(r)
 
-            print("%d/%d: " % (idx, len(reflist)), id(r), type(r), s)
+            print(f"{idx}/{len(reflist)}: ", id(r), type(r), s)
 
             if isinstance(r, dict):
                 for k, v in r.items():
@@ -159,7 +159,7 @@ def setup_readline():
             e = sys.exc_info()[1]
 
             from warnings import warn
-            warn("Error opening readline history file: %s" % e)
+            warn(f"Error opening readline history file: {e}")
 
     readline.parse_and_bind("tab: complete")
 
