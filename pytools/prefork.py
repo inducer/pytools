@@ -88,9 +88,6 @@ def _recv_packet(sock, who="Process", partner="other end"):
     size_bytes = sock.recv(size_bytes_size)
 
     if len(size_bytes) < size_bytes_size:
-        from warnings import warn
-        warn(f"{who} exiting upon apparent death of {partner}")
-
         raise SystemExit
 
     size, = unpack("I", size_bytes)
