@@ -116,22 +116,20 @@ class EOCRecorder:
                 eoc_format=eoc_format,
                 gliding_mean=gliding_mean)
 
+        if len(self.history) > 1:
+            order = self.estimate_order_of_convergence()[0, 1]
+            tbl.add_row(("Overall", "", eoc_format % order))
+
         if table_type == "markdown":
-            tbl_str = tbl.github_markdown()
+            return tbl.github_markdown()
         elif table_type == "latex":
-            tbl_str = tbl.latex()
+            return tbl.latex()
         elif table_type == "ascii":
-            tbl_str = str(tbl)
+            return str(tbl)
         elif table_type == "csv":
-            tbl_str = tbl.csv()
+            return tbl.csv()
         else:
             raise ValueError(f"unknown table type: {table_type}")
-
-        if len(self.history) > 1:
-            return "{}\n\nOverall EOC: {}".format(tbl_str,
-                    self.estimate_order_of_convergence()[0, 1])
-        else:
-            return tbl_str
 
     def __str__(self):
         return self.pretty_print()
