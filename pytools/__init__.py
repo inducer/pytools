@@ -103,6 +103,7 @@ Formatting
 ----------
 
 .. autoclass:: Table
+.. autofunction:: merge_tables
 .. autofunction:: string_histogram
 .. autofunction:: word_wrap
 
@@ -1575,30 +1576,66 @@ a_star = MovedFunctionDeprecationWrapper(a_star_moved)
 class Table:
     """An ASCII table generator.
 
-    :arg alignments: List of alignments of each column ('l', 'c', or 'r',
+    .. attribute:: nrows
+    .. attribute:: ncolumns
+
+    .. attribute:: alignments
+
+        A :class:`tuple` of alignments of each column: ``"l"``, ``"c"``, or ``"r"``,
         for left, center, and right alignment, respectively). Columns which
         have no alignment specifier will use the last specified alignment. For
-        example, with `alignments=['l', 'r']`, the third and all following
-        columns will use 'r' alignment.
+        example, with ``alignments=("l", "r")``, the third and all following
+        columns will use right alignment.
 
     .. automethod:: add_row
+
     .. automethod:: __str__
     .. automethod:: github_markdown
     .. automethod:: csv
     .. automethod:: latex
     """
 
-    def __init__(self, alignments=None):
-        self.rows = []
-        if alignments is not None:
-            self.alignments = alignments
+    def __init__(self, alignments: Optional[Tuple[str, ...]] = None) -> None:
+        if alignments is None:
+            alignments = ("l",)
         else:
-            self.alignments = ["l"]
+            if any(a not in ("l", "c", "r") for a in alignments):
+                raise ValueError(f"alignments are ('l', 'c', 'r'): {alignments}")
 
-    def add_row(self, row):
-        self.rows.append([str(i) for i in row])
+            alignments = tuple(alignments)
 
-    def __str__(self):
+        self.rows: List[Tuple[str, ...]] = []
+        self.alignments = alignments
+
+    @property
+    def nrows(self) -> int:
+        return len(self.rows)
+
+    @property
+    def ncolumns(self) -> int:
+        return len(self.rows[0])
+
+    def add_row(self, row: Tuple[Any, ...]) -> None:
+        if self.rows and len(row) != self.ncolumns:
+            raise ValueError(
+                    f"tried to add a row with {len(row)} columns to "
+                    f"a table with {self.ncolumns} columns")
+
+        self.rows.append(tuple([str(i) for i in row]))
+
+    def _get_alignments(self) -> Tuple[str, ...]:
+        # NOTE: If not all alignments were specified, extend alignments with the
+        # last alignment specified
+        return (self.alignments
+                + (self.alignments[-1],) * (self.ncolumns - len(self.alignments))
+                )
+
+    def _get_column_widths(self, rows) -> Tuple[int, ...]:
+        return tuple([
+            max(len(row[i]) for row in rows) for i in range(self.ncolumns)
+            ])
+
+    def __str__(self) -> str:
         """
         Returns a string representation of the table.
 
@@ -1613,15 +1650,11 @@ class Table:
             10 | 20||
 
         """
+        if not self.rows:
+            return ""
 
-        columns = len(self.rows[0])
-        col_widths = [max(len(row[i]) for row in self.rows)
-                      for i in range(columns)]
-
-        alignments = self.alignments
-        # If not all alignments were specified, extend alignments with the
-        # last alignment specified:
-        alignments += self.alignments[-1] * (columns - len(self.alignments))
+        alignments = self._get_alignments()
+        col_widths = self._get_column_widths(self.rows)
 
         lines = [" | ".join([
             cell.center(col_width) if align == "c"
@@ -1634,7 +1667,7 @@ class Table:
 
         return "\n".join(lines)
 
-    def github_markdown(self):
+    def github_markdown(self) -> str:
         r"""Returns a string representation of the table formatted as
         `GitHub-Flavored Markdown.
         <https://docs.github.com/en/github/writing-on-github/organizing-information-with-tables>`__
@@ -1650,17 +1683,16 @@ class Table:
             10 | 20\|\|
 
         """  # noqa: W605
-        # Pipe symbols ('|') must be replaced
-        rows = [[w.replace("|", "\\|") for w in r] for r in self.rows]
+        if not self.rows:
+            return ""
 
-        columns = len(rows[0])
-        col_widths = [max(len(row[i]) for row in rows)
-                      for i in range(columns)]
+        def escape(cell: str) -> str:
+            # Pipe symbols ('|') must be replaced
+            return cell.replace("|", "\\|")
 
-        alignments = self.alignments
-        # If not all alignments were specified, extend alignments with the
-        # last alignment specified:
-        alignments += self.alignments[-1] * (columns - len(self.alignments))
+        rows = [tuple([escape(cell) for cell in row]) for row in self.rows]
+        alignments = self._get_alignments()
+        col_widths = self._get_column_widths(rows)
 
         lines = [" | ".join([
             cell.center(col_width) if align == "c"
@@ -1669,14 +1701,16 @@ class Table:
             for cell, col_width, align in zip(row, col_widths, alignments)])
             for row in rows]
         lines[1:1] = ["|".join(
-            ":" + "-" * (col_width - 1 + (i > 0)) + ":" if align == "c"
-            else ":" + "-" * (col_width + (i > 0)) if align == "l"
-            else "-" * (col_width + (i > 0)) + ":"
+            (":" + "-" * (col_width - 1 + (i > 0)) + ":") if align == "c"
+            else (":" + "-" * (col_width + (i > 0))) if align == "l"
+            else ("-" * (col_width + (i > 0)) + ":")
             for i, (col_width, align) in enumerate(zip(col_widths, alignments)))]
 
         return "\n".join(lines)
 
-    def csv(self, dialect="excel", csv_kwargs=None):
+    def csv(self,
+            dialect: str = "excel",
+            csv_kwargs: Optional[Dict[str, Any]] = None) -> str:
         """Returns a string containing a CSV representation of the table.
 
         :arg dialect: String passed to :func:`csv.writer`.
@@ -1691,6 +1725,9 @@ class Table:
             1,","
             10,20
         """
+
+        if not self.rows:
+            return ""
 
         import csv
         import io
@@ -1708,7 +1745,9 @@ class Table:
 
         return output.getvalue().rstrip(csv_kwargs["lineterminator"])
 
-    def latex(self, skip_lines=0, hline_after=None):
+    def latex(self,
+            skip_lines: int = 0,
+            hline_after: Optional[Tuple[int, ...]] = None) -> str:
         r"""Returns a string containing the rows of a LaTeX representation of
         the table.
 
@@ -1726,8 +1765,11 @@ class Table:
             1 & apple \\
             2 & pear \\
         """
+        if not self.rows:
+            return ""
+
         if hline_after is None:
-            hline_after = []
+            hline_after = ()
 
         lines = []
         for row_nr, row in enumerate(self.rows[skip_lines:]):
@@ -1736,6 +1778,46 @@ class Table:
                 lines.append(r"\hline")
 
         return "\n".join(lines)
+
+
+def merge_tables(*tables: Table,
+        skip_columns: Optional[Tuple[int, ...]] = None) -> Table:
+    """
+    :arg skip_columns: a :class:`tuple` of column indices to skip in all the
+        tables except the first one.
+    """
+
+    if len(tables) == 1:
+        return tables[0]
+
+    if any(tables[0].nrows != tbl.nrows for tbl in tables[1:]):
+        raise ValueError("tables do not have the same number of rows")
+
+    if isinstance(skip_columns, int):
+        skip_columns = (skip_columns,)
+
+    def remove_columns(i, row):
+        if i == 0 or skip_columns is None:
+            return row
+        else:
+            return tuple([
+                entry for i, entry in enumerate(row) if i not in skip_columns
+                ])
+
+    alignments = sum([
+        remove_columns(i, tbl._get_alignments())
+        for i, tbl in enumerate(tables)
+        ], ())
+    result = Table(alignments=alignments)
+
+    for i in range(tables[0].nrows):
+        row = []
+        for j, tbl in enumerate(tables):
+            row.extend(remove_columns(j, tbl.rows[i]))
+
+        result.add_row(tuple(row))
+
+    return result
 
 # }}}
 
