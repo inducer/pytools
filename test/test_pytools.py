@@ -308,6 +308,14 @@ def test_table():
     print()
     print(tbl.latex())
 
+    # {{{ test merging
+
+    from pytools import merge_tables
+    tbl = merge_tables(tbl, tbl, tbl, skip_columns=(0,))
+    print(tbl.github_markdown())
+
+    # }}}
+
 
 def test_eoc():
     from pytools.convergence import EOCRecorder
@@ -326,6 +334,14 @@ def test_eoc():
             abscissa_format="%.5e",
             error_format="%.5e",
             eoc_format="%5.2f")
+    print(p)
+
+    # }}}
+
+    # {{{ test merging
+
+    from pytools.convergence import stringify_eocs
+    p = stringify_eocs(eoc, eoc, eoc, names=("First", "Second", "Third"))
     print(p)
 
     # }}}
