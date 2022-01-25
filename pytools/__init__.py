@@ -674,30 +674,34 @@ def memoize(*args: F, **kwargs: Any) -> F:
 FunctionValueCache = memoize
 
 
-class _HasKwargs:
-    pass
-
-
 def memoize_on_first_arg(function, cache_dict_name=None):
     """Like :func:`memoize_method`, but for functions that take the object
     in which do memoization information is stored as first argument.
 
     Supports cache deletion via ``function_name.clear_cache(self)``.
+
+    .. note::
+
+        If *function* is nested in another function, a separate cache
+        is created for each invocation of the surrounding function,
+        and use of the function in the cache key may keep references
+        to the nested function alive longer than desired.
     """
 
     if cache_dict_name is None:
-        cache_dict_name = intern(
-                f"_memoize_dic_{function.__module__}{function.__name__}"
-                )
+        cache_dict_name = (memoize_on_first_arg, function)
+    else:
+        if not isinstance(cache_dict_name, tuple):
+            cache_dict_name = (cache_dict_name,)
 
     def wrapper(obj, *args, **kwargs):
         if kwargs:
-            key = (_HasKwargs, frozenset(kwargs.items())) + args
+            key = cache_dict_name + args + (frozenset(kwargs.items()),)
         else:
-            key = args
+            key = (cache_dict_name + args)
 
         try:
-            return getattr(obj, cache_dict_name)[key]
+            return obj._memoize_on_first_arg_dict[key]
         except AttributeError:
             attribute_error = True
         except KeyError:
@@ -705,14 +709,14 @@ def memoize_on_first_arg(function, cache_dict_name=None):
 
         result = function(obj, *args, **kwargs)
         if attribute_error:
-            object.__setattr__(obj, cache_dict_name, {key: result})
+            object.__setattr__(obj, "_memoize_on_first_arg_dict", {key: result})
             return result
         else:
-            getattr(obj, cache_dict_name)[key] = result
+            obj._memoize_on_first_arg_dict[key] = result
             return result
 
     def clear_cache(obj):
-        object.__delattr__(obj, cache_dict_name)
+        object.__delattr__(obj, "_memoize_on_first_arg_dict")
 
     from functools import update_wrapper
     new_wrapper = update_wrapper(wrapper, function)
@@ -730,13 +734,12 @@ def memoize_method(method: F) -> F:
         (e.g. by overwritting ``__setattr__``), e.g. frozen :mod:`dataclasses`.
     """
 
-    return memoize_on_first_arg(method,
-            intern(f"_memoize_dic_{method.__name__}"))
+    return memoize_on_first_arg(method, (memoize_method, method))
 
 
 class keyed_memoize_on_first_arg:  # noqa: N801
-    """Like :func:`memoize_method`, but for functions that take the object
-    in which memoization information is stored as first argument.
+    """Like :func:`memoize_on_first_arg`, but uses a user-supplied function
+    for cache key computation.
 
     Supports cache deletion via ``function_name.clear_cache(self)``.
 
@@ -746,6 +749,13 @@ class keyed_memoize_on_first_arg:  # noqa: N801
         used to hold the cache.
 
     .. versionadded :: 2020.3
+
+    .. note::
+
+        If *function* is nested in another function, a separate cache
+        is created for each invocation of the surrounding function,
+        and use of the function in the cache key may keep references
+        to the nested function alive longer than desired.
     """
 
     def __init__(self, key, cache_dict_name=None):
@@ -804,6 +814,10 @@ class keyed_memoize_method(keyed_memoize_on_first_arg):  # noqa: N801
     """
     def _default_cache_dict_name(self, function):
         return intern(f"_memoize_dic_{function.__name__}")
+
+
+class _HasKwargs:
+    pass
 
 
 def memoize_method_with_uncached(uncached_args=None, uncached_kwargs=None):
