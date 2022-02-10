@@ -678,7 +678,7 @@ class _HasKwargs:
     pass
 
 
-def memoize_on_first_arg(function, cache_dict_name=None):
+def memoize_on_first_arg(function: F, cache_dict_name: str = None) -> F:
     """Like :func:`memoize_method`, but for functions that take the object
     in which do memoization information is stored as first argument.
 
@@ -716,9 +716,9 @@ def memoize_on_first_arg(function, cache_dict_name=None):
 
     from functools import update_wrapper
     new_wrapper = update_wrapper(wrapper, function)
-    new_wrapper.clear_cache = clear_cache
+    new_wrapper.clear_cache = clear_cache  # type: ignore[attr-defined]
 
-    return new_wrapper
+    return new_wrapper  # type: ignore[return-value]
 
 
 def memoize_method(method: F) -> F:
