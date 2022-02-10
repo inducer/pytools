@@ -34,7 +34,7 @@ import operator
 import sys
 import logging
 from typing import (
-        Any, Callable, Dict, Hashable, Iterable,
+        cast, Any, Callable, Dict, Hashable, Iterable,
         List, Optional, Set, Tuple, TypeVar)
 import builtins
 
@@ -678,7 +678,7 @@ class _HasKwargs:
     pass
 
 
-def memoize_on_first_arg(function, cache_dict_name=None):
+def memoize_on_first_arg(function: F, cache_dict_name=None) -> F:
     """Like :func:`memoize_method`, but for functions that take the object
     in which do memoization information is stored as first argument.
 
@@ -716,9 +716,12 @@ def memoize_on_first_arg(function, cache_dict_name=None):
 
     from functools import update_wrapper
     new_wrapper = update_wrapper(wrapper, function)
-    new_wrapper.clear_cache = clear_cache
 
-    return new_wrapper
+    # type-ignore because mypy has a point here, stuffing random attributes
+    # into the function's dict is moderately sketchy.
+    new_wrapper.clear_cache = clear_cache  # type: ignore[attr-defined]
+
+    return cast(F, new_wrapper)
 
 
 def memoize_method(method: F) -> F:
