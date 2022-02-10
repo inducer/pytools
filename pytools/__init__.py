@@ -678,7 +678,7 @@ class _HasKwargs:
     pass
 
 
-def memoize_on_first_arg(function: F, cache_dict_name=None) -> F:
+def memoize_on_first_arg(function: F, cache_dict_name: Optional[str] = None) -> F:
     """Like :func:`memoize_method`, but for functions that take the object
     in which do memoization information is stored as first argument.
 
