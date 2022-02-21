@@ -21,8 +21,7 @@ Internal stuff that is only here because the documentation tool wants it
 
 .. class:: T_co
 
-    A covariant type variable used in, e.g. :meth:`Taggable.copy`.
-
+    A covariant type variable lower-bounded by :class:`Taggable`.
 
 .. class:: TagsOfTypeT
 
@@ -33,7 +32,6 @@ from dataclasses import dataclass
 from typing import (Tuple, Set, Any, FrozenSet, Union, Iterable,  # noqa: F401
                     TypeVar, Type)
 from pytools import memoize, memoize_method
-from abc import ABC, abstractmethod
 
 __copyright__ = """
 Copyright (C) 2020 Andreas Klöckner
@@ -230,7 +228,7 @@ def normalize_tags(tags: TagOrIterableType) -> TagsType:
 
 # {{{ taggable
 
-class Taggable(ABC):
+class Taggable:
     """
     Parent class for objects with a `tags` attribute.
 
@@ -240,7 +238,7 @@ class Taggable(ABC):
 
     .. automethod:: __init__
 
-    .. automethod:: copy
+    .. automethod:: _with_new_tags
     .. automethod:: tagged
     .. automethod:: without_tags
     .. automethod:: tags_of_type
@@ -264,31 +262,40 @@ class Taggable(ABC):
         """
         self.tags = tags
 
-    @abstractmethod
-    def copy(self: T_co, **kwargs: Any) -> T_co:
+    def _with_new_tags(self: T_co, tags: TagsType) -> T_co:
         """
-        Returns of copy of *self* with the specified tags. This method
+        Returns a copy of *self* with the specified tags. This method
         should be overridden by subclasses.
         """
+        from warnings import warn
+        warn(f"_with_new_tags() for {self.__class__} fell back "
+                "to using copy(). This is deprecated and will stop working in "
+                "July of 2022. Instead, override _with_new_tags to specify "
+                "how tags should be applied to an instance.",
+                DeprecationWarning, stacklevel=2)
+
+        # mypy is right: we're not promising this attribute is defined.
+        # Once this deprecation expires, this will go back to being an
+        # abstract method.
+        return self.copy(tags=tags)  # type: ignore[attr-defined]  # pylint: disable=no-member  # noqa: E501
 
     def tagged(self: T_co, tags: TagOrIterableType) -> T_co:
         """
         Return a copy of *self* with the specified
-        tag or tags unioned. If *tags* is a :class:`pytools.tag.UniqueTag`
-        and other tags of this type are already present, an error is raised
-        Assumes `self.copy(tags=<NEW VALUE>)` is implemented.
+        tag or tags added to the set of tags. If the resulting set of
+        tags violates the rules on :class:`pytools.tag.UniqueTag`,
+        an error is raised.
 
         :arg tags: An instance of :class:`~pytools.tag.Tag` or
             an iterable with instances therein.
         """
-        return self.copy(
+        return self._with_new_tags(
                 tags=check_tag_uniqueness(normalize_tags(tags) | self.tags))
 
     def without_tags(self: T_co,
             tags: TagOrIterableType, verify_existence: bool = True) -> T_co:
         """
         Return a copy of *self* without the specified tags.
-        `self.copy(tags=<NEW VALUE>)` is implemented.
 
         :arg tags: An instance of :class:`~pytools.tag.Tag` or an iterable with
             instances therein.
@@ -302,7 +309,7 @@ class Taggable(ABC):
         if verify_existence and len(new_tags) > len(self.tags) - len(to_remove):
             raise ValueError("A tag specified for removal was not present.")
 
-        return self.copy(tags=check_tag_uniqueness(new_tags))
+        return self._with_new_tags(tags=check_tag_uniqueness(new_tags))
 
     @memoize_method
     def tags_of_type(self, tag_t: TagsOfTypeT) -> FrozenSet[TagsOfTypeT]:
