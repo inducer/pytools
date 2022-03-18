@@ -273,6 +273,11 @@ class KeyBuilder:
     # {{{ updaters
 
     @staticmethod
+    def update_for_type(key_hash, key):
+        key_hash.update(
+            f"{key.__module__}.{key.__qualname__}.{key.__name__}".encode("utf-8"))
+
+    @staticmethod
     def update_for_int(key_hash, key):
         sz = 8
         while True:
