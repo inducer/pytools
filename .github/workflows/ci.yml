@@ -110,23 +110,7 @@ jobs:
             run: |
                 curl -L -O -k https://tiker.net/ci-support-v0
                 . ./ci-support-v0
-
-                git clone "https://github.com/inducer/$DOWNSTREAM_PROJECT.git"
-                cd "$DOWNSTREAM_PROJECT"
-                echo "*** $DOWNSTREAM_PROJECT version: $(git rev-parse --short HEAD)"
-
-                edit_requirements_txt_for_downstream_in_subdir
-
-                # HACK: force overwrite even if it's already there (e.g. as a pyopencl dep)
-                sed -i '/egg=pytools/ s/^/-e/' requirements.txt
-
-                export CONDA_ENVIRONMENT=.test-conda-env-py3.yml
-
-                # Avoid slow or complicated tests in downstream projects
-                export PYTEST_ADDOPTS="-k 'not (slowtest or octave or mpi)'"
-
-                build_py_project_in_conda_env
-                test_py_project
+                test_downstream "$DOWNSTREAM_PROJECT"
 
     docs:
         name: Documentation
