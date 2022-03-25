@@ -22,7 +22,7 @@ jobs:
                 python-version: '3.6'
         -   name: "Main Script"
             run: |
-                curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-flake8.sh
+                curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-flake8.sh
                 . ./prepare-and-run-flake8.sh "$(basename $GITHUB_REPOSITORY)" ./test
 
     pylint:
@@ -37,7 +37,7 @@ jobs:
         -   name: "Main Script"
             run: |
                 EXTRA_INSTALL="pymbolic"
-                curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-pylint.sh
+                curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-pylint.sh
                 . ./prepare-and-run-pylint.sh "$(basename $GITHUB_REPOSITORY)" test/test_*.py
 
     mypy:
@@ -51,7 +51,7 @@ jobs:
                 python-version: '3.x'
         -   name: "Main Script"
             run: |
-                curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-mypy.sh
+                curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-mypy.sh
                 . ./prepare-and-run-mypy.sh python3 mypy
 
     pytest:
@@ -76,7 +76,7 @@ jobs:
                 rm pytools/log.py
 
                 EXTRA_INSTALL="numpy"
-                curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
+                curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
                 . ./build-and-test-py-project.sh
 
     #examples:
@@ -91,8 +91,8 @@ jobs:
     #    -   name: "Main Script"
     #        run: |
     #            EXTRA_INSTALL="numpy pymbolic"
-    #            curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/main/ci-support.sh
-    #            . ./ci-support.sh
+    #            curl -L -O https://tiker.net/ci-support-v0
+    #            . ./ci-support-v0
     #            build_py_project_in_venv
     #            run_examples
 
@@ -108,7 +108,7 @@ jobs:
             env:
                 DOWNSTREAM_PROJECT: ${{ matrix.downstream_project }}
             run: |
-                curl -L -O -k https://tiker.net/ci-support-v0
+                curl -L -O https://tiker.net/ci-support-v0
                 . ./ci-support-v0
                 test_downstream "$DOWNSTREAM_PROJECT"
 
@@ -124,8 +124,8 @@ jobs:
         -   name: "Main Script"
             run: |
                 EXTRA_INSTALL="numpy"
-                curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/main/ci-support.sh
-                . ci-support.sh
+                curl -L -O https://tiker.net/ci-support-v0
+                . ci-support-v0
                 build_py_project_in_venv
                 build_docs
 
