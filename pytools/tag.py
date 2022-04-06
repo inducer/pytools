@@ -1,5 +1,4 @@
 """
-
 Tag Interface
 ---------------
 .. ``normalize_tags`` undocumented for now. (Not ready to commit.)
@@ -19,19 +18,23 @@ Supporting Functionality
 Internal stuff that is only here because the documentation tool wants it
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. class:: T_co
-
-    A covariant type variable lower-bounded by :class:`Taggable`.
-
 .. class:: TagsOfTypeT
 
     A type variable used in :meth:`Taggable.tags_of_type`.
 """
 
+import sys
 from dataclasses import dataclass
 from typing import (Tuple, Set, Any, FrozenSet, Union, Iterable,  # noqa: F401
                     TypeVar, Type)
 from pytools import memoize, memoize_method
+
+
+try:
+    from typing import Self  # type: ignore[attr-defined]
+except ImportError:
+    from typing_extensions import Self
+
 
 __copyright__ = """
 Copyright (C) 2020 Andreas Klöckner
@@ -162,9 +165,7 @@ class UniqueTag(Tag):
 # }}}
 
 
-TagsType = FrozenSet[Tag]
-TagOrIterableType = Union[Iterable[Tag], Tag, None]
-T_co = TypeVar("T_co", bound="Taggable")
+ToTagSetConvertible = Union[Iterable[Tag], Tag, None]
 TagsOfTypeT = TypeVar("TagsOfTypeT", bound="Type[Tag]")
 
 
@@ -190,7 +191,7 @@ class NonUniqueTagError(ValueError):
     pass
 
 
-def check_tag_uniqueness(tags: TagsType):
+def check_tag_uniqueness(tags: FrozenSet[Tag]):
     """Ensure that *tags* obeys the rules set forth in :class:`UniqueTag`.
     If not, raise :exc:`NonUniqueTagError`. If any *tags* are not
     subclasses of :class:`Tag`, a :exc:`TypeError` will be raised.
@@ -216,7 +217,7 @@ def check_tag_uniqueness(tags: TagsType):
 # }}}
 
 
-def normalize_tags(tags: TagOrIterableType) -> TagsType:
+def normalize_tags(tags: ToTagSetConvertible) -> FrozenSet[Tag]:
     if isinstance(tags, Tag):
         tags = frozenset([tags])
     elif tags is None:
@@ -249,7 +250,7 @@ class Taggable:
     # ReST references in docstrings must be fully qualified, as docstrings may
     # be inherited and appear in different contexts.
 
-    def __init__(self, tags: TagsType = frozenset()):
+    def __init__(self, tags: FrozenSet[Tag] = frozenset()):
         """
         Constructor for all objects that possess a `tags` attribute.
 
@@ -262,7 +263,7 @@ class Taggable:
         """
         self.tags = tags
 
-    def _with_new_tags(self: T_co, tags: TagsType) -> T_co:
+    def _with_new_tags(self, tags: FrozenSet[Tag]) -> Self:
         """
         Returns a copy of *self* with the specified tags. This method
         should be overridden by subclasses.
@@ -279,7 +280,7 @@ class Taggable:
         # abstract method.
         return self.copy(tags=tags)  # type: ignore[attr-defined]  # pylint: disable=no-member  # noqa: E501
 
-    def tagged(self: T_co, tags: TagOrIterableType) -> T_co:
+    def tagged(self, tags: ToTagSetConvertible) -> Self:
         """
         Return a copy of *self* with the specified
         tag or tags added to the set of tags. If the resulting set of
@@ -292,8 +293,8 @@ class Taggable:
         return self._with_new_tags(
                 tags=check_tag_uniqueness(normalize_tags(tags) | self.tags))
 
-    def without_tags(self: T_co,
-            tags: TagOrIterableType, verify_existence: bool = True) -> T_co:
+    def without_tags(self,
+            tags: ToTagSetConvertible, verify_existence: bool = True) -> Self:
         """
         Return a copy of *self* without the specified tags.
 
@@ -323,5 +324,42 @@ class Taggable:
                          if isinstance(tag, tag_t))
 
 # }}}
+
+
+# {{{ deprecation
+
+_depr_name_to_replacement_and_obj = {
+        "TagsType": (
+            "FrozenSet[Tag]",
+            FrozenSet[Tag], 2023),
+        "TagOrIterableType": (
+            "ToTagSetConvertible",
+            ToTagSetConvertible, 2023),
+        "T_co": (
+            "Self (i.e. the self type from Python 3.11)",
+            TypeVar("TaggableT", bound="Taggable"), 2023),
+        }
+
+
+if sys.version_info >= (3, 7):
+    def __getattr__(name):
+        replacement_and_obj = _depr_name_to_replacement_and_obj.get(name, None)
+        if replacement_and_obj is not None:
+            replacement, obj, year = replacement_and_obj
+            from warnings import warn
+            warn(f"'arraycontext.{name}' is deprecated. "
+                    f"Use '{replacement}' instead. "
+                    f"'arraycontext.{name}' will continue to work until {year}.",
+                    DeprecationWarning, stacklevel=2)
+            return obj
+        else:
+            raise AttributeError(name)
+else:
+    TagsType = FrozenSet[Tag]
+    TagOrIterableType = ToTagSetConvertible
+    T_co = TypeVar("TaggableT", bound="Taggable")
+
+# }}}
+
 
 # vim: foldmethod=marker
