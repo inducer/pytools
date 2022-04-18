@@ -18,9 +18,9 @@ Supporting Functionality
 Internal stuff that is only here because the documentation tool wants it
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. class:: TagsOfTypeT
+.. class:: TagT
 
-    A type variable used in :meth:`Taggable.tags_of_type`.
+    A type variable with lower bound :class:`Tag`.
 """
 
 import sys
@@ -166,7 +166,7 @@ class UniqueTag(Tag):
 
 
 ToTagSetConvertible = Union[Iterable[Tag], Tag, None]
-TagsOfTypeT = TypeVar("TagsOfTypeT", bound="Type[Tag]")
+TagT = TypeVar("TagT", bound="Tag")
 
 
 # {{{ UniqueTag rules checking
@@ -313,15 +313,13 @@ class Taggable:
         return self._with_new_tags(tags=check_tag_uniqueness(new_tags))
 
     @memoize_method
-    def tags_of_type(self, tag_t: TagsOfTypeT) -> FrozenSet[TagsOfTypeT]:
+    def tags_of_type(self, tag_t: Type[TagT]) -> FrozenSet[TagT]:
         """
         Returns *self*'s tags of type *tag_t*.
         """
-        # type-ignore reason: mypy can't tell the generator has elements of
-        # type 'TagsOfTypeT' (infers it as elements of type 'Tag')
-        return frozenset(tag  # type: ignore[misc]
+        return frozenset({tag
                          for tag in self.tags
-                         if isinstance(tag, tag_t))
+                         if isinstance(tag, tag_t)})
 
 # }}}
 

@@ -31,7 +31,6 @@ intersphinx_mapping = {
     "https://documen.tician.de/loopy/": None,
     }
 
-
 nitpick_ignore_regex = [
         ["py:class", r"typing_extensions\.(.+)"],
         ]
