@@ -477,7 +477,8 @@ class ImmutableRecordWithoutPickling(RecordWithoutPickling):
         self._cached_hash = None
 
     def __hash__(self):
-        if self._cached_hash is None:
+        # This attribute may vanish during pickling.
+        if getattr(self, "_cached_hash", None) is None:
             self._cached_hash = hash(
                 (type(self),) + tuple(getattr(self, field)
                     for field in self.__class__.fields))
