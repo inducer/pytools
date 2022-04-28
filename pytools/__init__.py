@@ -463,6 +463,8 @@ class Record(RecordWithoutPickling):
             setattr(self, key, value)
 
     def __eq__(self, other):
+        if self is other:
+            return True
         return (self.__class__ == other.__class__
                 and self.__getstate__() == other.__getstate__())
 
