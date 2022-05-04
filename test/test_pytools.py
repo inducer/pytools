@@ -652,6 +652,18 @@ def test_sphere_sampling(sampling, visualize=False):
 # }}}
 
 
+def test_unique_name_gen_conflicting_ok():
+    from pytools import UniqueNameGenerator
+
+    ung = UniqueNameGenerator()
+    ung.add_names({"a", "b", "c"})
+
+    with pytest.raises(ValueError):
+        ung.add_names({"a"})
+
+    ung.add_names({"a", "b", "c"}, conflicting_ok=True)
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
