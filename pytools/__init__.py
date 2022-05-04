@@ -2311,8 +2311,14 @@ class UniqueNameGenerator:
         """
         pass
 
-    def add_name(self, name: str) -> None:
-        if self.is_name_conflicting(name):
+    def add_name(self, name: str, *, conflicting_ok: bool = False) -> None:
+        """
+        :arg conflicting_ok: A flag to dictate the behavior when *name* is
+            conflicting with the set of existing names. If *True*, a conflict
+            is silently passed. If *False*, a :class:`ValueError` is raised on
+            encountering a conflict.
+        """
+        if (not conflicting_ok) and self.is_name_conflicting(name):
             raise ValueError(f"name '{name}' conflicts with existing names")
 
         if not name.startswith(self.forced_prefix):
@@ -2323,9 +2329,14 @@ class UniqueNameGenerator:
         self.existing_names.add(name)
         self._name_added(name)
 
-    def add_names(self, names: Iterable[str]) -> None:
+    def add_names(self, names: Iterable[str],
+                  *,
+                  conflicting_ok: bool = False) -> None:
+        """
+        :arg conflicting_ok: Plainly passed to :meth:`UniqueNameGenerator.add_name`.
+        """
         for name in names:
-            self.add_name(name)
+            self.add_name(name, conflicting_ok=conflicting_ok)
 
     def __call__(self, based_on: str = "id") -> str:
         based_on = self.forced_prefix + based_on
