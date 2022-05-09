@@ -10,6 +10,9 @@ Pytools: Lots of Little Utilities
 .. image:: https://badge.fury.io/py/pytools.png
     :alt: Python Package Index Release Page
     :target: https://pypi.org/project/pytools/
+.. image:: https://zenodo.org/badge/1575270.svg
+    :alt: Zenodo DOI for latest release
+    :target: https://zenodo.org/badge/latestdoi/1575270
 
 Pytools is a big bag of things that are "missing" from the Python standard
 library. This is mainly a dependency of my other software packages, and is
