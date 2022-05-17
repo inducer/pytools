@@ -664,6 +664,26 @@ def test_unique_name_gen_conflicting_ok():
     ung.add_names({"a", "b", "c"}, conflicting_ok=True)
 
 
+def test_ignoredforequalitytag():
+    from pytools.tag import IgnoredForEqualityTag, Tag
+
+    class Eq1(IgnoredForEqualityTag):
+        pass
+
+    class Eq2(IgnoredForEqualityTag):
+        pass
+
+    class Eq3(Tag):
+        pass
+
+    eq1 = Eq1()
+    eq2 = Eq2()
+    eq3 = Eq3()
+
+    assert eq1 == eq2
+    assert not (eq1 == eq3)
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])

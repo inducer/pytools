@@ -331,6 +331,12 @@ class IgnoredForEqualityTag(Tag):
     """A type of tag whose value is purely informational and should not be used
     for equality comparison."""
 
+    def __eq__(self, __o: object) -> bool:
+        if isinstance(__o, IgnoredForEqualityTag):
+            return True
+        else:
+            return super().__eq__(__o)
+
 # }}}
 
 
