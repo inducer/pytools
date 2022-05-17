@@ -337,6 +337,9 @@ class IgnoredForEqualityTag(Tag):
         else:
             return super().__eq__(__o)
 
+    def __hash__(self) -> int:
+        return hash(IgnoredForEqualityTag)
+
 # }}}
 
 

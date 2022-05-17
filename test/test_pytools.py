@@ -681,7 +681,10 @@ def test_ignoredforequalitytag():
     eq3 = Eq3()
 
     assert eq1 == eq2
-    assert not (eq1 == eq3)
+    assert eq1 != eq3
+
+    assert hash(eq1) == hash(eq2)
+    assert hash(eq1) != hash(eq3)
 
 
 if __name__ == "__main__":
