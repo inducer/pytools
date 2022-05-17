@@ -7,6 +7,7 @@ Tag Interface
 .. autoclass:: Taggable
 .. autoclass:: Tag
 .. autoclass:: UniqueTag
+.. autoclass:: IgnoredForEqualityTag
 
 Supporting Functionality
 ------------------------
@@ -320,6 +321,15 @@ class Taggable:
         return frozenset({tag
                          for tag in self.tags
                          if isinstance(tag, tag_t)})
+
+# }}}
+
+
+# {{{ IgnoredForEqualityTag
+
+class IgnoredForEqualityTag(Tag):
+    """A type of tag whose value is purely informational and should not be used
+    for equality comparison."""
 
 # }}}
 
