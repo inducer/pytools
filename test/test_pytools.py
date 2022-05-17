@@ -665,7 +665,13 @@ def test_unique_name_gen_conflicting_ok():
 
 
 def test_ignoredforequalitytag():
-    from pytools.tag import IgnoredForEqualityTag, Tag
+    from pytools.tag import IgnoredForEqualityTag, Tag, Taggable
+
+    # Need a subclass that defines the copy function in order to test.
+    class TaggableWithCopy(Taggable):
+
+        def copy(self, **kwargs):
+            return TaggableWithCopy(kwargs["tags"])
 
     class Eq1(IgnoredForEqualityTag):
         pass
@@ -676,9 +682,9 @@ def test_ignoredforequalitytag():
     class Eq3(Tag):
         pass
 
-    eq1 = Eq1()
-    eq2 = Eq2()
-    eq3 = Eq3()
+    eq1 = TaggableWithCopy(frozenset([Eq1()]))
+    eq2 = TaggableWithCopy(frozenset([Eq2()]))
+    eq3 = TaggableWithCopy(frozenset([Eq3()]))
 
     assert eq1 == eq2
     assert eq1 != eq3

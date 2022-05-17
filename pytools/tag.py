@@ -244,6 +244,7 @@ class Taggable:
     .. automethod:: tagged
     .. automethod:: without_tags
     .. automethod:: tags_of_type
+    .. automethod:: tags_not_of_type
 
     .. versionadded:: 2021.1
     """
@@ -322,6 +323,27 @@ class Taggable:
                          for tag in self.tags
                          if isinstance(tag, tag_t)})
 
+    @memoize_method
+    def tags_not_of_type(self, tag_t: Type[TagT]) -> FrozenSet[TagT]:
+        """
+        Returns *self*'s tags that are not of type *tag_t*.
+        """
+        return frozenset({tag
+                         for tag in self.tags
+                         if not isinstance(tag, tag_t)})
+
+    def __eq__(self, __o: object) -> bool:
+        new_self_tags = self.tags_not_of_type(IgnoredForEqualityTag)
+        if isinstance(__o, Taggable):
+            new_other_tags = __o.tags_not_of_type(IgnoredForEqualityTag)
+            return new_self_tags == new_other_tags
+        else:
+            return super().__eq__(__o)
+
+    def __hash__(self) -> int:
+        return hash(self.tags_not_of_type(IgnoredForEqualityTag))
+
+
 # }}}
 
 
@@ -330,15 +352,7 @@ class Taggable:
 class IgnoredForEqualityTag(Tag):
     """A type of tag whose value is purely informational and should not be used
     for equality comparison."""
-
-    def __eq__(self, __o: object) -> bool:
-        if isinstance(__o, IgnoredForEqualityTag):
-            return True
-        else:
-            return super().__eq__(__o)
-
-    def __hash__(self) -> int:
-        return hash(IgnoredForEqualityTag)
+    pass
 
 # }}}
 
