@@ -333,10 +333,9 @@ class Taggable:
                          if not isinstance(tag, tag_t)})
 
     def __eq__(self, __o: object) -> bool:
-        new_self_tags = self.tags_not_of_type(IgnoredForEqualityTag)
         if isinstance(__o, Taggable):
-            new_other_tags = __o.tags_not_of_type(IgnoredForEqualityTag)
-            return new_self_tags == new_other_tags
+            return (self.tags_not_of_type(IgnoredForEqualityTag)
+                    == __o.tags_not_of_type(IgnoredForEqualityTag))
         else:
             return super().__eq__(__o)
 
