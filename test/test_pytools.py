@@ -668,7 +668,7 @@ def test_unique_name_gen_conflicting_ok():
 def test_ignoredforequalitytag():
     from pytools.tag import IgnoredForEqualityTag, Tag, Taggable
 
-    # Need a subclass that defines the copy function in order to test.
+    # Need a subclass that defines _with_new_tags in order to test.
     class TaggableWithNewTags(Taggable):
 
         def _with_new_tags(self, tags: FrozenSet[Tag]):
