@@ -26,6 +26,7 @@ import pytest
 
 import logging
 logger = logging.getLogger(__name__)
+from typing import FrozenSet
 
 
 @pytest.mark.skipif("sys.version_info < (2, 5)")
@@ -558,7 +559,7 @@ def test_tag():
                                 blue_ribbon, red_ribbon))
 
     # Test that tagged() fails if a UniqueTag of the same subclass
-    # is alredy present
+    # is already present
     with pytest.raises(NonUniqueTagError):
         t1.tagged(best_in_show_ribbon)
 
@@ -668,10 +669,10 @@ def test_ignoredforequalitytag():
     from pytools.tag import IgnoredForEqualityTag, Tag, Taggable
 
     # Need a subclass that defines the copy function in order to test.
-    class TaggableWithCopy(Taggable):
+    class TaggableWithNewTags(Taggable):
 
-        def copy(self, **kwargs):
-            return TaggableWithCopy(kwargs["tags"])
+        def _with_new_tags(self, tags: FrozenSet[Tag]):
+            return TaggableWithNewTags(tags)
 
     class Eq1(IgnoredForEqualityTag):
         pass
@@ -682,14 +683,19 @@ def test_ignoredforequalitytag():
     class Eq3(Tag):
         pass
 
-    eq1 = TaggableWithCopy(frozenset([Eq1()]))
-    eq2 = TaggableWithCopy(frozenset([Eq2()]))
-    eq3 = TaggableWithCopy(frozenset([Eq3()]))
+    eq1 = TaggableWithNewTags(frozenset([Eq1()]))
+    eq2 = TaggableWithNewTags(frozenset([Eq2()]))
+    eq12 = TaggableWithNewTags(frozenset([Eq1(), Eq2()]))
+    eq3 = TaggableWithNewTags(frozenset([Eq1(), Eq3()]))
 
-    assert eq1 == eq2
+    assert eq1 == eq2 == eq12
     assert eq1 != eq3
 
-    assert hash(eq1) == hash(eq2)
+    assert eq1.without_tags(Eq1())
+    with pytest.raises(ValueError):
+        eq3.without_tags(Eq2())
+
+    assert hash(eq1) == hash(eq2) == hash(eq12)
     assert hash(eq1) != hash(eq3)
 
 
