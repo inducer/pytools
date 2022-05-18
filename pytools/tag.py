@@ -354,7 +354,7 @@ class IgnoredForEqualityTag(Tag):
     :class:`Taggable`.
 
     When testing equality of two instances of :class:`Taggable`, the equality
-    of the :attr:`tags` of both instances is tested after removing all
+    of the ``tags`` of both instances is tested after removing all
     instances of :class:`IgnoredForEqualityTag`. Instances of
     :class:`IgnoredForEqualityTag` are removed for hashing instances of
     :class:`Taggable`.
