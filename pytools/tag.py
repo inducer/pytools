@@ -324,7 +324,7 @@ class Taggable:
                          if isinstance(tag, tag_t)})
 
     @memoize_method
-    def tags_not_of_type(self, tag_t: Type[TagT]) -> FrozenSet[TagT]:
+    def tags_not_of_type(self, tag_t: Type[TagT]) -> FrozenSet[Tag]:
         """
         Returns *self*'s tags that are not of type *tag_t*.
         """
