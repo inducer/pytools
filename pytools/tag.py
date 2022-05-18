@@ -350,8 +350,16 @@ class Taggable:
 # {{{ IgnoredForEqualityTag
 
 class IgnoredForEqualityTag(Tag):
-    """A type of tag whose value is purely informational and should not be used
-    for equality comparison."""
+    """
+    A superclass for tags that are ignored when testing equality of instances of
+    :class:`Taggable`.
+
+    When testing equality of two instances of :class:`Taggable`, the equality
+    of the :attr:`tags` of both instances is tested after removing all
+    instances of :class:`IgnoredForEqualityTag`. Instances of
+    :class:`IgnoredForEqualityTag` are removed for hashing instances of
+    :class:`Taggable`.
+    """
     pass
 
 # }}}
