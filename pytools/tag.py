@@ -26,7 +26,7 @@ Internal stuff that is only here because the documentation tool wants it
 import sys
 from dataclasses import dataclass
 from typing import (Tuple, Set, Any, FrozenSet, Union, Iterable,  # noqa: F401
-                    TypeVar, Type)
+                    TypeVar, Type, List)
 from pytools import memoize, memoize_method
 
 
@@ -162,6 +162,21 @@ class UniqueTag(Tag):
     """
     pass
 
+
+class WeakUniqueTag(Tag):
+    """
+    A superclass for tags that are weakly unique on each :class:`Taggable`.
+
+    Each instance of :class:`Taggable` may have no more than one
+    instance of each subclass of :class:`WeakUniqueTag` in its
+    set of `tags`. Multiple `WeakUniqueTag` instances of
+    different (immediate) subclasses are allowed. In contrast to
+    :class:`UniqueTag`, attempting to add multiple instances of
+    :class:`WeakUniqueTag` will result in the added tags being dropped
+    silently instead of causing an :exc:`NonUniqueTagError`.
+    """
+    pass
+
 # }}}
 
 
@@ -172,13 +187,13 @@ TagT = TypeVar("TagT", bound="Tag")
 # {{{ UniqueTag rules checking
 
 @memoize
-def _immediate_unique_tag_descendants(cls):
-    if UniqueTag in cls.__bases__:
-        return frozenset([cls])
+def _immediate_tag_descendants(obj, myclass):
+    if myclass in obj.__bases__:
+        return frozenset([obj])
     else:
         result = frozenset()
-        for base in cls.__bases__:
-            result = result | _immediate_unique_tag_descendants(base)
+        for base in obj.__bases__:
+            result = result | _immediate_tag_descendants(base, myclass)
         return result
 
 
@@ -191,28 +206,43 @@ class NonUniqueTagError(ValueError):
     pass
 
 
-def check_tag_uniqueness(tags: FrozenSet[Tag]):
-    """Ensure that *tags* obeys the rules set forth in :class:`UniqueTag`.
-    If not, raise :exc:`NonUniqueTagError`. If any *tags* are not
+def check_tag_uniqueness(tags: List[Tag]) -> FrozenSet[Tag]:
+    """Ensure that *tags* obeys the rules set forth in :class:`UniqueTag`
+    and :class:`WeakUniqueTag`. If rules for :class:`UniqueTag` are not obeyed,
+    raise :exc:`NonUniqueTagError`. If any *tags* are not
     subclasses of :class:`Tag`, a :exc:`TypeError` will be raised.
 
-    :returns: *tags*
+    :returns: *tags* with duplicate instance of :class:`WeakUniqueTag` removed.
     """
     unique_tag_descendants: Set[Tag] = set()
+    weak_unique_tag_descendants: Set[Tag] = set()
+    weakuniquetags: Set[Tag] = set()
+
     for tag in tags:
         if not isinstance(tag, Tag):
             raise TypeError(f"'{tag}' is not an instance of pytools.tag.Tag")
-        tag_unique_tag_descendants = _immediate_unique_tag_descendants(
-                type(tag))
-        intersection = unique_tag_descendants & tag_unique_tag_descendants
-        if intersection:
+        tag_unique_tag_descendants = _immediate_tag_descendants(
+                type(tag), UniqueTag)
+        tag_weak_unique_tag_descendants = _immediate_tag_descendants(
+                type(tag), WeakUniqueTag)
+        unique_tag_intersection = unique_tag_descendants & tag_unique_tag_descendants
+        weak_unique_tag_intersection = (weak_unique_tag_descendants
+                                        & tag_weak_unique_tag_descendants)
+
+        if weak_unique_tag_intersection:
+            weakuniquetags.add(tag)
+        else:
+            weak_unique_tag_descendants.update(tag_weak_unique_tag_descendants)
+
+        if unique_tag_intersection:
             raise NonUniqueTagError("Multiple tags are direct subclasses of "
                     "the following UniqueTag(s): "
-                    f"{', '.join(d.__name__ for d in intersection)}")
+                    f"{', '.join(d.__name__ for d in unique_tag_intersection)}")
         else:
             unique_tag_descendants.update(tag_unique_tag_descendants)
 
-    return tags
+    return frozenset(set(tags)-weakuniquetags)
+
 
 # }}}
 
@@ -291,7 +321,8 @@ class Taggable:
             an iterable with instances therein.
         """
         return self._with_new_tags(
-                tags=check_tag_uniqueness(normalize_tags(tags) | self.tags))
+                tags=check_tag_uniqueness(
+                    list(self.tags)+list(normalize_tags(tags))))
 
     def without_tags(self,
             tags: ToTagSetConvertible, verify_existence: bool = True) -> Self:
@@ -310,7 +341,7 @@ class Taggable:
         if verify_existence and len(new_tags) > len(self.tags) - len(to_remove):
             raise ValueError("A tag specified for removal was not present.")
 
-        return self._with_new_tags(tags=check_tag_uniqueness(new_tags))
+        return self._with_new_tags(tags=check_tag_uniqueness(list(new_tags)))
 
     @memoize_method
     def tags_of_type(self, tag_t: Type[TagT]) -> FrozenSet[TagT]:

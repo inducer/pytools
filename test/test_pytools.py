@@ -664,6 +664,41 @@ def test_unique_name_gen_conflicting_ok():
     ung.add_names({"a", "b", "c"}, conflicting_ok=True)
 
 
+def test_weakuniquetag():
+    from pytools.tag import WeakUniqueTag, Taggable, tag_dataclass
+
+    # Need a subclass that defines _with_new_tags in order to test.
+    class TaggableWithNewTags(Taggable):
+
+        def _with_new_tags(self, tags):
+            return TaggableWithNewTags(tags)
+
+    @tag_dataclass
+    class Wu1(WeakUniqueTag):
+        myid: int
+
+    class Wu2(Wu1):
+        pass
+
+    @tag_dataclass
+    class Wu3(WeakUniqueTag):
+        myid: int
+
+    wu1 = TaggableWithNewTags()
+    wu1 = wu1.tagged([Wu1(1), Wu1(2)])
+
+    assert len(wu1.tags) == 1
+    assert list(wu1.tags)[0].myid == 1
+
+    wu2 = TaggableWithNewTags(Wu1(1))
+
+    wu2 = wu1.tagged([Wu1(11), Wu2(22), Wu3(33)])
+
+    assert len(wu2.tags) == 2
+    assert list(wu2.tags)[0].myid == 1
+    assert list(wu2.tags)[1].myid == 33
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
