@@ -25,6 +25,16 @@ jobs:
                 curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-flake8.sh
                 . ./prepare-and-run-flake8.sh "$(basename $GITHUB_REPOSITORY)" ./test
 
+    validate_cff:
+        name: Validate CITATION.cff
+        runs-on: ubuntu-latest
+        steps:
+        -   uses: actions/checkout@v2
+        -   uses: actions/setup-python@v1
+        -   run: |
+                pip install cffconvert
+                cffconvert -i CITATION.cff --validate
+
     pylint:
         name: Pylint
         runs-on: ubuntu-latest
