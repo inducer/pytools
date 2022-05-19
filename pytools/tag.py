@@ -7,6 +7,7 @@ Tag Interface
 .. autoclass:: Taggable
 .. autoclass:: Tag
 .. autoclass:: UniqueTag
+.. autoclass:: IgnoredForEqualityTag
 
 Supporting Functionality
 ------------------------
@@ -243,6 +244,7 @@ class Taggable:
     .. automethod:: tagged
     .. automethod:: without_tags
     .. automethod:: tags_of_type
+    .. automethod:: tags_not_of_type
 
     .. versionadded:: 2021.1
     """
@@ -320,6 +322,44 @@ class Taggable:
         return frozenset({tag
                          for tag in self.tags
                          if isinstance(tag, tag_t)})
+
+    @memoize_method
+    def tags_not_of_type(self, tag_t: Type[TagT]) -> FrozenSet[Tag]:
+        """
+        Returns *self*'s tags that are not of type *tag_t*.
+        """
+        return frozenset({tag
+                         for tag in self.tags
+                         if not isinstance(tag, tag_t)})
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Taggable):
+            return (self.tags_not_of_type(IgnoredForEqualityTag)
+                    == other.tags_not_of_type(IgnoredForEqualityTag))
+        else:
+            return super().__eq__(other)
+
+    def __hash__(self) -> int:
+        return hash(self.tags_not_of_type(IgnoredForEqualityTag))
+
+
+# }}}
+
+
+# {{{ IgnoredForEqualityTag
+
+class IgnoredForEqualityTag(Tag):
+    """
+    A superclass for tags that are ignored when testing equality of instances of
+    :class:`Taggable`.
+
+    When testing equality of two instances of :class:`Taggable`, the equality
+    of the ``tags`` of both instances is tested after removing all
+    instances of :class:`IgnoredForEqualityTag`. Instances of
+    :class:`IgnoredForEqualityTag` are removed for hashing instances of
+    :class:`Taggable`.
+    """
+    pass
 
 # }}}
 
