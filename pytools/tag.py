@@ -322,7 +322,7 @@ class Taggable:
         """
         return self._with_new_tags(
                 tags=check_tag_uniqueness(
-                    list(self.tags)+list(normalize_tags(list(tags)))))
+                    list(self.tags) + list(normalize_tags(tags))))
 
     def without_tags(self,
             tags: ToTagSetConvertible, verify_existence: bool = True) -> Self:

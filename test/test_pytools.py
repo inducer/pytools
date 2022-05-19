@@ -688,7 +688,6 @@ def test_weakuniquetag():
     wu1 = wu1.tagged([Wu1(1), Wu1(2)])
 
     assert len(wu1.tags) == 1
-    assert list(wu1.tags)[0].myid == 1
 
     wu2 = TaggableWithNewTags(Wu1(1))
 
