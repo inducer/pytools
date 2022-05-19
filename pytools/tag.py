@@ -7,6 +7,7 @@ Tag Interface
 .. autoclass:: Taggable
 .. autoclass:: Tag
 .. autoclass:: UniqueTag
+.. autoclass:: WeakUniqueTag
 
 Supporting Functionality
 ------------------------
