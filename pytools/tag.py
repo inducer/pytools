@@ -212,7 +212,7 @@ def check_tag_uniqueness(tags: List[Tag]) -> FrozenSet[Tag]:
     raise :exc:`NonUniqueTagError`. If any *tags* are not
     subclasses of :class:`Tag`, a :exc:`TypeError` will be raised.
 
-    :returns: *tags* with duplicate instance of :class:`WeakUniqueTag` removed.
+    :returns: *tags* with duplicate instances of :class:`WeakUniqueTag` removed.
     """
     unique_tag_descendants: Set[Tag] = set()
     weak_unique_tag_descendants: Set[Tag] = set()
@@ -322,7 +322,7 @@ class Taggable:
         """
         return self._with_new_tags(
                 tags=check_tag_uniqueness(
-                    list(self.tags)+list(normalize_tags(tags))))
+                    list(self.tags)+list(normalize_tags(list(tags)))))
 
     def without_tags(self,
             tags: ToTagSetConvertible, verify_existence: bool = True) -> Self:
