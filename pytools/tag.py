@@ -332,12 +332,12 @@ class Taggable:
                          for tag in self.tags
                          if not isinstance(tag, tag_t)})
 
-    def __eq__(self, __o: object) -> bool:
-        if isinstance(__o, Taggable):
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Taggable):
             return (self.tags_not_of_type(IgnoredForEqualityTag)
-                    == __o.tags_not_of_type(IgnoredForEqualityTag))
+                    == other.tags_not_of_type(IgnoredForEqualityTag))
         else:
-            return super().__eq__(__o)
+            return super().__eq__(other)
 
     def __hash__(self) -> int:
         return hash(self.tags_not_of_type(IgnoredForEqualityTag))
