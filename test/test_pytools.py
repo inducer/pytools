@@ -50,14 +50,14 @@ def test_memoize_method_clear():
     sc.f.clear_cache(sc)  # pylint: disable=no-member
 
 
-def test_memoize_method_with_uncached():
-    from pytools import memoize_method_with_uncached
+def test_keyed_memoize_method_with_uncached():
+    from pytools import keyed_memoize_method
 
     class SomeClass:
         def __init__(self):
             self.run_count = 0
 
-        @memoize_method_with_uncached(uncached_args=[1], uncached_kwargs=["z"])
+        @keyed_memoize_method(key=lambda x, y, z: x)
         def f(self, x, y, z):
             del x, y, z
             self.run_count += 1
