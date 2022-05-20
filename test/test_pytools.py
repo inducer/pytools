@@ -452,7 +452,7 @@ def test_obj_array_vectorize(c=1):
 
     # {{{ check
 
-    scalar_ary = np.ones(42, dtype=np.float)
+    scalar_ary = np.ones(42, dtype=np.float64)
     object_ary = obj.make_obj_array([scalar_ary, scalar_ary, scalar_ary])
 
     for func, vectorizer, nargs in [
