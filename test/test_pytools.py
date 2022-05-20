@@ -497,8 +497,8 @@ def test_tag():
     # Need a subclass that defines the copy function in order to test.
     class TaggableWithCopy(Taggable):
 
-        def copy(self, **kwargs):
-            return TaggableWithCopy(kwargs["tags"])
+        def _with_new_tags(self, tags):
+            return TaggableWithCopy(tags)
 
     class FairRibbon(Tag):
         pass
