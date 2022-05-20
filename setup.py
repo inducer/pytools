@@ -38,12 +38,15 @@ setup(name="pytools",
 
       install_requires=[
           "platformdirs>=2.2.0",
-          "numpy>=1.6.0",
           "dataclasses>=0.7;python_version<='3.6'",
           "typing_extensions>=4.0; python_version<'3.11'",
           ],
 
       package_data={"pytools": ["py.typed"]},
+
+    extras_require={
+        "numpy":  ["numpy>=1.6.0"],
+        },
 
       author="Andreas Kloeckner",
       url="http://pypi.python.org/pypi/pytools",

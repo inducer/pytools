@@ -18,6 +18,19 @@ Pytest:
     reports:
       junit: test/pytest.xml
 
+Pytest without Numpy:
+  script: |
+    NO_DOCTESTS=1
+    curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
+    . ./build-and-test-py-project.sh
+  tags:
+  - python3
+  except:
+  - tags
+  artifacts:
+    reports:
+      junit: test/pytest.xml
+
 # Examples:
 #   script: |
 #     EXTRA_INSTALL="numpy pymbolic"
