@@ -273,7 +273,7 @@ def test_find_module_git_revision():
 
 def test_reshaped_view():
     import pytools
-    import numpy as np
+    np = pytest.importorskip("numpy")
 
     a = np.zeros((10, 2))
     b = a.T
@@ -319,6 +319,8 @@ def test_table():
 
 
 def test_eoc():
+    np = pytest.importorskip("numpy")
+
     from pytools.convergence import EOCRecorder
     eoc = EOCRecorder()
 
@@ -397,6 +399,8 @@ class FakeArray:
 
 
 def test_make_obj_array_iteration():
+    pytest.importorskip("numpy")
+
     from pytools.obj_array import make_obj_array
     make_obj_array([FakeArray()])
 
@@ -624,7 +628,7 @@ def test_sphere_sampling(sampling, visualize=False):
     else:
         raise ValueError(f"unknown sampling method: '{sampling}'")
 
-    import numpy as np
+    np = pytest.importorskip("numpy")
     points = sampling_func(npoints)
     assert np.all(np.linalg.norm(points, axis=0) < radius + 1.0e-15)
 
