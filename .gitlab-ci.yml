@@ -63,7 +63,7 @@ Mypy:
 
 Pylint:
   script:
-  - EXTRA_INSTALL="pymbolic"
+  - EXTRA_INSTALL="numpy pymbolic"
   - py_version=3
   - curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-pylint.sh
   - . ./prepare-and-run-pylint.sh "$CI_PROJECT_NAME" test/test_*.py
