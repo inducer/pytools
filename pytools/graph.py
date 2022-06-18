@@ -33,9 +33,11 @@ Graph Algorithms
 .. autofunction:: compute_sccs
 .. autoclass:: CycleError
 .. autofunction:: compute_topological_order
+.. autofunction:: compute_topological_order_with_dynamic_key
 .. autofunction:: compute_transitive_closure
 .. autofunction:: contains_cycle
 .. autofunction:: compute_induced_subgraph
+.. autoclass:: TopologicalOrderState
 
 Type Variables Used
 -------------------
@@ -46,7 +48,8 @@ Type Variables Used
 """
 
 from typing import (TypeVar, Mapping, Iterable, List, Optional, Any, Callable,
-                    Set, MutableSet, Dict, Iterator, Tuple)
+                    Set, MutableSet, Dict, Iterator, Tuple, Generic)
+from dataclasses import dataclass
 
 
 T = TypeVar("T")
@@ -207,6 +210,111 @@ class HeapEntry:
         return self.key < other.key
 
 
+@dataclass(frozen=True)
+class TopologicalOrderState(Generic[T]):
+    """
+    .. attribute:: scheduled_nodes
+
+        A :class:`list` of nodes that have been scheduled.
+
+    .. warning::
+
+        - Mutable updates to :attr:`scheduled_nodes`
+          results in an undefined behavior.
+    """
+    scheduled_nodes: List[T]
+
+
+def compute_topological_order_with_dynamic_key(
+        graph: Mapping[T, Iterable[T]],
+        trigger_key_update: Callable[[TopologicalOrderState[T]], bool],
+        get_key: Callable[[TopologicalOrderState[T]], Callable[[T], Any]]
+) -> List[T]:
+    """
+    Computes a topological order of nodes in a directed graph with support for
+    a dynamic keying function.
+
+    :arg graph: A :class:`collections.abc.Mapping` representing a directed
+        graph. The dictionary contains one key representing each node in the
+        graph, and this key maps to a :class:`collections.abc.Iterable` of its
+        successor nodes.
+
+    :arg trigger_key_update: A function called after scheduling a node in
+        *graph* that takes in an instance of :class:`TopologicalOrderState`
+        corresponding to the scheduling state at that point and returns whether
+        the comparison keys corresponding to the nodes be updated.
+
+    :arg get_key: A callable  called when *trigger_key_update*
+        returns *True*. Takes in an instance of :class:`TopologicalOrderState`
+        and returns another callable that accepts node as an argument and returns the
+        comparison key corresponding to the node.
+
+    :returns: A :class:`list` representing a valid topological ordering of the
+        nodes in the directed graph.
+
+    .. note::
+
+        * Requires the keys of the mapping *graph* to be hashable.
+        * Implements `Kahn's algorithm <https://w.wiki/YDy>`__.
+
+    .. versionadded:: 2022.2
+    """
+
+    from heapq import heapify, heappop, heappush
+
+    order = []
+
+    # {{{ compute nodes_to_num_predecessors
+
+    nodes_to_num_predecessors = {node: 0 for node in graph}
+
+    for node in graph:
+        for child in graph[node]:
+            nodes_to_num_predecessors[child] = (
+                    nodes_to_num_predecessors.get(child, 0) + 1)
+
+    # }}}
+
+    keyfunc = get_key(TopologicalOrderState(scheduled_nodes=[]))
+
+    total_num_nodes = len(nodes_to_num_predecessors)
+
+    # heap: list of instances of HeapEntry(n) where 'n' is a node in
+    # 'graph' with no predecessor. Nodes with no predecessors are the
+    # schedulable candidates.
+    heap = [HeapEntry(n, keyfunc(n))
+            for n, num_preds in nodes_to_num_predecessors.items()
+            if num_preds == 0]
+    heapify(heap)
+
+    while heap:
+        # pick the node with least key
+        node_to_be_scheduled = heappop(heap).node
+        order.append(node_to_be_scheduled)
+
+        state = TopologicalOrderState(scheduled_nodes=order)
+
+        if trigger_key_update(state):
+            keyfunc = get_key(state)
+            heap = [HeapEntry(entry.node, keyfunc(entry.node))
+                    for entry in heap]
+            heapify(heap)
+
+        # discard 'node_to_be_scheduled' from the predecessors of its
+        # successors since it's been scheduled
+        for child in graph.get(node_to_be_scheduled, ()):
+            nodes_to_num_predecessors[child] -= 1
+            if nodes_to_num_predecessors[child] == 0:
+                heappush(heap, HeapEntry(child, keyfunc(child)))
+
+    if len(order) != total_num_nodes:
+        # any node which has a predecessor left is a part of a cycle
+        raise CycleError(next(iter(n for n, num_preds in
+            nodes_to_num_predecessors.items() if num_preds != 0)))
+
+    return order
+
+
 def compute_topological_order(graph: Mapping[T, Iterable[T]],
                               key: Optional[Callable[[T], Any]] = None) -> List[T]:
     """Compute a topological order of nodes in a directed graph.
@@ -233,49 +341,10 @@ def compute_topological_order(graph: Mapping[T, Iterable[T]],
     # all nodes have the same keys when not provided
     keyfunc = key if key is not None else (lambda x: 0)
 
-    from heapq import heapify, heappop, heappush
-
-    order = []
-
-    # {{{ compute nodes_to_num_predecessors
-
-    nodes_to_num_predecessors = {node: 0 for node in graph}
-
-    for node in graph:
-        for child in graph[node]:
-            nodes_to_num_predecessors[child] = (
-                    nodes_to_num_predecessors.get(child, 0) + 1)
-
-    # }}}
-
-    total_num_nodes = len(nodes_to_num_predecessors)
-
-    # heap: list of instances of HeapEntry(n) where 'n' is a node in
-    # 'graph' with no predecessor. Nodes with no predecessors are the
-    # schedulable candidates.
-    heap = [HeapEntry(n, keyfunc(n))
-            for n, num_preds in nodes_to_num_predecessors.items()
-            if num_preds == 0]
-    heapify(heap)
-
-    while heap:
-        # pick the node with least key
-        node_to_be_scheduled = heappop(heap).node
-        order.append(node_to_be_scheduled)
-
-        # discard 'node_to_be_scheduled' from the predecessors of its
-        # successors since it's been scheduled
-        for child in graph.get(node_to_be_scheduled, ()):
-            nodes_to_num_predecessors[child] -= 1
-            if nodes_to_num_predecessors[child] == 0:
-                heappush(heap, HeapEntry(child, keyfunc(child)))
-
-    if len(order) != total_num_nodes:
-        # any node which has a predecessor left is a part of a cycle
-        raise CycleError(next(iter(n for n, num_preds in
-            nodes_to_num_predecessors.items() if num_preds != 0)))
-
-    return order
+    return compute_topological_order_with_dynamic_key(
+        graph,
+        trigger_key_update=lambda _: False,
+        get_key=lambda _: keyfunc)
 
 # }}}
 
