@@ -703,6 +703,50 @@ def test_ignoredforequalitytag():
     assert hash(eq1) != hash(eq3)
 
 
+def test_compute_topological_order_with_dynamic_key():
+    from pytools.graph import compute_topological_order_with_dynamic_key
+
+    dag = {"A": {"C"},
+           "B": {"E"},
+           "C": {"D"},
+           "D": set(),
+           "E": set(),
+           }
+
+    colors = {"A": "red",
+              "B": "red",
+              "C": "blue",
+              "D": "red",
+              "E": "blue"}
+
+    # {{{ set a dynamic key to greedily schedule continuous chunks of blue/red nodes
+
+    def trigger_key_update(state):
+        if len(state.scheduled_nodes) == 1:
+            # initially we preferred blue.
+            return colors[state.scheduled_nodes[0]] == "red"
+        else:
+            return (colors[state.scheduled_nodes[-1]]
+                    != colors[state.scheduled_nodes[-2]])
+
+    def get_key(state):
+        if len(state.scheduled_nodes) == 0:
+            # initial state => prefer blue.
+            return lambda x: (colors[x] != "blue",
+                              x)
+        else:
+            return lambda x: (colors[x] != colors[state.scheduled_nodes[-1]],
+                              x)
+
+    # }}}
+
+    sorted_nodes = compute_topological_order_with_dynamic_key(
+        dag,
+        trigger_key_update, get_key)
+
+    assert sorted_nodes == ["A", "B", "C", "E", "D"]
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
