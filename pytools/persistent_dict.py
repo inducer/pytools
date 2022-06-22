@@ -30,6 +30,7 @@ from enum import Enum
 import logging
 import hashlib
 import collections.abc as abc
+from dataclasses import is_dataclass, fields
 
 # Removing this in 2020-12 broke a shocking amount of stuff, such as
 # https://github.com/OP2/PyOP2/pull/605
@@ -245,6 +246,9 @@ class KeyBuilder:
                 elif issubclass(tp, Enum):
                     method = self.update_for_enum
 
+                elif is_dataclass(tp):
+                    method = self.update_for_dataclass
+
             if method is not None:
                 inner_key_hash = self.new_hash()
                 method(inner_key_hash, key)
@@ -335,6 +339,11 @@ class KeyBuilder:
     @staticmethod
     def update_for_specific_dtype(key_hash, key):
         key_hash.update(key.str.encode("utf8"))
+
+    def update_for_dataclass(self, key_hash, key):
+        for fld in fields(key):
+            self.rec(key_hash, fld.name)
+            self.rec(key_hash, getattr(key, fld.name, None))
 
     # }}}
 
