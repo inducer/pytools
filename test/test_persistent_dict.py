@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+from enum import Enum, IntEnum
 import shutil
 import sys  # noqa
 import tempfile
@@ -43,6 +45,22 @@ class PDictTestingKeyOrValue:
 @tag_dataclass
 class SomeTag(Tag):
     value: str
+
+
+class MyEnum(Enum):
+    YES = 1
+    NO = 2
+
+
+class MyIntEnum(IntEnum):
+    YES = 1
+    NO = 2
+
+
+@dataclass
+class MyStruct:
+    name: str
+    value: int
 
 
 def test_persistent_dict_storage_and_lookup():
@@ -98,6 +116,38 @@ def test_persistent_dict_storage_and_lookup():
 
         pdict.store_if_not_present(2001, 2001)
         assert pdict[2001] == 2001
+
+        # }}}
+
+        # {{{ check dataclasses
+
+        for v in [17, 18]:
+            key = MyStruct("hi", v)
+            pdict[key] = v
+
+            # reuse same key, with stored hash
+            assert pdict[key] == v
+
+        with pytest.raises(NoSuchEntryError):
+            pdict[MyStruct("hi", 19)]
+
+        for v in [17, 18]:
+            # make new key instances
+            assert pdict[MyStruct("hi", v)] == v
+
+        # }}}
+
+        # {{{ check enums
+
+        pdict[MyEnum.YES] = 1
+        with pytest.raises(NoSuchEntryError):
+            pdict[MyEnum.NO]
+        assert pdict[MyEnum.YES] == 1
+
+        pdict[MyIntEnum.YES] = 12
+        with pytest.raises(NoSuchEntryError):
+            pdict[MyIntEnum.NO]
+        assert pdict[MyIntEnum.YES] == 12
 
         # }}}
 
