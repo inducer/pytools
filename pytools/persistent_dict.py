@@ -256,7 +256,8 @@ class KeyBuilder:
 
         if not isinstance(key, type):
             try:
-                key._pytools_persistent_hash_digest = digest   # noqa pylint:disable=protected-access
+                # pylint:disable=protected-access
+                object.__setattr__(key, "_pytools_persistent_hash_digest",  digest)
             except AttributeError:
                 pass
             except TypeError:
