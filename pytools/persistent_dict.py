@@ -216,12 +216,7 @@ class KeyBuilder:
             Now returns the updated *key_hash*.
         """
 
-        digest = None
-
-        try:
-            digest = key._pytools_persistent_hash_digest  # noqa pylint:disable=protected-access
-        except AttributeError:
-            pass
+        digest = getattr(key, "_pytools_persistent_hash_digest", None)
 
         if digest is None:
             try:
