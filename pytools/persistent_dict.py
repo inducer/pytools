@@ -341,6 +341,8 @@ class KeyBuilder:
         key_hash.update(key.str.encode("utf8"))
 
     def update_for_dataclass(self, key_hash, key):
+        self.rec(key_hash, type(key_hash).__name__.encode("utf-8"))
+
         for fld in fields(key):
             self.rec(key_hash, fld.name)
             self.rec(key_hash, getattr(key, fld.name, None))
