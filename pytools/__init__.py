@@ -34,7 +34,7 @@ import sys
 import logging
 from typing import (
         Any, Callable, Dict, Generic, Hashable, Iterable,
-        List, Optional, Set, Tuple, TypeVar, Union)
+        List, Optional, Set, Tuple, TypeVar, Union, ClassVar)
 import builtins
 
 import math
@@ -394,7 +394,8 @@ class RecordWithoutPickling:
     will be individually derived from this class.
     """
 
-    __slots__: List[str] = []
+    __slots__: ClassVar[List[str]] = []
+    fields: ClassVar[Set[str]]
 
     def __init__(self, valuedict=None, exclude=None, **kwargs):
         assert self.__class__ is not Record
@@ -451,7 +452,7 @@ class RecordWithoutPickling:
 
 
 class Record(RecordWithoutPickling):
-    __slots__: List[str] = []
+    __slots__: ClassVar[List[str]] = []
 
     def __getstate__(self):
         return {
