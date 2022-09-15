@@ -8,7 +8,20 @@ Pytest:
     rm pytools/log.py
 
     export EXTRA_INSTALL="numpy"
-    curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
+    curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
+    . ./build-and-test-py-project.sh
+  tags:
+  - python3
+  except:
+  - tags
+  artifacts:
+    reports:
+      junit: test/pytest.xml
+
+Pytest without Numpy:
+  script: |
+    NO_DOCTESTS=1
+    curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
     . ./build-and-test-py-project.sh
   tags:
   - python3
@@ -21,8 +34,8 @@ Pytest:
 # Examples:
 #   script: |
 #     EXTRA_INSTALL="numpy pymbolic"
-#     curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/main/ci-support.sh
-#     . ./ci-support.sh
+#     curl -L -O https://tiker.net/ci-support-v0
+#     . ./ci-support-v0
 #     build_py_project_in_venv
 #     run_examples
 #   tags:
@@ -32,7 +45,7 @@ Pytest:
 
 Flake8:
   script:
-  - curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-flake8.sh
+  - curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-flake8.sh
   - . ./prepare-and-run-flake8.sh "$CI_PROJECT_NAME" test
   tags:
   - python3
@@ -41,7 +54,7 @@ Flake8:
 
 Mypy:
   script:
-  - curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-mypy.sh
+  - curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-mypy.sh
   - ". ./prepare-and-run-mypy.sh python3 mypy"
   tags:
   - python3
@@ -50,9 +63,9 @@ Mypy:
 
 Pylint:
   script:
-  - EXTRA_INSTALL="pymbolic"
+  - EXTRA_INSTALL="numpy pymbolic"
   - py_version=3
-  - curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-pylint.sh
+  - curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-pylint.sh
   - . ./prepare-and-run-pylint.sh "$CI_PROJECT_NAME" test/test_*.py
   tags:
   - python3
@@ -62,8 +75,21 @@ Pylint:
 Documentation:
   script:
   - EXTRA_INSTALL="numpy"
-  - curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/main/build-docs.sh
+  - curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-docs.sh
   - ". ./build-docs.sh"
   tags:
   - python3
 
+Downstream:
+  parallel:
+    matrix:
+    - DOWNSTREAM_PROJECT: [loopy, pytato]
+  tags:
+  - large-node
+  - "docker-runner"
+  script: |
+    curl -L -O https://tiker.net/ci-support-v0
+    . ./ci-support-v0
+    test_downstream "$DOWNSTREAM_PROJECT"
+
+# vim: sw=2

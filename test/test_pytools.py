@@ -26,6 +26,7 @@ import pytest
 
 import logging
 logger = logging.getLogger(__name__)
+from typing import FrozenSet
 
 
 @pytest.mark.skipif("sys.version_info < (2, 5)")
@@ -49,14 +50,14 @@ def test_memoize_method_clear():
     sc.f.clear_cache(sc)  # pylint: disable=no-member
 
 
-def test_memoize_method_with_uncached():
-    from pytools import memoize_method_with_uncached
+def test_keyed_memoize_method_with_uncached():
+    from pytools import keyed_memoize_method
 
     class SomeClass:
         def __init__(self):
             self.run_count = 0
 
-        @memoize_method_with_uncached(uncached_args=[1], uncached_kwargs=["z"])
+        @keyed_memoize_method(key=lambda x, y, z: x)
         def f(self, x, y, z):
             del x, y, z
             self.run_count += 1
@@ -272,7 +273,7 @@ def test_find_module_git_revision():
 
 def test_reshaped_view():
     import pytools
-    import numpy as np
+    np = pytest.importorskip("numpy")
 
     a = np.zeros((10, 2))
     b = a.T
@@ -308,8 +309,18 @@ def test_table():
     print()
     print(tbl.latex())
 
+    # {{{ test merging
+
+    from pytools import merge_tables
+    tbl = merge_tables(tbl, tbl, tbl, skip_columns=(0,))
+    print(tbl.github_markdown())
+
+    # }}}
+
 
 def test_eoc():
+    np = pytest.importorskip("numpy")
+
     from pytools.convergence import EOCRecorder
     eoc = EOCRecorder()
 
@@ -326,6 +337,14 @@ def test_eoc():
             abscissa_format="%.5e",
             error_format="%.5e",
             eoc_format="%5.2f")
+    print(p)
+
+    # }}}
+
+    # {{{ test merging
+
+    from pytools.convergence import stringify_eocs
+    p = stringify_eocs(eoc, eoc, eoc, names=("First", "Second", "Third"))
     print(p)
 
     # }}}
@@ -380,6 +399,8 @@ class FakeArray:
 
 
 def test_make_obj_array_iteration():
+    pytest.importorskip("numpy")
+
     from pytools.obj_array import make_obj_array
     make_obj_array([FakeArray()])
 
@@ -435,7 +456,7 @@ def test_obj_array_vectorize(c=1):
 
     # {{{ check
 
-    scalar_ary = np.ones(42, dtype=np.float)
+    scalar_ary = np.ones(42, dtype=np.float64)
     object_ary = obj.make_obj_array([scalar_ary, scalar_ary, scalar_ary])
 
     for func, vectorizer, nargs in [
@@ -476,8 +497,8 @@ def test_tag():
     # Need a subclass that defines the copy function in order to test.
     class TaggableWithCopy(Taggable):
 
-        def copy(self, **kwargs):
-            return TaggableWithCopy(kwargs["tags"])
+        def _with_new_tags(self, tags):
+            return TaggableWithCopy(tags)
 
     class FairRibbon(Tag):
         pass
@@ -542,7 +563,7 @@ def test_tag():
                                 blue_ribbon, red_ribbon))
 
     # Test that tagged() fails if a UniqueTag of the same subclass
-    # is alredy present
+    # is already present
     with pytest.raises(NonUniqueTagError):
         t1.tagged(best_in_show_ribbon)
 
@@ -607,7 +628,7 @@ def test_sphere_sampling(sampling, visualize=False):
     else:
         raise ValueError(f"unknown sampling method: '{sampling}'")
 
-    import numpy as np
+    np = pytest.importorskip("numpy")
     points = sampling_func(npoints)
     assert np.all(np.linalg.norm(points, axis=0) < radius + 1.0e-15)
 
@@ -634,6 +655,52 @@ def test_sphere_sampling(sampling, visualize=False):
     plt.close(fig)
 
 # }}}
+
+
+def test_unique_name_gen_conflicting_ok():
+    from pytools import UniqueNameGenerator
+
+    ung = UniqueNameGenerator()
+    ung.add_names({"a", "b", "c"})
+
+    with pytest.raises(ValueError):
+        ung.add_names({"a"})
+
+    ung.add_names({"a", "b", "c"}, conflicting_ok=True)
+
+
+def test_ignoredforequalitytag():
+    from pytools.tag import IgnoredForEqualityTag, Tag, Taggable
+
+    # Need a subclass that defines _with_new_tags in order to test.
+    class TaggableWithNewTags(Taggable):
+
+        def _with_new_tags(self, tags: FrozenSet[Tag]):
+            return TaggableWithNewTags(tags)
+
+    class Eq1(IgnoredForEqualityTag):
+        pass
+
+    class Eq2(IgnoredForEqualityTag):
+        pass
+
+    class Eq3(Tag):
+        pass
+
+    eq1 = TaggableWithNewTags(frozenset([Eq1()]))
+    eq2 = TaggableWithNewTags(frozenset([Eq2()]))
+    eq12 = TaggableWithNewTags(frozenset([Eq1(), Eq2()]))
+    eq3 = TaggableWithNewTags(frozenset([Eq1(), Eq3()]))
+
+    assert eq1 == eq2 == eq12
+    assert eq1 != eq3
+
+    assert eq1.without_tags(Eq1())
+    with pytest.raises(ValueError):
+        eq3.without_tags(Eq2())
+
+    assert hash(eq1) == hash(eq2) == hash(eq12)
+    assert hash(eq1) != hash(eq3)
 
 
 if __name__ == "__main__":

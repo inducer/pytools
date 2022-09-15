@@ -27,19 +27,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-
 import re
 from functools import reduce, wraps
 import operator
 import sys
 import logging
 from typing import (
-        Any, Callable, Dict, Hashable, Iterable,
-        List, Optional, Set, Tuple, TypeVar)
+        Any, Callable, Dict, Generic, Hashable, Iterable,
+        List, Optional, Set, Tuple, TypeVar, Union, ClassVar)
 import builtins
 
+import math
 from sys import intern
 
+try:
+    from typing import SupportsIndex, ParamSpec, Concatenate
+except ImportError:
+    from typing_extensions import SupportsIndex, ParamSpec, Concatenate
 
 # These are deprecated and will go away in 2022.
 all = builtins.all
@@ -103,6 +107,7 @@ Formatting
 ----------
 
 .. autoclass:: Table
+.. autofunction:: merge_tables
 .. autofunction:: string_histogram
 .. autofunction:: word_wrap
 
@@ -178,18 +183,25 @@ Type Variables Used
 -------------------
 
 .. class:: T
+.. class:: R
 
-    Any type.
+    Generic unbound invariant :class:`typing.TypeVar`.
 
 .. class:: F
 
-    Any callable.
+    Generic invariant :class:`typing.TypeVar` bound to a :class:`typing.Callable`.
+
+.. class:: P
+
+    Generic unbound invariant :class:`typing.ParamSpec`.
 """
 
 # {{{ type variables
 
 T = TypeVar("T")
+R = TypeVar("R")
 F = TypeVar("F", bound=Callable[..., Any])
+P = ParamSpec("P")
 
 # }}}
 
@@ -197,7 +209,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 # {{{ code maintenance
 
 class MovedFunctionDeprecationWrapper:
-    def __init__(self, f, deadline=None):
+    def __init__(self, f: F, deadline: Optional[Union[int, str]] = None) -> None:
         if deadline is None:
             deadline = "the future"
 
@@ -266,43 +278,85 @@ def delta(x, y):
         return 0
 
 
-def levi_civita(tup):
-    """Compute an entry of the Levi-Civita tensor for the indices *tuple*."""
+def levi_civita(tup: Tuple[int, ...]) -> int:
+    """Compute an entry of the Levi-Civita symbol for the indices *tuple*."""
     if len(tup) == 2:
         i, j = tup
-        return j-i
+        return j - i
     if len(tup) == 3:
         i, j, k = tup
-        return (j-i)*(k-i)*(k-j)/2
+        return (j-i) * (k-i) * (k-j) // 2
     else:
-        raise NotImplementedError
+        raise NotImplementedError(f"Levi-Civita symbol in {len(tup)} dimensions")
 
 
-def factorial(n):
-    from operator import mul
-    assert n == int(n)
-    return reduce(mul, (i for i in range(1, n+1)), 1)
+factorial = MovedFunctionDeprecationWrapper(math.factorial, deadline=2023)
 
+try:
+    # NOTE: only available in python >= 3.8
+    perm = MovedFunctionDeprecationWrapper(math.perm, deadline=2023)
+except AttributeError:
+    def _unchecked_perm(n, k):
+        result = 1
+        while k:
+            result *= n
+            n -= 1
+            k -= 1
 
-def perm(n, k):
-    """Return P(n, k), the number of permutations of length k drawn from n
-    choices.
-    """
-    result = 1
-    assert k > 0
-    while k:
-        result *= n
-        n -= 1
-        k -= 1
+        return result
 
-    return result
+    def perm(n: SupportsIndex,              # type: ignore[misc]
+             k: Optional[SupportsIndex] = None) -> int:
+        """
+        :returns: :math:`P(n, k)`, the number of permutations of length :math:`k`
+            drawn from :math:`n` choices.
+        """
+        from warnings import warn
+        warn("This function is deprecated and will go away in 2023. "
+                "Use `math.perm` instead, which is available from Python 3.8.",
+                DeprecationWarning, stacklevel=2)
 
+        if k is None:
+            return math.factorial(n)
 
-def comb(n, k):
-    """Return C(n, k), the number of combinations (subsets)
-    of length k drawn from n choices.
-    """
-    return perm(n, k)//factorial(k)
+        import operator
+        n, k = operator.index(n), operator.index(k)
+        if k > n:
+            return 0
+
+        if k < 0:
+            raise ValueError("k must be a non-negative integer")
+
+        if n < 0:
+            raise ValueError("n must be a non-negative integer")
+
+        from numbers import Integral
+        if not isinstance(k, Integral):
+            raise TypeError(f"'{type(k).__name__}' object cannot be interpreted "
+                            "as an integer")
+
+        if not isinstance(n, Integral):
+            raise TypeError(f"'{type(n).__name__}' object cannot be interpreted "
+                            "as an integer")
+
+        return _unchecked_perm(n, k)
+
+try:
+    # NOTE: only available in python >= 3.8
+    comb = MovedFunctionDeprecationWrapper(math.comb, deadline=2023)
+except AttributeError:
+    def comb(n: SupportsIndex,              # type: ignore[misc]
+             k: SupportsIndex) -> int:
+        """
+        :returns: :math:`C(n, k)`, the number of combinations (subsets)
+            of length :math:`k` drawn from :math:`n` choices.
+        """
+        from warnings import warn
+        warn("This function is deprecated and will go away in 2023. "
+                "Use `math.comb` instead, which is available from Python 3.8.",
+                DeprecationWarning, stacklevel=2)
+
+        return _unchecked_perm(n, k) // math.factorial(k)
 
 
 def norm_1(iterable):
@@ -340,7 +394,8 @@ class RecordWithoutPickling:
     will be individually derived from this class.
     """
 
-    __slots__: List[str] = []
+    __slots__: ClassVar[List[str]] = []
+    fields: ClassVar[Set[str]]
 
     def __init__(self, valuedict=None, exclude=None, **kwargs):
         assert self.__class__ is not Record
@@ -397,7 +452,7 @@ class RecordWithoutPickling:
 
 
 class Record(RecordWithoutPickling):
-    __slots__: List[str] = []
+    __slots__: ClassVar[List[str]] = []
 
     def __getstate__(self):
         return {
@@ -416,6 +471,8 @@ class Record(RecordWithoutPickling):
             setattr(self, key, value)
 
     def __eq__(self, other):
+        if self is other:
+            return True
         return (self.__class__ == other.__class__
                 and self.__getstate__() == other.__getstate__())
 
@@ -430,7 +487,8 @@ class ImmutableRecordWithoutPickling(RecordWithoutPickling):
         self._cached_hash = None
 
     def __hash__(self):
-        if self._cached_hash is None:
+        # This attribute may vanish during pickling.
+        if getattr(self, "_cached_hash", None) is None:
             self._cached_hash = hash(
                 (type(self),) + tuple(getattr(self, field)
                     for field in self.__class__.fields))
@@ -677,7 +735,9 @@ class _HasKwargs:
     pass
 
 
-def memoize_on_first_arg(function, cache_dict_name=None):
+def memoize_on_first_arg(
+        function: Callable[Concatenate[T, P], R], *,
+        cache_dict_name: Optional[str] = None) -> Callable[Concatenate[T, P], R]:
     """Like :func:`memoize_method`, but for functions that take the object
     in which do memoization information is stored as first argument.
 
@@ -689,12 +749,13 @@ def memoize_on_first_arg(function, cache_dict_name=None):
                 f"_memoize_dic_{function.__module__}{function.__name__}"
                 )
 
-    def wrapper(obj, *args, **kwargs):
+    def wrapper(obj: T, *args: P.args, **kwargs: P.kwargs) -> R:
         if kwargs:
             key = (_HasKwargs, frozenset(kwargs.items())) + args
         else:
             key = args
 
+        assert cache_dict_name is not None
         try:
             return getattr(obj, cache_dict_name)[key]
         except AttributeError:
@@ -715,12 +776,17 @@ def memoize_on_first_arg(function, cache_dict_name=None):
 
     from functools import update_wrapper
     new_wrapper = update_wrapper(wrapper, function)
-    new_wrapper.clear_cache = clear_cache
+
+    # type-ignore because mypy has a point here, stuffing random attributes
+    # into the function's dict is moderately sketchy.
+    new_wrapper.clear_cache = clear_cache  # type: ignore[attr-defined]
 
     return new_wrapper
 
 
-def memoize_method(method: F) -> F:
+def memoize_method(
+        method: Callable[Concatenate[T, P], R]
+        ) -> Callable[Concatenate[T, P], R]:
     """Supports cache deletion via ``method_name.clear_cache(self)``.
 
     .. versionchanged:: 2021.2
@@ -730,10 +796,10 @@ def memoize_method(method: F) -> F:
     """
 
     return memoize_on_first_arg(method,
-            intern(f"_memoize_dic_{method.__name__}"))
+            cache_dict_name=intern(f"_memoize_dic_{method.__name__}"))
 
 
-class keyed_memoize_on_first_arg:  # noqa: N801
+class keyed_memoize_on_first_arg(Generic[T, P, R]):  # noqa: N801
     """Like :func:`memoize_method`, but for functions that take the object
     in which memoization information is stored as first argument.
 
@@ -747,23 +813,29 @@ class keyed_memoize_on_first_arg:  # noqa: N801
     .. versionadded :: 2020.3
     """
 
-    def __init__(self, key, cache_dict_name=None):
+    def __init__(self,
+            key: Callable[P, Hashable], *,
+            cache_dict_name: Optional[str] = None) -> None:
         self.key = key
         self.cache_dict_name = cache_dict_name
 
-    def _default_cache_dict_name(self, function):
+    def _default_cache_dict_name(self,
+            function: Callable[Concatenate[T, P], R]) -> str:
         return intern(f"_memoize_dic_{function.__module__}{function.__name__}")
 
-    def __call__(self, function):
+    def __call__(
+            self, function: Callable[Concatenate[T, P], R]
+            ) -> Callable[Concatenate[T, P], R]:
         cache_dict_name = self.cache_dict_name
         key = self.key
 
         if cache_dict_name is None:
             cache_dict_name = self._default_cache_dict_name(function)
 
-        def wrapper(obj, *args, **kwargs):
+        def wrapper(obj: T, *args: P.args, **kwargs: P.kwargs) -> R:
             cache_key = key(*args, **kwargs)
 
+            assert cache_dict_name is not None
             try:
                 return getattr(obj, cache_dict_name)[cache_key]
             except AttributeError:
@@ -780,7 +852,7 @@ class keyed_memoize_on_first_arg:  # noqa: N801
 
         from functools import update_wrapper
         new_wrapper = update_wrapper(wrapper, function)
-        new_wrapper.clear_cache = clear_cache
+        new_wrapper.clear_cache = clear_cache       # type: ignore[attr-defined]
 
         return new_wrapper
 
@@ -805,75 +877,7 @@ class keyed_memoize_method(keyed_memoize_on_first_arg):  # noqa: N801
         return intern(f"_memoize_dic_{function.__name__}")
 
 
-def memoize_method_with_uncached(uncached_args=None, uncached_kwargs=None):
-    """Supports cache deletion via ``method_name.clear_cache(self)``.
-
-    :arg uncached_args: a list of argument numbers
-        (0-based, not counting 'self' argument)
-    """
-    from warnings import warn
-    warn("memoize_method_with_uncached is deprecated and will go away in 2022. "
-            "Use memoize_method_with_key instead",
-            DeprecationWarning,
-            stacklevel=2)
-
-    if uncached_args is None:
-        uncached_args = []
-    if uncached_kwargs is None:
-        uncached_kwargs = set()
-
-    # delete starting from the end
-    uncached_args = sorted(uncached_args, reverse=True)
-    uncached_kwargs = list(uncached_kwargs)
-
-    def parametrized_decorator(method):
-        cache_dict_name = intern(f"_memoize_dic_{method.__name__}")
-
-        def wrapper(self, *args, **kwargs):
-            cache_args = list(args)
-            cache_kwargs = kwargs.copy()
-
-            for i in uncached_args:
-                if i < len(cache_args):
-                    cache_args.pop(i)
-
-            cache_args = tuple(cache_args)
-
-            if kwargs:
-                for name in uncached_kwargs:
-                    cache_kwargs.pop(name, None)
-
-                key = (
-                        (_HasKwargs, frozenset(cache_kwargs.items()))
-                        + cache_args)
-            else:
-                key = cache_args
-
-            try:
-                return getattr(self, cache_dict_name)[key]
-            except AttributeError:
-                result = method(self, *args, **kwargs)
-                object.__setattr__(self, cache_dict_name, {key: result})
-                return result
-            except KeyError:
-                result = method(self, *args, **kwargs)
-                getattr(self, cache_dict_name)[key] = result
-                return result
-
-        def clear_cache(self):
-            object.__delattr__(self, cache_dict_name)
-
-        if sys.version_info >= (2, 5):
-            from functools import update_wrapper
-            new_wrapper = update_wrapper(wrapper, method)
-            new_wrapper.clear_cache = clear_cache
-
-        return new_wrapper
-
-    return parametrized_decorator
-
-
-class memoize_in:  # noqa
+class memoize_in(Generic[P, R]):  # noqa
     """Adds a cache to the function it decorates. The cache is attached
     to *container* and must be uniquely specified by *identifier* (i.e.
     all functions using the same *container* and *identifier* will be using
@@ -907,9 +911,11 @@ class memoize_in:  # noqa
 
         self.cache_dict = memoize_in_dict.setdefault(identifier, {})
 
-    def __call__(self, inner: F) -> F:
+    def __call__(self, inner: Callable[P, R]) -> Callable[P, R]:
         @wraps(inner)
-        def new_inner(*args):
+        def new_inner(*args: P.args, **kwargs: P.kwargs) -> R:
+            assert not kwargs
+
             try:
                 return self.cache_dict[args]
             except KeyError:
@@ -923,7 +929,7 @@ class memoize_in:  # noqa
         return new_inner                # type: ignore[return-value]
 
 
-class keyed_memoize_in:  # noqa
+class keyed_memoize_in(Generic[P, R]):  # noqa
     """Like :class:`memoize_in`, but additionally uses a function *key* to
     compute the key under which the function result is memoized.
 
@@ -933,7 +939,9 @@ class keyed_memoize_in:  # noqa
     .. versionadded :: 2021.2.1
     """
 
-    def __init__(self, container, identifier, key):
+    def __init__(self,
+            container: Any, identifier: Hashable,
+            key: Callable[P, Hashable]) -> None:
         try:
             memoize_in_dict = container._pytools_keyed_memoize_in_dict
         except AttributeError:
@@ -944,10 +952,12 @@ class keyed_memoize_in:  # noqa
         self.cache_dict = memoize_in_dict.setdefault(identifier, {})
         self.key = key
 
-    def __call__(self, inner):
+    def __call__(self, inner: Callable[P, R]) -> Callable[P, R]:
         @wraps(inner)
-        def new_inner(*args):
+        def new_inner(*args: P.args, **kwargs: P.kwargs) -> R:
+            assert not kwargs
             key = self.key(*args)
+
             try:
                 return self.cache_dict[key]
             except KeyError:
@@ -1575,30 +1585,66 @@ a_star = MovedFunctionDeprecationWrapper(a_star_moved)
 class Table:
     """An ASCII table generator.
 
-    :arg alignments: List of alignments of each column ('l', 'c', or 'r',
+    .. attribute:: nrows
+    .. attribute:: ncolumns
+
+    .. attribute:: alignments
+
+        A :class:`tuple` of alignments of each column: ``"l"``, ``"c"``, or ``"r"``,
         for left, center, and right alignment, respectively). Columns which
         have no alignment specifier will use the last specified alignment. For
-        example, with `alignments=['l', 'r']`, the third and all following
-        columns will use 'r' alignment.
+        example, with ``alignments=("l", "r")``, the third and all following
+        columns will use right alignment.
 
     .. automethod:: add_row
+
     .. automethod:: __str__
     .. automethod:: github_markdown
     .. automethod:: csv
     .. automethod:: latex
     """
 
-    def __init__(self, alignments=None):
-        self.rows = []
-        if alignments is not None:
-            self.alignments = alignments
+    def __init__(self, alignments: Optional[Tuple[str, ...]] = None) -> None:
+        if alignments is None:
+            alignments = ("l",)
         else:
-            self.alignments = ["l"]
+            if any(a not in ("l", "c", "r") for a in alignments):
+                raise ValueError(f"alignments are ('l', 'c', 'r'): {alignments}")
 
-    def add_row(self, row):
-        self.rows.append([str(i) for i in row])
+            alignments = tuple(alignments)
 
-    def __str__(self):
+        self.rows: List[Tuple[str, ...]] = []
+        self.alignments = alignments
+
+    @property
+    def nrows(self) -> int:
+        return len(self.rows)
+
+    @property
+    def ncolumns(self) -> int:
+        return len(self.rows[0])
+
+    def add_row(self, row: Tuple[Any, ...]) -> None:
+        if self.rows and len(row) != self.ncolumns:
+            raise ValueError(
+                    f"tried to add a row with {len(row)} columns to "
+                    f"a table with {self.ncolumns} columns")
+
+        self.rows.append(tuple([str(i) for i in row]))
+
+    def _get_alignments(self) -> Tuple[str, ...]:
+        # NOTE: If not all alignments were specified, extend alignments with the
+        # last alignment specified
+        return (self.alignments
+                + (self.alignments[-1],) * (self.ncolumns - len(self.alignments))
+                )
+
+    def _get_column_widths(self, rows) -> Tuple[int, ...]:
+        return tuple([
+            max(len(row[i]) for row in rows) for i in range(self.ncolumns)
+            ])
+
+    def __str__(self) -> str:
         """
         Returns a string representation of the table.
 
@@ -1613,15 +1659,11 @@ class Table:
             10 | 20||
 
         """
+        if not self.rows:
+            return ""
 
-        columns = len(self.rows[0])
-        col_widths = [max(len(row[i]) for row in self.rows)
-                      for i in range(columns)]
-
-        alignments = self.alignments
-        # If not all alignments were specified, extend alignments with the
-        # last alignment specified:
-        alignments += self.alignments[-1] * (columns - len(self.alignments))
+        alignments = self._get_alignments()
+        col_widths = self._get_column_widths(self.rows)
 
         lines = [" | ".join([
             cell.center(col_width) if align == "c"
@@ -1634,7 +1676,7 @@ class Table:
 
         return "\n".join(lines)
 
-    def github_markdown(self):
+    def github_markdown(self) -> str:
         r"""Returns a string representation of the table formatted as
         `GitHub-Flavored Markdown.
         <https://docs.github.com/en/github/writing-on-github/organizing-information-with-tables>`__
@@ -1650,17 +1692,16 @@ class Table:
             10 | 20\|\|
 
         """  # noqa: W605
-        # Pipe symbols ('|') must be replaced
-        rows = [[w.replace("|", "\\|") for w in r] for r in self.rows]
+        if not self.rows:
+            return ""
 
-        columns = len(rows[0])
-        col_widths = [max(len(row[i]) for row in rows)
-                      for i in range(columns)]
+        def escape(cell: str) -> str:
+            # Pipe symbols ('|') must be replaced
+            return cell.replace("|", "\\|")
 
-        alignments = self.alignments
-        # If not all alignments were specified, extend alignments with the
-        # last alignment specified:
-        alignments += self.alignments[-1] * (columns - len(self.alignments))
+        rows = [tuple([escape(cell) for cell in row]) for row in self.rows]
+        alignments = self._get_alignments()
+        col_widths = self._get_column_widths(rows)
 
         lines = [" | ".join([
             cell.center(col_width) if align == "c"
@@ -1669,14 +1710,16 @@ class Table:
             for cell, col_width, align in zip(row, col_widths, alignments)])
             for row in rows]
         lines[1:1] = ["|".join(
-            ":" + "-" * (col_width - 1 + (i > 0)) + ":" if align == "c"
-            else ":" + "-" * (col_width + (i > 0)) if align == "l"
-            else "-" * (col_width + (i > 0)) + ":"
+            (":" + "-" * (col_width - 1 + (i > 0)) + ":") if align == "c"
+            else (":" + "-" * (col_width + (i > 0))) if align == "l"
+            else ("-" * (col_width + (i > 0)) + ":")
             for i, (col_width, align) in enumerate(zip(col_widths, alignments)))]
 
         return "\n".join(lines)
 
-    def csv(self, dialect="excel", csv_kwargs=None):
+    def csv(self,
+            dialect: str = "excel",
+            csv_kwargs: Optional[Dict[str, Any]] = None) -> str:
         """Returns a string containing a CSV representation of the table.
 
         :arg dialect: String passed to :func:`csv.writer`.
@@ -1691,6 +1734,9 @@ class Table:
             1,","
             10,20
         """
+
+        if not self.rows:
+            return ""
 
         import csv
         import io
@@ -1708,7 +1754,9 @@ class Table:
 
         return output.getvalue().rstrip(csv_kwargs["lineterminator"])
 
-    def latex(self, skip_lines=0, hline_after=None):
+    def latex(self,
+            skip_lines: int = 0,
+            hline_after: Optional[Tuple[int, ...]] = None) -> str:
         r"""Returns a string containing the rows of a LaTeX representation of
         the table.
 
@@ -1726,8 +1774,11 @@ class Table:
             1 & apple \\
             2 & pear \\
         """
+        if not self.rows:
+            return ""
+
         if hline_after is None:
-            hline_after = []
+            hline_after = ()
 
         lines = []
         for row_nr, row in enumerate(self.rows[skip_lines:]):
@@ -1736,6 +1787,46 @@ class Table:
                 lines.append(r"\hline")
 
         return "\n".join(lines)
+
+
+def merge_tables(*tables: Table,
+        skip_columns: Optional[Tuple[int, ...]] = None) -> Table:
+    """
+    :arg skip_columns: a :class:`tuple` of column indices to skip in all the
+        tables except the first one.
+    """
+
+    if len(tables) == 1:
+        return tables[0]
+
+    if any(tables[0].nrows != tbl.nrows for tbl in tables[1:]):
+        raise ValueError("tables do not have the same number of rows")
+
+    if isinstance(skip_columns, int):
+        skip_columns = (skip_columns,)
+
+    def remove_columns(i, row):
+        if i == 0 or skip_columns is None:
+            return row
+        else:
+            return tuple([
+                entry for i, entry in enumerate(row) if i not in skip_columns
+                ])
+
+    alignments = sum([
+        remove_columns(i, tbl._get_alignments())
+        for i, tbl in enumerate(tables)
+        ], ())
+    result = Table(alignments=alignments)
+
+    for i in range(tables[0].nrows):
+        row = []
+        for j, tbl in enumerate(tables):
+            row.extend(remove_columns(j, tbl.rows[i]))
+
+        result.add_row(tuple(row))
+
+    return result
 
 # }}}
 
@@ -2189,9 +2280,14 @@ class UniqueNameGenerator:
         """
         pass
 
-    def add_name(self, name: str) -> None:
-        """Add an existing name to the generator."""
-        if self.is_name_conflicting(name):
+    def add_name(self, name: str, *, conflicting_ok: bool = False) -> None:
+        """
+        :arg conflicting_ok: A flag to dictate the behavior when *name* is
+            conflicting with the set of existing names. If *True*, a conflict
+            is silently passed. If *False*, a :class:`ValueError` is raised on
+            encountering a conflict.
+        """
+        if (not conflicting_ok) and self.is_name_conflicting(name):
             raise ValueError(f"name '{name}' conflicts with existing names")
 
         if not name.startswith(self.forced_prefix):
@@ -2202,10 +2298,14 @@ class UniqueNameGenerator:
         self.existing_names.add(name)
         self._name_added(name)
 
-    def add_names(self, names: Iterable[str]) -> None:
-        """Add multiple existing names to the generator."""
+    def add_names(self, names: Iterable[str],
+                  *,
+                  conflicting_ok: bool = False) -> None:
+        """
+        :arg conflicting_ok: Plainly passed to :meth:`UniqueNameGenerator.add_name`.
+        """
         for name in names:
-            self.add_name(name)
+            self.add_name(name, conflicting_ok=conflicting_ok)
 
     def __call__(self, based_on: str = "id") -> str:
         """Returns a new unique name."""
@@ -2227,7 +2327,7 @@ class UniqueNameGenerator:
 
         # }}}
 
-        for counter, var_name in generate_numbered_unique_names(based_on, counter):  # noqa: B007,E501
+        for counter, var_name in generate_numbered_unique_names(based_on, counter):  # noqa: B020,B007,E501
             if not self.is_name_conflicting(var_name):
                 break
 

@@ -26,9 +26,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+from enum import Enum
 import logging
 import hashlib
 import collections.abc as abc
+from dataclasses import is_dataclass, fields
 
 # Removing this in 2020-12 broke a shocking amount of stuff, such as
 # https://github.com/OP2/PyOP2/pull/605
@@ -114,18 +116,29 @@ class LockManager(CleanupBase):
             except OSError:
                 pass
 
+            # This value was chosen based on the py-filelock package:
+            # https://github.com/tox-dev/py-filelock/blob/a6c8fabc4192fa7a4ae19b1875ee842ec5eb4f61/src/filelock/_api.py#L113
+            wait_time_seconds = 0.05
+
+            # Warn every 10 seconds if not able to acquire lock
+            warn_attempts = int(10/wait_time_seconds)
+
+            # Exit after 60 seconds if not able to acquire lock
+            exit_attempts = int(60/wait_time_seconds)
+
             from time import sleep
-            sleep(1)
+            sleep(wait_time_seconds)
 
             attempts += 1
 
-            if attempts > 10:
+            if attempts % warn_attempts == 0:
                 from warnings import warn
                 warn("could not obtain lock -- "
                         f"delete '{self.lock_file}' if necessary",
                         stacklevel=1 + stacklevel)
-            if attempts > 3 * 60:
-                raise RuntimeError("waited more than three minutes "
+
+            if attempts > exit_attempts:
+                raise RuntimeError("waited more than one minute "
                         f"on the lock file '{self.lock_file}' "
                         "-- something is wrong")
 
@@ -204,12 +217,7 @@ class KeyBuilder:
             Now returns the updated *key_hash*.
         """
 
-        digest = None
-
-        try:
-            digest = key._pytools_persistent_hash_digest  # noqa pylint:disable=protected-access
-        except AttributeError:
-            pass
+        digest = getattr(key, "_pytools_persistent_hash_digest", None)
 
         if digest is None:
             try:
@@ -222,7 +230,8 @@ class KeyBuilder:
                 digest = inner_key_hash.digest()
 
         if digest is None:
-            tname = type(key).__name__
+            tp = type(key)
+            tname = tp.__name__
             method = None
             try:
                 method = getattr(self, "update_for_"+tname)
@@ -233,6 +242,12 @@ class KeyBuilder:
                     import numpy as np
                     if isinstance(key, np.dtype):
                         method = self.update_for_specific_dtype
+
+                elif issubclass(tp, Enum):
+                    method = self.update_for_enum
+
+                elif is_dataclass(tp):
+                    method = self.update_for_dataclass
 
             if method is not None:
                 inner_key_hash = self.new_hash()
@@ -245,7 +260,8 @@ class KeyBuilder:
 
         if not isinstance(key, type):
             try:
-                key._pytools_persistent_hash_digest = digest   # noqa pylint:disable=protected-access
+                # pylint:disable=protected-access
+                object.__setattr__(key, "_pytools_persistent_hash_digest",  digest)
             except AttributeError:
                 pass
             except TypeError:
@@ -262,6 +278,11 @@ class KeyBuilder:
     # {{{ updaters
 
     @staticmethod
+    def update_for_type(key_hash, key):
+        key_hash.update(
+            f"{key.__module__}.{key.__qualname__}.{key.__name__}".encode("utf-8"))
+
+    @staticmethod
     def update_for_int(key_hash, key):
         sz = 8
         while True:
@@ -270,6 +291,10 @@ class KeyBuilder:
                 return
             except OverflowError:
                 sz *= 2
+
+    @classmethod
+    def update_for_enum(cls, key_hash, key):
+        cls.update_for_str(key_hash, str(key))
 
     @staticmethod
     def update_for_bool(key_hash, key):
@@ -314,6 +339,13 @@ class KeyBuilder:
     @staticmethod
     def update_for_specific_dtype(key_hash, key):
         key_hash.update(key.str.encode("utf8"))
+
+    def update_for_dataclass(self, key_hash, key):
+        self.rec(key_hash, type(key_hash).__name__.encode("utf-8"))
+
+        for fld in fields(key):
+            self.rec(key_hash, fld.name)
+            self.rec(key_hash, getattr(key, fld.name, None))
 
     # }}}
 

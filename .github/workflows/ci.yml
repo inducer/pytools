@@ -22,8 +22,18 @@ jobs:
                 python-version: '3.6'
         -   name: "Main Script"
             run: |
-                curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-flake8.sh
+                curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-flake8.sh
                 . ./prepare-and-run-flake8.sh "$(basename $GITHUB_REPOSITORY)" ./test
+
+    validate_cff:
+        name: Validate CITATION.cff
+        runs-on: ubuntu-latest
+        steps:
+        -   uses: actions/checkout@v2
+        -   uses: actions/setup-python@v1
+        -   run: |
+                pip install cffconvert
+                cffconvert -i CITATION.cff --validate
 
     pylint:
         name: Pylint
@@ -36,8 +46,8 @@ jobs:
                 python-version: '3.x'
         -   name: "Main Script"
             run: |
-                EXTRA_INSTALL="pymbolic"
-                curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-pylint.sh
+                EXTRA_INSTALL="numpy pymbolic"
+                curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-pylint.sh
                 . ./prepare-and-run-pylint.sh "$(basename $GITHUB_REPOSITORY)" test/test_*.py
 
     mypy:
@@ -51,7 +61,7 @@ jobs:
                 python-version: '3.x'
         -   name: "Main Script"
             run: |
-                curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-mypy.sh
+                curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-mypy.sh
                 . ./prepare-and-run-mypy.sh python3 mypy
 
     pytest:
@@ -76,7 +86,22 @@ jobs:
                 rm pytools/log.py
 
                 EXTRA_INSTALL="numpy"
-                curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
+                curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
+                . ./build-and-test-py-project.sh
+
+    pytest_nonumpy:
+        name: Pytest without Numpy
+        runs-on: ubuntu-latest
+        steps:
+        -   uses: actions/checkout@v2
+        -
+            uses: actions/setup-python@v1
+            with:
+                python-version: '3.x'
+        -   name: "Main Script"
+            run: |
+                NO_DOCTESTS=1
+                curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
                 . ./build-and-test-py-project.sh
 
     #examples:
@@ -91,8 +116,8 @@ jobs:
     #    -   name: "Main Script"
     #        run: |
     #            EXTRA_INSTALL="numpy pymbolic"
-    #            curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/main/ci-support.sh
-    #            . ./ci-support.sh
+    #            curl -L -O https://tiker.net/ci-support-v0
+    #            . ./ci-support-v0
     #            build_py_project_in_venv
     #            run_examples
 
@@ -108,25 +133,9 @@ jobs:
             env:
                 DOWNSTREAM_PROJECT: ${{ matrix.downstream_project }}
             run: |
-                curl -L -O -k https://tiker.net/ci-support-v0
+                curl -L -O https://tiker.net/ci-support-v0
                 . ./ci-support-v0
-
-                git clone "https://github.com/inducer/$DOWNSTREAM_PROJECT.git"
-                cd "$DOWNSTREAM_PROJECT"
-                echo "*** $DOWNSTREAM_PROJECT version: $(git rev-parse --short HEAD)"
-
-                edit_requirements_txt_for_downstream_in_subdir
-
-                # HACK: force overwrite even if it's already there (e.g. as a pyopencl dep)
-                sed -i '/egg=pytools/ s/^/-e/' requirements.txt
-
-                export CONDA_ENVIRONMENT=.test-conda-env-py3.yml
-
-                # Avoid slow or complicated tests in downstream projects
-                export PYTEST_ADDOPTS="-k 'not (slowtest or octave or mpi)'"
-
-                build_py_project_in_conda_env
-                test_py_project
+                test_downstream "$DOWNSTREAM_PROJECT"
 
     docs:
         name: Documentation
@@ -140,8 +149,8 @@ jobs:
         -   name: "Main Script"
             run: |
                 EXTRA_INSTALL="numpy"
-                curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/main/ci-support.sh
-                . ci-support.sh
+                curl -L -O https://tiker.net/ci-support-v0
+                . ci-support-v0
                 build_py_project_in_venv
                 build_docs
 
