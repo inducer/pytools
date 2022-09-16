@@ -2240,6 +2240,10 @@ generate_unique_possibilities = MovedFunctionDeprecationWrapper(
 
 class UniqueNameGenerator:
     """
+    Class that creates a new :class:`str` on each :meth:`__call__` that is
+    unique to the generator.
+
+    .. automethod:: __init__
     .. automethod:: is_name_conflicting
     .. automethod:: add_name
     .. automethod:: add_names
@@ -2248,6 +2252,13 @@ class UniqueNameGenerator:
     def __init__(self,
             existing_names: Optional[Set[str]] = None,
             forced_prefix: str = ""):
+        """
+        Create a new :class:`UniqueNameGenerator`.
+
+        :arg existing_names: a :class:`set` of existing names that will be
+            skipped when generating new names.
+        :arg forced_prefix: all generated :class:`str` have this prefix.
+        """
         if existing_names is None:
             existing_names = set()
 
@@ -2256,6 +2267,7 @@ class UniqueNameGenerator:
         self.prefix_to_counter: Dict[str, int] = {}
 
     def is_name_conflicting(self, name: str) -> bool:
+        """Returns *True* if *name* conflicts with an existing :class:`str`."""
         return name in self.existing_names
 
     def _name_added(self, name: str) -> None:
@@ -2296,6 +2308,7 @@ class UniqueNameGenerator:
             self.add_name(name, conflicting_ok=conflicting_ok)
 
     def __call__(self, based_on: str = "id") -> str:
+        """Returns a new unique name."""
         based_on = self.forced_prefix + based_on
 
         counter = self.prefix_to_counter.get(based_on, None)
