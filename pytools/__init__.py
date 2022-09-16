@@ -2322,9 +2322,6 @@ class UniqueNameGenerator:
                 based_on = counter_match.groupdict()["based_on"]
                 counter = int(counter_match.groupdict()["counter"])
 
-            else:
-                counter = 0
-
         # }}}
 
         for counter, var_name in generate_numbered_unique_names(based_on, counter):  # noqa: B020,B007,E501
