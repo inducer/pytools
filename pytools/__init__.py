@@ -2933,7 +2933,7 @@ def strtobool(val: str, default: Optional[bool] = None) -> bool:
         return False
     else:
         if default is None:
-            raise ValueError(f"invalid truth value {val}")
+            raise ValueError(f"invalid truth value '{val}'")
         else:
             return default
 
