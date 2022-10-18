@@ -2918,24 +2918,28 @@ def strtobool(val: str, default: Optional[bool] = None) -> bool:
     """Convert a string representation of truth to True or False.
     True values are 'y', 'yes', 't', 'true', 'on', and '1'; false values
     are 'n', 'no', 'f', 'false', 'off', and '0'.  If *default* is None,
-    raises ValueError if *val* is anything else. Otherwise, returns
-    *default*. Based on :func:`distutils.util.strtobool`.
+    raises ValueError if *val* is anything else. If *val* is None and
+    *default* is not None, returns *default*. Based on
+    :func:`distutils.util.strtobool`.
 
     :param val: Value to convert.
-    :param default: Value to return if *val* can not be converted.
+    :param default: Value to return if *val* is None.
 
     :returns: True or False.
     """
+    if val is None and default is not None:
+        return default
+
     val = val.lower()
     if val in ("y", "yes", "t", "true", "on", "1"):
         return True
     elif val in ("n", "no", "f", "false", "off", "0"):
         return False
     else:
-        if default is None:
-            raise ValueError(f"invalid truth value '{val}'")
-        else:
-            return default
+        raise ValueError(f"invalid truth value '{val}'. "
+                          "Valid values are ('y', 'yes', 't', 'true', 'on', '1') "
+                          "for 'True' and ('n', 'no', 'f', 'false', 'off', '0') "
+                          "for 'False'.")
 
 # }}}
 

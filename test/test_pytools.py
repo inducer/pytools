@@ -723,10 +723,7 @@ def test_strtobool():
         strtobool("xxx")
         strtobool(".")
 
-    assert strtobool("tru", False) is False
-    assert strtobool("fal", True) is True
-    assert strtobool("xxx", True) is True
-    assert strtobool(".", True) is True
+    assert strtobool(None, False) is False
 
 
 if __name__ == "__main__":
