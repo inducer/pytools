@@ -2914,7 +2914,7 @@ def sphere_sample_fibonacci(
 
 # {{{ strtobool
 
-def strtobool(val: str, default: Optional[bool] = None) -> bool:
+def strtobool(val: Optional[str], default: Optional[bool] = None) -> bool:
     """Convert a string representation of truth to True or False.
     True values are 'y', 'yes', 't', 'true', 'on', and '1'; false values
     are 'n', 'no', 'f', 'false', 'off', and '0'.  If *default* is None,
