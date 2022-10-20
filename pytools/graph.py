@@ -375,8 +375,7 @@ def compute_induced_subgraph(graph: Mapping[T, Set[T]],
 
 def visualize_graph(graph: Mapping[T, Iterable[T]]) -> None:
     """
-    Visualize the graph *graph* using the :mod:`graphviz` package. Needs the
-    ``dot`` program installed.
+    Visualize the graph *graph*. Needs the ``dot`` program installed.
 
     :arg graph: A :class:`collections.abc.Mapping` representing a directed
         graph. The dictionary contains one key representing each node in the
@@ -385,21 +384,26 @@ def visualize_graph(graph: Mapping[T, Iterable[T]]) -> None:
     """
     from pytools import UniqueNameGenerator
     id_gen = UniqueNameGenerator(forced_prefix="mynode")
-    import graphviz
+
+    from pytools.dot import dot_escape
 
     array_to_id = {}
 
-    dot = graphviz.Digraph("mygraph")
+    res = "digraph mygraph {\n"
 
     for node, targets in graph.items():
         array_to_id[node] = id_gen()
-        dot.node(array_to_id[node], graphviz.escape(str(node)))
+        res += f'{array_to_id[node]} [label="{dot_escape(repr(node))}"];\n'
         for t in targets:
             array_to_id[t] = id_gen()
-            dot.node(array_to_id[t], graphviz.escape(str(t)))
-            dot.edge(array_to_id[node], array_to_id[t])
+            res += f'{array_to_id[t]} [label="{dot_escape(repr(t))}"];\n'
+            res += f"{array_to_id[node]} -> {array_to_id[t]};\n"
 
-    dot.render(view=True)
+    res += "}\n"
+
+    from pytools.dot import show_dot
+    show_dot(res)
+
 
 # }}}
 

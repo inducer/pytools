@@ -40,7 +40,6 @@ setup(name="pytools",
           "platformdirs>=2.2.0",
           "dataclasses>=0.7;python_version<='3.6'",
           "typing_extensions>=4.0; python_version<'3.11'",
-          "graphviz",
           ],
 
       package_data={"pytools": ["py.typed"]},
