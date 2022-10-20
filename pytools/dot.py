@@ -54,7 +54,7 @@ def dot_escape(s: str) -> str:
     return html.escape(s.replace("\\", "\\\\"))
 
 
-def show_dot(dot_code: str, output_to: Optional[str] = None) -> Optional[str]:
+def show_dot(dot_code: str, output_to: Optional[str] = None):
     """
     Visualize the graph represented by *dot_code*.
 
@@ -78,7 +78,7 @@ def show_dot(dot_code: str, output_to: Optional[str] = None) -> Optional[str]:
 
     from tempfile import mkdtemp
     import subprocess
-    temp_dir = mkdtemp(prefix="tmp_dagrt_dot")
+    temp_dir = mkdtemp(prefix="tmp_pytools_dot")
 
     dot_file_name = "code.dot"
 
@@ -93,6 +93,8 @@ def show_dot(dot_code: str, output_to: Optional[str] = None) -> Optional[str]:
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE
                               ) as proc:
+            assert proc.stderr, ("Could not execute the 'dot' program. "
+                                 "Please install the 'graphviz' package.")
             supported_formats = proc.stderr.read().decode()
 
             if " x11 " in supported_formats:
