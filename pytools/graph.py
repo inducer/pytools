@@ -385,7 +385,7 @@ def visualize_graph(graph: Mapping[T, Iterable[T]]) -> None:
     from pytools import UniqueNameGenerator
     id_gen = UniqueNameGenerator(forced_prefix="mynode")
 
-    from pytools.dot import dot_escape
+    from pytools.dot import dot_escape, show_dot
 
     array_to_id = {}
 
@@ -401,7 +401,6 @@ def visualize_graph(graph: Mapping[T, Iterable[T]]) -> None:
 
     res += "}\n"
 
-    from pytools.dot import show_dot
     show_dot(res)
 
 

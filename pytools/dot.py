@@ -27,8 +27,8 @@ __doc__ = """
 Dot helper functions
 ====================
 
-.. autofunction:: show_dot
 .. autofunction:: dot_escape
+.. autofunction:: show_dot
 """
 
 from typing import Optional
@@ -94,7 +94,8 @@ def show_dot(dot_code: str, output_to: Optional[str] = None):
                               stderr=subprocess.PIPE
                               ) as proc:
             assert proc.stderr, ("Could not execute the 'dot' program. "
-                                 "Please install the 'graphviz' package.")
+                                 "Please install the 'graphviz' package and "
+                                 "make sure it is in your $PATH.")
             supported_formats = proc.stderr.read().decode()
 
             if " x11 " in supported_formats:
