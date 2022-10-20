@@ -36,6 +36,7 @@ Graph Algorithms
 .. autofunction:: compute_transitive_closure
 .. autofunction:: contains_cycle
 .. autofunction:: compute_induced_subgraph
+.. autofunction:: visualize_graph
 
 Type Variables Used
 -------------------
@@ -366,6 +367,39 @@ def compute_induced_subgraph(graph: Mapping[T, Set[T]],
         if node in subgraph_nodes:
             new_graph[node] = children & subgraph_nodes
     return new_graph
+
+# }}}
+
+
+# {{{
+
+def visualize_graph(graph: Mapping[T, Iterable[T]]) -> None:
+    """
+    Visualize the graph *graph* using the :mod:`graphviz` package. Needs the
+    ``dot`` program installed.
+
+    :arg graph: A :class:`collections.abc.Mapping` representing a directed
+        graph. The dictionary contains one key representing each node in the
+        graph, and this key maps to a :class:`collections.abc.Set` of nodes
+        that are connected to the node by outgoing edges.
+    """
+    from pytools import UniqueNameGenerator
+    id_gen = UniqueNameGenerator(forced_prefix="mynode")
+    import graphviz
+
+    array_to_id = {}
+
+    dot = graphviz.Digraph("mygraph")
+
+    for node, targets in graph.items():
+        array_to_id[node] = id_gen()
+        dot.node(array_to_id[node], graphviz.escape(str(node)))
+        for t in targets:
+            array_to_id[t] = id_gen()
+            dot.node(array_to_id[t], graphviz.escape(str(t)))
+            dot.edge(array_to_id[node], array_to_id[t])
+
+    dot.render(view=True)
 
 # }}}
 
