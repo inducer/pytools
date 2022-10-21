@@ -295,6 +295,12 @@ def test_prioritzed_topological_sort():
 
 
 def test_visualize_graph():
+    try:
+        import subprocess
+        subprocess.Popen(["dot", "-T?"])
+    except Exception:
+        pytest.skip("Needs the 'dot' executable")
+
     graph = {"A": ["B", "C"],
              "B": [],
              "C": ["A"]}
