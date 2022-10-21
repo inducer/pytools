@@ -387,22 +387,27 @@ def visualize_graph(graph: Mapping[T, Iterable[T]]) -> None:
 
     from pytools.dot import dot_escape, show_dot
 
-    array_to_id = {}
-
-    res = "digraph mygraph {\n"
+    node_to_id = {}
+    edges = []
 
     for node, targets in graph.items():
-        array_to_id[node] = id_gen()
-        res += f'{array_to_id[node]} [label="{dot_escape(repr(node))}"];\n'
+        if node not in node_to_id:
+            node_to_id[node] = id_gen()
         for t in targets:
-            array_to_id[t] = id_gen()
-            res += f'{array_to_id[t]} [label="{dot_escape(repr(t))}"];\n'
-            res += f"{array_to_id[node]} -> {array_to_id[t]};\n"
+            if t not in node_to_id:
+                node_to_id[t] = id_gen()
+            edges.append((node, t))
 
-    res += "}\n"
+    content = "\n".join(
+        [f'{node_to_id[node]} [label="{dot_escape(repr(node))}"];'
+         for node in node_to_id.keys()])
+
+    content += "\n".join(
+        [f"{node_to_id[node]} -> {node_to_id[t]};" for (node, t) in edges])
+
+    res = f"digraph mygraph {{\n{ content }\n}}"
 
     show_dot(res)
-
 
 # }}}
 
