@@ -36,7 +36,7 @@ Graph Algorithms
 .. autofunction:: compute_transitive_closure
 .. autofunction:: contains_cycle
 .. autofunction:: compute_induced_subgraph
-.. autofunction:: visualize_graph
+.. autofunction:: get_graph_dot_code
 
 Type Variables Used
 -------------------
@@ -373,34 +373,30 @@ def compute_induced_subgraph(graph: Mapping[T, Set[T]],
 
 # {{{
 
-def visualize_graph(graph: Mapping[T, Iterable[T]],
-                    output_to: Optional[str] = None) -> str:
+def get_graph_dot_code(graph: Mapping[T, Iterable[T]]) -> str:
     """
-    Visualize the graph *graph*. Needs the ``dot`` program installed.
+    Create a visualization of the graph *graph* in the
+    `dot <http://graphviz.org/>`__ language.
 
     :arg graph: A :class:`collections.abc.Mapping` representing a directed
         graph. The dictionary contains one key representing each node in the
         graph, and this key maps to a :class:`collections.abc.Set` of nodes
         that are connected to the node by outgoing edges.
 
-    :arg output_to: See :func:`pytools.dot.show_dot` for details.
-
     :returns: A string in the `dot <http://graphviz.org/>`__ language.
     """
     from pytools import UniqueNameGenerator
     id_gen = UniqueNameGenerator(forced_prefix="mynode")
 
-    from pytools.dot import dot_escape, show_dot
+    from pytools.dot import dot_escape
 
     node_to_id = {}
     edges = []
 
     for node, targets in graph.items():
-        if node not in node_to_id:
-            node_to_id[node] = id_gen()
+        assert node not in node_to_id
+        node_to_id[node] = id_gen()
         for t in targets:
-            if t not in node_to_id:
-                node_to_id[t] = id_gen()
             edges.append((node, t))
 
     content = "\n".join(
@@ -412,11 +408,7 @@ def visualize_graph(graph: Mapping[T, Iterable[T]],
     content += "\n".join(
         [f"{node_to_id[node]} -> {node_to_id[t]};" for (node, t) in edges])
 
-    res = f"digraph mygraph {{\n{ content }\n}}\n"
-
-    show_dot(res, output_to)
-
-    return res
+    return f"digraph mygraph {{\n{ content }\n}}\n"
 
 # }}}
 

@@ -222,7 +222,7 @@ def test_induced_subgraph():
     assert subgraph == expected_subgraph
 
 
-def test_prioritzed_topological_sort_examples():
+def test_prioritized_topological_sort_examples():
 
     from pytools.graph import compute_topological_order
 
@@ -248,7 +248,7 @@ def test_prioritzed_topological_sort_examples():
     assert compute_topological_order(dag, key=keys.get) == ["d", "c", "b", "a"]
 
 
-def test_prioritzed_topological_sort():
+def test_prioritized_topological_sort():
 
     import random
     from pytools.graph import compute_topological_order
@@ -281,7 +281,7 @@ def test_prioritzed_topological_sort():
 
         # check whether the order is a valid topological order
         assert scheduled_node in nodes_with_no_deps
-        # check whether priorites are upheld
+        # check whether priorities are upheld
         assert keys[scheduled_node] == min(
                 keys[node] for node in nodes_with_no_deps)
 
@@ -294,20 +294,14 @@ def test_prioritzed_topological_sort():
     assert len(dep_graph) == 0
 
 
-def test_visualize_graph():
-    try:
-        import subprocess
-        subprocess.Popen(["dot", "-T?"])
-    except Exception:
-        pytest.skip("Needs the 'dot' executable")
-
+def test_get_graph_dot_code():
     graph = {"A": ["B", "C"],
              "B": [],
              "C": ["A"]}
 
-    from pytools.graph import visualize_graph
+    from pytools.graph import get_graph_dot_code
 
-    res = visualize_graph(graph, "svg")
+    res = get_graph_dot_code(graph)
 
     assert res == \
 """digraph mygraph {
