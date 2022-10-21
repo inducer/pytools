@@ -179,6 +179,11 @@ Sampling
 .. autofunction:: sphere_sample_equidistant
 .. autofunction:: sphere_sample_fibonacci
 
+String utilities
+----------------
+
+.. autofunction:: strtobool
+
 Type Variables Used
 -------------------
 
@@ -2903,6 +2908,44 @@ def sphere_sample_fibonacci(
         r * np.sin(theta) * np.sin(phi),
         r * np.cos(theta)
         ])
+
+# }}}
+
+
+# {{{ strtobool
+
+def strtobool(val: Optional[str], default: Optional[bool] = None) -> bool:
+    """Convert a string representation of truth to True or False.
+    True values are 'y', 'yes', 't', 'true', 'on', and '1'; false values
+    are 'n', 'no', 'f', 'false', 'off', and '0'.  Uppercase versions are
+    also accepted. If *default* is None, raises ValueError if *val* is anything
+    else. If *val* is None and *default* is not None, returns *default*.
+    Based on :func:`distutils.util.strtobool`.
+
+    :param val: Value to convert.
+    :param default: Value to return if *val* is None.
+
+    :returns: Truth value of *val*.
+    """
+    if val is None and default is not None:
+        return default
+
+    if val is None:
+        raise ValueError(f"invalid truth value '{val}'. "
+                          "Valid values are ('y', 'yes', 't', 'true', 'on', '1') "
+                          "for 'True' and ('n', 'no', 'f', 'false', 'off', '0') "
+                          "for 'False'. Uppercase versions are also accepted.")
+
+    val = val.lower()
+    if val in ("y", "yes", "t", "true", "on", "1"):
+        return True
+    elif val in ("n", "no", "f", "false", "off", "0"):
+        return False
+    else:
+        raise ValueError(f"invalid truth value '{val}'. "
+                          "Valid values are ('y', 'yes', 't', 'true', 'on', '1') "
+                          "for 'True' and ('n', 'no', 'f', 'false', 'off', '0') "
+                          "for 'False'. Uppercase versions are also accepted.")
 
 # }}}
 
