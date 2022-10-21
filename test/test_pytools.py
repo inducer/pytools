@@ -703,6 +703,29 @@ def test_ignoredforequalitytag():
     assert hash(eq1) != hash(eq3)
 
 
+def test_strtobool():
+    from pytools import strtobool
+    assert strtobool("true") is True
+    assert strtobool("tRuE") is True
+    assert strtobool("1") is True
+    assert strtobool("t") is True
+    assert strtobool("on") is True
+
+    assert strtobool("false") is False
+    assert strtobool("FaLse") is False
+    assert strtobool("0") is False
+    assert strtobool("f") is False
+    assert strtobool("off") is False
+
+    with pytest.raises(ValueError):
+        strtobool("tru")
+        strtobool("fal")
+        strtobool("xxx")
+        strtobool(".")
+
+    assert strtobool(None, False) is False
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
