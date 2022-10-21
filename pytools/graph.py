@@ -394,7 +394,6 @@ def get_graph_dot_code(graph: Mapping[T, Iterable[T]]) -> str:
     edges = []
 
     for node, targets in graph.items():
-        assert node not in node_to_id
         node_to_id[node] = id_gen()
         for t in targets:
             edges.append((node, t))
