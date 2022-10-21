@@ -294,6 +294,27 @@ def test_prioritzed_topological_sort():
     assert len(dep_graph) == 0
 
 
+def test_visualize_graph():
+    graph = {"A": ["B", "C"],
+             "B": [],
+             "C": ["A"]}
+
+    from pytools.graph import visualize_graph
+
+    res = visualize_graph(graph, "svg")
+
+    assert res == \
+"""digraph mygraph {
+mynodeid [label="&#x27;A&#x27;"];
+mynodeid_0 [label="&#x27;B&#x27;"];
+mynodeid_1 [label="&#x27;C&#x27;"];
+mynodeid -> mynodeid_0;
+mynodeid -> mynodeid_1;
+mynodeid_1 -> mynodeid;
+}
+"""
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])

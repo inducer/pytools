@@ -373,7 +373,8 @@ def compute_induced_subgraph(graph: Mapping[T, Set[T]],
 
 # {{{
 
-def visualize_graph(graph: Mapping[T, Iterable[T]]) -> None:
+def visualize_graph(graph: Mapping[T, Iterable[T]],
+                    output_to: Optional[str] = None) -> str:
     """
     Visualize the graph *graph*. Needs the ``dot`` program installed.
 
@@ -381,6 +382,10 @@ def visualize_graph(graph: Mapping[T, Iterable[T]]) -> None:
         graph. The dictionary contains one key representing each node in the
         graph, and this key maps to a :class:`collections.abc.Set` of nodes
         that are connected to the node by outgoing edges.
+
+    :arg output_to: See :func:`pytools.dot.show_dot` for details.
+
+    :returns: A string in the `dot <http://graphviz.org/>`__ language.
     """
     from pytools import UniqueNameGenerator
     id_gen = UniqueNameGenerator(forced_prefix="mynode")
@@ -402,12 +407,16 @@ def visualize_graph(graph: Mapping[T, Iterable[T]]) -> None:
         [f'{node_to_id[node]} [label="{dot_escape(repr(node))}"];'
          for node in node_to_id.keys()])
 
+    content += "\n"
+
     content += "\n".join(
         [f"{node_to_id[node]} -> {node_to_id[t]};" for (node, t) in edges])
 
-    res = f"digraph mygraph {{\n{ content }\n}}"
+    res = f"digraph mygraph {{\n{ content }\n}}\n"
 
-    show_dot(res)
+    show_dot(res, output_to)
+
+    return res
 
 # }}}
 
