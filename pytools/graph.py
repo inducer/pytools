@@ -380,7 +380,7 @@ def get_graph_dot_code(graph: Mapping[T, Iterable[T]]) -> str:
 
     :arg graph: A :class:`collections.abc.Mapping` representing a directed
         graph. The dictionary contains one key representing each node in the
-        graph, and this key maps to a :class:`collections.abc.Set` of nodes
+        graph, and this key maps to a :class:`collections.abc.Iterable` of nodes
         that are connected to the node by outgoing edges.
 
     :returns: A string in the `dot <http://graphviz.org/>`__ language.
