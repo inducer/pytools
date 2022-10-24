@@ -46,7 +46,7 @@ Type Variables Used
     Any type.
 """
 
-from typing import (TypeVar, Mapping, Iterable, List, Optional, Any, Callable,
+from typing import (TypeVar, Mapping, Collection, List, Optional, Any, Callable,
                     Set, MutableSet, Dict, Iterator, Tuple)
 
 
@@ -121,7 +121,7 @@ def a_star(  # pylint: disable=too-many-locals
 
 # {{{ compute SCCs with Tarjan's algorithm
 
-def compute_sccs(graph: Mapping[T, Iterable[T]]) -> List[List[T]]:
+def compute_sccs(graph: Mapping[T, Collection[T]]) -> List[List[T]]:
     to_search = set(graph.keys())
     visit_order: Dict[T, int] = {}
     scc_root = {}
@@ -208,13 +208,13 @@ class HeapEntry:
         return self.key < other.key
 
 
-def compute_topological_order(graph: Mapping[T, Iterable[T]],
+def compute_topological_order(graph: Mapping[T, Collection[T]],
                               key: Optional[Callable[[T], Any]] = None) -> List[T]:
     """Compute a topological order of nodes in a directed graph.
 
     :arg graph: A :class:`collections.abc.Mapping` representing a directed
         graph. The dictionary contains one key representing each node in the
-        graph, and this key maps to a :class:`collections.abc.Iterable` of its
+        graph, and this key maps to a :class:`collections.abc.Collection` of its
         successor nodes.
 
     :arg key: A custom key function may be supplied to determine the order in
@@ -319,12 +319,12 @@ def compute_transitive_closure(graph: Mapping[T, MutableSet[T]]) -> (
 
 # {{{ check for cycle
 
-def contains_cycle(graph: Mapping[T, Iterable[T]]) -> bool:
+def contains_cycle(graph: Mapping[T, Collection[T]]) -> bool:
     """Determine whether a graph contains a cycle.
 
     :arg graph: A :class:`collections.abc.Mapping` representing a directed
         graph. The dictionary contains one key representing each node in the
-        graph, and this key maps to a :class:`collections.abc.Iterable` of
+        graph, and this key maps to a :class:`collections.abc.Collection` of
         nodes that are connected to the node by outgoing edges.
 
     :returns: A :class:`bool` indicating whether the graph contains a cycle.
@@ -373,14 +373,14 @@ def compute_induced_subgraph(graph: Mapping[T, Set[T]],
 
 # {{{
 
-def get_graph_dot_code(graph: Mapping[T, Iterable[T]]) -> str:
+def get_graph_dot_code(graph: Mapping[T, Collection[T]]) -> str:
     """
     Create a visualization of the graph *graph* in the
     `dot <http://graphviz.org/>`__ language.
 
     :arg graph: A :class:`collections.abc.Mapping` representing a directed
         graph. The dictionary contains one key representing each node in the
-        graph, and this key maps to a :class:`collections.abc.Iterable` of nodes
+        graph, and this key maps to a :class:`collections.abc.Collection` of nodes
         that are connected to the node by outgoing edges.
 
     :returns: A string in the `dot <http://graphviz.org/>`__ language.
