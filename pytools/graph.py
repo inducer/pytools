@@ -29,6 +29,7 @@ __doc__ = """
 Graph Algorithms
 =========================
 
+.. autofunction:: reverse_graph
 .. autofunction:: a_star
 .. autofunction:: compute_sccs
 .. autoclass:: CycleError
@@ -45,11 +46,35 @@ Type Variables Used
     Any type.
 """
 
-from typing import (TypeVar, Mapping, Iterable, List, Optional, Any, Callable,
-                    Set, MutableSet, Dict, Iterator, Tuple)
+from typing import (Collection, TypeVar, Mapping, Iterable, List, Optional, Any,
+                    Callable, Set, MutableSet, Dict, Iterator, Tuple, FrozenSet)
 
 
 T = TypeVar("T")
+
+
+# {{{ reverse_graph
+
+def reverse_graph(graph: Mapping[T, Collection[T]]) -> Dict[T, FrozenSet[T]]:
+    """
+    Reverses a graph.
+
+    :param graph: A :class:`dict` representation of a directed graph, mapping each
+        node to other nodes to which it is connected by edges.
+    :returns: A :class:`dict` representing *graph* with edges reversed.
+    """
+    result: Dict[T, Set[T]] = {}
+
+    for node_key, successor_nodes in graph.items():
+        # Make sure every node is in the result even if it has no successors
+        result.setdefault(node_key, set())
+
+        for successor in successor_nodes:
+            result.setdefault(successor, set()).add(node_key)
+
+    return {k: frozenset(v) for k, v in result.items()}
+
+# }}}
 
 
 # {{{ a_star
