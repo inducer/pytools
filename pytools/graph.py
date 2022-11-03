@@ -69,8 +69,8 @@ def reverse_graph(graph: Mapping[T, Collection[T]]) -> Dict[T, FrozenSet[T]]:
         # Make sure every node is in the result even if it has no successors
         result.setdefault(node_key, set())
 
-        for other_node_key in successor_nodes:
-            result.setdefault(other_node_key, set()).add(node_key)
+        for successor in successor_nodes:
+            result.setdefault(successor, set()).add(node_key)
 
     return {k: frozenset(v) for k, v in result.items()}
 
