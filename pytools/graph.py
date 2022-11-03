@@ -65,11 +65,11 @@ def reverse_graph(graph: Mapping[T, Collection[T]]) -> Dict[T, FrozenSet[T]]:
     """
     result: Dict[T, Set[T]] = {}
 
-    for node_key, edges in graph.items():
-        # Make sure every node is in the result even if it has no users
+    for node_key, successor_nodes in graph.items():
+        # Make sure every node is in the result even if it has no successors
         result.setdefault(node_key, set())
 
-        for other_node_key in edges:
+        for other_node_key in successor_nodes:
             result.setdefault(other_node_key, set()).add(node_key)
 
     return {k: frozenset(v) for k, v in result.items()}
