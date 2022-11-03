@@ -315,6 +315,24 @@ mynodeid_1 -> mynodeid;
 """
 
 
+def test_reverse_graph():
+    graph = {
+        "a": frozenset(("b", "c")),
+        "b": frozenset(("d", "e")),
+        "c": frozenset(("d", "f")),
+        "d": frozenset(),
+        "e": frozenset(),
+        "f": frozenset(("g",)),
+        "g": frozenset(("h", "i", "j")),
+        "h": frozenset(),
+        "i": frozenset(),
+        "j": frozenset(),
+        }
+
+    from pytools.graph import reverse_graph
+    assert graph == reverse_graph(reverse_graph(graph))
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
