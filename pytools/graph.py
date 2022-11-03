@@ -47,7 +47,7 @@ Type Variables Used
     Any type.
 """
 
-from typing import (Collection, TypeVar, Mapping, Iterable, List, Optional, Any,
+from typing import (Collection, TypeVar, Mapping, List, Optional, Any,
                     Callable, Set, MutableSet, Dict, Iterator, Tuple, FrozenSet)
 
 
