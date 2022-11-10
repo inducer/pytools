@@ -41,9 +41,15 @@ import math
 from sys import intern
 
 try:
-    from typing import SupportsIndex, ParamSpec, Concatenate
+    from typing import SupportsIndex, Concatenate
 except ImportError:
-    from typing_extensions import SupportsIndex, ParamSpec, Concatenate
+    from typing_extensions import SupportsIndex, Concatenate
+
+try:
+    from typing import ParamSpec
+except ImportError:
+    from typing_extensions import ParamSpec  # type: ignore[assignment]
+
 
 # These are deprecated and will go away in 2022.
 all = builtins.all
