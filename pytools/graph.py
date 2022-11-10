@@ -37,6 +37,7 @@ Graph Algorithms
 .. autofunction:: compute_transitive_closure
 .. autofunction:: contains_cycle
 .. autofunction:: compute_induced_subgraph
+.. autofunction:: validate_graph
 
 Type Variables Used
 -------------------
@@ -391,6 +392,30 @@ def compute_induced_subgraph(graph: Mapping[T, Set[T]],
         if node in subgraph_nodes:
             new_graph[node] = children & subgraph_nodes
     return new_graph
+
+# }}}
+
+
+# {{{ validate graph
+
+def validate_graph(graph: Mapping[T, Collection[T]]) -> None:
+    """
+    Validates that all successor nodes of each node in *graph* are keys in
+    *graph* itself. Raises a :class:`ValueError` if not.
+
+    :arg graph: A :class:`collections.abc.Mapping` representing a directed
+        graph. The dictionary contains one key representing each node in the
+        graph, and this key maps to a :class:`collections.abc.Collection` of nodes
+        that are connected to the node by outgoing edges.
+    """
+    seen_nodes: Set[T] = set()
+
+    for children in graph.values():
+        seen_nodes.update(children)
+
+    if not seen_nodes <= graph.keys():
+        raise ValueError(
+            f"invalid graph: {graph.keys()}, seen nodes: {seen_nodes}")
 
 # }}}
 
