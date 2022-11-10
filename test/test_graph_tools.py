@@ -339,7 +339,7 @@ def test_validate_graph():
         "d": set(),
         "e": set(),
         "f": {"g"},
-        "g": {"h", "i", "j"},  # i, j missing from keys
+        "g": {"h", "i", "j"},  # h, i, j missing from keys
         }
 
     with pytest.raises(ValueError):
