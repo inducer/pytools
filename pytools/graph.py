@@ -415,7 +415,7 @@ def validate_graph(graph: Mapping[T, Collection[T]]) -> None:
 
     if not seen_nodes <= graph.keys():
         raise ValueError(
-            f"invalid graph: {graph.keys()}, seen nodes: {seen_nodes}")
+            f"invalid graph, missing keys: {seen_nodes-graph.keys()}")
 
 # }}}
 
