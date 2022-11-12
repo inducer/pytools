@@ -333,6 +333,42 @@ def test_reverse_graph():
     assert graph == reverse_graph(reverse_graph(graph))
 
 
+def test_validate_graph():
+    from pytools.graph import validate_graph
+    graph1 = {
+            "d": set("c"),
+            "b": set("a"),
+            "a": set(),
+            "c": set("a"),
+            }
+
+    validate_graph(graph1)
+
+    graph2 = {
+            "d": set("d"),
+            "b": set("c"),
+            "a": set("b"),
+            "c": set("a"),
+            }
+
+    validate_graph(graph2)
+
+    graph3 = {
+        "a": {"b", "c"},
+        "b": {"d", "e"},
+        "c": {"d", "f"},
+        "d": set(),
+        "e": set(),
+        "f": {"g"},
+        "g": {"h", "i", "j"},  # h, i, j missing from keys
+        }
+
+    with pytest.raises(ValueError):
+        validate_graph(graph3)
+
+    validate_graph({})
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])

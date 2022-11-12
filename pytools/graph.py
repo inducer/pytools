@@ -38,6 +38,7 @@ Graph Algorithms
 .. autofunction:: contains_cycle
 .. autofunction:: compute_induced_subgraph
 .. autofunction:: get_graph_dot_code
+.. autofunction:: validate_graph
 
 Type Variables Used
 -------------------
@@ -396,7 +397,7 @@ def compute_induced_subgraph(graph: Mapping[T, Set[T]],
 # }}}
 
 
-# {{{
+# {{{ get_graph_dot_code
 
 def get_graph_dot_code(graph: Mapping[T, Collection[T]]) -> str:
     """
@@ -433,6 +434,30 @@ def get_graph_dot_code(graph: Mapping[T, Collection[T]]) -> str:
         [f"{node_to_id[node]} -> {node_to_id[t]};" for (node, t) in edges])
 
     return f"digraph mygraph {{\n{ content }\n}}\n"
+
+# }}}
+
+
+# {{{ validate graph
+
+def validate_graph(graph: Mapping[T, Collection[T]]) -> None:
+    """
+    Validates that all successor nodes of each node in *graph* are keys in
+    *graph* itself. Raises a :class:`ValueError` if not.
+
+    :arg graph: A :class:`collections.abc.Mapping` representing a directed
+        graph. The dictionary contains one key representing each node in the
+        graph, and this key maps to a :class:`collections.abc.Collection` of nodes
+        that are connected to the node by outgoing edges.
+    """
+    seen_nodes: Set[T] = set()
+
+    for children in graph.values():
+        seen_nodes.update(children)
+
+    if not seen_nodes <= graph.keys():
+        raise ValueError(
+            f"invalid graph, missing keys: {seen_nodes-graph.keys()}")
 
 # }}}
 
