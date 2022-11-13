@@ -33,7 +33,7 @@ class EOCRecorder:
     .. automethod:: write_gnuplot_file
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.history: List[Tuple[float, float]] = []
 
     def add_data_point(self, abscissa: float, error: float) -> None:
