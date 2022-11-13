@@ -47,7 +47,7 @@ Type Variables Used
     Any type.
 """
 
-from typing import (Collection, TypeVar, Mapping, Iterable, List, Optional, Any,
+from typing import (Collection, TypeVar, Mapping, List, Optional, Any,
                     Callable, Set, MutableSet, Dict, Iterator, Tuple, FrozenSet)
 
 
@@ -146,7 +146,7 @@ def a_star(  # pylint: disable=too-many-locals
 
 # {{{ compute SCCs with Tarjan's algorithm
 
-def compute_sccs(graph: Mapping[T, Iterable[T]]) -> List[List[T]]:
+def compute_sccs(graph: Mapping[T, Collection[T]]) -> List[List[T]]:
     to_search = set(graph.keys())
     visit_order: Dict[T, int] = {}
     scc_root = {}
@@ -213,7 +213,7 @@ class CycleError(Exception):
 
     :attr node: Node in a directed graph that is part of a cycle.
     """
-    def __init__(self, node):
+    def __init__(self, node) -> None:
         self.node = node
 
 
@@ -225,21 +225,21 @@ class HeapEntry:
     Only needs to define :func:`pytools.graph.__lt__` according to
     <https://github.com/python/cpython/blob/8d21aa21f2cbc6d50aab3f420bb23be1d081dac4/Lib/heapq.py#L135-L138>.
     """
-    def __init__(self, node, key):
+    def __init__(self, node, key) -> None:
         self.node = node
         self.key = key
 
-    def __lt__(self, other):
+    def __lt__(self, other) -> bool:
         return self.key < other.key
 
 
-def compute_topological_order(graph: Mapping[T, Iterable[T]],
+def compute_topological_order(graph: Mapping[T, Collection[T]],
                               key: Optional[Callable[[T], Any]] = None) -> List[T]:
     """Compute a topological order of nodes in a directed graph.
 
     :arg graph: A :class:`collections.abc.Mapping` representing a directed
         graph. The dictionary contains one key representing each node in the
-        graph, and this key maps to a :class:`collections.abc.Iterable` of its
+        graph, and this key maps to a :class:`collections.abc.Collection` of its
         successor nodes.
 
     :arg key: A custom key function may be supplied to determine the order in
@@ -344,12 +344,12 @@ def compute_transitive_closure(graph: Mapping[T, MutableSet[T]]) -> (
 
 # {{{ check for cycle
 
-def contains_cycle(graph: Mapping[T, Iterable[T]]) -> bool:
+def contains_cycle(graph: Mapping[T, Collection[T]]) -> bool:
     """Determine whether a graph contains a cycle.
 
     :arg graph: A :class:`collections.abc.Mapping` representing a directed
         graph. The dictionary contains one key representing each node in the
-        graph, and this key maps to a :class:`collections.abc.Iterable` of
+        graph, and this key maps to a :class:`collections.abc.Collection` of
         nodes that are connected to the node by outgoing edges.
 
     :returns: A :class:`bool` indicating whether the graph contains a cycle.
