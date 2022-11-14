@@ -214,7 +214,7 @@ class CycleError(Exception):
 
     :attr node: Node in a directed graph that is part of a cycle.
     """
-    def __init__(self, node):
+    def __init__(self, node) -> None:
         self.node = node
 
 
@@ -226,11 +226,11 @@ class HeapEntry:
     Only needs to define :func:`pytools.graph.__lt__` according to
     <https://github.com/python/cpython/blob/8d21aa21f2cbc6d50aab3f420bb23be1d081dac4/Lib/heapq.py#L135-L138>.
     """
-    def __init__(self, node, key):
+    def __init__(self, node, key) -> None:
         self.node = node
         self.key = key
 
-    def __lt__(self, other):
+    def __lt__(self, other) -> bool:
         return self.key < other.key
 
 
