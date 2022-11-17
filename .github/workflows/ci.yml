@@ -12,7 +12,8 @@ on:
 jobs:
     flake8:
         name: Flake8
-        runs-on: ubuntu-latest
+        # Newer images have no Python 3.6 support
+        runs-on: ubuntu-20.04
         steps:
         -   uses: actions/checkout@v3
         -
@@ -67,7 +68,8 @@ jobs:
 
     pytest:
         name: Pytest on Py${{ matrix.python-version }}
-        runs-on: ubuntu-latest
+        # Newer images have no Python 3.6 support
+        runs-on: ubuntu-20.04
         strategy:
             matrix:
                 python-version: ["3.6", "3.8", "3.9", "3.x", "pypy3.8"]
