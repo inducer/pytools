@@ -54,7 +54,7 @@ def dot_escape(s: str) -> str:
     return html.escape(s.replace("\\", "\\\\"))
 
 
-def show_dot(dot_code: str, output_to: Optional[str] = None):
+def show_dot(dot_code: str, output_to: Optional[str] = None) -> Optional[str]:
     """
     Visualize the graph represented by *dot_code*.
 
@@ -73,7 +73,7 @@ def show_dot(dot_code: str, output_to: Optional[str] = None):
         to ``"browser"``.
 
     :returns: Depends on *output_to*. If ``"svg"``, returns the path to the
-        generated SVG file, otherwise returns nothing.
+        generated SVG file, otherwise returns ``None``.
     """
 
     from tempfile import mkdtemp
@@ -126,4 +126,5 @@ def show_dot(dot_code: str, output_to: Optional[str] = None):
         raise ValueError("`output_to` can be one of 'xwindow', 'browser', or 'svg',"
                          f" got '{output_to}'")
 
+    return None
 # }}}
