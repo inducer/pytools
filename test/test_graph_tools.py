@@ -76,6 +76,12 @@ def test_compute_topological_order():
     with pytest.raises(CycleError):
         compute_topological_order(cycle)
 
+    cycle2 = {0: [2], 1: [2], 2: [3], 3: [1]}
+    with pytest.raises(CycleError) as exc:
+        compute_topological_order(cycle2)
+
+    assert str(exc.value) == "[1, 2, 3]"
+
 
 def test_transitive_closure():
     from pytools.graph import compute_transitive_closure

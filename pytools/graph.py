@@ -212,10 +212,10 @@ class CycleError(Exception):
     """
     Raised when a topological ordering cannot be computed due to a cycle.
 
-    :attr node: Node in a directed graph that is part of a cycle.
+    :attr nodes: List of nodes in a directed graph that are part of a cycle.
     """
-    def __init__(self, node: T) -> None:
-        self.node = node
+    def __init__(self, nodes: List[T]) -> None:
+        self.nodes = nodes
 
 
 class HeapEntry:
@@ -299,8 +299,8 @@ def compute_topological_order(graph: Mapping[T, Collection[T]],
 
     if len(order) != total_num_nodes:
         # any node which has a predecessor left is a part of a cycle
-        raise CycleError(next(iter(n for n, num_preds in
-            nodes_to_num_predecessors.items() if num_preds != 0)))
+        raise CycleError(list(n for n, num_preds in
+            nodes_to_num_predecessors.items() if num_preds != 0))
 
     return order
 
