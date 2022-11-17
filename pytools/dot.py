@@ -113,8 +113,7 @@ def show_dot(dot_code: str, output_to: Optional[str] = None):
                               cwd=temp_dir)
 
         full_svg_file_name = join(temp_dir, svg_file_name)
-        logger.info("show_dot_dependency_graph: svg written to '%s'",
-                full_svg_file_name)
+        logger.info("show_dot: svg written to '%s'", full_svg_file_name)
 
         if output_to == "svg":
             return full_svg_file_name
