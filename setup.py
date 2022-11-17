@@ -24,8 +24,6 @@ setup(name="pytools",
           "Natural Language :: English",
           "Programming Language :: Python",
           "Programming Language :: Python :: 3",
-          "Programming Language :: Python :: 3.6",
-          "Programming Language :: Python :: 3.7",
           "Topic :: Scientific/Engineering",
           "Topic :: Scientific/Engineering :: Information Analysis",
           "Topic :: Scientific/Engineering :: Mathematics",
@@ -34,11 +32,10 @@ setup(name="pytools",
           "Topic :: Utilities",
           ],
 
-      python_requires="~=3.6",
+      python_requires="~=3.8",
 
       install_requires=[
           "platformdirs>=2.2.0",
-          "dataclasses>=0.7;python_version<='3.6'",
           "typing_extensions>=4.0; python_version<'3.11'",
           ],
 
