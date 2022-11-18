@@ -421,8 +421,11 @@ def get_graph_dot_code(graph: Mapping[T, Collection[T]]) -> str:
     edges = []
 
     for node, targets in graph.items():
-        node_to_id[node] = id_gen()
+        if node not in node_to_id:
+            node_to_id[node] = id_gen()
         for t in targets:
+            if t not in node_to_id:
+                node_to_id[t] = id_gen()
             edges.append((node, t))
 
     content = "\n".join(
