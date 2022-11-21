@@ -128,3 +128,6 @@ def show_dot(dot_code: str, output_to: Optional[str] = None) -> Optional[str]:
 
     return None
 # }}}
+
+
+# vim: foldmethod=marker
