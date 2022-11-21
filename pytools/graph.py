@@ -400,7 +400,9 @@ def compute_induced_subgraph(graph: Mapping[T, Set[T]],
 
 # {{{ get_graph_dot_code
 
-def get_graph_dot_code(graph: Mapping[T, Collection[T]]) -> str:
+def get_graph_dot_code(graph: Mapping[T, Collection[T]],
+                       edge_labels: Optional[Mapping[Tuple[T, T], str]] = None) \
+                       -> str:
     """
     Create a visualization of the graph *graph* in the
     `dot <http://graphviz.org/>`__ language.
@@ -410,12 +412,18 @@ def get_graph_dot_code(graph: Mapping[T, Collection[T]]) -> str:
         graph, and this key maps to a :class:`collections.abc.Collection` of nodes
         that are connected to the node by outgoing edges.
 
+    :arg edge_labels: An optional :class:`collections.abc.Mapping` of edge labels
+        between pairs of nodes.
+
     :returns: A string in the `dot <http://graphviz.org/>`__ language.
     """
     from pytools import UniqueNameGenerator
     id_gen = UniqueNameGenerator(forced_prefix="mynode")
 
-    from pytools.dot import dot_escape
+    from pytools.graphviz import dot_escape
+
+    if edge_labels is None:
+        edge_labels = {}
 
     node_to_id = {}
     edges = []
@@ -428,14 +436,18 @@ def get_graph_dot_code(graph: Mapping[T, Collection[T]]) -> str:
                 node_to_id[t] = id_gen()
             edges.append((node, t))
 
+    # Add nodes
     content = "\n".join(
         [f'{node_to_id[node]} [label="{dot_escape(repr(node))}"];'
          for node in node_to_id.keys()])
 
     content += "\n"
 
+    # Add edges
     content += "\n".join(
-        [f"{node_to_id[node]} -> {node_to_id[t]};" for (node, t) in edges])
+        [f"{node_to_id[node]} -> {node_to_id[t]} "
+         f"[label=\"{dot_escape(edge_labels.get((node, t), ''))}\"];"
+         for (node, t) in edges])
 
     return f"digraph mygraph {{\n{ content }\n}}\n"
 

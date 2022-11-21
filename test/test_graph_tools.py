@@ -301,16 +301,16 @@ def test_get_graph_dot_code():
 
     from pytools.graph import get_graph_dot_code
 
-    res = get_graph_dot_code(graph)
+    res = get_graph_dot_code(graph, edge_labels={("A", "B"): "foo"})
 
     assert res == \
 """digraph mygraph {
 mynodeid [label="&#x27;A&#x27;"];
 mynodeid_0 [label="&#x27;B&#x27;"];
 mynodeid_1 [label="&#x27;C&#x27;"];
-mynodeid -> mynodeid_0;
-mynodeid -> mynodeid_1;
-mynodeid_1 -> mynodeid;
+mynodeid -> mynodeid_0 [label="foo"];
+mynodeid -> mynodeid_1 [label=""];
+mynodeid_1 -> mynodeid [label=""];
 }
 """
 
