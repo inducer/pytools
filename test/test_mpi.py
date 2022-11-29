@@ -35,8 +35,12 @@ def test_pytest_raises_on_rank():
 
     fail(0, 1)
 
-    with pytest_raises_on_rank(0, 1, ValueError):
-        fail(0, 1)
-
     with pytest_raises_on_rank(0, 0, ValueError):
+        # Generates an exception, and pytest_raises_on_rank
+        # expects one.
         fail(0, 0)
+
+    with pytest_raises_on_rank(0, 1, ValueError):
+        # Generates no exception, and pytest_raises_on_rank
+        # does not expect one.
+        fail(0, 1)
