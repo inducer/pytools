@@ -3,7 +3,6 @@ Copyright (C) 2009-2019 Andreas Kloeckner
 Copyright (C) 2022 University of Illinois Board of Trustees
 """
 
-
 __license__ = """
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -24,9 +23,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-"""
+__doc__ = """
 MPI helper functionality
-------------------------
+========================
 
 .. autofunction:: check_for_mpi_relaunch
 .. autofunction:: run_with_mpi_ranks
