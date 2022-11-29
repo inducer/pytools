@@ -8,7 +8,7 @@ MPI helper functionality
 """
 
 from contextlib import contextmanager, AbstractContextManager
-from typing import Any
+from typing import Generator, Tuple, Union, Type
 
 
 def check_for_mpi_relaunch(argv):
@@ -43,7 +43,9 @@ def run_with_mpi_ranks(py_script, ranks, callable_, args=(), kwargs=None):
 
 @contextmanager
 def pytest_raises_on_rank(my_rank: int, fail_rank: int,
-                          expected_exception: Any):
+        expected_exception: Union[Type[BaseException],
+                                  Tuple[Type[BaseException], ...]]) \
+                -> Generator[AbstractContextManager, None, None]:
     """
     Like :func:`pytest.raises`, but only expect an exception on rank *fail_rank*.
     """
