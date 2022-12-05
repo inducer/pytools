@@ -29,8 +29,11 @@ intersphinx_mapping = {
     "https://numpy.org/doc/stable": None,
     "https://documen.tician.de/pymbolic/": None,
     "https://documen.tician.de/loopy/": None,
+    "https://docs.pytest.org/en/stable/": None,
     }
 
 nitpick_ignore_regex = [
         ["py:class", r"typing_extensions\.(.+)"],
         ]
+
+nitpicky = True
