@@ -32,7 +32,7 @@ Graph Algorithms
 .. autofunction:: reverse_graph
 .. autofunction:: a_star
 .. autofunction:: compute_sccs
-.. autoclass:: CycleError
+.. autoexception:: CycleError
 .. autofunction:: compute_topological_order
 .. autofunction:: compute_transitive_closure
 .. autofunction:: contains_cycle
