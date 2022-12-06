@@ -212,9 +212,12 @@ class CycleError(Exception):
     """
     Raised when a topological ordering cannot be computed due to a cycle.
 
+    :attr node: Node in a directed graph that is part of a cycle.
+
     :attr nodes: List of nodes in a directed graph that are part of a cycle.
     """
     def __init__(self, nodes: List[T]) -> None:
+        self.node = nodes[0]
         self.nodes = nodes
 
 
