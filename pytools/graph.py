@@ -220,6 +220,11 @@ class CycleError(Exception):
         self.node = nodes[0]
         self.nodes = nodes
 
+    def __str__(self) -> str:
+        le = len(self.nodes)
+        mlen = 10
+        return f"{[n for n in self.nodes[:mlen]] + (['...'] if le > mlen else [])}"
+
 
 class HeapEntry:
     """
