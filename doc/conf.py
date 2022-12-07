@@ -37,3 +37,5 @@ nitpick_ignore_regex = [
         ]
 
 nitpicky = True
+
+autodoc_type_aliases = {"GraphT": "pytools.graph.GraphT"}
