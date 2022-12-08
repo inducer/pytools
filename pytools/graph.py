@@ -38,6 +38,7 @@ Graph Algorithms
 .. autofunction:: contains_cycle
 .. autofunction:: compute_induced_subgraph
 .. autofunction:: validate_graph
+.. autofunction:: is_connected
 
 Type Variables Used
 -------------------
@@ -419,5 +420,41 @@ def validate_graph(graph: Mapping[T, Collection[T]]) -> None:
             f"invalid graph, missing keys: {seen_nodes-graph.keys()}")
 
 # }}}
+
+
+# {{{
+
+def is_connected(graph: Mapping[T, Collection[T]]) -> bool:
+    """
+    Returns whether all nodes in *graph* are connected, ignoring
+    the edge direction.
+
+    :arg graph: A :class:`collections.abc.Mapping` representing a directed
+        graph. The dictionary contains one key representing each node in the
+        graph, and this key maps to a :class:`collections.abc.Collection` of nodes
+        that are connected to the node by outgoing edges.
+    """
+    if not graph:
+        # https://cs.stackexchange.com/questions/52815/is-a-graph-of-zero-nodes-vertices-connected
+        return True
+
+    visited = set()
+
+    undirected_graph = {node: set(children) for node, children in graph.items()}
+
+    for node, children in graph.items():
+        for child in children:
+            undirected_graph[child].add(node)
+
+    def dfs(node: T) -> None:
+        visited.add(node)
+        for child in undirected_graph[node]:
+            if child not in visited:
+                dfs(child)
+
+    dfs(next(iter(graph.keys())))
+
+    return visited == graph.keys()
+
 
 # vim: foldmethod=marker
