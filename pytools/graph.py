@@ -459,7 +459,7 @@ def is_connected(graph: GraphT) -> bool:
         for child in children:
             undirected_graph[child].add(node)
 
-    def dfs(node: T) -> None:
+    def dfs(node: NodeT) -> None:
         visited.add(node)
         for child in undirected_graph[node]:
             if child not in visited:
