@@ -84,6 +84,8 @@ def reverse_graph(graph: GraphT) -> Dict[NodeT, FrozenSet[NodeT]]:
     """
     Reverses a graph *graph*.
 
+    :arg graph: An instance of :class:`GraphT`.
+
     :returns: A :class:`dict` representing *graph* with edges reversed.
     """
     result: Dict[NodeT, Set[NodeT]] = {}
@@ -261,6 +263,8 @@ def compute_topological_order(graph: GraphT,
                               -> List[NodeT]:
     """Compute a topological order of nodes in a directed graph.
 
+    :arg graph: An instance of :class:`GraphT`.
+
     :arg key: A custom key function may be supplied to determine the order in
         break-even cases. Expects a function of one argument that is used to
         extract a comparison key from each node of the *graph*.
@@ -366,6 +370,8 @@ def compute_transitive_closure(graph: Mapping[NodeT, MutableSet[NodeT]]) -> (
 def contains_cycle(graph: GraphT) -> bool:
     """Determine whether a graph contains a cycle.
 
+    :arg graph: An instance of :class:`GraphT`.
+
     :returns: A :class:`bool` indicating whether the graph contains a cycle.
 
     .. versionadded:: 2020.2
@@ -417,6 +423,8 @@ def validate_graph(graph: GraphT) -> None:
     """
     Validates that all successor nodes of each node in *graph* are keys in
     *graph* itself. Raises a :class:`ValueError` if not.
+
+    :arg graph: An instance of :class:`GraphT`.
     """
     seen_nodes: Set[Type[GraphT]] = set()
 
