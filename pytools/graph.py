@@ -434,8 +434,6 @@ def is_connected(graph: Mapping[T, Collection[T]]) -> bool:
         graph, and this key maps to a :class:`collections.abc.Collection` of nodes
         that are connected to the node by outgoing edges.
     """
-    validate_graph(graph)
-
     if not graph:
         # https://cs.stackexchange.com/questions/52815/is-a-graph-of-zero-nodes-vertices-connected
         return True
