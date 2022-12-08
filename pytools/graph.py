@@ -299,9 +299,26 @@ def compute_topological_order(graph: Mapping[T, Collection[T]],
                 heappush(heap, HeapEntry(child, keyfunc(child)))
 
     if len(order) != total_num_nodes:
-        # any node which has a predecessor left is a part of a cycle
-        raise CycleError(next(iter(n for n, num_preds in
-            nodes_to_num_predecessors.items() if num_preds != 0)))
+        # There is a cycle in the graph
+        try:
+            validate_graph(graph)
+        except ValueError:
+            # Graph is invalid, we can't compute SCCs or return a meaningful node
+            # that is part of a cycle
+            raise CycleError(None)
+
+        sccs = compute_sccs(graph)
+        cycles = [scc for scc in sccs if len(scc) > 1]
+
+        if cycles:
+            # Cycles that are not self-loops
+            node = cycles[0][0]
+        else:
+            # Self-loop SCCs also have a length of 1
+            node = next(iter(n for n, num_preds in
+                             nodes_to_num_predecessors.items() if num_preds != 0))
+
+        raise CycleError(node)
 
     return order
 
