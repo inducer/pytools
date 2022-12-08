@@ -444,6 +444,8 @@ def is_connected(graph: GraphT) -> bool:
     the edge direction.
 
     :arg graph: An instance of :class:`GraphT`.
+
+    :returns: A :class:`bool` indicating whether the graph is connected.
     """
     if not graph:
         # https://cs.stackexchange.com/questions/52815/is-a-graph-of-zero-nodes-vertices-connected
