@@ -436,7 +436,7 @@ def is_connected(graph: Mapping[T, Collection[T]]) -> bool:
     """
     validate_graph(graph)
 
-    if len(graph.keys()) == 0:
+    if not graph:
         # https://cs.stackexchange.com/questions/52815/is-a-graph-of-zero-nodes-vertices-connected
         return True
 
@@ -456,10 +456,7 @@ def is_connected(graph: Mapping[T, Collection[T]]) -> bool:
 
     dfs(next(iter(graph.keys())))
 
-    if visited == graph.keys():
-        return True
-    else:
-        return False
+    return visited == graph.keys()
 
 
 # vim: foldmethod=marker
