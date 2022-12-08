@@ -334,10 +334,10 @@ def compute_topological_order(graph: GraphT,
 def compute_transitive_closure(graph: Mapping[NodeT, MutableSet[NodeT]]) -> (
         Mapping[NodeT, MutableSet[NodeT]]):
     """Compute the transitive closure of a directed graph using Warshall's
-        algorithm.
+    algorithm.
 
     :arg graph: A :class:`collections.abc.Mapping` representing a directed
-        graph. The dictionary contains one key representing each node in the
+        graph. The mapping contains one key representing each node in the
         graph, and this key maps to a :class:`collections.abc.MutableSet` of
         nodes that are connected to the node by outgoing edges. This graph may
         contain cycles. This object must be picklable. Every graph node must
@@ -392,7 +392,7 @@ def compute_induced_subgraph(graph: Mapping[NodeT, Set[NodeT]],
                              subgraph_nodes: Set[NodeT]) \
                              -> Mapping[NodeT, Set[NodeT]]:
     """Compute the induced subgraph formed by a subset of the vertices in a
-        graph.
+    graph.
 
     :arg graph: A :class:`collections.abc.Mapping` representing a directed
         graph. The mapping contains one key representing each node in the
