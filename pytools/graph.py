@@ -63,7 +63,7 @@ Type Variables Used
 """
 
 from typing import (Collection, TypeVar, Mapping, List, Optional, Any,
-                    Callable, Set, MutableSet, Dict, Iterator, Tuple, FrozenSet,
+                    Callable, Set, MutableSet, Dict, Iterator, Tuple,
                     Type, Hashable)
 
 try:
@@ -80,7 +80,7 @@ GraphT: TypeAlias = Mapping[NodeT, Collection[NodeT]]
 
 # {{{ reverse_graph
 
-def reverse_graph(graph: GraphT) -> Dict[NodeT, FrozenSet[NodeT]]:
+def reverse_graph(graph: GraphT) -> GraphT:
     """
     Reverses a graph *graph*.
 
@@ -88,7 +88,7 @@ def reverse_graph(graph: GraphT) -> Dict[NodeT, FrozenSet[NodeT]]:
 
     :returns: A :class:`dict` representing *graph* with edges reversed.
     """
-    result: Dict[NodeT, Set[NodeT]] = {}
+    result: Dict[Type[GraphT], Set[Type[GraphT]]] = {}
 
     for node_key, successor_nodes in graph.items():
         # Make sure every node is in the result even if it has no successors
@@ -331,8 +331,7 @@ def compute_topological_order(graph: GraphT,
 
 # {{{ compute transitive closure
 
-def compute_transitive_closure(graph: Mapping[NodeT, MutableSet[NodeT]]) -> (
-        Mapping[NodeT, MutableSet[NodeT]]):
+def compute_transitive_closure(graph: Mapping[NodeT, MutableSet[NodeT]]) -> GraphT:
     """Compute the transitive closure of a directed graph using Warshall's
     algorithm.
 
@@ -389,8 +388,7 @@ def contains_cycle(graph: GraphT) -> bool:
 # {{{ compute induced subgraph
 
 def compute_induced_subgraph(graph: Mapping[NodeT, Set[NodeT]],
-                             subgraph_nodes: Set[NodeT]) \
-                             -> Mapping[NodeT, Set[NodeT]]:
+                             subgraph_nodes: Set[NodeT]) -> GraphT:
     """Compute the induced subgraph formed by a subset of the vertices in a
     graph.
 
