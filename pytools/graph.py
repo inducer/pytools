@@ -51,7 +51,7 @@ Type Variables Used
 
 .. class:: NodeT
 
-    Type of a graph node, can be any type.
+    Type of a graph node, can be any hashable type.
 
 .. class:: GraphT
 
@@ -64,7 +64,7 @@ Type Variables Used
 
 from typing import (Collection, TypeVar, Mapping, List, Optional, Any,
                     Callable, Set, MutableSet, Dict, Iterator, Tuple, FrozenSet,
-                    Type)
+                    Type, Hashable)
 
 try:
     from typing import TypeAlias
@@ -72,7 +72,7 @@ except ImportError:
     from typing_extensions import TypeAlias
 
 
-NodeT = TypeVar("NodeT")
+NodeT = TypeVar("NodeT", bound=Hashable)
 
 
 GraphT: TypeAlias = Mapping[NodeT, Collection[NodeT]]
