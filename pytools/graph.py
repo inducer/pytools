@@ -62,9 +62,9 @@ Type Variables Used
     is included as a key in the graph.
 """
 
-from typing import (Collection, TypeVar, Mapping, List, Optional, Any,
+from typing import (Collection, Mapping, List, Optional, Any,
                     Callable, Set, MutableSet, Dict, Iterator, Tuple,
-                    Type, Hashable)
+                    Hashable)
 
 try:
     from typing import TypeAlias
@@ -72,7 +72,7 @@ except ImportError:
     from typing_extensions import TypeAlias
 
 
-NodeT = TypeVar("NodeT", bound=Hashable)
+NodeT: TypeAlias = Hashable
 
 
 GraphT: TypeAlias = Mapping[NodeT, Collection[NodeT]]
@@ -88,7 +88,7 @@ def reverse_graph(graph: GraphT) -> GraphT:
 
     :returns: A :class:`dict` representing *graph* with edges reversed.
     """
-    result: Dict[Type[GraphT], Set[Type[GraphT]]] = {}
+    result: Dict[NodeT, Set[NodeT]] = {}
 
     for node_key, successor_nodes in graph.items():
         # Make sure every node is in the result even if it has no successors
@@ -424,7 +424,7 @@ def validate_graph(graph: GraphT) -> None:
 
     :arg graph: An instance of :class:`GraphT`.
     """
-    seen_nodes: Set[Type[GraphT]] = set()
+    seen_nodes: Set[NodeT] = set()
 
     for children in graph.values():
         seen_nodes.update(children)
