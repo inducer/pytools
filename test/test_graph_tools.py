@@ -400,7 +400,7 @@ def test_cycle_detection():
 
     # Non-Self Loop
     graph = {1: {}, 5: {1, 8}, 8: {5}}
-    with pytest.raises(CycleError, match="5"):
+    with pytest.raises(CycleError, match="5|8"):
         compute_topological_order(graph)
 
     # Self-Loop
