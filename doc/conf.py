@@ -38,4 +38,6 @@ nitpick_ignore_regex = [
 
 nitpicky = True
 
-autodoc_type_aliases = {"GraphT": "GraphT"}
+autodoc_type_aliases = {"GraphT": "GraphT",
+                        "NodeT": "NodeT",
+                        }
