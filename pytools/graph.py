@@ -440,15 +440,12 @@ def validate_graph(graph: GraphT) -> None:
 
 # {{{
 
-def is_connected(graph: Mapping[T, Collection[T]]) -> bool:
+def is_connected(graph: GraphT) -> bool:
     """
     Returns whether all nodes in *graph* are connected, ignoring
     the edge direction.
 
-    :arg graph: A :class:`collections.abc.Mapping` representing a directed
-        graph. The dictionary contains one key representing each node in the
-        graph, and this key maps to a :class:`collections.abc.Collection` of nodes
-        that are connected to the node by outgoing edges.
+    :arg graph: An instance of :class:`GraphT`.
     """
     if not graph:
         # https://cs.stackexchange.com/questions/52815/is-a-graph-of-zero-nodes-vertices-connected
