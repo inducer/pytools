@@ -236,7 +236,8 @@ class HeapEntry:
 
 
 def compute_topological_order(graph: Mapping[T, Collection[T]],
-                              key: Optional[Callable[[T], Any]] = None) -> List[T]:
+                              key: Optional[Callable[[T], Any]] = None,
+                              verbose_cycle: bool = True) -> List[T]:
     """Compute a topological order of nodes in a directed graph.
 
     :arg graph: A :class:`collections.abc.Mapping` representing a directed
@@ -247,6 +248,8 @@ def compute_topological_order(graph: Mapping[T, Collection[T]],
     :arg key: A custom key function may be supplied to determine the order in
         break-even cases. Expects a function of one argument that is used to
         extract a comparison key from each node of the *graph*.
+
+    :arg verbose_cycle: Verbose reporting in case *graph* contains a cycle.
 
     :returns: A :class:`list` representing a valid topological ordering of the
         nodes in the directed graph.
@@ -300,6 +303,9 @@ def compute_topological_order(graph: Mapping[T, Collection[T]],
 
     if len(order) != total_num_nodes:
         # There is a cycle in the graph
+        if not verbose_cycle:
+            raise CycleError(None)
+
         try:
             validate_graph(graph)
         except ValueError:
@@ -377,7 +383,7 @@ def contains_cycle(graph: Mapping[T, Collection[T]]) -> bool:
     """
 
     try:
-        compute_topological_order(graph)
+        compute_topological_order(graph, verbose_cycle=False)
         return False
     except CycleError:
         return True
