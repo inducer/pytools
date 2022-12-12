@@ -306,7 +306,8 @@ def compute_topological_order(graph: GraphT,
         break-even cases. Expects a function of one argument that is used to
         extract a comparison key from each node of the *graph*.
 
-    :arg verbose_cycle: Verbose reporting in case *graph* contains a cycle.
+    :arg verbose_cycle: Verbose reporting in case *graph* contains a cycle, i.e.
+        return a :class:`CycleError` which has a node that is part of a cycle.
 
     :returns: A :class:`list` representing a valid topological ordering of the
         nodes in the directed graph.
