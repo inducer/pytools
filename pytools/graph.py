@@ -251,7 +251,7 @@ class NodeState(Enum):
 
 def find_cycles(graph: GraphT, all_cycles: bool = True) -> List[List[NodeT]]:
     """
-    Find all cycles in *graph* using DFS.
+    Find cycles in *graph* using DFS.
 
     :arg all_cycles: If False, only return the first cycle found.
 
