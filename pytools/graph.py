@@ -67,6 +67,8 @@ from typing import (Collection, Mapping, List, Optional, Any,
                     Callable, Set, MutableSet, Dict, Iterator, Tuple,
                     Hashable)
 
+from enum import Enum
+
 try:
     from typing import TypeAlias
 except ImportError:
@@ -241,6 +243,12 @@ class CycleError(Exception):
         self.node = node
 
 
+class NodeState(Enum):
+    WHITE = 0  # Not visited yet
+    GREY = 1   # Currently visiting
+    BLACK = 2  # Done visiting
+
+
 def find_cycles(graph: GraphT, all_cycles: bool = True) -> List[List[NodeT]]:
     """
     Find all cycles in *graph* using DFS.
@@ -252,26 +260,26 @@ def find_cycles(graph: GraphT, all_cycles: bool = True) -> List[List[NodeT]]:
     """
     def dfs(node: NodeT, path: List[NodeT]) -> List[NodeT]:
         # Cycle detected
-        if visited[node] == 1:
+        if visited[node] == NodeState.GREY:
             return path
 
         # Visit this node, explore its children
-        visited[node] = 1
+        visited[node] = NodeState.GREY
         path.append(node)
         for child in graph[node]:
-            if visited[child] != 2 and dfs(child, path):
+            if visited[child] != NodeState.BLACK and dfs(child, path):
                 return path
 
         # Done visiting node
-        visited[node] = 2
+        visited[node] = NodeState.BLACK
         return []
 
-    visited = {node: 0 for node in graph.keys()}
+    visited = {node: NodeState.WHITE for node in graph.keys()}
 
     res = []
 
     for node in graph:
-        if not visited[node]:
+        if visited[node] == NodeState.WHITE:
             cycle = dfs(node, [])
             if cycle:
                 res.append(cycle)
