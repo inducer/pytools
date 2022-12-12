@@ -41,6 +41,7 @@ Graph Algorithms
 .. autoexception:: CycleError
 .. autofunction:: compute_topological_order
 .. autofunction:: compute_transitive_closure
+.. autofunction:: find_cycles
 .. autofunction:: contains_cycle
 .. autofunction:: compute_induced_subgraph
 .. autofunction:: validate_graph
@@ -240,6 +241,42 @@ class CycleError(Exception):
         self.node = node
 
 
+def find_cycles(graph: GraphT) -> List[List[NodeT]]:
+    """
+    Find all cycles in *graph* using DFS.
+
+    :returns: A :class:`list` in which each element represents another :class:`list`
+        of nodes that form a cycle.
+    """
+    def dfs(node: NodeT, path: List[NodeT]) -> List[NodeT]:
+        # Cycle detected
+        if visited[node] == 1:
+            return path
+
+        # Visit this node, explore its children
+        visited[node] = 1
+        path.append(node)
+        for child in graph[node]:
+            if visited[child] != 2 and dfs(child, path):
+                return path
+
+        # Done visiting node
+        visited[node] = 2
+        return []
+
+    visited = {node: 0 for node in graph.keys()}
+
+    res = []
+
+    for node in graph:
+        if not visited[node]:
+            cycle = dfs(node, [])
+            if cycle:
+                res.append(cycle)
+
+    return res
+
+
 class HeapEntry:
     """
     Helper class to compare associated keys while comparing the elements in
@@ -257,8 +294,8 @@ class HeapEntry:
 
 
 def compute_topological_order(graph: GraphT,
-                              key: Optional[Callable[[T], Any]] = None,
-                              verbose_cycle: bool = True) -> List[T]:
+                              key: Optional[Callable[[NodeT], Any]] = None,
+                              verbose_cycle: bool = True) -> List[NodeT]:
     """Compute a topological order of nodes in a directed graph.
 
     :arg key: A custom key function may be supplied to determine the order in
@@ -323,24 +360,12 @@ def compute_topological_order(graph: GraphT,
             raise CycleError(None)
 
         try:
-            validate_graph(graph)
-        except ValueError:
-            # Graph is invalid, we can't compute SCCs or return a meaningful node
-            # that is part of a cycle
+            cycles = find_cycles(graph)
+        except KeyError:
+            # Graph is invalid
             raise CycleError(None)
-
-        sccs = compute_sccs(graph)
-        cycles = [scc for scc in sccs if len(scc) > 1]
-
-        if cycles:
-            # Cycles that are not self-loops
-            node = cycles[0][0]
         else:
-            # Self-loop SCCs also have a length of 1
-            node = next(iter(n for n, num_preds in
-                             nodes_to_num_predecessors.items() if num_preds != 0))
-
-        raise CycleError(node)
+            raise CycleError(cycles[0][0])
 
     return order
 
