@@ -241,9 +241,11 @@ class CycleError(Exception):
         self.node = node
 
 
-def find_cycles(graph: GraphT) -> List[List[NodeT]]:
+def find_cycles(graph: GraphT, all_cycles: bool = True) -> List[List[NodeT]]:
     """
     Find all cycles in *graph* using DFS.
+
+    :arg all_cycles: If False, only return the first cycle found.
 
     :returns: A :class:`list` in which each element represents another :class:`list`
         of nodes that form a cycle.
@@ -273,6 +275,8 @@ def find_cycles(graph: GraphT) -> List[List[NodeT]]:
             cycle = dfs(node, [])
             if cycle:
                 res.append(cycle)
+                if not all_cycles:
+                    return res
 
     return res
 
@@ -417,7 +421,7 @@ def contains_cycle(graph: GraphT) -> bool:
     .. versionadded:: 2020.2
     """
 
-    return bool(find_cycles(graph))
+    return bool(find_cycles(graph, all_cycles=False))
 
 # }}}
 
