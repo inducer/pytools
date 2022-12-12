@@ -417,11 +417,7 @@ def contains_cycle(graph: GraphT) -> bool:
     .. versionadded:: 2020.2
     """
 
-    try:
-        compute_topological_order(graph, verbose_cycle=False)
-        return False
-    except CycleError:
-        return True
+    return bool(find_cycles(graph))
 
 # }}}
 
