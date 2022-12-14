@@ -307,11 +307,17 @@ def test_as_graphviz_dot():
 
         return ""
 
-    res = as_graphviz_dot(graph, edge_labels=edge_labels)
+    def node_labels(node: NodeT) -> str:
+        if node == "A":
+            return "foonode"
+
+        return str(node)
+
+    res = as_graphviz_dot(graph, node_labels=node_labels, edge_labels=edge_labels)
 
     assert res == \
 """digraph mygraph {
-mynodeid [label="A"];
+mynodeid [label="foonode"];
 mynodeid_0 [label="B"];
 mynodeid_1 [label="C"];
 mynodeid -> mynodeid_0 [label="foo"];
