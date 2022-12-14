@@ -294,20 +294,26 @@ def test_prioritized_topological_sort():
     assert len(dep_graph) == 0
 
 
-def test_get_graph_dot_code():
+def test_as_graphviz_dot():
     graph = {"A": ["B", "C"],
              "B": [],
              "C": ["A"]}
 
-    from pytools.graph import get_graph_dot_code
+    from pytools.graph import as_graphviz_dot, NodeT
 
-    res = get_graph_dot_code(graph, edge_labels={("A", "B"): "foo"})
+    def edge_labels(n1: NodeT, n2: NodeT) -> str:
+        if n1 == "A" and n2 == "B":
+            return "foo"
+
+        return ""
+
+    res = as_graphviz_dot(graph, edge_labels=edge_labels)
 
     assert res == \
 """digraph mygraph {
-mynodeid [label="&#x27;A&#x27;"];
-mynodeid_0 [label="&#x27;B&#x27;"];
-mynodeid_1 [label="&#x27;C&#x27;"];
+mynodeid [label="A"];
+mynodeid_0 [label="B"];
+mynodeid_1 [label="C"];
 mynodeid -> mynodeid_0 [label="foo"];
 mynodeid -> mynodeid_1 [label=""];
 mynodeid_1 -> mynodeid [label=""];

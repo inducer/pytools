@@ -43,7 +43,7 @@ Graph Algorithms
 .. autofunction:: compute_transitive_closure
 .. autofunction:: contains_cycle
 .. autofunction:: compute_induced_subgraph
-.. autofunction:: get_graph_dot_code
+.. autofunction:: as_graphviz_dot
 .. autofunction:: validate_graph
 .. autofunction:: is_connected
 
@@ -411,22 +411,21 @@ def compute_induced_subgraph(graph: Mapping[NodeT, Set[NodeT]],
 # }}}
 
 
-# {{{ get_graph_dot_code
+# {{{ as_graphviz_dot
 
-def get_graph_dot_code(graph: Mapping[T, Collection[T]],
-                       edge_labels: Optional[Mapping[Tuple[T, T], str]] = None) \
-                       -> str:
+def as_graphviz_dot(graph: GraphT[NodeT],
+                    node_labels: Optional[Callable[[NodeT], str]] = None,
+                    edge_labels: Optional[Callable[[NodeT, NodeT], str]] = None) \
+                    -> str:
     """
     Create a visualization of the graph *graph* in the
     `dot <http://graphviz.org/>`__ language.
 
-    :arg graph: A :class:`collections.abc.Mapping` representing a directed
-        graph. The dictionary contains one key representing each node in the
-        graph, and this key maps to a :class:`collections.abc.Collection` of nodes
-        that are connected to the node by outgoing edges.
+    :arg node_labels: An optional function that returns node labels
+        for each node.
 
-    :arg edge_labels: An optional :class:`collections.abc.Mapping` of edge labels
-        between pairs of nodes.
+    :arg edge_labels: An optional function that returns edge labels
+        for each pair of nodes.
 
     :returns: A string in the `dot <http://graphviz.org/>`__ language.
     """
@@ -435,8 +434,11 @@ def get_graph_dot_code(graph: Mapping[T, Collection[T]],
 
     from pytools.graphviz import dot_escape
 
+    if node_labels is None:
+        node_labels = lambda x: str(x)
+
     if edge_labels is None:
-        edge_labels = {}
+        edge_labels = lambda x, y: ""
 
     node_to_id = {}
     edges = []
@@ -451,7 +453,7 @@ def get_graph_dot_code(graph: Mapping[T, Collection[T]],
 
     # Add nodes
     content = "\n".join(
-        [f'{node_to_id[node]} [label="{dot_escape(repr(node))}"];'
+        [f'{node_to_id[node]} [label="{dot_escape(node_labels(node))}"];'
          for node in node_to_id.keys()])
 
     content += "\n"
@@ -459,7 +461,7 @@ def get_graph_dot_code(graph: Mapping[T, Collection[T]],
     # Add edges
     content += "\n".join(
         [f"{node_to_id[node]} -> {node_to_id[t]} "
-         f"[label=\"{dot_escape(edge_labels.get((node, t), ''))}\"];"
+         f"[label=\"{dot_escape(edge_labels(node, t))}\"];"
          for (node, t) in edges])
 
     return f"digraph mygraph {{\n{ content }\n}}\n"
