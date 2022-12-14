@@ -459,7 +459,7 @@ def as_graphviz_dot(graph: GraphT[NodeT],
     # Add edges
     content += "\n".join(
         [f"{node_to_id[node]} -> {node_to_id[t]} "
-         f"[label=\"{dot_escape(edge_labels(node, t))}\"];"
+         f'[label="{dot_escape(edge_labels(node, t))}"];'
          for (node, targets) in graph.items()
          for t in targets])
 
