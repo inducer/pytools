@@ -441,7 +441,6 @@ def as_graphviz_dot(graph: GraphT[NodeT],
         edge_labels = lambda x, y: ""
 
     node_to_id = {}
-    edges = []
 
     for node, targets in graph.items():
         if node not in node_to_id:
@@ -449,7 +448,6 @@ def as_graphviz_dot(graph: GraphT[NodeT],
         for t in targets:
             if t not in node_to_id:
                 node_to_id[t] = id_gen()
-            edges.append((node, t))
 
     # Add nodes
     content = "\n".join(
@@ -462,7 +460,8 @@ def as_graphviz_dot(graph: GraphT[NodeT],
     content += "\n".join(
         [f"{node_to_id[node]} -> {node_to_id[t]} "
          f"[label=\"{dot_escape(edge_labels(node, t))}\"];"
-         for (node, t) in edges])
+         for (node, targets) in graph.items()
+         for t in targets])
 
     return f"digraph mygraph {{\n{ content }\n}}\n"
 
