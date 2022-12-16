@@ -376,7 +376,7 @@ def compute_topological_order(graph: GraphT[NodeT],
             raise CycleError(None)
 
         try:
-            cycles = find_cycles(graph)
+            cycles: List[List[NodeT]] = find_cycles(graph)
         except KeyError:
             # Graph is invalid
             raise CycleError(None)
