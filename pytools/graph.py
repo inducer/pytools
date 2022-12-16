@@ -238,14 +238,20 @@ class CycleError(Exception):
 
     :attr nodes: List of nodes in a directed graph that are part of a cycle.
     """
-    def __init__(self, nodes: List[T]) -> None:
-        self.node = nodes[0]
+    def __init__(self, nodes: List[NodeT]) -> None:
         self.nodes = nodes
 
     def __str__(self) -> str:
         le = len(self.nodes)
         mlen = 10
         return f"{[n for n in self.nodes[:mlen]] + (['...'] if le > mlen else [])}"
+
+    @property
+    def node(self) -> Hashable:
+        from warnings import warn
+        warn("CycleError.node is deprecated and will go away in 06/2023. "
+            "Use CycleError.nodes instead.", DeprecationWarning)
+        return self.nodes[0]
 
 
 class HeapEntry:
