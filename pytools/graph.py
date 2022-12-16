@@ -265,13 +265,10 @@ def find_cycles(graph: GraphT, all_cycles: bool = True) -> List[List[NodeT]]:
 
         # Visit this node, explore its children
         visited[node] = NodeState.GREY
-        tmp = []
         for child in graph[node]:
-            if child != node:
-                # Don't duplicate nodes for self-cycles
-                tmp.append(child)
             if visited[child] != NodeState.BLACK and dfs(child, path):
-                return path + [node] + tmp
+                return path + [node] + (
+                    [child] if child != node else [])
 
         # Done visiting node
         visited[node] = NodeState.BLACK
