@@ -243,7 +243,7 @@ class CycleError(Exception):
         self.node = node
 
 
-class NodeState(Enum):
+class _NodeState(Enum):
     WHITE = 0  # Not visited yet
     GREY = 1   # Currently visiting
     BLACK = 2  # Done visiting
@@ -260,26 +260,26 @@ def find_cycles(graph: GraphT, all_cycles: bool = True) -> List[List[NodeT]]:
     """
     def dfs(node: NodeT, path: List[NodeT]) -> List[NodeT]:
         # Cycle detected
-        if visited[node] == NodeState.GREY:
+        if visited[node] == _NodeState.GREY:
             return path + [node]
 
         # Visit this node, explore its children
-        visited[node] = NodeState.GREY
+        visited[node] = _NodeState.GREY
         for child in graph[node]:
-            if visited[child] != NodeState.BLACK and dfs(child, path):
+            if visited[child] != _NodeState.BLACK and dfs(child, path):
                 return path + [node] + (
                     [child] if child != node else [])
 
         # Done visiting node
-        visited[node] = NodeState.BLACK
+        visited[node] = _NodeState.BLACK
         return []
 
-    visited = {node: NodeState.WHITE for node in graph.keys()}
+    visited = {node: _NodeState.WHITE for node in graph.keys()}
 
     res = []
 
     for node in graph:
-        if visited[node] == NodeState.WHITE:
+        if visited[node] == _NodeState.WHITE:
             cycle = dfs(node, [])
             if cycle:
                 res.append(cycle)
