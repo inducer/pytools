@@ -43,6 +43,7 @@ Graph Algorithms
 .. autofunction:: compute_transitive_closure
 .. autofunction:: contains_cycle
 .. autofunction:: compute_induced_subgraph
+.. autofunction:: as_graphviz_dot
 .. autofunction:: validate_graph
 .. autofunction:: is_connected
 
@@ -406,6 +407,63 @@ def compute_induced_subgraph(graph: Mapping[NodeT, Set[NodeT]],
         if node in subgraph_nodes:
             new_graph[node] = children & subgraph_nodes
     return new_graph
+
+# }}}
+
+
+# {{{ as_graphviz_dot
+
+def as_graphviz_dot(graph: GraphT[NodeT],
+                    node_labels: Optional[Callable[[NodeT], str]] = None,
+                    edge_labels: Optional[Callable[[NodeT, NodeT], str]] = None) \
+                    -> str:
+    """
+    Create a visualization of the graph *graph* in the
+    `dot <http://graphviz.org/>`__ language.
+
+    :arg node_labels: An optional function that returns node labels
+        for each node.
+
+    :arg edge_labels: An optional function that returns edge labels
+        for each pair of nodes.
+
+    :returns: A string in the `dot <http://graphviz.org/>`__ language.
+    """
+    from pytools import UniqueNameGenerator
+    id_gen = UniqueNameGenerator(forced_prefix="mynode")
+
+    from pytools.graphviz import dot_escape
+
+    if node_labels is None:
+        node_labels = lambda x: str(x)
+
+    if edge_labels is None:
+        edge_labels = lambda x, y: ""
+
+    node_to_id = {}
+
+    for node, targets in graph.items():
+        if node not in node_to_id:
+            node_to_id[node] = id_gen()
+        for t in targets:
+            if t not in node_to_id:
+                node_to_id[t] = id_gen()
+
+    # Add nodes
+    content = "\n".join(
+        [f'{node_to_id[node]} [label="{dot_escape(node_labels(node))}"];'
+         for node in node_to_id.keys()])
+
+    content += "\n"
+
+    # Add edges
+    content += "\n".join(
+        [f"{node_to_id[node]} -> {node_to_id[t]} "
+         f'[label="{dot_escape(edge_labels(node, t))}"];'
+         for (node, targets) in graph.items()
+         for t in targets])
+
+    return f"digraph mygraph {{\n{ content }\n}}\n"
 
 # }}}
 
