@@ -455,6 +455,10 @@ def test_find_cycles():
     with pytest.raises(CycleError, match="1"):
         compute_topological_order(graph)
 
+    # Cycle over multiple nodes
+    graph = {4: {2}, 2: {3}, 3: {4}}
+    assert find_cycles(graph) == [[4, 2, 3]]
+
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
