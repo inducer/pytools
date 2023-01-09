@@ -21,13 +21,11 @@ THE SOFTWARE.
 """
 
 import marshal
+from importlib.util import MAGIC_NUMBER as BYTECODE_VERSION
 from types import FunctionType, ModuleType
 
 from pytools.codegen import CodeGenerator as CodeGeneratorBase
 from pytools.codegen import Indentation, remove_common_indentation  # noqa
-
-
-from importlib.util import MAGIC_NUMBER as BYTECODE_VERSION
 
 
 class PythonCodeGenerator(CodeGeneratorBase):

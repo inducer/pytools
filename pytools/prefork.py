@@ -40,7 +40,7 @@ class DirectForker:
 
     @staticmethod
     def call_capture_output(cmdline, cwd=None, error_on_nonzero=True):
-        from subprocess import Popen, PIPE
+        from subprocess import PIPE, Popen
 
         try:
             popen = Popen(cmdline, cwd=cwd, stdin=PIPE, stdout=PIPE,
@@ -73,8 +73,8 @@ class DirectForker:
 
 
 def _send_packet(sock, data):
-    from struct import pack
     from pickle import dumps
+    from struct import pack
 
     packet = dumps(data)
 

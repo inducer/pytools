@@ -31,10 +31,11 @@ Dot helper functions
 .. autofunction:: show_dot
 """
 
-from typing import Optional
-
 import html
 import logging
+from typing import Optional
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -76,8 +77,8 @@ def show_dot(dot_code: str, output_to: Optional[str] = None) -> Optional[str]:
         generated SVG file, otherwise returns ``None``.
     """
 
-    from tempfile import mkdtemp
     import subprocess
+    from tempfile import mkdtemp
     temp_dir = mkdtemp(prefix="tmp_pytools_dot")
 
     dot_file_name = "code.dot"
