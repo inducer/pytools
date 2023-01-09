@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+
 __copyright__ = """
 Copyright (C) 2009-2013 Andreas Kloeckner
 Copyright (C) 2020 Matt Wala
@@ -63,9 +64,9 @@ Type Variables Used
     is included as a key in the graph.
 """
 
-from typing import (Collection, Mapping, List, Optional, Any,
-                    Callable, Set, MutableSet, Dict, Iterator, Tuple,
-                    Hashable, TypeVar)
+from typing import (Any, Callable, Collection, Dict, Hashable, Iterator, List,
+                    Mapping, MutableSet, Optional, Set, Tuple, TypeVar)
+
 
 try:
     from typing import TypeAlias

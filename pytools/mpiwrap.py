@@ -1,11 +1,15 @@
 """See pytools.prefork for this module's reason for being."""
 
 import mpi4py.rc  # pylint:disable=import-error
+
+
 mpi4py.rc.initialize = False
 
 from mpi4py.MPI import *  # noqa pylint:disable=wildcard-import,wrong-import-position
 
 import pytools.prefork  # pylint:disable=wrong-import-position
+
+
 pytools.prefork.enable_prefork()
 
 

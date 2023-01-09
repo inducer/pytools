@@ -1,10 +1,12 @@
 import sys
+
 import pytest
 
 
 def test_compute_sccs():
-    from pytools.graph import compute_sccs
     import random
+
+    from pytools.graph import compute_sccs
 
     rng = random.Random(0)
 
@@ -47,7 +49,7 @@ def test_compute_sccs():
 
 
 def test_compute_topological_order():
-    from pytools.graph import compute_topological_order, CycleError
+    from pytools.graph import CycleError, compute_topological_order
 
     empty = {}
     assert compute_topological_order(empty) == []
@@ -251,6 +253,7 @@ def test_prioritized_topological_sort_examples():
 def test_prioritized_topological_sort():
 
     import random
+
     from pytools.graph import compute_topological_order
     rng = random.Random(0)
 
@@ -299,7 +302,7 @@ def test_as_graphviz_dot():
              "B": [],
              "C": ["A"]}
 
-    from pytools.graph import as_graphviz_dot, NodeT
+    from pytools.graph import NodeT, as_graphviz_dot
 
     def edge_labels(n1: NodeT, n2: NodeT) -> str:
         if n1 == "A" and n2 == "B":
