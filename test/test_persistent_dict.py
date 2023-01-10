@@ -6,9 +6,9 @@ from enum import Enum, IntEnum
 
 import pytest
 
-from pytools.persistent_dict import (CollisionWarning, NoSuchEntryError,
-                                     PersistentDict, ReadOnlyEntryError,
-                                     WriteOncePersistentDict)
+from pytools.persistent_dict import (
+    CollisionWarning, NoSuchEntryError, PersistentDict, ReadOnlyEntryError,
+    WriteOncePersistentDict)
 from pytools.tag import Tag, tag_dataclass
 
 

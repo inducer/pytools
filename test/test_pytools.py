@@ -494,8 +494,8 @@ def test_obj_array_vectorize(c=1):
 
 
 def test_tag():
-    from pytools.tag import (NonUniqueTagError, Tag, Taggable, UniqueTag,
-                             check_tag_uniqueness)
+    from pytools.tag import (
+        NonUniqueTagError, Tag, Taggable, UniqueTag, check_tag_uniqueness)
 
     # Need a subclass that defines the copy function in order to test.
     class TaggableWithCopy(Taggable):
