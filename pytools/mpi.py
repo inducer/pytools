@@ -32,8 +32,8 @@ MPI helper functionality
 .. autofunction:: pytest_raises_on_rank
 """
 
-from contextlib import contextmanager, AbstractContextManager
-from typing import Generator, Tuple, Union, Type
+from contextlib import AbstractContextManager, contextmanager
+from typing import Generator, Tuple, Type, Union
 
 
 def check_for_mpi_relaunch(argv):
@@ -52,8 +52,8 @@ def run_with_mpi_ranks(py_script, ranks, callable_, args=(), kwargs=None):
     if kwargs is None:
         kwargs = {}
 
-    import sys
     import os
+    import sys
     newenv = os.environ.copy()
     newenv["PYTOOLS_RUN_WITHIN_MPI"] = "1"
 
@@ -74,8 +74,9 @@ def pytest_raises_on_rank(my_rank: int, fail_rank: int,
     """
     Like :func:`pytest.raises`, but only expect an exception on rank *fail_rank*.
     """
-    import pytest
     from contextlib import nullcontext
+
+    import pytest
 
     if my_rank == fail_rank:
         cm: AbstractContextManager = pytest.raises(expected_exception)

@@ -1,7 +1,7 @@
+import numbers
 from typing import List, Optional, Tuple
 
 import numpy as np
-import numbers
 
 
 # {{{ eoc estimation --------------------------------------------------------------

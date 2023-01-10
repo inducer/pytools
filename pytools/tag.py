@@ -30,8 +30,9 @@ Internal stuff that is only here because the documentation tool wants it
 
 import sys
 from dataclasses import dataclass
-from typing import (Tuple, Set, Any, FrozenSet, Union, Iterable,  # noqa: F401
-                    TypeVar, Type)
+from typing import (Any, FrozenSet, Iterable, Set, Tuple, Type,  # noqa: F401
+                    TypeVar, Union)
+
 from pytools import memoize, memoize_method
 
 
@@ -138,6 +139,7 @@ class Tag:
                 (self.__class__.__module__, self.__class__.__qualname__))
 
         from dataclasses import fields
+
         # Fields are ordered consistently, so ordered hashing is OK.
         #
         # No need to dispatch to superclass: fields() automatically gives us

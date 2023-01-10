@@ -27,23 +27,22 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-import re
-from functools import reduce, wraps
-import operator
-import sys
-import logging
-from typing import (
-        Any, Callable, Dict, Generic, Hashable, Iterable,
-        List, Optional, Set, Tuple, TypeVar, Union, ClassVar)
 import builtins
-
+import logging
 import math
+import operator
+import re
+import sys
+from functools import reduce, wraps
 from sys import intern
+from typing import (Any, Callable, ClassVar, Dict, Generic, Hashable, Iterable,
+                    List, Optional, Set, Tuple, TypeVar, Union)
+
 
 try:
-    from typing import SupportsIndex, Concatenate
+    from typing import Concatenate, SupportsIndex
 except ImportError:
-    from typing_extensions import SupportsIndex, Concatenate
+    from typing_extensions import Concatenate, SupportsIndex
 
 try:
     from typing import ParamSpec
@@ -1584,6 +1583,8 @@ def get_write_to_map_from_permutation(original, permuted):
 # {{{ graph algorithms
 
 from pytools.graph import a_star as a_star_moved
+
+
 a_star = MovedFunctionDeprecationWrapper(a_star_moved)
 
 # }}}
@@ -1871,7 +1872,7 @@ def string_histogram(  # pylint: disable=too-many-arguments,too-many-locals
                 print(value, bin_nr, bin_starts)
                 raise
 
-    from math import floor, ceil
+    from math import ceil, floor
     if use_unicode:
         def format_bar(cnt):
             scaled = cnt*width/max_count
@@ -2169,7 +2170,7 @@ def assert_not_a_file(name):
 
 
 def add_python_path_relative_to_script(rel_path):
-    from os.path import dirname, join, abspath
+    from os.path import abspath, dirname, join
 
     script_name = sys.argv[0]
     rel_script_dir = dirname(script_name)
@@ -2391,8 +2392,9 @@ def download_from_web_if_not_present(url, local_name=None):
         local_name = basename(url)
 
     if not exists(local_name):
-        from pytools.version import VERSION_TEXT
         from urllib.request import Request, urlopen
+
+        from pytools.version import VERSION_TEXT
         req = Request(url, headers={
             "User-Agent": f"pytools/{VERSION_TEXT}"
             })
@@ -2412,7 +2414,7 @@ def find_git_revision(tree_root):  # pylint: disable=too-many-locals
     # Keep this routine self-contained so that it can be copy-pasted into
     # setup.py.
 
-    from os.path import join, exists, abspath
+    from os.path import abspath, exists, join
     tree_root = abspath(tree_root)
 
     if not exists(join(tree_root, ".git")):
@@ -2432,7 +2434,7 @@ def find_git_revision(tree_root):  # pylint: disable=too-many-locals
     env["LANG"] = "C"
     env["LC_ALL"] = "C"
 
-    from subprocess import Popen, PIPE, STDOUT
+    from subprocess import PIPE, STDOUT, Popen
     p = Popen(["git", "rev-parse", "HEAD"], shell=False,
               stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True,
               cwd=tree_root, env=env)
@@ -2808,8 +2810,8 @@ def unordered_hash(hash_instance, iterable, hash_constructor=None):
     """
 
     if hash_constructor is None:
-        from functools import partial
         import hashlib
+        from functools import partial
         hash_constructor = partial(hashlib.new, hash_instance.name)
 
     h_int = 0

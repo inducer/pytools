@@ -11,8 +11,8 @@ def make_unique_filesystem_object(stem, extension="", directory="",
     :param extension: needs a leading dot.
     :param directory: must not have a trailing slash.
     """
-    from os.path import join
     import os
+    from os.path import join
 
     if creator is None:
         def default_creator(name):

@@ -26,11 +26,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-from enum import Enum
-import logging
-import hashlib
 import collections.abc as abc
-from dataclasses import is_dataclass, fields
+import hashlib
+import logging
+from dataclasses import fields, is_dataclass
+from enum import Enum
+
 
 # Removing this in 2020-12 broke a shocking amount of stuff, such as
 # https://github.com/OP2/PyOP2/pull/605
@@ -38,10 +39,11 @@ from dataclasses import is_dataclass, fields
 # away in 2021 at the latest.
 new_hash = hashlib.sha256
 
+import errno
 import os
 import shutil
 import sys
-import errno
+
 
 logger = logging.getLogger(__name__)
 
@@ -533,12 +535,13 @@ class _PersistentDictBase:
 
     @staticmethod
     def _write(path, value):
-        from pickle import dump, HIGHEST_PROTOCOL
+        from pickle import HIGHEST_PROTOCOL, dump
         with open(path, "wb") as outf:
             dump(value, outf, protocol=HIGHEST_PROTOCOL)
 
     def _item_dir(self, hexdigest_key):
         from os.path import join
+
         # Some file systems limit the number of directories in a directory.
         # For ext4, that limit appears to be 64K for example.
         # This doesn't solve that problem, but it makes it much less likely

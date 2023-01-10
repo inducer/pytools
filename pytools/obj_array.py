@@ -20,9 +20,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-import numpy as np
 from functools import partial, update_wrapper
 from warnings import warn
+
+import numpy as np
 
 
 __doc__ = """
