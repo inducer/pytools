@@ -64,8 +64,9 @@ Type Variables Used
     is included as a key in the graph.
 """
 
-from typing import (Any, Callable, Collection, Dict, Hashable, Iterator, List,
-                    Mapping, MutableSet, Optional, Set, Tuple, TypeVar)
+from typing import (
+    Any, Callable, Collection, Dict, Hashable, Iterator, List, Mapping, MutableSet,
+    Optional, Set, Tuple, TypeVar)
 
 
 try:

@@ -30,8 +30,8 @@ Internal stuff that is only here because the documentation tool wants it
 
 import sys
 from dataclasses import dataclass
-from typing import (Any, FrozenSet, Iterable, Set, Tuple, Type,  # noqa: F401
-                    TypeVar, Union)
+from typing import (  # noqa: F401
+    Any, FrozenSet, Iterable, Set, Tuple, Type, TypeVar, Union)
 
 from pytools import memoize, memoize_method
 
