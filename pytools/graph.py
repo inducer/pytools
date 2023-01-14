@@ -453,14 +453,14 @@ def as_graphviz_dot(graph: GraphT[NodeT],
 
     # Add nodes
     content = "\n".join(
-        [f'{node_to_id[node]} [label="{dot_escape(node_labels(node))}"];'
+        [f'{node_to_id[node]} [label="{dot_escape(node_labels(node))}"];'  # noqa: B028, E501
          for node in node_to_id.keys()])
 
     content += "\n"
 
     # Add edges
     content += "\n".join(
-        [f"{node_to_id[node]} -> {node_to_id[t]} "
+        [f"{node_to_id[node]} -> {node_to_id[t]} "      # noqa: B028
          f'[label="{dot_escape(edge_labels(node, t))}"];'
          for (node, targets) in graph.items()
          for t in targets])

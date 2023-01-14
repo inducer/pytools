@@ -255,18 +255,19 @@ def deprecate_keyword(oldkey: str,
         def inner_wrapper(*args, **kwargs):
             if oldkey in kwargs:
                 if newkey is None:
-                    warn(f"The '{oldkey}' keyword is deprecated and will "
+                    warn(f"The {oldkey!r} keyword is deprecated and will "
                             f"go away in {deadline}.",
                             DeprecationWarning, stacklevel=2)
                 else:
-                    warn(f"The '{oldkey}' keyword is deprecated and will "
+                    warn(f"The {oldkey!r} keyword is deprecated and will "
                             f"go away in {deadline}. "
-                            f"Use '{newkey}' instead.",
+                            f"Use {newkey!r} instead.",
                             DeprecationWarning, stacklevel=2)
 
                     if newkey in kwargs:
-                        raise ValueError(f"Cannot use '{oldkey}' "
-                                f"and '{newkey}' in the same call.")
+                        raise ValueError(
+                            f"Cannot use {oldkey!r} and {newkey!r} in the same call."
+                            )
 
                     kwargs[newkey] = kwargs[oldkey]
                     del kwargs[oldkey]
@@ -343,11 +344,11 @@ except AttributeError:
 
         from numbers import Integral
         if not isinstance(k, Integral):
-            raise TypeError(f"'{type(k).__name__}' object cannot be interpreted "
+            raise TypeError(f"{type(k).__name__!r} object cannot be interpreted "
                             "as an integer")
 
         if not isinstance(n, Integral):
-            raise TypeError(f"'{type(n).__name__}' object cannot be interpreted "
+            raise TypeError(f"{type(n).__name__!r} object cannot be interpreted "
                             "as an integer")
 
         return _unchecked_perm(n, k)
@@ -1133,7 +1134,7 @@ def reverse_dictionary(the_dict):
     for key, value in the_dict.items():
         if value in result:
             raise RuntimeError(
-                    f"non-reversible mapping, duplicate key '{value}'")
+                    f"non-reversible mapping, duplicate key {value!r}")
         result[value] = key
     return result
 
@@ -1990,7 +1991,7 @@ class CPyUserInterface:
                 - set(self.constants.keys())):
             if not (added_key.startswith("user_") or added_key.startswith("_")):
                 raise ValueError(
-                        f"invalid setup key: '{added_key}' "
+                        f"invalid setup key: {added_key!r} "
                         "(user variables must start with 'user_' or '_')")
 
         result = self.Parameters({key: execenv[key] for key in self.variables})
@@ -2301,12 +2302,12 @@ class UniqueNameGenerator:
             encountering a conflict.
         """
         if (not conflicting_ok) and self.is_name_conflicting(name):
-            raise ValueError(f"name '{name}' conflicts with existing names")
+            raise ValueError(f"name {name!r} conflicts with existing names")
 
         if not name.startswith(self.forced_prefix):
             raise ValueError(
-                    f"name '{name}' does not start with required prefix "
-                    f"'{self.forced_prefix}'")
+                    f"name {name!r} does not start with required prefix "
+                    f"{self.forced_prefix!r}")
 
         self.existing_names.add(name)
         self._name_added(name)
@@ -2904,7 +2905,7 @@ def sphere_sample_fibonacci(
     elif optimize == "average":
         epsilon = 0.36
     else:
-        raise ValueError(f"unknown 'optimize' choice: '{optimize}'")
+        raise ValueError(f"unknown 'optimize' choice: {optimize!r}")
 
     golden_ratio = (1 + np.sqrt(5)) / 2
     n = np.arange(npoints)
@@ -2940,7 +2941,7 @@ def strtobool(val: Optional[str], default: Optional[bool] = None) -> bool:
         return default
 
     if val is None:
-        raise ValueError(f"invalid truth value '{val}'. "
+        raise ValueError(f"invalid truth value {val!r}. "
                           "Valid values are ('y', 'yes', 't', 'true', 'on', '1') "
                           "for 'True' and ('n', 'no', 'f', 'false', 'off', '0') "
                           "for 'False'. Uppercase versions are also accepted.")
@@ -2951,7 +2952,7 @@ def strtobool(val: Optional[str], default: Optional[bool] = None) -> bool:
     elif val in ("n", "no", "f", "false", "off", "0"):
         return False
     else:
-        raise ValueError(f"invalid truth value '{val}'. "
+        raise ValueError(f"invalid truth value {val!r}. "
                           "Valid values are ('y', 'yes', 't', 'true', 'on', '1') "
                           "for 'True' and ('n', 'no', 'f', 'false', 'off', '0') "
                           "for 'False'. Uppercase versions are also accepted.")

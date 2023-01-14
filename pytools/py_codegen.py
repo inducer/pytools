@@ -55,7 +55,7 @@ class PythonFunctionGenerator(PythonCodeGenerator):
 
     @property
     def _gen_filename(self):
-        return f"<generated code for '{self.name}'>"
+        return f"<generated code for {self.name!r}>"
 
     def get_function(self):
         return self.get_module(name=self._gen_filename)[self.name]

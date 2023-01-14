@@ -124,10 +124,11 @@ def show_dot(dot_code: str, output_to: Optional[str] = None) -> Optional[str]:
             from webbrowser import open as browser_open
             browser_open("file://" + full_svg_file_name)
     else:
-        raise ValueError("`output_to` can be one of 'xwindow', 'browser', or 'svg',"
-                         f" got '{output_to}'")
+        raise ValueError("`output_to` can be one of 'xwindow', 'browser', or 'svg': "
+                         f"got {output_to!r}")
 
     return None
+
 # }}}
 
 

@@ -204,7 +204,7 @@ def check_tag_uniqueness(tags: FrozenSet[Tag]):
     unique_tag_descendants: Set[Tag] = set()
     for tag in tags:
         if not isinstance(tag, Tag):
-            raise TypeError(f"'{tag}' is not an instance of pytools.tag.Tag")
+            raise TypeError(f"{tag!r} is not an instance of pytools.tag.Tag")
         tag_unique_tag_descendants = _immediate_unique_tag_descendants(
                 type(tag))
         intersection = unique_tag_descendants & tag_unique_tag_descendants
@@ -389,7 +389,7 @@ if sys.version_info >= (3, 7):
             replacement, obj, year = replacement_and_obj
             from warnings import warn
             warn(f"'arraycontext.{name}' is deprecated. "
-                    f"Use '{replacement}' instead. "
+                    f"Use {replacement!r} instead. "
                     f"'arraycontext.{name}' will continue to work until {year}.",
                     DeprecationWarning, stacklevel=2)
             return obj

@@ -630,7 +630,7 @@ def test_sphere_sampling(sampling, visualize=False):
         sampling_func = partial(
                 sphere_sample_fibonacci, r=radius, optimize="average")
     else:
-        raise ValueError(f"unknown sampling method: '{sampling}'")
+        raise ValueError(f"unknown sampling method: {sampling!r}")
 
     np = pytest.importorskip("numpy")
     points = sampling_func(npoints)

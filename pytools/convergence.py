@@ -41,11 +41,11 @@ class EOCRecorder:
         if not (isinstance(abscissa, numbers.Number)
                 or (isinstance(abscissa, np.ndarray) and abscissa.shape == ())):
             raise TypeError(
-                    f"'abscissa' is not a scalar: '{type(abscissa).__name__}'")
+                    f"'abscissa' is not a scalar: {type(abscissa).__name__!r}")
 
         if not (isinstance(error, numbers.Number)
                 or (isinstance(error, np.ndarray) and error.shape == ())):
-            raise TypeError(f"'error' is not a scalar: '{type(error).__name__}'")
+            raise TypeError(f"'error' is not a scalar: {type(error).__name__!r}")
 
         self.history.append((abscissa, error))
 

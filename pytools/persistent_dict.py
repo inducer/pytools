@@ -136,12 +136,12 @@ class LockManager(CleanupBase):
             if attempts % warn_attempts == 0:
                 from warnings import warn
                 warn("could not obtain lock -- "
-                        f"delete '{self.lock_file}' if necessary",
+                        f"delete {self.lock_file!r} if necessary",
                         stacklevel=1 + stacklevel)
 
             if attempts > exit_attempts:
                 raise RuntimeError("waited more than one minute "
-                        f"on the lock file '{self.lock_file}' "
+                        f"on the lock file {self.lock_file!r} "
                         "-- something is wrong")
 
         cleanup_m.register(self)
@@ -570,7 +570,7 @@ class _PersistentDictBase:
         if stored_key != key:
             # Key collision, oh well.
             self._warn(f"{self.identifier}: key collision in cache at "
-                    f"'{self.container_dir}' -- these are sufficiently unlikely "
+                    f"{self.container_dir!r} -- these are sufficiently unlikely "
                     "that they're often indicative of a broken hash key "
                     "implementation (that is not considering some elements "
                     "relevant for equality comparison)",
@@ -636,12 +636,12 @@ class WriteOncePersistentDict(_PersistentDictBase):
 
             if attempts > 10:
                 self._warn(
-                        f"waiting until unlocked--delete '{lock_file}' if necessary",
+                        f"waiting until unlocked--delete {lock_file!r} if necessary",
                         stacklevel=1 + stacklevel)
 
             if attempts > 3 * 60:
                 raise RuntimeError("waited more than three minutes "
-                        f"on the lock file '{lock_file}'"
+                        f"on the lock file {lock_file!r}"
                         "--something is wrong")
 
     def store(self, key, value, _skip_if_present=False, _stacklevel=0):
@@ -722,7 +722,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
         except Exception as e:
             self._warn(f"{type(self).__name__}({self.identifier}) "
                     f"encountered an invalid key file for key {hexdigest_key}. "
-                    f"Remove the directory '{item_dir}' if necessary. "
+                    f"Remove the directory {item_dir!r} if necessary. "
                     f"(caught: {type(e).__name__}: {e})",
                     stacklevel=1 + _stacklevel)
             raise NoSuchEntryError(key)
@@ -741,7 +741,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
         except Exception:
             self._warn(f"{type(self).__name__}({self.identifier}) "
                     f"encountered an invalid key file for key {hexdigest_key}. "
-                    f"Remove the directory '{item_dir}' if necessary.",
+                    f"Remove the directory {item_dir!r} if necessary.",
                     stacklevel=1 + _stacklevel)
             raise NoSuchEntryError(key)
 
