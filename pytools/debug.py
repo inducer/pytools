@@ -109,7 +109,7 @@ def refdebug(obj, top_level=True, exclude=()):  # noqa: E501  pylint:disable=too
             response = input()
 
             if response == "d":
-                refdebug(r, top_level=False, exclude=exclude+[reflist])
+                refdebug(r, top_level=False, exclude=exclude+tuple(reflist))
                 print_head = True
             elif response == "n":
                 if idx + 1 < len(reflist):
