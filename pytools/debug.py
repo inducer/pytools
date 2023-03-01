@@ -1,6 +1,7 @@
 import sys
 
 from pytools import memoize
+from typing import List, Set, Optional, Collection
 
 
 # {{{ debug files -------------------------------------------------------------
@@ -143,54 +144,26 @@ def refdebug(obj, top_level=True, exclude=()):  # noqa: E501  pylint:disable=too
 
 # https://code.activestate.com/recipes/523004-find-cyclical-references/
 
-import gc
-from types import FrameType
-
-
-def print_cycles(objects, outstream=sys.stdout, show_progress=True):
+def get_object_cycles(objects: Collection[object]) -> List[List[object]]:
     """
-    objects:       A list of objects to find cycles in.  It is often useful
-                   to pass in gc.garbage to find the cycles that are
-                   preventing some objects from being garbage collected.
-    outstream:     The stream for output.
-    show_progress: If True, print the number of objects reached as they are
-                   found.
+    :param objects: A collection of objects to find cycles in. It is often
+    useful to pass in gc.garbage to find the cycles that are preventing some
+    objects from being garbage collected.
     """
-    def print_path(path):
-        for i, step in enumerate(path):
-            # next_obj "wraps around"
-            next_obj = path[(i + 1) % len(path)]
-
-            outstream.write("   %s -- " % str(type(step)))
-            if isinstance(step, dict):
-                for key, val in step.items():
-                    if val is next_obj:
-                        outstream.write("[%s]" % repr(key))
-                        break
-                    if key is next_obj:
-                        outstream.write("[key] = %s" % repr(val))
-                        break
-            elif isinstance(step, list):
-                outstream.write("[%d]" % step.index(next_obj))
-            elif isinstance(step, tuple):
-                outstream.write("[%d]" % step.index(next_obj))
-            else:
-                outstream.write(repr(step))
-            outstream.write(" ->\n")
-        outstream.write("\n")
-
-    def recurse(obj, start, all_objs, current_path):
-        if show_progress:
-            outstream.write("%d\r" % len(all_objs))
-
+    def recurse(obj: object, start: object, all_objs: Set[object],
+                current_path: List[object]) -> Optional[List[object]]:
         all_objs.add(id(obj))
 
+        import gc
+        from types import FrameType
+
         referents = gc.get_referents(obj)
+
         for referent in referents:
             # If we've found our way back to the start, this is
             # a cycle, so print it out
             if referent is start:
-                print_path(current_path)
+                return current_path
 
             # Don't go back through the original list of objects, or
             # through temporary references to the object, since those
@@ -200,11 +173,17 @@ def print_cycles(objects, outstream=sys.stdout, show_progress=True):
 
             # We haven't seen this object before, so recurse
             elif id(referent) not in all_objs:
-                recurse(referent, start, all_objs, current_path + [obj])
+                return recurse(referent, start, all_objs, current_path + [obj])
 
+        return None
+
+    res = []
     for obj in objects:
-        outstream.write(f"Examining: {obj}\n")
-        recurse(obj, obj, set(), [])
+        r = recurse(obj, obj, set(), [])
+        if r:
+            res.append(r)
+
+    return res
 
 # }}}
 
