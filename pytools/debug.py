@@ -1,7 +1,7 @@
 import sys
+from typing import Collection, List, Optional, Set
 
 from pytools import memoize
-from typing import List, Set, Optional, Collection
 
 
 # {{{ debug files -------------------------------------------------------------
