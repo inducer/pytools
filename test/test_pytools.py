@@ -726,6 +726,34 @@ def test_strtobool():
     assert strtobool(None, False) is False
 
 
+def test_typedump():
+    from pytools import typedump
+    assert typedump("") == "str"
+    assert typedump(5) == "int"
+
+    assert typedump((5.0, 4)) == "tuple(float,int)"
+    assert typedump([5, 4]) == "list(int,int)"
+    assert typedump({5, 4}) == "set(int,int)"
+
+    assert typedump([5, 4, 3, 2, 1]) == "list(int,int,int,int,int)"
+    assert typedump([5, 4, 3, 2, 1, 0]) == "list(int,int,int,int,int,...)"
+    assert typedump([5, 4, 3, 2, 1, 0], max_seq=6) == "list(int,int,int,int,int,int)"
+
+    class C:
+        class D:
+            pass
+
+    assert typedump(C()) == "test_pytools.test_typedump.<locals>.C"
+    assert typedump(C.D()) == "test_pytools.test_typedump.<locals>.C.D"
+    assert typedump(C.D(), fully_qualified_name=False) == "D"
+
+    from pytools.datatable import DataTable
+    t = DataTable(column_names=[])
+
+    assert typedump(t) == "pytools.datatable.DataTable()"
+    assert typedump(t, special_handlers={type(t): lambda x: "foo"}) == "foo"
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
