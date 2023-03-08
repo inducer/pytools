@@ -36,8 +36,8 @@ import sys
 from functools import reduce, wraps
 from sys import intern
 from typing import (
-    Any, Callable, ClassVar, Dict, Generic, Hashable, Iterable, List, Optional, Set,
-    Tuple, TypeVar, Union, Type, Mapping)
+    Any, Callable, ClassVar, Dict, Generic, Hashable, Iterable, List, Mapping,
+    Optional, Set, Tuple, Type, TypeVar, Union)
 
 
 try:
