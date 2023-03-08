@@ -2027,7 +2027,7 @@ def typedump(val: Any, max_seq: int = 5,
     :arg max_seq: For iterable objects, the maximum number of elements to
         include in the return string. Lower this value if you get a
         :class:`RecursionError`.
-    :arg special_handlers: A optional mapping of specific types to special
+    :arg special_handlers: An optional mapping of specific types to special
         handlers.
     :arg fully_qualified_name: Return fully qualified names, that is,
         include module names and use ``__qualname__`` instead of ``__name__``.
