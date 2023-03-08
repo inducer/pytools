@@ -29,8 +29,15 @@ intersphinx_mapping = {
     "https://numpy.org/doc/stable": None,
     "https://documen.tician.de/pymbolic/": None,
     "https://documen.tician.de/loopy/": None,
+    "https://docs.pytest.org/en/stable/": None,
     }
 
 nitpick_ignore_regex = [
         ["py:class", r"typing_extensions\.(.+)"],
         ]
+
+nitpicky = True
+
+autodoc_type_aliases = {"GraphT": "pytools.graph.GraphT",
+                        "NodeT": "pytools.graph.NodeT",
+                        }

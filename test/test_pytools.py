@@ -21,10 +21,12 @@ THE SOFTWARE.
 """
 
 
+import logging
 import sys
+
 import pytest
 
-import logging
+
 logger = logging.getLogger(__name__)
 from typing import FrozenSet
 
@@ -171,6 +173,7 @@ def test_memoize_keyfunc():
 
 def test_memoize_frozen():
     from dataclasses import dataclass
+
     from pytools import memoize_method
 
     # {{{ check frozen dataclass
@@ -297,6 +300,7 @@ def test_processlogger():
 
 def test_table():
     import math
+
     from pytools import Table
 
     tbl = Table()
@@ -373,7 +377,7 @@ def test_eoc():
 
 
 def test_natsorted():
-    from pytools import natsorted, natorder
+    from pytools import natorder, natsorted
 
     assert natorder("1.001") < natorder("1.01")
 
@@ -491,8 +495,7 @@ def test_obj_array_vectorize(c=1):
 
 def test_tag():
     from pytools.tag import (
-        Taggable, Tag, UniqueTag, NonUniqueTagError, check_tag_uniqueness
-    )
+        NonUniqueTagError, Tag, Taggable, UniqueTag, check_tag_uniqueness)
 
     # Need a subclass that defines the copy function in order to test.
     class TaggableWithCopy(Taggable):
@@ -581,8 +584,8 @@ def test_tag():
 
 
 def test_unordered_hash():
-    import random
     import hashlib
+    import random
 
     # FIXME: Use randbytes once >=3.9 is OK
     lst = [bytes([random.randrange(256) for _ in range(20)])
@@ -609,6 +612,7 @@ def test_unordered_hash():
     ])
 def test_sphere_sampling(sampling, visualize=False):
     from functools import partial
+
     from pytools import sphere_sample_equidistant, sphere_sample_fibonacci
 
     npoints = 128

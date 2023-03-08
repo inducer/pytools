@@ -22,19 +22,18 @@ Internal stuff that is only here because the documentation tool wants it
 .. class:: TagT
 
     A type variable with lower bound :class:`Tag`.
+
+.. class:: _Self_Taggable
+
+    A type variable with lower bound :class:`Taggable`.
 """
 
 import sys
 from dataclasses import dataclass
-from typing import (Tuple, Set, Any, FrozenSet, Union, Iterable,  # noqa: F401
-                    TypeVar, Type)
+from typing import (  # noqa: F401
+    Any, FrozenSet, Iterable, Set, Tuple, Type, TypeVar, Union)
+
 from pytools import memoize, memoize_method
-
-
-try:
-    from typing import Self  # type: ignore[attr-defined]
-except ImportError:
-    from typing_extensions import Self
 
 
 __copyright__ = """
@@ -140,6 +139,7 @@ class Tag:
                 (self.__class__.__module__, self.__class__.__qualname__))
 
         from dataclasses import fields
+
         # Fields are ordered consistently, so ordered hashing is OK.
         #
         # No need to dispatch to superclass: fields() automatically gives us
@@ -168,6 +168,8 @@ class UniqueTag(Tag):
 
 ToTagSetConvertible = Union[Iterable[Tag], Tag, None]
 TagT = TypeVar("TagT", bound="Tag")
+# FIXME: Replace by Self type
+_Self_Taggable = TypeVar("_Self_Taggable", bound="Taggable")
 
 
 # {{{ UniqueTag rules checking
@@ -265,7 +267,7 @@ class Taggable:
         """
         self.tags = tags
 
-    def _with_new_tags(self, tags: FrozenSet[Tag]) -> Self:
+    def _with_new_tags(self: _Self_Taggable, tags: FrozenSet[Tag]) -> _Self_Taggable:
         """
         Returns a copy of *self* with the specified tags. This method
         should be overridden by subclasses.
@@ -282,7 +284,7 @@ class Taggable:
         # abstract method.
         return self.copy(tags=tags)  # type: ignore[attr-defined]  # pylint: disable=no-member  # noqa: E501
 
-    def tagged(self, tags: ToTagSetConvertible) -> Self:
+    def tagged(self: _Self_Taggable, tags: ToTagSetConvertible) -> _Self_Taggable:
         """
         Return a copy of *self* with the specified
         tag or tags added to the set of tags. If the resulting set of
@@ -295,8 +297,9 @@ class Taggable:
         return self._with_new_tags(
                 tags=check_tag_uniqueness(normalize_tags(tags) | self.tags))
 
-    def without_tags(self,
-            tags: ToTagSetConvertible, verify_existence: bool = True) -> Self:
+    def without_tags(self: _Self_Taggable,
+                     tags: ToTagSetConvertible, verify_existence: bool = True
+                     ) -> _Self_Taggable:
         """
         Return a copy of *self* without the specified tags.
 

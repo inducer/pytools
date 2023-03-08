@@ -1,3 +1,4 @@
+import numbers
 from typing import List, Optional, Tuple
 
 import numpy as np
@@ -33,16 +34,16 @@ class EOCRecorder:
     .. automethod:: write_gnuplot_file
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.history: List[Tuple[float, float]] = []
 
     def add_data_point(self, abscissa: float, error: float) -> None:
-        if not (np.isscalar(abscissa)
+        if not (isinstance(abscissa, numbers.Number)
                 or (isinstance(abscissa, np.ndarray) and abscissa.shape == ())):
             raise TypeError(
                     f"'abscissa' is not a scalar: '{type(abscissa).__name__}'")
 
-        if not (np.isscalar(error)
+        if not (isinstance(error, numbers.Number)
                 or (isinstance(error, np.ndarray) and error.shape == ())):
             raise TypeError(f"'error' is not a scalar: '{type(error).__name__}'")
 

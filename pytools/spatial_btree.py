@@ -152,8 +152,8 @@ class SpatialBinaryTreeBucket:
                 i.visualize(file)
 
     def plot(self, **kwargs):
-        import matplotlib.pyplot as pt
         import matplotlib.patches as mpatches
+        import matplotlib.pyplot as pt
         from matplotlib.path import Path
 
         el = self.bottom_left

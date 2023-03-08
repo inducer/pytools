@@ -11,6 +11,7 @@ Welcome to pytools's documentation!
     graph
     tag
     codegen
+    mpi
     misc
     🚀 Github <https://github.com/inducer/pytools>
     💾 Download Releases <https://pypi.python.org/pypi/pytools>

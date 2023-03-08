@@ -1,14 +1,15 @@
-from dataclasses import dataclass
-from enum import Enum, IntEnum
 import shutil
 import sys  # noqa
 import tempfile
+from dataclasses import dataclass
+from enum import Enum, IntEnum
 
 import pytest
 
+from pytools.persistent_dict import (
+    CollisionWarning, NoSuchEntryError, PersistentDict, ReadOnlyEntryError,
+    WriteOncePersistentDict)
 from pytools.tag import Tag, tag_dataclass
-from pytools.persistent_dict import (CollisionWarning, NoSuchEntryError,
-        PersistentDict, ReadOnlyEntryError, WriteOncePersistentDict)
 
 
 # {{{ type for testing

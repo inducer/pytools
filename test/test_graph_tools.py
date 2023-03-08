@@ -1,10 +1,12 @@
 import sys
+
 import pytest
 
 
 def test_compute_sccs():
-    from pytools.graph import compute_sccs
     import random
+
+    from pytools.graph import compute_sccs
 
     rng = random.Random(0)
 
@@ -47,7 +49,7 @@ def test_compute_sccs():
 
 
 def test_compute_topological_order():
-    from pytools.graph import compute_topological_order, CycleError
+    from pytools.graph import CycleError, compute_topological_order
 
     empty = {}
     assert compute_topological_order(empty) == []
@@ -222,7 +224,7 @@ def test_induced_subgraph():
     assert subgraph == expected_subgraph
 
 
-def test_prioritzed_topological_sort_examples():
+def test_prioritized_topological_sort_examples():
 
     from pytools.graph import compute_topological_order
 
@@ -248,9 +250,10 @@ def test_prioritzed_topological_sort_examples():
     assert compute_topological_order(dag, key=keys.get) == ["d", "c", "b", "a"]
 
 
-def test_prioritzed_topological_sort():
+def test_prioritized_topological_sort():
 
     import random
+
     from pytools.graph import compute_topological_order
     rng = random.Random(0)
 
@@ -281,7 +284,7 @@ def test_prioritzed_topological_sort():
 
         # check whether the order is a valid topological order
         assert scheduled_node in nodes_with_no_deps
-        # check whether priorites are upheld
+        # check whether priorities are upheld
         assert keys[scheduled_node] == min(
                 keys[node] for node in nodes_with_no_deps)
 
@@ -292,6 +295,140 @@ def test_prioritzed_topological_sort():
             deps.discard(scheduled_node)
 
     assert len(dep_graph) == 0
+
+
+def test_as_graphviz_dot():
+    graph = {"A": ["B", "C"],
+             "B": [],
+             "C": ["A"]}
+
+    from pytools.graph import NodeT, as_graphviz_dot
+
+    def edge_labels(n1: NodeT, n2: NodeT) -> str:
+        if n1 == "A" and n2 == "B":
+            return "foo"
+
+        return ""
+
+    def node_labels(node: NodeT) -> str:
+        if node == "A":
+            return "foonode"
+
+        return str(node)
+
+    res = as_graphviz_dot(graph, node_labels=node_labels, edge_labels=edge_labels)
+
+    assert res == \
+"""digraph mygraph {
+mynodeid [label="foonode"];
+mynodeid_0 [label="B"];
+mynodeid_1 [label="C"];
+mynodeid -> mynodeid_0 [label="foo"];
+mynodeid -> mynodeid_1 [label=""];
+mynodeid_1 -> mynodeid [label=""];
+}
+"""
+
+
+def test_reverse_graph():
+    graph = {
+        "a": frozenset(("b", "c")),
+        "b": frozenset(("d", "e")),
+        "c": frozenset(("d", "f")),
+        "d": frozenset(),
+        "e": frozenset(),
+        "f": frozenset(("g",)),
+        "g": frozenset(("h", "i", "j")),
+        "h": frozenset(),
+        "i": frozenset(),
+        "j": frozenset(),
+        }
+
+    from pytools.graph import reverse_graph
+    assert graph == reverse_graph(reverse_graph(graph))
+
+
+def test_validate_graph():
+    from pytools.graph import validate_graph
+    graph1 = {
+            "d": set("c"),
+            "b": set("a"),
+            "a": set(),
+            "c": set("a"),
+            }
+
+    validate_graph(graph1)
+
+    graph2 = {
+            "d": set("d"),
+            "b": set("c"),
+            "a": set("b"),
+            "c": set("a"),
+            }
+
+    validate_graph(graph2)
+
+    graph3 = {
+        "a": {"b", "c"},
+        "b": {"d", "e"},
+        "c": {"d", "f"},
+        "d": set(),
+        "e": set(),
+        "f": {"g"},
+        "g": {"h", "i", "j"},  # h, i, j missing from keys
+        }
+
+    with pytest.raises(ValueError):
+        validate_graph(graph3)
+
+    validate_graph({})
+
+
+def test_is_connected():
+    from pytools.graph import is_connected
+    graph1 = {
+            "d": set("c"),
+            "b": set("a"),
+            "a": set(),
+            "c": set("a"),
+            }
+
+    assert is_connected(graph1)
+
+    graph2 = {
+            "d": set("d"),
+            "b": set("c"),
+            "a": set("b"),
+            "c": set("a"),
+            }
+
+    assert not is_connected(graph2)
+
+    graph3 = {
+        "a": {"b", "c"},
+        "b": {"d", "e"},
+        "c": {"d", "f"},
+        "d": set(),
+        "e": set(),
+        "f": {"g"},
+        "g": {},
+        }
+
+    assert is_connected(graph3)
+
+    graph4 = {
+        "a": {"c"},
+        "b": {"d", "e"},
+        "c": {"f"},
+        "d": set(),
+        "e": set(),
+        "f": {"g"},
+        "g": {},
+        }
+
+    assert not is_connected(graph4)
+
+    assert is_connected({})
 
 
 if __name__ == "__main__":

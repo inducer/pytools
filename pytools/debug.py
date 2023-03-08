@@ -11,8 +11,8 @@ def make_unique_filesystem_object(stem, extension="", directory="",
     :param extension: needs a leading dot.
     :param directory: must not have a trailing slash.
     """
-    from os.path import join
     import os
+    from os.path import join
 
     if creator is None:
         def default_creator(name):
@@ -109,7 +109,7 @@ def refdebug(obj, top_level=True, exclude=()):  # noqa: E501  pylint:disable=too
             response = input()
 
             if response == "d":
-                refdebug(r, top_level=False, exclude=exclude+[reflist])
+                refdebug(r, top_level=False, exclude=exclude+tuple(reflist))
                 print_head = True
             elif response == "n":
                 if idx + 1 < len(reflist):
