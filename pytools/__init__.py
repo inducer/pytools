@@ -2073,15 +2073,14 @@ def typedump(val: Any, max_seq: int = 5,
 
         try:
             if len(val) > max_seq:
-                return "{}({},...)".format(
-                        objname(val),
-                        ",".join(typedump(x, max_seq, special_handlers)
-                            for x in val[:max_seq]))
+                t = ",".join(typedump(x, max_seq, special_handlers)
+                            for x in val[:max_seq])
+                return f"{objname(val)}({t},...)"
             else:
-                return "{}({})".format(
-                        objname(val),
-                        ",".join(typedump(x, max_seq, special_handlers)
-                            for x in val))
+                t = ",".join(typedump(x, max_seq, special_handlers)
+                            for x in val)
+                return f"{objname(val)}({t})"
+
         except TypeError:
             return objname(val)
 
