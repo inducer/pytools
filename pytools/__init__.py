@@ -2083,7 +2083,7 @@ def typedump(val: Any, max_seq: int = 5,
                         ",".join(typedump(x, max_seq, special_handlers)
                             for x in val))
         except TypeError:
-            return val.__class__.__name__
+            return objname(val)
 
 
 def invoke_editor(s, filename="edit.txt", descr="the file"):

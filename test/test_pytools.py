@@ -733,15 +733,19 @@ def test_strtobool():
 def test_typedump():
     from pytools import typedump
     assert typedump("") == "str"
+    assert typedump("abcdefg") == "str"
     assert typedump(5) == "int"
 
     assert typedump((5.0, 4)) == "tuple(float,int)"
     assert typedump([5, 4]) == "list(int,int)"
     assert typedump({5, 4}) == "set(int,int)"
+    assert typedump(frozenset((1, 2, 3))) == "frozenset(int,int,int)"
 
     assert typedump([5, 4, 3, 2, 1]) == "list(int,int,int,int,int)"
     assert typedump([5, 4, 3, 2, 1, 0]) == "list(int,int,int,int,int,...)"
     assert typedump([5, 4, 3, 2, 1, 0], max_seq=6) == "list(int,int,int,int,int,int)"
+
+    assert typedump({5: 42, 7: 43}) == "{'5': int, '7': int}"
 
     class C:
         class D:
