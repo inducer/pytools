@@ -9,6 +9,7 @@ Welcome to pytools's documentation!
     obj_array
     persistent_dict
     graph
+    debug
     tag
     codegen
     mpi

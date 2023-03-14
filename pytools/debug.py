@@ -1,3 +1,36 @@
+__license__ = """
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+"""
+
+
+__doc__ = """
+Debugging helpers
+=================
+
+.. autofunction:: make_unique_filesystem_object
+.. autofunction:: open_unique_debug_file
+.. autofunction:: refdebug
+.. autofunction:: get_object_cycles
+.. autofunction:: estimate_memory_usage
+
+"""
+
 import sys
 from typing import Collection, List, Set
 
@@ -142,13 +175,28 @@ def refdebug(obj, top_level=True, exclude=()):  # noqa: E501  pylint:disable=too
 
 # {{{ Find circular references
 
-# https://code.activestate.com/recipes/523004-find-cyclical-references/
+# Based on https://code.activestate.com/recipes/523004-find-cyclical-references/
 
 def get_object_cycles(objects: Collection[object]) -> List[List[object]]:
     """
-    :param objects: A collection of objects to find cycles in. It is often
-    useful to pass in gc.garbage to find the cycles that are preventing some
-    objects from being garbage collected.
+    Find circular references in *objects*. This can be useful for example to debug
+    why certain objects need to be freed via garbage collection instead of
+    reference counting.
+
+    :arg objects: A collection of objects to find cycles in. A potential way
+        to find a list of objects potentially containing cycles from the garbage
+        collector is the following code::
+
+            gc.set_debug(gc.DEBUG_SAVEALL)
+            gc.collect()
+            gc.set_debug(0)
+            obj_list = gc.garbage
+
+            from pytools.debug import get_object_cycles
+            print(get_object_cycles(obj_list))
+
+    :returns: A :class:`list` in which each element contains a :class:`list`
+        of objects forming a cycle.
     """
     def recurse(obj: object, start: object, all_objs: Set[object],
                 current_path: List[object]) -> None:
