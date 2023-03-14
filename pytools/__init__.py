@@ -716,7 +716,7 @@ def memoize_on_first_arg(
 
         assert cache_dict_name is not None
         try:
-            return getattr(obj, cache_dict_name)[key]
+            return cast(R, getattr(obj, cache_dict_name)[key])
         except AttributeError:
             attribute_error = True
         except KeyError:
@@ -741,7 +741,7 @@ def memoize_on_first_arg(
     # into the function's dict is moderately sketchy.
     new_wrapper.clear_cache = clear_cache  # type: ignore[attr-defined]
 
-    return new_wrapper
+    return cast(Callable[Concatenate[T, P], R], new_wrapper)
 
 
 def memoize_method(
@@ -797,7 +797,7 @@ class keyed_memoize_on_first_arg(Generic[T, P, R]):  # noqa: N801
 
             assert cache_dict_name is not None
             try:
-                return getattr(obj, cache_dict_name)[cache_key]
+                return cast(R, getattr(obj, cache_dict_name)[cache_key])
             except AttributeError:
                 result = function(obj, *args, **kwargs)
                 object.__setattr__(obj, cache_dict_name, {cache_key: result})
@@ -815,10 +815,10 @@ class keyed_memoize_on_first_arg(Generic[T, P, R]):  # noqa: N801
         new_wrapper = update_wrapper(wrapper, function)
         new_wrapper.clear_cache = clear_cache       # type: ignore[attr-defined]
 
-        return new_wrapper
+        return cast(Callable[Concatenate[T, P], R], new_wrapper)
 
 
-class keyed_memoize_method(keyed_memoize_on_first_arg):  # noqa: N801
+class keyed_memoize_method(keyed_memoize_on_first_arg[T, P, R]):  # noqa: N801
     """Like :class:`memoize_method`, but additionally uses a function *key* to
     compute the key under which the function result is stored.
 
@@ -870,7 +870,7 @@ class memoize_in(Generic[P, R]):  # noqa
             object.__setattr__(container, "_pytools_memoize_in_dict",
                     memoize_in_dict)
 
-        self.cache_dict = memoize_in_dict.setdefault(identifier, {})
+        self.cache_dict: Dict[P.args, R] = memoize_in_dict.setdefault(identifier, {})
 
     def __call__(self, inner: Callable[P, R]) -> Callable[P, R]:
         @wraps(inner)
@@ -907,7 +907,7 @@ class keyed_memoize_in(Generic[P, R]):  # noqa
             object.__setattr__(container, "_pytools_keyed_memoize_in_dict",
                     memoize_in_dict)
 
-        self.cache_dict = memoize_in_dict.setdefault(identifier, {})
+        self.cache_dict: Dict[P.args, R] = memoize_in_dict.setdefault(identifier, {})
         self.key = key
 
     def __call__(self, inner: Callable[P, R]) -> Callable[P, R]:
@@ -1243,7 +1243,7 @@ def distinct_pairs(list1: Sequence[Any], list2: Sequence[Any]) -> Generator[Tupl
                 yield (xi, yj)
 
 
-def cartesian_product_sum(list1: Sequence[Any], list2: Sequence[Any]) -> Generator[Any, None, None]:
+def cartesian_product_sum(list1: List[int], list2: List[int]) -> Generator[int, None, None]:
     """This routine returns a list of sums of each element of
     list1 with each element of list2. Also works with lists.
     """
@@ -1350,17 +1350,19 @@ def indices_in_shape(shape: Sequence[int]) -> Generator[Tuple[int, ...], None, N
                 yield (i,)+rest
 
 
-def generate_nonnegative_integer_tuples_below(n, length=None, least=0):
+def generate_nonnegative_integer_tuples_below(n: Union[int, Sequence[int]], length: Optional[int] = None, least: int = 0) -> Generator[Union[Tuple[int, ...], Tuple[()]], None, None]:
     """n may be a sequence, in which case length must be None."""
     if length is None:
         if not n:
             yield ()
             return
 
+        n = cast(Sequence[int], n)
         my_n = n[0]
         n = n[1:]
         next_length = None
     else:
+        n = cast(int, n)
         my_n = n
 
         assert length >= 0
@@ -1373,14 +1375,16 @@ def generate_nonnegative_integer_tuples_below(n, length=None, least=0):
     for i in range(least, my_n):
         my_part = (i,)
         for base in generate_nonnegative_integer_tuples_below(n, next_length, least):
+            base = cast(Tuple[Any], base)
             yield my_part + base
 
 
 def generate_decreasing_nonnegative_tuples_summing_to(
-        n, length, min_value=0, max_value=None):
+        n: int, length: int, min_value: int = 0, max_value: Optional[int] = None) -> Generator[Union[Tuple[int, ...], Tuple[()]], None, None]:
     if length == 0:
         yield ()
     elif length == 1:
+        max_value = cast(int, max_value)
         if n <= max_value:
             #print "MX", n, max_value
             yield (n,)
@@ -1397,7 +1401,7 @@ def generate_decreasing_nonnegative_tuples_summing_to(
                 yield (i,) + remainder
 
 
-def generate_nonnegative_integer_tuples_summing_to_at_most(n, length):
+def generate_nonnegative_integer_tuples_summing_to_at_most(n: int, length: int) -> Generator[Union[Tuple[int, ...], Tuple[()]], None, None]:
     """Enumerate all non-negative integer tuples summing to at most n,
     exhausting the search space by varying the first entry fastest,
     and the last entry the slowest.
@@ -1416,7 +1420,7 @@ def generate_nonnegative_integer_tuples_summing_to_at_most(n, length):
 generate_positive_integer_tuples_below = generate_nonnegative_integer_tuples_below
 
 
-def _pos_and_neg_adaptor(tuple_iter):
+def _pos_and_neg_adaptor(tuple_iter: Iterable[Tuple[float, ...]]) -> Generator[Tuple[float, ...], None, None]:
     for tup in tuple_iter:
         nonzero_indices = [i for i in range(len(tup)) if tup[i] != 0]
         for do_neg_tup in generate_nonnegative_integer_tuples_below(
@@ -1428,12 +1432,12 @@ def _pos_and_neg_adaptor(tuple_iter):
             yield tuple(this_result)
 
 
-def generate_all_integer_tuples_below(n, length, least_abs=0):
+def generate_all_integer_tuples_below(n: int, length: int, least_abs: int = 0) -> Generator[Tuple[float, ...], None, None]:
     return _pos_and_neg_adaptor(generate_nonnegative_integer_tuples_below(
         n, length, least_abs))
 
 
-def generate_permutations(original: Sequence[Any]) -> Generator[List[Any], None, None]:
+def generate_permutations(original: List[Any]) -> Generator[List[Any], None, None]:
     """Generate all permutations of the list *original*.
 
     Nicked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/252178
@@ -1447,7 +1451,7 @@ def generate_permutations(original: Sequence[Any]) -> Generator[List[Any], None,
                 yield perm_[:i] + original[0:1] + perm_[i:]
 
 
-def generate_unique_permutations(original):
+def generate_unique_permutations(original: List[Any]) -> Generator[List[Any], None, None]:
     """Generate all unique permutations of the list *original*.
     """
 
@@ -1459,16 +1463,16 @@ def generate_unique_permutations(original):
             yield perm_
 
 
-def enumerate_basic_directions(dimensions: int):
+def enumerate_basic_directions(dimensions: int) -> List[List[int]]:
     coordinate_list = [[0], [1], [-1]]
-    return reduce(cartesian_product_sum, [coordinate_list] * dimensions)[1:]
+    return reduce(cartesian_product_sum, [coordinate_list] * dimensions)[1:]  # type: ignore[arg-type]
 
 # }}}
 
 
 # {{{ index mangling
 
-def get_read_from_map_from_permutation(original, permuted):
+def get_read_from_map_from_permutation(original: List[int], permuted: List[int]) -> Tuple[int, ...]:
     """With a permutation given by *original* and *permuted*,
     generate a list *rfm* of indices such that
     ``permuted[i] == original[rfm[i]]``.
@@ -1495,7 +1499,7 @@ def get_read_from_map_from_permutation(original, permuted):
     return tuple(where_in_original[pi] for pi in permuted)
 
 
-def get_write_to_map_from_permutation(original, permuted):
+def get_write_to_map_from_permutation(original: List[int], permuted: List[int]) -> Tuple[int, ...]:
     """With a permutation given by *original* and *permuted*,
     generate a list *wtm* of indices such that
     ``permuted[wtm[i]] == original[i]``.
@@ -1599,7 +1603,7 @@ class Table:
                 + (self.alignments[-1],) * (self.ncolumns - len(self.alignments))
                 )
 
-    def _get_column_widths(self, rows: Tuple[Any, ...]) -> Tuple[int, ...]:
+    def _get_column_widths(self, rows: List[Tuple[Any, ...]]) -> Tuple[int, ...]:
         return tuple([
             max(len(row[i]) for row in rows) for i in range(self.ncolumns)
             ])
@@ -1872,7 +1876,7 @@ def word_wrap(text: str, width: int, wrap_using: str = "\n") -> str:
 def _exec_arg(arg: str, execenv: Dict[str, Any]) -> None:
     import os
     if os.access(arg, os.F_OK):
-        exec(compile(open(arg), arg, "exec"), execenv)
+        exec(compile(open(arg).read(), arg, "exec"), execenv)
     else:
         exec(compile(arg, "<command line>", "exec"), execenv)
 
