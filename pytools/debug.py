@@ -1,5 +1,5 @@
 import sys
-from typing import Collection, List, Optional, Set
+from typing import Collection, List, Set
 
 from pytools import memoize
 
@@ -151,7 +151,7 @@ def get_object_cycles(objects: Collection[object]) -> List[List[object]]:
     objects from being garbage collected.
     """
     def recurse(obj: object, start: object, all_objs: Set[object],
-                current_path: List[object]) -> Optional[List[object]]:
+                current_path: List[object]) -> None:
         all_objs.add(id(obj))
 
         import gc
@@ -161,9 +161,10 @@ def get_object_cycles(objects: Collection[object]) -> List[List[object]]:
 
         for referent in referents:
             # If we've found our way back to the start, this is
-            # a cycle, so print it out
+            # a cycle, so return it
             if referent is start:
-                return current_path
+                res.append(current_path)
+                return
 
             # Don't go back through the original list of objects, or
             # through temporary references to the object, since those
@@ -173,15 +174,11 @@ def get_object_cycles(objects: Collection[object]) -> List[List[object]]:
 
             # We haven't seen this object before, so recurse
             elif id(referent) not in all_objs:
-                return recurse(referent, start, all_objs, current_path + [obj])
+                recurse(referent, start, all_objs, current_path + [obj])
 
-        return None
-
-    res = []
+    res: List[List[object]] = []
     for obj in objects:
-        r = recurse(obj, obj, set(), [])
-        if r:
-            res.append(r)
+        recurse(obj, obj, set(), [])
 
     return res
 
