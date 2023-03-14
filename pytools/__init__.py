@@ -36,8 +36,8 @@ import sys
 from functools import reduce, wraps
 from sys import intern
 from typing import (
-    Any, Callable, ClassVar, Dict, Generic, Hashable, Iterable, List, Optional, Set,
-    Tuple, TypeVar, Union)
+    Any, Callable, ClassVar, Dict, Generic, Hashable, Iterable, List, Mapping,
+    Optional, Set, Tuple, Type, TypeVar, Union)
 
 
 try:
@@ -2016,7 +2016,24 @@ class StderrToStdout:
         del self.stderr_backup
 
 
-def typedump(val, max_seq=5, special_handlers=None):
+def typedump(val: Any, max_seq: int = 5,
+             special_handlers: Optional[Mapping[Type, Callable]] = None,
+             fully_qualified_name: bool = True) -> str:
+    """
+    Return a string representation of the type of *val*, recursing into
+    iterable objects.
+
+    :arg val: The object for which the type should be returned.
+    :arg max_seq: For iterable objects, the maximum number of elements to
+        include in the return string. Lower this value if you get a
+        :class:`RecursionError`.
+    :arg special_handlers: An optional mapping of specific types to special
+        handlers.
+    :arg fully_qualified_name: Return fully qualified names, that is,
+        include module names and use ``__qualname__`` instead of ``__name__``.
+
+    :returns: A string representation of the type of *val*.
+    """
     if special_handlers is None:
         special_handlers = {}
 
@@ -2027,10 +2044,26 @@ def typedump(val, max_seq=5, special_handlers=None):
     else:
         return hdlr(val)
 
+    def objname(obj: Any) -> str:
+        if type(obj).__module__ == "builtins":
+            if fully_qualified_name:
+                return type(obj).__qualname__
+            else:
+                return type(obj).__name__
+
+        if fully_qualified_name:
+            return type(obj).__module__ + "." + type(obj).__qualname__
+        else:
+            return type(obj).__name__
+
+    # Special handling for 'str' since it is also iterable
+    if isinstance(val, str):
+        return "str"
+
     try:
         len(val)
     except TypeError:
-        return type(val).__name__
+        return objname(val)
     else:
         if isinstance(val, dict):
             return "{%s}" % (
@@ -2040,17 +2073,16 @@ def typedump(val, max_seq=5, special_handlers=None):
 
         try:
             if len(val) > max_seq:
-                return "{}({},...)".format(
-                        type(val).__name__,
-                        ",".join(typedump(x, max_seq, special_handlers)
-                            for x in val[:max_seq]))
+                t = ",".join(typedump(x, max_seq, special_handlers)
+                            for x in val[:max_seq])
+                return f"{objname(val)}({t},...)"
             else:
-                return "{}({})".format(
-                        type(val).__name__,
-                        ",".join(typedump(x, max_seq, special_handlers)
-                            for x in val))
+                t = ",".join(typedump(x, max_seq, special_handlers)
+                            for x in val)
+                return f"{objname(val)}({t})"
+
         except TypeError:
-            return val.__class__.__name__
+            return objname(val)
 
 
 def invoke_editor(s, filename="edit.txt", descr="the file"):
