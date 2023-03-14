@@ -307,71 +307,9 @@ def levi_civita(tup: Tuple[int, ...]) -> int:
 
 factorial = MovedFunctionDeprecationWrapper(math.factorial, deadline=2023)
 
-try:
-    # NOTE: only available in python >= 3.8
-    perm = MovedFunctionDeprecationWrapper(math.perm, deadline=2023)
-except AttributeError:
-    def _unchecked_perm(n: SupportsIndex, k: SupportsIndex) -> int:
-        result = 1
-        while k:
-            result *= n
-            n -= 1
-            k -= 1
+perm = MovedFunctionDeprecationWrapper(math.perm, deadline=2023)
 
-        return result
-
-    def perm(n: SupportsIndex,              # type: ignore[misc]
-             k: Optional[SupportsIndex] = None) -> int:
-        """
-        :returns: :math:`P(n, k)`, the number of permutations of length :math:`k`
-            drawn from :math:`n` choices.
-        """
-        from warnings import warn
-        warn("This function is deprecated and will go away in 2023. "
-                "Use `math.perm` instead, which is available from Python 3.8.",
-                DeprecationWarning, stacklevel=2)
-
-        if k is None:
-            return math.factorial(n)
-
-        import operator
-        n, k = operator.index(n), operator.index(k)
-        if k > n:
-            return 0
-
-        if k < 0:
-            raise ValueError("k must be a non-negative integer")
-
-        if n < 0:
-            raise ValueError("n must be a non-negative integer")
-
-        from numbers import Integral
-        if not isinstance(k, Integral):
-            raise TypeError(f"'{type(k).__name__}' object cannot be interpreted "
-                            "as an integer")
-
-        if not isinstance(n, Integral):
-            raise TypeError(f"'{type(n).__name__}' object cannot be interpreted "
-                            "as an integer")
-
-        return _unchecked_perm(n, k)
-
-try:
-    # NOTE: only available in python >= 3.8
-    comb = MovedFunctionDeprecationWrapper(math.comb, deadline=2023)
-except AttributeError:
-    def comb(n: SupportsIndex,              # type: ignore[misc]
-             k: SupportsIndex) -> int:
-        """
-        :returns: :math:`C(n, k)`, the number of combinations (subsets)
-            of length :math:`k` drawn from :math:`n` choices.
-        """
-        from warnings import warn
-        warn("This function is deprecated and will go away in 2023. "
-                "Use `math.comb` instead, which is available from Python 3.8.",
-                DeprecationWarning, stacklevel=2)
-
-        return _unchecked_perm(n, k) // math.factorial(k)
+comb = MovedFunctionDeprecationWrapper(math.comb, deadline=2023)
 
 
 def norm_1(iterable: Iterable[float]) -> float:
@@ -542,18 +480,20 @@ class FakeList:
     def __len__(self) -> int:
         return self._Length
 
-    def __getitem__(self, index: int) -> Any:
+    def __getitem__(self, index: Union[slice, int]) -> Any:
         try:
+            assert isinstance(index, slice)
             return [self._Function(i)
                     for i in range(*index.indices(self._Length))]
         except AttributeError:
+            assert isinstance(index, int)
             return self._Function(index)
 
 
 # {{{ dependent dictionary
 
 class DependentDictionary:
-    def __init__(self, f: Callable[[Any], Any], start: Optional[Dict[Any, Any]] = None):
+    def __init__(self, f: Callable[[Any, Any], Any], start: Optional[Dict[Any, Any]] = None):
         if start is None:
             start = {}
 
@@ -641,7 +581,7 @@ all_equal = is_single_valued
 
 def all_roughly_equal(iterable: Iterable[T], threshold: float) -> bool:
     return is_single_valued(iterable,
-            equality_pred=lambda a, b: abs(a-b) < threshold)
+            equality_pred=lambda a, b: abs(cast(float, a)-cast(float, b)) < threshold)
 
 
 def single_valued(
@@ -671,7 +611,7 @@ def single_valued(
 
 # {{{ memoization / attribute storage
 
-def memoize(*args: F, **kwargs: Any) -> F:
+def memoize(*args: F, **kwargs: Any) -> Callable[[Any], Any]:
     """Stores previously computed function values in a cache.
 
     Two keyword-only arguments are supported:
@@ -701,7 +641,7 @@ def memoize(*args: F, **kwargs: Any) -> F:
                 ", ".join(kwargs.keys())))
 
     if key_func is not None:
-        def _decorator(func: F) -> F:
+        def _decorator(func: F) -> Callable[[Any], Any]:
             def wrapper(*args: Any, **kwargs: Any) -> Any:
                 key = key_func(*args, **kwargs)
                 try:
@@ -721,7 +661,7 @@ def memoize(*args: F, **kwargs: Any) -> F:
             return wrapper
 
     else:
-        def _decorator(func: F) -> F:
+        def _decorator(func: F) -> Callable[[Any], Any]:
             def wrapper(*args: Any) -> Any:
                 try:
                     return func._memoize_dic[args]  # type: ignore[attr-defined]  # noqa: E501 # pylint: disable=protected-access
@@ -740,7 +680,7 @@ def memoize(*args: F, **kwargs: Any) -> F:
             return wrapper
 
     if not args:
-        return _decorator  # type: ignore
+        return _decorator
     if callable(args[0]) and len(args) == 1:
         return _decorator(args[0])
     raise TypeError(
@@ -894,7 +834,7 @@ class keyed_memoize_method(keyed_memoize_on_first_arg):  # noqa: N801
         Can memoize methods on classes that do not allow setting attributes
         (e.g. by overwritting ``__setattr__``), e.g. frozen :mod:`dataclasses`.
     """
-    def _default_cache_dict_name(self, function):
+    def _default_cache_dict_name(self, function: Callable[[Any], Any]) -> str:
         return intern(f"_memoize_dic_{function.__name__}")
 
 
@@ -944,10 +884,7 @@ class memoize_in(Generic[P, R]):  # noqa
                 self.cache_dict[args] = result
                 return result
 
-        # NOTE: mypy gets confused because it types `wraps` as
-        #   Callable[[VarArg(Any)], Any]
-        # which, for some reason, is not compatible with `F`
-        return new_inner                # type: ignore[return-value]
+        return new_inner
 
 
 class keyed_memoize_in(Generic[P, R]):  # noqa
@@ -1388,12 +1325,12 @@ def std_deviation(iterable: Iterable[float], finite_pop: int) -> Optional[float]
 
 # {{{ permutations, tuples, integer sequences
 
-def wandering_element(length, wanderer=1, landscape=0):
+def wandering_element(length: int, wanderer: float = 1, landscape: float = 0) -> Generator[Tuple[float, ...], None, None]:
     for i in range(length):
         yield i*(landscape,) + (wanderer,) + (length-1-i)*(landscape,)
 
 
-def indices_in_shape(shape):
+def indices_in_shape(shape: Sequence[int]) -> Generator[Tuple[int, ...], None, None]:
     from warnings import warn
     warn("indices_in_shape is deprecated. You should prefer numpy.ndindex.",
             DeprecationWarning, stacklevel=2)
