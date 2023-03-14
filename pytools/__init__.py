@@ -36,13 +36,16 @@ import sys
 from functools import reduce, wraps
 from sys import intern
 from typing import (
-    Any, Callable, cast, ClassVar, Dict, Generic, Hashable, Iterable, List, Mapping,
-    Optional, Set, Tuple, Type, TypeVar, Union, ValuesView, KeysView,
-    ItemsView, Sequence, Generator, TYPE_CHECKING)
+    TYPE_CHECKING, Any, Callable, ClassVar, Dict, Generator, Generic, Hashable,
+    ItemsView, Iterable, KeysView, List, Mapping, Optional, Sequence, Set, Tuple,
+    Type, TypeVar, Union, ValuesView, cast)
 
 
 if TYPE_CHECKING:
     import numpy as np
+
+if getattr(sys, "_BUILDING_SPHINX_DOCS", False):
+    import numpy as np  # noqa: F811
 
 
 try:
@@ -2475,11 +2478,11 @@ def find_git_revision(tree_root: str) \
     return git_rev
 
 
-def find_module_git_revision(module_file, n_levels_up):
+def find_module_git_revision(module_file: str, n_levels_up: int) -> Optional[bytes]:
     from os.path import dirname, join
     tree_root = join(*([dirname(module_file)] + [".." * n_levels_up]))
 
-    return find_git_revision(tree_root)  # type: ignore[no-untyped-call]
+    return find_git_revision(tree_root)
 
 # }}}
 

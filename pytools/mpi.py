@@ -72,7 +72,7 @@ def run_with_mpi_ranks(py_script: str, ranks: int,
 def pytest_raises_on_rank(my_rank: int, fail_rank: int,
         expected_exception: Union[Type[BaseException],
                                   Tuple[Type[BaseException], ...]]) \
-                -> Generator[AbstractContextManager[Any], None, None]:
+                -> Generator[Any, None, None]:
     """
     Like :func:`pytest.raises`, but only expect an exception on rank *fail_rank*.
     """
