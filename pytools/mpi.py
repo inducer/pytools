@@ -33,10 +33,10 @@ MPI helper functionality
 """
 
 from contextlib import AbstractContextManager, contextmanager
-from typing import Generator, Tuple, Type, Union
+from typing import Any, Callable, Generator, Sequence, Tuple, Type, Union
 
 
-def check_for_mpi_relaunch(argv):
+def check_for_mpi_relaunch(argv: Sequence[Any]) -> None:
     if argv[1] != "--mpi-relaunch":
         return
 
@@ -48,7 +48,9 @@ def check_for_mpi_relaunch(argv):
     sys.exit()
 
 
-def run_with_mpi_ranks(py_script, ranks, callable_, args=(), kwargs=None):
+def run_with_mpi_ranks(py_script: str, ranks: int,
+                       callable_: Callable[[Any], Any], args: Any = (),
+                       kwargs: Any = None) -> None:
     if kwargs is None:
         kwargs = {}
 
@@ -70,7 +72,7 @@ def run_with_mpi_ranks(py_script, ranks, callable_, args=(), kwargs=None):
 def pytest_raises_on_rank(my_rank: int, fail_rank: int,
         expected_exception: Union[Type[BaseException],
                                   Tuple[Type[BaseException], ...]]) \
-                -> Generator[AbstractContextManager, None, None]:
+                -> Generator[AbstractContextManager[Any], None, None]:
     """
     Like :func:`pytest.raises`, but only expect an exception on rank *fail_rank*.
     """
@@ -79,7 +81,7 @@ def pytest_raises_on_rank(my_rank: int, fail_rank: int,
     import pytest
 
     if my_rank == fail_rank:
-        cm: AbstractContextManager = pytest.raises(expected_exception)
+        cm: AbstractContextManager[Any] = pytest.raises(expected_exception)
     else:
         cm = nullcontext()
 
