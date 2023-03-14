@@ -37,7 +37,8 @@ from functools import reduce, wraps
 from sys import intern
 from typing import (
     Any, Callable, cast, ClassVar, Dict, Generic, Hashable, Iterable, List, Mapping,
-    Optional, Set, Tuple, Type, TypeVar, Union, ValuesView, KeysView, ItemsView, Sequence, Generator, TYPE_CHECKING)
+    Optional, Set, Tuple, Type, TypeVar, Union, ValuesView, KeysView,
+    ItemsView, Sequence, Generator, TYPE_CHECKING)
 
 
 if TYPE_CHECKING:
@@ -45,9 +46,9 @@ if TYPE_CHECKING:
 
 
 try:
-    from typing import Concatenate, SupportsIndex
+    from typing import Concatenate
 except ImportError:
-    from typing_extensions import Concatenate, SupportsIndex
+    from typing_extensions import Concatenate
 
 try:
     from typing import ParamSpec
@@ -493,7 +494,8 @@ class FakeList:
 # {{{ dependent dictionary
 
 class DependentDictionary:
-    def __init__(self, f: Callable[[Any, Any], Any], start: Optional[Dict[Any, Any]] = None):
+    def __init__(self, f: Callable[[Any, Any], Any],
+                 start: Optional[Dict[Any, Any]] = None) -> None:
         if start is None:
             start = {}
 
@@ -581,7 +583,7 @@ all_equal = is_single_valued
 
 def all_roughly_equal(iterable: Iterable[T], threshold: float) -> bool:
     return is_single_valued(iterable,
-            equality_pred=lambda a, b: abs(cast(float, a)-cast(float, b)) < threshold)
+           equality_pred=lambda a, b: abs(cast(float, a)-cast(float, b)) < threshold)
 
 
 def single_valued(
@@ -957,7 +959,8 @@ def monkeypatch_method(cls: Any) -> Callable[..., Any]:
     return decorator
 
 
-def monkeypatch_class(_name: Any, bases: Sequence[Any], namespace: Dict[str, Any]) -> Any:
+def monkeypatch_class(_name: Any, bases: Sequence[Any],
+                      namespace: Dict[str, Any]) -> Any:
     # from GvR, http://mail.python.org/pipermail/python-dev/2008-January/076194.html
 
     assert len(bases) == 1, "Exactly one base class required"
@@ -1019,7 +1022,8 @@ def general_sum(sequence: Sequence[float]) -> float:
     return reduce(operator.add, sequence)
 
 
-def linear_combination(coefficients: Sequence[float], vectors: Sequence[float]) -> float:
+def linear_combination(coefficients: Sequence[float],
+                       vectors: Sequence[float]) -> float:
     result = coefficients[0] * vectors[0]
     for c, v in zip(coefficients[1:], vectors[1:]):
         result += c*v
@@ -1044,11 +1048,13 @@ def common_prefix(iterable: Iterable[Any], empty: Optional[Any] = None) -> Any:
     return pfx
 
 
-def decorate(function: Callable[[Any], Any], iterable: Iterable[Any]) -> List[Tuple[Any, ...]]:
+def decorate(function: Callable[[Any], Any],
+             iterable: Iterable[Any]) -> List[Tuple[Any, ...]]:
     return [(x, function(x)) for x in iterable]
 
 
-def partition(criterion: Callable[[Any], Any], iterable: Iterable[Any]) -> Tuple[Any, Any]:
+def partition(criterion: Callable[[Any], Any],
+              iterable: Iterable[Any]) -> Tuple[Any, Any]:
     part_true = []
     part_false = []
     for i in iterable:
@@ -1094,7 +1100,8 @@ def div_ceil(nr: int, dr: int) -> int:
     return -(-nr // dr)
 
 
-def uniform_interval_splitting(n: int, granularity: int, max_intervals: int) -> Tuple[int, int]:
+def uniform_interval_splitting(n: int, granularity: int,
+                               max_intervals: int) -> Tuple[int, int]:
     """ Return *(interval_size, num_intervals)* such that::
 
         num_intervals * interval_size >= n
@@ -1120,7 +1127,8 @@ def uniform_interval_splitting(n: int, granularity: int, max_intervals: int) -> 
     return interval_size, num_intervals
 
 
-def find_max_where(predicate: Callable[[Any], bool], prec: float = 1e-5, initial_guess: float = 1, fail_bound: float = 1e38) -> float:
+def find_max_where(predicate: Callable[[Any], bool], prec: float = 1e-5,
+                   initial_guess: float = 1, fail_bound: float = 1e38) -> float:
     """Find the largest value for which a predicate is true,
     along a half-line. 0 is assumed to be the lower bound."""
 
@@ -1177,7 +1185,8 @@ def find_max_where(predicate: Callable[[Any], bool], prec: float = 1e-5, initial
 
 # {{{ argmin, argmax
 
-def argmin2(iterable: Iterable[Sequence[Any]], return_value: bool = False) -> Union[Any, Tuple[int, Any]]:
+def argmin2(iterable: Iterable[Sequence[Any]], return_value: bool = False) \
+                -> Union[Any, Tuple[int, Any]]:
     it = iter(iterable)
     try:
         current_argmin, current_min = next(it)
@@ -1195,7 +1204,8 @@ def argmin2(iterable: Iterable[Sequence[Any]], return_value: bool = False) -> Un
         return current_argmin
 
 
-def argmax2(iterable: Iterable[Sequence[Any]], return_value: bool = False) -> Union[Any, Tuple[int, Any]]:
+def argmax2(iterable: Iterable[Sequence[Any]], return_value: bool = False) \
+                -> Union[Any, Tuple[int, Any]]:
     it = iter(iterable)
     try:
         current_argmax, current_max = next(it)
@@ -1225,7 +1235,8 @@ def argmax(iterable: Iterable[Any]) -> Any:
 
 # {{{ cartesian products etc.
 
-def cartesian_product(*args: Iterable[Any]) -> Generator[Tuple[Any, ...], None, None]:
+def cartesian_product(*args: Iterable[Any]) \
+                        -> Generator[Tuple[Any, ...], None, None]:
     if len(args) == 1:
         for arg in args[0]:
             yield (arg,)
@@ -1236,14 +1247,16 @@ def cartesian_product(*args: Iterable[Any]) -> Generator[Tuple[Any, ...], None, 
             yield prod + (i,)
 
 
-def distinct_pairs(list1: Sequence[Any], list2: Sequence[Any]) -> Generator[Tuple[Any, Any], None, None]:
+def distinct_pairs(list1: Sequence[Any], list2: Sequence[Any]) \
+                    -> Generator[Tuple[Any, Any], None, None]:
     for i, xi in enumerate(list1):
         for j, yj in enumerate(list2):
             if i != j:
                 yield (xi, yj)
 
 
-def cartesian_product_sum(list1: List[int], list2: List[int]) -> Generator[int, None, None]:
+def cartesian_product_sum(list1: List[int], list2: List[int]) \
+                            -> Generator[int, None, None]:
     """This routine returns a list of sums of each element of
     list1 with each element of list2. Also works with lists.
     """
@@ -1325,7 +1338,8 @@ def std_deviation(iterable: Iterable[float], finite_pop: int) -> Optional[float]
 
 # {{{ permutations, tuples, integer sequences
 
-def wandering_element(length: int, wanderer: float = 1, landscape: float = 0) -> Generator[Tuple[float, ...], None, None]:
+def wandering_element(length: int, wanderer: float = 1, landscape: float = 0) \
+                        -> Generator[Tuple[float, ...], None, None]:
     for i in range(length):
         yield i*(landscape,) + (wanderer,) + (length-1-i)*(landscape,)
 
@@ -1350,7 +1364,10 @@ def indices_in_shape(shape: Sequence[int]) -> Generator[Tuple[int, ...], None, N
                 yield (i,)+rest
 
 
-def generate_nonnegative_integer_tuples_below(n: Union[int, Sequence[int]], length: Optional[int] = None, least: int = 0) -> Generator[Union[Tuple[int, ...], Tuple[()]], None, None]:
+def generate_nonnegative_integer_tuples_below(n: Union[int, Sequence[int]],
+                                              length: Optional[int] = None,
+                                              least: int = 0) \
+                    -> Generator[Union[Tuple[int, ...], Tuple[()]], None, None]:
     """n may be a sequence, in which case length must be None."""
     if length is None:
         if not n:
@@ -1380,7 +1397,8 @@ def generate_nonnegative_integer_tuples_below(n: Union[int, Sequence[int]], leng
 
 
 def generate_decreasing_nonnegative_tuples_summing_to(
-        n: int, length: int, min_value: int = 0, max_value: Optional[int] = None) -> Generator[Union[Tuple[int, ...], Tuple[()]], None, None]:
+        n: int, length: int, min_value: int = 0, max_value: Optional[int] = None) \
+              -> Generator[Union[Tuple[int, ...], Tuple[()]], None, None]:
     if length == 0:
         yield ()
     elif length == 1:
@@ -1401,7 +1419,8 @@ def generate_decreasing_nonnegative_tuples_summing_to(
                 yield (i,) + remainder
 
 
-def generate_nonnegative_integer_tuples_summing_to_at_most(n: int, length: int) -> Generator[Union[Tuple[int, ...], Tuple[()]], None, None]:
+def generate_nonnegative_integer_tuples_summing_to_at_most(n: int, length: int) \
+         -> Generator[Union[Tuple[int, ...], Tuple[()]], None, None]:
     """Enumerate all non-negative integer tuples summing to at most n,
     exhausting the search space by varying the first entry fastest,
     and the last entry the slowest.
@@ -1420,7 +1439,8 @@ def generate_nonnegative_integer_tuples_summing_to_at_most(n: int, length: int) 
 generate_positive_integer_tuples_below = generate_nonnegative_integer_tuples_below
 
 
-def _pos_and_neg_adaptor(tuple_iter: Iterable[Tuple[float, ...]]) -> Generator[Tuple[float, ...], None, None]:
+def _pos_and_neg_adaptor(tuple_iter: Iterable[Tuple[float, ...]]) \
+                            -> Generator[Tuple[float, ...], None, None]:
     for tup in tuple_iter:
         nonzero_indices = [i for i in range(len(tup)) if tup[i] != 0]
         for do_neg_tup in generate_nonnegative_integer_tuples_below(
@@ -1432,7 +1452,8 @@ def _pos_and_neg_adaptor(tuple_iter: Iterable[Tuple[float, ...]]) -> Generator[T
             yield tuple(this_result)
 
 
-def generate_all_integer_tuples_below(n: int, length: int, least_abs: int = 0) -> Generator[Tuple[float, ...], None, None]:
+def generate_all_integer_tuples_below(n: int, length: int, least_abs: int = 0) \
+                                        -> Generator[Tuple[float, ...], None, None]:
     return _pos_and_neg_adaptor(generate_nonnegative_integer_tuples_below(
         n, length, least_abs))
 
@@ -1451,7 +1472,8 @@ def generate_permutations(original: List[Any]) -> Generator[List[Any], None, Non
                 yield perm_[:i] + original[0:1] + perm_[i:]
 
 
-def generate_unique_permutations(original: List[Any]) -> Generator[List[Any], None, None]:
+def generate_unique_permutations(original: List[Any]) \
+                                    -> Generator[List[Any], None, None]:
     """Generate all unique permutations of the list *original*.
     """
 
@@ -1465,14 +1487,15 @@ def generate_unique_permutations(original: List[Any]) -> Generator[List[Any], No
 
 def enumerate_basic_directions(dimensions: int) -> List[List[int]]:
     coordinate_list = [[0], [1], [-1]]
-    return reduce(cartesian_product_sum, [coordinate_list] * dimensions)[1:]  # type: ignore[arg-type]
+    return reduce(cartesian_product_sum, [coordinate_list] * dimensions)[1:]  # type: ignore[arg-type]  # noqa: E501
 
 # }}}
 
 
 # {{{ index mangling
 
-def get_read_from_map_from_permutation(original: List[int], permuted: List[int]) -> Tuple[int, ...]:
+def get_read_from_map_from_permutation(original: List[int], permuted: List[int]) \
+                                        -> Tuple[int, ...]:
     """With a permutation given by *original* and *permuted*,
     generate a list *rfm* of indices such that
     ``permuted[i] == original[rfm[i]]``.
@@ -1499,7 +1522,8 @@ def get_read_from_map_from_permutation(original: List[int], permuted: List[int])
     return tuple(where_in_original[pi] for pi in permuted)
 
 
-def get_write_to_map_from_permutation(original: List[int], permuted: List[int]) -> Tuple[int, ...]:
+def get_write_to_map_from_permutation(original: List[int], permuted: List[int]) \
+                                        -> Tuple[int, ...]:
     """With a permutation given by *original* and *permuted*,
     generate a list *wtm* of indices such that
     ``permuted[wtm[i]] == original[i]``.
@@ -1798,8 +1822,10 @@ def merge_tables(*tables: Table,
 # {{{ histogram formatting
 
 def string_histogram(  # pylint: disable=too-many-arguments,too-many-locals
-        iterable: Iterable[float], min_value: Optional[float] = None, max_value: Optional[float] = None,
-        bin_count: int = 20, width: int = 70, bin_starts: Optional[Sequence[float]] = None, use_unicode: bool = True) -> str:
+        iterable: Iterable[float], min_value: Optional[float] = None,
+        max_value: Optional[float] = None, bin_count: int = 20,
+        width: int = 70, bin_starts: Optional[Sequence[float]] = None,
+        use_unicode: bool = True) -> str:
     if bin_starts is None:
         if min_value is None or max_value is None:
             iterable = list(iterable)
@@ -1885,7 +1911,9 @@ class CPyUserInterface:
     class Parameters(Record):
         pass
 
-    def __init__(self, variables: Dict[str, Any], constants: Optional[Dict[str, Any]] = None, doc: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, variables: Dict[str, Any],
+                 constants: Optional[Dict[str, Any]] = None,
+                 doc: Optional[Dict[str, Any]] = None) -> None:
         if constants is None:
             constants = {}
         if doc is None:
@@ -1968,7 +1996,8 @@ class StderrToStdout:
 
 
 def typedump(val: Any, max_seq: int = 5,
-             special_handlers: Optional[Mapping[Type[Any], Callable[[Any], str]]] = None,
+             special_handlers:
+                Optional[Mapping[Type[Any], Callable[[Any], str]]] = None,
              fully_qualified_name: bool = True) -> str:
     """
     Return a string representation of the type of *val*, recursing into
@@ -2036,7 +2065,8 @@ def typedump(val: Any, max_seq: int = 5,
             return objname(val)
 
 
-def invoke_editor(s: str, filename: str = "edit.txt", descr: str = "the file") -> str:
+def invoke_editor(s: str, filename: str = "edit.txt", descr: str = "the file") \
+                     -> str:
     from tempfile import mkdtemp
     tempdir = mkdtemp()
 
@@ -2077,7 +2107,8 @@ class ProgressBar:  # pylint: disable=too-many-instance-attributes
     .. automethod:: __enter__
     .. automethod:: __exit__
     """
-    def __init__(self, descr: str, total: float, initial: float = 0, length: float = 40):
+    def __init__(self, descr: str, total: float, initial: float = 0,
+                 length: float = 40) -> None:
         import time
         self.description = descr
         self.total = total
@@ -2166,7 +2197,8 @@ def add_python_path_relative_to_script(rel_path: str) -> None:
 
 # {{{ numpy dtype mangling
 
-def common_dtype(dtypes: Sequence["np.dtype[Any]"], default: Optional["np.dtype[Any]"] = None) -> "np.dtype[Any]":
+def common_dtype(dtypes: Sequence["np.dtype[Any]"],
+                 default: Optional["np.dtype[Any]"] = None) -> "np.dtype[Any]":
     import numpy as np
 
     dtypes = list(dtypes)
@@ -2185,7 +2217,8 @@ def to_uncomplex_dtype(dtype: "np.dtype[Any]") -> "Type[Any]":
     return np.array(1, dtype=dtype).real.dtype.type
 
 
-def match_precision(dtype: "np.dtype[Any]", dtype_to_match: "np.dtype[Any]") -> "np.dtype[Any]":
+def match_precision(dtype: "np.dtype[Any]", dtype_to_match: "np.dtype[Any]") \
+                        -> "np.dtype[Any]":
     import numpy
 
     tgt_is_double = dtype_to_match in [
@@ -2368,7 +2401,8 @@ class MinRecursionLimit:
 
 # {{{ download from web if not present
 
-def download_from_web_if_not_present(url: str, local_name: Optional[str] = None) -> None:
+def download_from_web_if_not_present(url: str, local_name: Optional[str] = None) \
+                                         -> None:
     """
     .. versionadded:: 2017.5
     """
@@ -2396,7 +2430,8 @@ def download_from_web_if_not_present(url: str, local_name: Optional[str] = None)
 
 # {{{ find git revisions
 
-def find_git_revision(tree_root):  # type: ignore[no-untyped-def]  # pylint: disable=too-many-locals
+def find_git_revision(tree_root: str) \
+        -> Optional[bytes]:  # pylint: disable=too-many-locals
     # Keep this routine self-contained so that it can be copy-pasted into
     # setup.py.
 
@@ -2440,7 +2475,7 @@ def find_git_revision(tree_root):  # type: ignore[no-untyped-def]  # pylint: dis
     return git_rev
 
 
-def find_module_git_revision(module_file, n_levels_up):  # type: ignore[no-untyped-def]
+def find_module_git_revision(module_file, n_levels_up):
     from os.path import dirname, join
     tree_root = join(*([dirname(module_file)] + [".." * n_levels_up]))
 
@@ -2451,7 +2486,8 @@ def find_module_git_revision(module_file, n_levels_up):  # type: ignore[no-untyp
 
 # {{{ create a reshaped view of a numpy array
 
-def reshaped_view(a: "np.ndarray[Any, Any]", newshape: Tuple[int, ...]) -> "np.ndarray[Any, Any]":
+def reshaped_view(a: "np.ndarray[Any, Any]", newshape: Tuple[int, ...]) \
+                    -> "np.ndarray[Any, Any]":
     """ Create a new view object with shape ``newshape`` without copying the data of
     ``a``. This function is different from ``numpy.reshape`` by raising an
     exception when data copy is necessary.
@@ -2541,7 +2577,8 @@ class ProcessLogger:  # pylint: disable=too-many-instance-attributes
 
     def __init__(  # pylint: disable=too-many-arguments
             self, logger: logging.Logger, description: str,
-            silent_level: Optional[int] =None, noisy_level: Optional[int] = None, long_threshold_seconds: Optional[float] = None) -> None:
+            silent_level: Optional[int] = None, noisy_level: Optional[int] =
+            None, long_threshold_seconds: Optional[float] = None) -> None:
         self.logger = logger
         self.description = description
         self.silent_level = silent_level or logging.DEBUG
@@ -2614,7 +2651,8 @@ class ProcessLogger:  # pylint: disable=too-many-instance-attributes
 
         completion_level = (
                 self.noisy_level
-                if self.timer.wall_elapsed is not None and self.timer.wall_elapsed > self.long_threshold_seconds
+                if (self.timer.wall_elapsed is not None
+                    and self.timer.wall_elapsed > self.long_threshold_seconds)
                 else self.silent_level)
 
         msg = "%s: completed (%s)"
@@ -2645,7 +2683,8 @@ class log_process:  # noqa: N801
     .. automethod:: __call__
     """
 
-    def __init__(self, logger: logging.Logger, description: Optional[str] = None, long_threshold_seconds: Optional[float] = None) -> None:
+    def __init__(self, logger: logging.Logger, description: Optional[str] = None,
+                 long_threshold_seconds: Optional[float] = None) -> None:
         self.logger = logger
         self.description = description
         self.long_threshold_seconds = long_threshold_seconds
@@ -2690,7 +2729,8 @@ def natorder(item: Any) -> List[Any]:
     return result
 
 
-def natsorted(iterable: Iterable[Any], key: Optional[Callable[[Any], Any]] = None, reverse: bool = False) -> List[Any]:
+def natsorted(iterable: Iterable[Any], key: Optional[Callable[[Any], Any]] = None,
+              reverse: bool = False) -> List[Any]:
     """Sort using natural order [1]_, as opposed to lexicographic order.
 
     Example::
@@ -2716,7 +2756,7 @@ def natsorted(iterable: Iterable[Any], key: Optional[Callable[[Any], Any]] = Non
         key = lambda x: x
 
     # type-ignore-reason: mypy thinks key could be None
-    return sorted(iterable, key=lambda y: natorder(key(y)), reverse=reverse)  # type: ignore[misc]
+    return sorted(iterable, key=lambda y: natorder(key(y)), reverse=reverse)  # type: ignore[misc]  # noqa: E501
 
 # }}}
 
@@ -2779,7 +2819,8 @@ def resolve_name(name: str) -> object:
 
 # {{{ unordered_hash
 
-def unordered_hash(hash_instance: Any, iterable: Iterable[Any], hash_constructor: Optional[Callable[[], Any]] = None) -> Any:
+def unordered_hash(hash_instance: Any, iterable: Iterable[Any],
+                   hash_constructor: Optional[Callable[[], Any]] = None) -> Any:
     """Using a hash algorithm given by the parameter-less constructor
     *hash_constructor*, return a hash object whose internal state
     depends on the entries of *iterable*, but not their order. If *hash*
@@ -2824,7 +2865,8 @@ def unordered_hash(hash_instance: Any, iterable: Iterable[Any], hash_constructor
 
 # {{{ sphere_sample
 
-def sphere_sample_equidistant(npoints_approx: int, r: float = 1.0) -> "np.ndarray[Any, Any]":
+def sphere_sample_equidistant(npoints_approx: int, r: float = 1.0) \
+                                -> "np.ndarray[Any, Any]":
     """Generate points regularly distributed on a sphere
     based on https://www.cmu.edu/biolphys/deserno/pdf/sphere_equi.pdf.
 
