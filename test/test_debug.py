@@ -20,12 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-import sys
 
-import pytest
-
-
-@pytest.mark.skipif(hasattr(sys, "pypy_version_info"), reason="not support on PYPY")
 def test_get_object_cycles():
     from pytools.debug import get_object_cycles
     assert len(get_object_cycles([])) == 0
