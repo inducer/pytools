@@ -26,13 +26,14 @@ Debugging helpers
 .. autofunction:: make_unique_filesystem_object
 .. autofunction:: open_unique_debug_file
 .. autofunction:: refdebug
+.. autofunction:: get_object_graph
 .. autofunction:: get_object_cycles
 .. autofunction:: estimate_memory_usage
 
 """
 
 import sys
-from typing import Collection, List, Set
+from typing import Collection, Dict, List, Set, Tuple, Union
 
 from pytools import memoize
 
@@ -174,6 +175,48 @@ def refdebug(obj, top_level=True, exclude=()):  # noqa: E501  pylint:disable=too
 
 
 # {{{ Find circular references
+
+from pytools.graph import GraphT
+
+
+def get_object_graph(objects: Collection[object],
+                     outside_objects: bool = False) -> GraphT:
+
+    """Create a graph out of *objects*, with graph edges representing
+    references between objects.
+
+    :arg objects: The objects to build the graph.
+    :arg outside_objects: Include objects not in *objects* in the graph when
+        ``True``.
+
+    :returns: A :class:`~pytools.graph.GraphT` with the references between objects.
+    """
+
+    import gc
+    res: Dict[object, List[object]] = {}
+
+    def hash_unhashable(obj: object) -> Union[object, Tuple[int, str]]:
+        try:
+            hash(obj)
+        except TypeError:
+            return (id(obj), str(obj))
+        else:
+            return obj
+
+    # Collect objects first to differentiate to outside objects later
+    for obj in objects:
+        res[hash_unhashable(obj)] = []
+
+    for obj in objects:
+        refs = gc.get_referents(obj)
+        obj = hash_unhashable(obj)
+        for r in refs:
+            r = hash_unhashable(r)
+            if r in res or outside_objects:
+                res.setdefault(r, []).append(obj)
+
+    return res
+
 
 # Based on https://code.activestate.com/recipes/523004-find-cyclical-references/
 

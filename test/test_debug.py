@@ -47,3 +47,36 @@ def test_get_object_cycles():
     b.append(a)
 
     assert len(get_object_cycles([a, b])) == 2
+
+
+def test_get_object_graph():
+    from pytools.debug import get_object_graph
+
+    assert get_object_graph([]) == {}
+
+    a = (1,)
+    b = (2,)
+    c = (a, b)
+    assert get_object_graph([a]) == {(1,): []}
+    assert get_object_graph([a, b]) == {(1,): [], (2,): []}
+    assert get_object_graph([a, b, c]) == {((1,), (2,)): [],      # c: []
+                                           (1,): [((1,), (2,))],  # a: [c]
+                                           (2,): [((1,), (2,))]}  # b: [c]
+
+    a = {}
+    b = {"a": a}
+    a["b"] = b
+
+    assert get_object_graph([a, b]) == {
+        (id(a), "{'b': {'a': {...}}}"): [(id(b), "{'a': {'b': {...}}}")],
+        (id(b), "{'a': {'b': {...}}}"): [(id(a), "{'b': {'a': {...}}}")]}
+
+    b = [42, 4]
+    a = [1, 2, 3, 4, 5, b]
+    b.append(a)
+
+    assert get_object_graph([a, b]) == {
+        (id(a), "[1, 2, 3, 4, 5, [42, 4, [...]]]"):
+            [(id(b), "[42, 4, [1, 2, 3, 4, 5, [...]]]")],
+        (id(b), "[42, 4, [1, 2, 3, 4, 5, [...]]]"):
+            [(id(a), "[1, 2, 3, 4, 5, [42, 4, [...]]]")]}
