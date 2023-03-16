@@ -59,9 +59,9 @@ def test_get_object_graph():
     c = (a, b)
     assert get_object_graph([a]) == {(1,): []}
     assert get_object_graph([a, b]) == {(1,): [], (2,): []}
-    assert get_object_graph([a, b, c]) == {((1,), (2,)): [],      # c: []
-                                           (1,): [((1,), (2,))],  # a: [c]
-                                           (2,): [((1,), (2,))]}  # b: [c]
+    assert get_object_graph([a, b, c]) == {((1,), (2,)): [(2,), (1,)],  # c: [a, b]
+                                           (1,): [],  # a: []
+                                           (2,): []}  # b: []
 
     a = {}
     b = {"a": a}

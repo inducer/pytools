@@ -213,7 +213,7 @@ def get_object_graph(objects: Collection[object],
         for r in refs:
             r = hash_unhashable(r)
             if r in res or outside_objects:
-                res.setdefault(r, []).append(obj)
+                res.setdefault(obj, []).append(r)
 
     return res
 
