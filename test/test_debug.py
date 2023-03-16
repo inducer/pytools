@@ -57,19 +57,19 @@ def test_get_object_graph():
     a = (1,)
     b = (2,)
     c = (a, b)
-    assert get_object_graph([a]) == {(1,): []}
-    assert get_object_graph([a, b]) == {(1,): [], (2,): []}
-    assert get_object_graph([a, b, c]) == {((1,), (2,)): [(2,), (1,)],  # c: [a, b]
-                                           (1,): [],  # a: []
-                                           (2,): []}  # b: []
+    assert get_object_graph([a]) == {(1,): set()}
+    assert get_object_graph([a, b]) == {(1,): set(), (2,): set()}
+    assert get_object_graph([a, b, c]) == {((1,), (2,)): {(2,), (1,)},  # c: [a, b]
+                                           (1,): set(),  # a: set()
+                                           (2,): set()}  # b: set()
 
     a = {}
     b = {"a": a}
     a["b"] = b
 
     assert get_object_graph([a, b]) == {
-        (id(a), "{'b': {'a': {...}}}"): [(id(b), "{'a': {'b': {...}}}")],
-        (id(b), "{'a': {'b': {...}}}"): [(id(a), "{'b': {'a': {...}}}")]}
+        (id(a), "{'b': {'a': {...}}}"): {(id(b), "{'a': {'b': {...}}}")},
+        (id(b), "{'a': {'b': {...}}}"): {(id(a), "{'b': {'a': {...}}}")}}
 
     b = [42, 4]
     a = [1, 2, 3, 4, 5, b]
@@ -77,6 +77,6 @@ def test_get_object_graph():
 
     assert get_object_graph([a, b]) == {
         (id(a), "[1, 2, 3, 4, 5, [42, 4, [...]]]"):
-            [(id(b), "[42, 4, [1, 2, 3, 4, 5, [...]]]")],
+            {(id(b), "[42, 4, [1, 2, 3, 4, 5, [...]]]")},
         (id(b), "[42, 4, [1, 2, 3, 4, 5, [...]]]"):
-            [(id(a), "[1, 2, 3, 4, 5, [42, 4, [...]]]")]}
+            {(id(a), "[1, 2, 3, 4, 5, [42, 4, [...]]]")}}

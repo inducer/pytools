@@ -193,7 +193,7 @@ def get_object_graph(objects: Collection[object],
     """
 
     import gc
-    res: Dict[object, List[object]] = {}
+    res: Dict[object, Set[object]] = {}
 
     def hash_unhashable(obj: object) -> Union[object, Tuple[int, str]]:
         try:
@@ -205,7 +205,7 @@ def get_object_graph(objects: Collection[object],
 
     # Collect objects first to differentiate to outside objects later
     for obj in objects:
-        res[hash_unhashable(obj)] = []
+        res[hash_unhashable(obj)] = set()
 
     for obj in objects:
         refs = gc.get_referents(obj)
@@ -213,7 +213,7 @@ def get_object_graph(objects: Collection[object],
         for r in refs:
             r = hash_unhashable(r)
             if r in res or outside_objects:
-                res.setdefault(obj, []).append(r)
+                res.setdefault(obj, set()).add(r)
 
     return res
 
