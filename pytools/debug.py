@@ -218,6 +218,21 @@ def get_object_graph(objects: Collection[object],
     return res
 
 
+def show_object_graph(objects: Collection[object],
+                      outside_objects: bool = False) -> None:
+    """Show a graph out of *objects*, with graph edges representing
+    references between objects.
+
+    :arg objects: The objects to build the graph.
+    :arg outside_objects: Include objects not in *objects* in the graph when
+        ``True``.
+    """
+    from pytools.graph import as_graphviz_dot
+    from pytools.graphviz import show_dot
+
+    show_dot(as_graphviz_dot(get_object_graph(objects, outside_objects)))
+
+
 # Based on https://code.activestate.com/recipes/523004-find-cyclical-references/
 
 def get_object_cycles(objects: Collection[object]) -> List[List[object]]:
