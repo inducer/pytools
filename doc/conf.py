@@ -1,5 +1,6 @@
 from urllib.request import urlopen
 
+
 _conf_url = \
         "https://raw.githubusercontent.com/inducer/sphinxconfig/main/sphinxconfig.py"
 with urlopen(_conf_url) as _inf:
@@ -25,19 +26,19 @@ release = ver_dic["VERSION_TEXT"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 intersphinx_mapping = {
-    "https://docs.python.org/3": None,
-    "https://numpy.org/doc/stable": None,
-    "https://documen.tician.de/pymbolic/": None,
-    "https://documen.tician.de/loopy/": None,
-    "https://docs.pytest.org/en/stable/": None,
-    }
-
-nitpick_ignore_regex = [
-        ["py:class", r"typing_extensions\.(.+)"],
-        ]
+    "loopy": ("https://documen.tician.de/loopy/", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
+    "pymbolic": ("https://documen.tician.de/pymbolic/", None),
+    "pytest": ("https://docs.pytest.org/en/stable/", None),
+    "python": ("https://docs.python.org/3", None),
+}
 
 nitpicky = True
+nitpick_ignore_regex = [
+    ["py:class", r"typing_extensions\.(.+)"],
+]
 
-autodoc_type_aliases = {"GraphT": "pytools.graph.GraphT",
-                        "NodeT": "pytools.graph.NodeT",
-                        }
+autodoc_type_aliases = {
+    "GraphT": "pytools.graph.GraphT",
+    "NodeT": "pytools.graph.NodeT",
+}
