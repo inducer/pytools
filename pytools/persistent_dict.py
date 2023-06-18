@@ -33,12 +33,6 @@ from dataclasses import fields, is_dataclass
 from enum import Enum
 
 
-# Removing this in 2020-12 broke a shocking amount of stuff, such as
-# https://github.com/OP2/PyOP2/pull/605
-# Bring it back for now to mitigate the breakage, however this is going
-# away in 2021 at the latest.
-new_hash = hashlib.sha256
-
 import errno
 import os
 import shutil
