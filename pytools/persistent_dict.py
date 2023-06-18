@@ -238,9 +238,14 @@ class KeyBuilder:
             try:
                 method = getattr(self, "update_for_"+tname)
             except AttributeError:
-                # Handling numpy >= 1.20, for which
-                # type(np.dtype("float32")) -> "dtype[float32]"
-                if tname.startswith("dtype[") and "numpy" in sys.modules:
+                if (
+                        # Handling numpy >= 1.20, for which
+                        # type(np.dtype("float32")) -> "dtype[float32]"
+                        tname.startswith("dtype[")
+                        # Handling numpy >= 1.25, for which
+                        # type(np.dtype("float32")) -> "Float32DType"
+                        or tname.endswith("DType")
+                        ) and "numpy" in sys.modules:
                     import numpy as np
                     if isinstance(key, np.dtype):
                         method = self.update_for_specific_dtype
