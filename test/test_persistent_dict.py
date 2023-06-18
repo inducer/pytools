@@ -7,8 +7,8 @@ from enum import Enum, IntEnum
 import pytest
 
 from pytools.persistent_dict import (
-    CollisionWarning, NoSuchEntryError, PersistentDict, ReadOnlyEntryError,
-    WriteOncePersistentDict)
+    CollisionWarning, KeyBuilder, NoSuchEntryError, PersistentDict,
+    ReadOnlyEntryError, WriteOncePersistentDict)
 from pytools.tag import Tag, tag_dataclass
 
 
@@ -370,6 +370,14 @@ def test_write_once_persistent_dict_clear():
             pdict.fetch(0)
     finally:
         shutil.rmtree(tmpdir)
+
+
+def test_dtype_hashing():
+    np = pytest.importorskip("numpy")
+
+    keyb = KeyBuilder()
+    assert keyb(np.float32) == keyb(np.float32)
+    assert keyb(np.dtype(np.float32)) == keyb(np.dtype(np.float32))
 
 
 if __name__ == "__main__":
