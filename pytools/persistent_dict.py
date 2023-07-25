@@ -623,6 +623,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
     .. automethod:: __getitem__
     .. automethod:: __setitem__
     .. automethod:: clear
+    .. automethod:: clear_in_mem_cache
     .. automethod:: store
     .. automethod:: store_if_not_present
     .. automethod:: fetch
@@ -637,7 +638,15 @@ class WriteOncePersistentDict(_PersistentDictBase):
             *in_mem_cache_size* items
         """
         _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
-        self._cache = _LRUCache(in_mem_cache_size)
+        self._in_mem_cache_size = in_mem_cache_size
+        self.clear_in_mem_cache()
+
+    def clear_in_mem_cache(self) -> None:
+        """
+        .. versionadded:: 2023.1.1
+        """
+
+        self._cache = _LRUCache(self._in_mem_cache_size)
 
     def _spin_until_removed(self, lock_file, stacklevel):
         from os.path import exists
