@@ -244,7 +244,7 @@ class DataTable:
                 if outer:
                     this_batch = [(None,) * len(self.column_names)]
 
-            if run_other and not other_over:
+            if run_other and not other_over:  # pylint: disable=used-before-assignment  # noqa: E501
                 key = other_key
                 while other_row[other_key_idx] == other_key:
                     other_batch.append(other_row)
