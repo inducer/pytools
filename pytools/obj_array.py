@@ -113,7 +113,7 @@ def flat_obj_array(*args):
             res_list.extend(arg)
 
         # Only flatten genuine, non-subclassed object arrays.
-        elif type(arg) == np.ndarray:
+        elif type(arg) is np.ndarray:
             res_list.extend(arg.flat)
 
         else:
