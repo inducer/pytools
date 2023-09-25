@@ -263,14 +263,15 @@ class KeyBuilder:
                         elif np.issubdtype(tp, np.integer):
                             method = self.update_for_int
 
-                elif issubclass(tp, Enum):
-                    method = self.update_for_enum
+                if method is None:
+                    if issubclass(tp, Enum):
+                        method = self.update_for_enum
 
-                elif is_dataclass(tp):
-                    method = self.update_for_dataclass
+                    elif is_dataclass(tp):
+                        method = self.update_for_dataclass
 
-                elif _HAS_ATTRS and attrs.has(tp):
-                    method = self.update_for_attrs
+                    elif _HAS_ATTRS and attrs.has(tp):
+                        method = self.update_for_attrs
 
             if method is not None:
                 inner_key_hash = self.new_hash()
