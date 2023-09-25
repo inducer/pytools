@@ -245,10 +245,21 @@ class KeyBuilder:
                         # Handling numpy >= 1.25, for which
                         # type(np.dtype("float32")) -> "Float32DType"
                         or tname.endswith("DType")
+                        or tname in ("int8", "int16", "int32", "int64")
+                        or tname in ("float16", "float32", "float64", "float128")
+                        or tname in ("complex64", "complex128", "complex256")
                         ) and "numpy" in sys.modules:
                     import numpy as np
                     if isinstance(key, np.dtype):
                         method = self.update_for_specific_dtype
+                    elif np.isscalar(key):
+                        # Non-numpy scalars are handled above in the try block.
+                        if np.issubdtype(tp, np.complexfloating):
+                            method = self.update_for_complex
+                        elif np.issubdtype(tp, np.floating):
+                            method = self.update_for_float
+                        elif np.issubdtype(tp, np.integer):
+                            method = self.update_for_int
 
                 elif issubclass(tp, Enum):
                     method = self.update_for_enum
@@ -301,6 +312,10 @@ class KeyBuilder:
                 return
             except OverflowError:
                 sz *= 2
+            except AttributeError:
+                # Numpy scalars don't have to_bytes()
+                key_hash.update(str(key).encode("utf8"))
+                return
 
     @classmethod
     def update_for_enum(cls, key_hash, key):
@@ -312,7 +327,15 @@ class KeyBuilder:
 
     @staticmethod
     def update_for_float(key_hash, key):
-        key_hash.update(key.hex().encode("utf8"))
+        try:
+            key_hash.update(key.hex().encode("utf8"))
+        except AttributeError:
+            # Some numpy float scalars don't have hex()
+            key_hash.update(str(key).encode("utf8"))
+
+    @staticmethod
+    def update_for_complex(key_hash, key):
+        key_hash.update(f"{key.real}.{key.imag}".encode("utf-8"))
 
     @staticmethod
     def update_for_str(key_hash, key):
