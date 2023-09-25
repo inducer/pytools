@@ -338,7 +338,7 @@ class KeyBuilder:
 
     @staticmethod
     def update_for_complex(key_hash, key):
-        key_hash.update(f"{key.real}.{key.imag}".encode("utf-8"))
+        key_hash.update(str(key).encode("utf-8"))
 
     @staticmethod
     def update_for_str(key_hash, key):
