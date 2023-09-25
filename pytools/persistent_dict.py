@@ -238,20 +238,22 @@ class KeyBuilder:
             try:
                 method = getattr(self, "update_for_"+tname)
             except AttributeError:
-                if (
-                        # Handling numpy >= 1.20, for which
-                        # type(np.dtype("float32")) -> "dtype[float32]"
-                        tname.startswith("dtype[")
-                        # Handling numpy >= 1.25, for which
-                        # type(np.dtype("float32")) -> "Float32DType"
-                        or tname.endswith("DType")
-                        or tname in ("int8", "int16", "int32", "int64")
-                        or tname in ("float16", "float32", "float64", "float128")
-                        or tname in ("complex64", "complex128", "complex256")
-                        ) and "numpy" in sys.modules:
+                if "numpy" in sys.modules:
                     import numpy as np
-                    if isinstance(key, np.dtype):
-                        method = self.update_for_specific_dtype
+
+                    # Hashing numpy dtypes
+                    if (
+                            # Handling numpy >= 1.20, for which
+                            # type(np.dtype("float32")) -> "dtype[float32]"
+                            tname.startswith("dtype[")
+                            # Handling numpy >= 1.25, for which
+                            # type(np.dtype("float32")) -> "Float32DType"
+                            or tname.endswith("DType")
+                            ):
+                        if isinstance(key, np.dtype):
+                            method = self.update_for_specific_dtype
+
+                    # Hashing numpy scalars
                     elif np.isscalar(key):
                         # Non-numpy scalars are handled above in the try block.
                         if np.issubdtype(tp, np.complexfloating):

@@ -397,6 +397,7 @@ def test_scalar_hashing():
     assert keyb(np.int16(1)) == keyb(np.int16(1))
     assert keyb(np.int32(1)) == keyb(np.int32(1))
     assert keyb(np.int64(1)) == keyb(np.int64(1))
+    assert keyb(np.longlong(1)) == keyb(np.longlong(1))
 
     assert keyb(np.float16(1.1)) == keyb(np.float16(1.1))
     assert keyb(np.float32(1.1)) == keyb(np.float32(1.1))
@@ -404,10 +405,16 @@ def test_scalar_hashing():
     if hasattr(np, "float128"):
         assert keyb(np.float128(1.1)) == keyb(np.float128(1.1))
 
+    assert keyb(np.longfloat(1.1)) == keyb(np.longfloat(1.1))
+    assert keyb(np.longdouble(1.1)) == keyb(np.longdouble(1.1))
+
     assert keyb(np.complex64(1.1+2.2j)) == keyb(np.complex64(1.1+2.2j))
     assert keyb(np.complex128(1.1+2.2j)) == keyb(np.complex128(1.1+2.2j))
     if hasattr(np, "complex256"):
         assert keyb(np.complex256(1.1+2.2j)) == keyb(np.complex256(1.1+2.2j))
+
+    assert keyb(np.longcomplex(1.1+2.2j)) == keyb(np.longcomplex(1.1+2.2j))
+    assert keyb(np.clongdouble(1.1+2.2j)) == keyb(np.clongdouble(1.1+2.2j))
 
 
 if __name__ == "__main__":
