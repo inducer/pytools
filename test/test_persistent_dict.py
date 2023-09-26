@@ -396,7 +396,11 @@ def test_scalar_hashing():
     assert keyb(np.int8(1)) == keyb(np.int8(1))
     assert keyb(np.int16(1)) == keyb(np.int16(1))
     assert keyb(np.int32(1)) == keyb(np.int32(1))
+    assert keyb(np.int32(2)) != keyb(np.int32(1))
     assert keyb(np.int64(1)) == keyb(np.int64(1))
+    assert keyb(1) == keyb(np.int64(1))
+    assert keyb(1) != keyb(np.int32(1))
+
     assert keyb(np.longlong(1)) == keyb(np.longlong(1))
 
     assert keyb(np.float16(1.1)) == keyb(np.float16(1.1))

@@ -256,12 +256,7 @@ class KeyBuilder:
                     # Hashing numpy scalars
                     elif np.isscalar(key):
                         # Non-numpy scalars are handled above in the try block.
-                        if np.issubdtype(tp, np.complexfloating):
-                            method = self.update_for_complex
-                        elif np.issubdtype(tp, np.floating):
-                            method = self.update_for_float
-                        elif np.issubdtype(tp, np.integer):
-                            method = self.update_for_int
+                        method = self.update_for_numpy_scalar
 
                 if method is None:
                     if issubclass(tp, Enum):
@@ -315,10 +310,6 @@ class KeyBuilder:
                 return
             except OverflowError:
                 sz *= 2
-            except AttributeError:
-                # Numpy scalars don't have to_bytes()
-                key_hash.update(str(key).encode("utf8"))
-                return
 
     @classmethod
     def update_for_enum(cls, key_hash, key):
@@ -330,11 +321,7 @@ class KeyBuilder:
 
     @staticmethod
     def update_for_float(key_hash, key):
-        try:
-            key_hash.update(key.hex().encode("utf8"))
-        except AttributeError:
-            # Some numpy float scalars don't have hex()
-            key_hash.update(str(key).encode("utf8"))
+        key_hash.update(key.hex().encode("utf8"))
 
     @staticmethod
     def update_for_complex(key_hash, key):
@@ -375,6 +362,11 @@ class KeyBuilder:
     @staticmethod
     def update_for_specific_dtype(key_hash, key):
         key_hash.update(key.str.encode("utf8"))
+
+    @staticmethod
+    def update_for_numpy_scalar(key_hash, key):
+        import numpy as np
+        key_hash.update(np.atleast_1d(key).tobytes())
 
     def update_for_dataclass(self, key_hash, key):
         self.rec(key_hash, type(key_hash).__name__.encode("utf-8"))
