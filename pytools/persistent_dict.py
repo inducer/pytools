@@ -254,7 +254,7 @@ class KeyBuilder:
                             method = self.update_for_specific_dtype
 
                     # Hashing numpy scalars
-                    elif np.isscalar(key):
+                    elif isinstance(key, np.number):
                         # Non-numpy scalars are handled above in the try block.
                         method = self.update_for_numpy_scalar
 
