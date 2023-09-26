@@ -366,7 +366,7 @@ class KeyBuilder:
     @staticmethod
     def update_for_numpy_scalar(key_hash, key):
         import numpy as np
-        key_hash.update(np.atleast_1d(key).tobytes())
+        key_hash.update(np.array(key).tobytes())
 
     def update_for_dataclass(self, key_hash, key):
         self.rec(key_hash, type(key_hash).__name__.encode("utf-8"))
