@@ -325,7 +325,7 @@ class KeyBuilder:
 
     @staticmethod
     def update_for_complex(key_hash, key):
-        key_hash.update(str(key).encode("utf-8"))
+        key_hash.update(repr(key).encode("utf-8"))
 
     @staticmethod
     def update_for_str(key_hash, key):
@@ -366,7 +366,12 @@ class KeyBuilder:
     @staticmethod
     def update_for_numpy_scalar(key_hash, key):
         import numpy as np
-        key_hash.update(np.array(key).tobytes())
+        if hasattr(np, "complex256") and key.dtype == np.dtype("complex256"):
+            key_hash.update(repr(complex(key)).encode("utf8"))
+        elif hasattr(np, "float128") and key.dtype == np.dtype("float128"):
+            key_hash.update(repr(float(key)).encode("utf8"))
+        else:
+            key_hash.update(np.array(key).tobytes())
 
     def update_for_dataclass(self, key_hash, key):
         self.rec(key_hash, type(key_hash).__name__.encode("utf-8"))
