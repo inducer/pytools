@@ -363,9 +363,10 @@ class KeyBuilder:
     def update_for_specific_dtype(key_hash, key):
         key_hash.update(key.str.encode("utf8"))
 
-    def update_for_numpy_scalar(self, key_hash, key):
-        self.rec(key_hash, str(key))
-        self.rec(key_hash, key.dtype)
+    @staticmethod
+    def update_for_numpy_scalar(key_hash, key):
+        import numpy as np
+        key_hash.update(np.array(key).tobytes())
 
     def update_for_dataclass(self, key_hash, key):
         self.rec(key_hash, type(key_hash).__name__.encode("utf-8"))
