@@ -30,6 +30,7 @@ intersphinx_mapping = {
     "numpy": ("https://numpy.org/doc/stable", None),
     "pymbolic": ("https://documen.tician.de/pymbolic/", None),
     "pytest": ("https://docs.pytest.org/en/stable/", None),
+    "setuptools": ("https://setuptools.pypa.io/en/latest/", None),
     "python": ("https://docs.python.org/3", None),
 }
 
