@@ -238,26 +238,35 @@ class KeyBuilder:
             try:
                 method = getattr(self, "update_for_"+tname)
             except AttributeError:
-                if (
-                        # Handling numpy >= 1.20, for which
-                        # type(np.dtype("float32")) -> "dtype[float32]"
-                        tname.startswith("dtype[")
-                        # Handling numpy >= 1.25, for which
-                        # type(np.dtype("float32")) -> "Float32DType"
-                        or tname.endswith("DType")
-                        ) and "numpy" in sys.modules:
+                if "numpy" in sys.modules:
                     import numpy as np
-                    if isinstance(key, np.dtype):
-                        method = self.update_for_specific_dtype
 
-                elif issubclass(tp, Enum):
-                    method = self.update_for_enum
+                    # Hashing numpy dtypes
+                    if (
+                            # Handling numpy >= 1.20, for which
+                            # type(np.dtype("float32")) -> "dtype[float32]"
+                            tname.startswith("dtype[")
+                            # Handling numpy >= 1.25, for which
+                            # type(np.dtype("float32")) -> "Float32DType"
+                            or tname.endswith("DType")
+                            ):
+                        if isinstance(key, np.dtype):
+                            method = self.update_for_specific_dtype
 
-                elif is_dataclass(tp):
-                    method = self.update_for_dataclass
+                    # Hashing numpy scalars
+                    elif isinstance(key, np.number):
+                        # Non-numpy scalars are handled above in the try block.
+                        method = self.update_for_numpy_scalar
 
-                elif _HAS_ATTRS and attrs.has(tp):
-                    method = self.update_for_attrs
+                if method is None:
+                    if issubclass(tp, Enum):
+                        method = self.update_for_enum
+
+                    elif is_dataclass(tp):
+                        method = self.update_for_dataclass
+
+                    elif _HAS_ATTRS and attrs.has(tp):
+                        method = self.update_for_attrs
 
             if method is not None:
                 inner_key_hash = self.new_hash()
@@ -315,6 +324,10 @@ class KeyBuilder:
         key_hash.update(key.hex().encode("utf8"))
 
     @staticmethod
+    def update_for_complex(key_hash, key):
+        key_hash.update(repr(key).encode("utf-8"))
+
+    @staticmethod
     def update_for_str(key_hash, key):
         key_hash.update(key.encode("utf8"))
 
@@ -349,6 +362,16 @@ class KeyBuilder:
     @staticmethod
     def update_for_specific_dtype(key_hash, key):
         key_hash.update(key.str.encode("utf8"))
+
+    @staticmethod
+    def update_for_numpy_scalar(key_hash, key):
+        import numpy as np
+        if hasattr(np, "complex256") and key.dtype == np.dtype("complex256"):
+            key_hash.update(repr(complex(key)).encode("utf8"))
+        elif hasattr(np, "float128") and key.dtype == np.dtype("float128"):
+            key_hash.update(repr(float(key)).encode("utf8"))
+        else:
+            key_hash.update(np.array(key).tobytes())
 
     def update_for_dataclass(self, key_hash, key):
         self.rec(key_hash, type(key_hash).__name__.encode("utf-8"))
