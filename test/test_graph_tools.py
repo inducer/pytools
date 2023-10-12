@@ -431,6 +431,38 @@ def test_is_connected():
     assert is_connected({})
 
 
+def test_find_cycles():
+    from pytools.graph import compute_topological_order, CycleError, find_cycles
+
+    # Non-Self Loop
+    graph = {1: {}, 5: {1, 8}, 8: {5}}
+    assert find_cycles(graph) == [[5, 8]]
+    with pytest.raises(CycleError, match="5|8"):
+        compute_topological_order(graph)
+
+    # Self-Loop
+    graph = {1: {1}, 5: {8}, 8: {}}
+    assert find_cycles(graph) == [[1]]
+    with pytest.raises(CycleError, match="1"):
+        compute_topological_order(graph)
+
+    # Invalid graph with loop
+    graph = {1: {42}, 5: {8}, 8: {5}}
+    # Can't run find_cycles on this graph since it is invalid
+    with pytest.raises(CycleError, match="None"):
+        compute_topological_order(graph)
+
+    # Multiple loops
+    graph = {1: {1}, 5: {8}, 8: {5}}
+    assert find_cycles(graph) == [[1], [5, 8]]
+    with pytest.raises(CycleError, match="1"):
+        compute_topological_order(graph)
+
+    # Cycle over multiple nodes
+    graph = {4: {2}, 2: {3}, 3: {4}}
+    assert find_cycles(graph) == [[4, 2, 3]]
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])

@@ -42,6 +42,7 @@ Graph Algorithms
 .. autoexception:: CycleError
 .. autofunction:: compute_topological_order
 .. autofunction:: compute_transitive_closure
+.. autofunction:: find_cycles
 .. autofunction:: contains_cycle
 .. autofunction:: compute_induced_subgraph
 .. autofunction:: as_graphviz_dot
@@ -68,6 +69,8 @@ from typing import (
     Any, Callable, Collection, Dict, Hashable, Iterator, List, Mapping, MutableSet,
     Optional, Set, Tuple, TypeVar)
 
+
+from enum import Enum
 
 try:
     from typing import TypeAlias
@@ -243,6 +246,52 @@ class CycleError(Exception):
         self.node = node
 
 
+class _NodeState(Enum):
+    WHITE = 0  # Not visited yet
+    GREY = 1   # Currently visiting
+    BLACK = 2  # Done visiting
+
+
+def find_cycles(graph: GraphT, all_cycles: bool = True) -> List[List[NodeT]]:
+    """
+    Find cycles in *graph* using DFS.
+
+    :arg all_cycles: If False, only return the first cycle found.
+
+    :returns: A :class:`list` in which each element represents another :class:`list`
+        of nodes that form a cycle.
+    """
+    def dfs(node: NodeT, path: List[NodeT]) -> List[NodeT]:
+        # Cycle detected
+        if visited[node] == _NodeState.GREY:
+            return path + [node]
+
+        # Visit this node, explore its children
+        visited[node] = _NodeState.GREY
+        for child in graph[node]:
+            if visited[child] != _NodeState.BLACK and dfs(child, path):
+                return path + [node] + (
+                    [child] if child != node else [])
+
+        # Done visiting node
+        visited[node] = _NodeState.BLACK
+        return []
+
+    visited = {node: _NodeState.WHITE for node in graph.keys()}
+
+    res = []
+
+    for node in graph:
+        if visited[node] == _NodeState.WHITE:
+            cycle = dfs(node, [])
+            if cycle:
+                res.append(cycle)
+                if not all_cycles:
+                    return res
+
+    return res
+
+
 class HeapEntry:
     """
     Helper class to compare associated keys while comparing the elements in
@@ -260,13 +309,16 @@ class HeapEntry:
 
 
 def compute_topological_order(graph: GraphT[NodeT],
-                              key: Optional[Callable[[NodeT], Any]] = None) \
-                              -> List[NodeT]:
+                              key: Optional[Callable[[NodeT], Any]] = None,
+                              verbose_cycle: bool = True) -> List[NodeT]:
     """Compute a topological order of nodes in a directed graph.
 
     :arg key: A custom key function may be supplied to determine the order in
         break-even cases. Expects a function of one argument that is used to
         extract a comparison key from each node of the *graph*.
+
+    :arg verbose_cycle: Verbose reporting in case *graph* contains a cycle, i.e.
+        return a :class:`CycleError` which has a node that is part of a cycle.
 
     :returns: A :class:`list` representing a valid topological ordering of the
         nodes in the directed graph.
@@ -319,9 +371,17 @@ def compute_topological_order(graph: GraphT[NodeT],
                 heappush(heap, HeapEntry(child, keyfunc(child)))
 
     if len(order) != total_num_nodes:
-        # any node which has a predecessor left is a part of a cycle
-        raise CycleError(next(iter(n for n, num_preds in
-            nodes_to_num_predecessors.items() if num_preds != 0)))
+        # There is a cycle in the graph
+        if not verbose_cycle:
+            raise CycleError(None)
+
+        try:
+            cycles: List[List[NodeT]] = find_cycles(graph)
+        except KeyError:
+            # Graph is invalid
+            raise CycleError(None)
+        else:
+            raise CycleError(cycles[0][0])
 
     return order
 
@@ -374,11 +434,7 @@ def contains_cycle(graph: GraphT[NodeT]) -> bool:
     .. versionadded:: 2020.2
     """
 
-    try:
-        compute_topological_order(graph)
-        return False
-    except CycleError:
-        return True
+    return bool(find_cycles(graph, all_cycles=False))
 
 # }}}
 
