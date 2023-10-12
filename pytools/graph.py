@@ -237,10 +237,24 @@ class CycleError(Exception):
     """
     Raised when a topological ordering cannot be computed due to a cycle.
 
-    :attr node: Node in a directed graph that is part of a cycle.
+    :attr paths: A :class:`list` in which each element represents another
+        :class:`list` of nodes that form a cycle. In each cycle,
+        ``node[i+1]`` is a successor of ``node[i]``.
     """
-    def __init__(self, node: NodeT) -> None:
-        self.node = node
+    def __init__(self, paths: List[List[NodeT]]) -> None:
+        self.paths = paths
+
+    def __str__(self) -> str:
+        le = len(self.paths)
+        mlen = 10
+        return f"{[n for n in self.paths[:mlen]] + (['...'] if le > mlen else [])}"
+
+    @property
+    def node(self) -> Hashable:
+        from warnings import warn
+        warn("CycleError.node is deprecated and will go away in 06/2023. "
+            "Use CycleError.nodes instead.", DeprecationWarning)
+        return self.paths[0][0]
 
 
 class HeapEntry:
@@ -320,8 +334,8 @@ def compute_topological_order(graph: GraphT[NodeT],
 
     if len(order) != total_num_nodes:
         # any node which has a predecessor left is a part of a cycle
-        raise CycleError(next(iter(n for n, num_preds in
-            nodes_to_num_predecessors.items() if num_preds != 0)))
+        raise CycleError([list(n for n, num_preds in
+            nodes_to_num_predecessors.items() if num_preds != 0)])
 
     return order
 
