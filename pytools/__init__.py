@@ -2566,6 +2566,18 @@ class ProcessTimer:
 
 # {{{ log utilities
 
+def _log_start_if_long(logger, sleep_duration, done_indicator,
+                       noisy_level, description):
+    from time import sleep
+    sleep(sleep_duration)
+
+    if not done_indicator[0]:
+        logger.log(
+                noisy_level, "%s: started %.gs ago",
+                description,
+                sleep_duration)
+
+
 class ProcessLogger:  # pylint: disable=too-many-instance-attributes
     """Logs the completion time of a (presumably) lengthy process to :mod:`logging`.
     Only uses a high log level if the process took perceptible time.
@@ -2591,13 +2603,16 @@ class ProcessLogger:  # pylint: disable=too-many-instance-attributes
                 0.3 if long_threshold_seconds is None else long_threshold_seconds)
 
         self.logger.log(self.silent_level, "%s: start", self.description)
-        self.is_done = False
+        self._done_indicator = [False]
 
         import threading
-        self.late_start_log_thread = threading.Thread(target=self._log_start_if_long)
+        self.late_start_log_thread = threading.Thread(
+                target=_log_start_if_long,
+                args=(logger, 10*self.long_threshold_seconds, self._done_indicator,
+                      self.noisy_level, self.description),
 
-        # Do not delay interpreter exit if thread not finished.
-        self.late_start_log_thread.daemon = True
+                # Do not delay interpreter exit if thread not finished.
+                daemon=True)
 
         # https://github.com/firedrakeproject/firedrake/issues/1422
         # Starting a thread may irrecoverably break various environments,
@@ -2635,22 +2650,10 @@ class ProcessLogger:  # pylint: disable=too-many-instance-attributes
 
         self.timer = ProcessTimer()
 
-    def _log_start_if_long(self) -> None:
-        from time import sleep
-
-        sleep_duration = 10*self.long_threshold_seconds
-        sleep(sleep_duration)
-
-        if not self.is_done:
-            self.logger.log(
-                    self.noisy_level, "%s: started %.gs ago",
-                    self.description,
-                    sleep_duration)
-
     def done(  # pylint: disable=keyword-arg-before-vararg
             self, extra_msg: Optional[str] = None, *extra_fmt_args: Any) -> None:
         self.timer.done()
-        self.is_done = True
+        self._done_indicator[0] = True
 
         completion_level = (
                 self.noisy_level

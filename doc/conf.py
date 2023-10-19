@@ -26,33 +26,20 @@ release = ver_dic["VERSION_TEXT"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 intersphinx_mapping = {
-    "https://docs.python.org/3": None,
-    "https://numpy.org/doc/stable": None,
-    "https://documen.tician.de/pymbolic/": None,
-    "https://documen.tician.de/loopy/": None,
-    "https://docs.pytest.org/en/stable/": None,
-    }
-
-nitpick_ignore_regex = [
-        ["py:class", r"typing_extensions\.(.+)"],
-        ]
+    "loopy": ("https://documen.tician.de/loopy/", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
+    "pymbolic": ("https://documen.tician.de/pymbolic/", None),
+    "pytest": ("https://docs.pytest.org/en/stable/", None),
+    "setuptools": ("https://setuptools.pypa.io/en/latest/", None),
+    "python": ("https://docs.python.org/3", None),
+}
 
 nitpicky = True
+nitpick_ignore_regex = [
+    ["py:class", r"typing_extensions\.(.+)"],
+]
 
-autodoc_type_aliases = {"GraphT": "pytools.graph.GraphT",
-                        "NodeT": "pytools.graph.NodeT",
-                        }
-
-# Some modules need to import things just so that sphinx can resolve symbols in
-# type annotations. Often, we do not want these imports (e.g. of PyOpenCL) when
-# in normal use (because they would introduce unintended side effects or hard
-# dependencies). This flag exists so that these imports only occur during doc
-# build. Since sphinx appears to resolve type hints lexically (as it should),
-# this needs to be cross-module (since, e.g. an inherited pytools
-# docstring can be read by sphinx when building meshmode, a dependent package),
-# this needs a setting of the same name across all packages involved, that's
-# why this name is as global-sounding as it is.
-import sys
-
-
-sys._BUILDING_SPHINX_DOCS = True
+autodoc_type_aliases = {
+    "GraphT": "pytools.graph.GraphT",
+    "NodeT": "pytools.graph.NodeT",
+}

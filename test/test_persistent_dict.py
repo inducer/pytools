@@ -7,8 +7,8 @@ from enum import Enum, IntEnum
 import pytest
 
 from pytools.persistent_dict import (
-    CollisionWarning, NoSuchEntryError, PersistentDict, ReadOnlyEntryError,
-    WriteOncePersistentDict)
+    CollisionWarning, KeyBuilder, NoSuchEntryError, PersistentDict,
+    ReadOnlyEntryError, WriteOncePersistentDict)
 from pytools.tag import Tag, tag_dataclass
 
 
@@ -370,6 +370,55 @@ def test_write_once_persistent_dict_clear():
             pdict.fetch(0)
     finally:
         shutil.rmtree(tmpdir)
+
+
+def test_dtype_hashing():
+    np = pytest.importorskip("numpy")
+
+    keyb = KeyBuilder()
+    assert keyb(np.float32) == keyb(np.float32)
+    assert keyb(np.dtype(np.float32)) == keyb(np.dtype(np.float32))
+
+
+def test_scalar_hashing():
+    keyb = KeyBuilder()
+
+    assert keyb(1) == keyb(1)
+    assert keyb(2) != keyb(1)
+    assert keyb(1.1) == keyb(1.1)
+    assert keyb(1+4j) == keyb(1+4j)
+
+    try:
+        import numpy as np
+    except ImportError:
+        return
+
+    assert keyb(np.int8(1)) == keyb(np.int8(1))
+    assert keyb(np.int16(1)) == keyb(np.int16(1))
+    assert keyb(np.int32(1)) == keyb(np.int32(1))
+    assert keyb(np.int32(2)) != keyb(np.int32(1))
+    assert keyb(np.int64(1)) == keyb(np.int64(1))
+    assert keyb(1) == keyb(np.int64(1))
+    assert keyb(1) != keyb(np.int32(1))
+
+    assert keyb(np.longlong(1)) == keyb(np.longlong(1))
+
+    assert keyb(np.float16(1.1)) == keyb(np.float16(1.1))
+    assert keyb(np.float32(1.1)) == keyb(np.float32(1.1))
+    assert keyb(np.float64(1.1)) == keyb(np.float64(1.1))
+    if hasattr(np, "float128"):
+        assert keyb(np.float128(1.1)) == keyb(np.float128(1.1))
+
+    assert keyb(np.longfloat(1.1)) == keyb(np.longfloat(1.1))
+    assert keyb(np.longdouble(1.1)) == keyb(np.longdouble(1.1))
+
+    assert keyb(np.complex64(1.1+2.2j)) == keyb(np.complex64(1.1+2.2j))
+    assert keyb(np.complex128(1.1+2.2j)) == keyb(np.complex128(1.1+2.2j))
+    if hasattr(np, "complex256"):
+        assert keyb(np.complex256(1.1+2.2j)) == keyb(np.complex256(1.1+2.2j))
+
+    assert keyb(np.longcomplex(1.1+2.2j)) == keyb(np.longcomplex(1.1+2.2j))
+    assert keyb(np.clongdouble(1.1+2.2j)) == keyb(np.clongdouble(1.1+2.2j))
 
 
 if __name__ == "__main__":

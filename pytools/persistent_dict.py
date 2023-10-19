@@ -27,22 +27,22 @@ THE SOFTWARE.
 """
 
 import collections.abc as abc
+import errno
 import hashlib
 import logging
-from dataclasses import fields, is_dataclass
-from enum import Enum
-
-
-# Removing this in 2020-12 broke a shocking amount of stuff, such as
-# https://github.com/OP2/PyOP2/pull/605
-# Bring it back for now to mitigate the breakage, however this is going
-# away in 2021 at the latest.
-new_hash = hashlib.sha256
-
-import errno
 import os
 import shutil
 import sys
+from dataclasses import fields as dc_fields, is_dataclass
+from enum import Enum
+
+
+try:
+    import attrs
+except ModuleNotFoundError:
+    _HAS_ATTRS = False
+else:
+    _HAS_ATTRS = True
 
 
 logger = logging.getLogger(__name__)
@@ -238,18 +238,35 @@ class KeyBuilder:
             try:
                 method = getattr(self, "update_for_"+tname)
             except AttributeError:
-                # Handling numpy >= 1.20, for which
-                # type(np.dtype("float32")) -> "dtype[float32]"
-                if tname.startswith("dtype[") and "numpy" in sys.modules:
+                if "numpy" in sys.modules:
                     import numpy as np
-                    if isinstance(key, np.dtype):
-                        method = self.update_for_specific_dtype
 
-                elif issubclass(tp, Enum):
-                    method = self.update_for_enum
+                    # Hashing numpy dtypes
+                    if (
+                            # Handling numpy >= 1.20, for which
+                            # type(np.dtype("float32")) -> "dtype[float32]"
+                            tname.startswith("dtype[")
+                            # Handling numpy >= 1.25, for which
+                            # type(np.dtype("float32")) -> "Float32DType"
+                            or tname.endswith("DType")
+                            ):
+                        if isinstance(key, np.dtype):
+                            method = self.update_for_specific_dtype
 
-                elif is_dataclass(tp):
-                    method = self.update_for_dataclass
+                    # Hashing numpy scalars
+                    elif isinstance(key, np.number):
+                        # Non-numpy scalars are handled above in the try block.
+                        method = self.update_for_numpy_scalar
+
+                if method is None:
+                    if issubclass(tp, Enum):
+                        method = self.update_for_enum
+
+                    elif is_dataclass(tp):
+                        method = self.update_for_dataclass
+
+                    elif _HAS_ATTRS and attrs.has(tp):
+                        method = self.update_for_attrs
 
             if method is not None:
                 inner_key_hash = self.new_hash()
@@ -307,6 +324,10 @@ class KeyBuilder:
         key_hash.update(key.hex().encode("utf8"))
 
     @staticmethod
+    def update_for_complex(key_hash, key):
+        key_hash.update(repr(key).encode("utf-8"))
+
+    @staticmethod
     def update_for_str(key_hash, key):
         key_hash.update(key.encode("utf8"))
 
@@ -342,10 +363,27 @@ class KeyBuilder:
     def update_for_specific_dtype(key_hash, key):
         key_hash.update(key.str.encode("utf8"))
 
+    @staticmethod
+    def update_for_numpy_scalar(key_hash, key):
+        import numpy as np
+        if hasattr(np, "complex256") and key.dtype == np.dtype("complex256"):
+            key_hash.update(repr(complex(key)).encode("utf8"))
+        elif hasattr(np, "float128") and key.dtype == np.dtype("float128"):
+            key_hash.update(repr(float(key)).encode("utf8"))
+        else:
+            key_hash.update(np.array(key).tobytes())
+
     def update_for_dataclass(self, key_hash, key):
         self.rec(key_hash, type(key_hash).__name__.encode("utf-8"))
 
-        for fld in fields(key):
+        for fld in dc_fields(key):
+            self.rec(key_hash, fld.name)
+            self.rec(key_hash, getattr(key, fld.name, None))
+
+    def update_for_attrs(self, key_hash, key):
+        self.rec(key_hash, type(key_hash).__name__.encode("utf-8"))
+
+        for fld in attrs.fields(key.__class__):
             self.rec(key_hash, fld.name)
             self.rec(key_hash, getattr(key, fld.name, None))
 
@@ -608,6 +646,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
     .. automethod:: __getitem__
     .. automethod:: __setitem__
     .. automethod:: clear
+    .. automethod:: clear_in_mem_cache
     .. automethod:: store
     .. automethod:: store_if_not_present
     .. automethod:: fetch
@@ -622,7 +661,15 @@ class WriteOncePersistentDict(_PersistentDictBase):
             *in_mem_cache_size* items
         """
         _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
-        self._cache = _LRUCache(in_mem_cache_size)
+        self._in_mem_cache_size = in_mem_cache_size
+        self.clear_in_mem_cache()
+
+    def clear_in_mem_cache(self) -> None:
+        """
+        .. versionadded:: 2023.1.1
+        """
+
+        self._cache = _LRUCache(self._in_mem_cache_size)
 
     def _spin_until_removed(self, lock_file, stacklevel):
         from os.path import exists
