@@ -3,9 +3,6 @@ Pytest:
     # untested, causes import error with Pytest >= 6.2.0
     # AK, 2020-12-13
     rm pytools/mpiwrap.py
-    # just a forwarding shim, causes import error with Pytest >= 6.2.0
-    # AK, 2020-12-13
-    rm pytools/log.py
 
     export EXTRA_INSTALL="numpy"
     curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
@@ -20,7 +17,7 @@ Pytest:
 
 Pytest without Numpy:
   script: |
-    NO_DOCTESTS=1
+    rm pytools/{convergence,spatial_btree,obj_array,mpiwrap}.py
     curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
     . ./build-and-test-py-project.sh
   tags:
@@ -46,7 +43,7 @@ Pytest without Numpy:
 Flake8:
   script:
   - curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-flake8.sh
-  - . ./prepare-and-run-flake8.sh "$CI_PROJECT_NAME" test
+  - . ./prepare-and-run-flake8.sh "$CI_PROJECT_NAME"
   tags:
   - python3
   except:
@@ -66,7 +63,7 @@ Pylint:
   - EXTRA_INSTALL="numpy pymbolic"
   - py_version=3
   - curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-pylint.sh
-  - . ./prepare-and-run-pylint.sh "$CI_PROJECT_NAME" test/test_*.py
+  - . ./prepare-and-run-pylint.sh "$CI_PROJECT_NAME"
   tags:
   - python3
   except:
