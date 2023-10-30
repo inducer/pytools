@@ -23,7 +23,7 @@ jobs:
         -   name: "Main Script"
             run: |
                 curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-flake8.sh
-                . ./prepare-and-run-flake8.sh "$(basename $GITHUB_REPOSITORY)" ./test
+                . ./prepare-and-run-flake8.sh "$(basename $GITHUB_REPOSITORY)"
 
     validate_cff:
         name: Validate CITATION.cff
@@ -48,7 +48,7 @@ jobs:
             run: |
                 EXTRA_INSTALL="numpy pymbolic"
                 curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-pylint.sh
-                . ./prepare-and-run-pylint.sh "$(basename $GITHUB_REPOSITORY)" test/test_*.py
+                . ./prepare-and-run-pylint.sh "$(basename $GITHUB_REPOSITORY)"
 
     mypy:
         name: Mypy
@@ -82,9 +82,6 @@ jobs:
                 # untested, causes import error with Pytest >= 6.2.0
                 # AK, 2020-12-13
                 rm pytools/mpiwrap.py
-                # just a forwarding shim, causes import error with Pytest >= 6.2.0
-                # AK, 2020-12-13
-                rm pytools/log.py
 
                 EXTRA_INSTALL="numpy"
                 curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
@@ -101,7 +98,7 @@ jobs:
                 python-version: '3.x'
         -   name: "Main Script"
             run: |
-                NO_DOCTESTS=1
+                rm pytools/{convergence,spatial_btree,obj_array,mpiwrap}.py
                 curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
                 . ./build-and-test-py-project.sh
 
