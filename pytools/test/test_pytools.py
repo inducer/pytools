@@ -762,6 +762,19 @@ def test_typedump():
     assert typedump(t, special_handlers={type(t): lambda x: "foo"}) == "foo"
 
 
+def test_unique():
+    from pytools import unique
+
+    assert list(unique([1, 2, 1])) == [1, 2]
+    assert tuple(unique((1, 2, 1))) == (1, 2)
+
+    assert list(range(1000)) == list(unique(range(1000)))
+    assert list(unique(list(range(1000)) + list(range(1000)))) == list(range(1000))
+
+    assert next(unique([1, 2, 1, 3])) == 1
+    assert next(unique([]), None) is None
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])

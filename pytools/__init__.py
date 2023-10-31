@@ -36,8 +36,8 @@ import sys
 from functools import reduce, wraps
 from sys import intern
 from typing import (
-    Any, Callable, ClassVar, Dict, Generic, Hashable, Iterable, List, Mapping,
-    Optional, Set, Tuple, Type, TypeVar, Union)
+    Any, Callable, ClassVar, Dict, Generic, Hashable, Iterable, Iterator, List,
+    Mapping, Optional, Sequence, Set, Tuple, Type, TypeVar, Union)
 
 
 try:
@@ -189,6 +189,11 @@ String utilities
 ----------------
 
 .. autofunction:: strtobool
+
+Sequence utilities
+------------------
+
+.. autofunction:: unique
 
 Type Variables Used
 -------------------
@@ -2990,6 +2995,16 @@ def strtobool(val: Optional[str], default: Optional[bool] = None) -> bool:
                           "Valid values are ('y', 'yes', 't', 'true', 'on', '1') "
                           "for 'True' and ('n', 'no', 'f', 'false', 'off', '0') "
                           "for 'False'. Uppercase versions are also accepted.")
+
+# }}}
+
+
+# {{{ unique
+
+def unique(seq: Sequence[T]) -> Iterator[T]:
+    """Yield unique elements in *seq*, removing all duplicates. See also
+    :func:`itertools.groupby` (which removes consecutive duplicates)."""
+    return iter(dict.fromkeys(seq))
 
 # }}}
 
