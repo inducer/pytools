@@ -255,8 +255,9 @@ class HeapEntry:
         self.node = node
         self.key = key
 
-    def __lt__(self, other: "HeapEntry") -> bool:
-        return self.key < other.key
+    def __lt__(self, other: Any) -> bool:
+        from typing import cast
+        return cast(bool, self.key < other.key)
 
 
 def compute_topological_order(graph: GraphT[NodeT],

@@ -2,6 +2,7 @@
 
 from setuptools import setup
 
+
 ver_dic = {}
 version_file = open("pytools/version.py")
 try:
