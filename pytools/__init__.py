@@ -3002,7 +3002,8 @@ def strtobool(val: Optional[str], default: Optional[bool] = None) -> bool:
 # {{{ unique
 
 def unique(seq: Sequence[T]) -> Iterator[T]:
-    """Yield unique elements in *seq*. See also :func:`reversed`."""
+    """Yield unique elements in *seq*, removing all duplicates. See also
+    :func:`itertools.groupby` (which removes consecutive duplicates)."""
     return iter(dict.fromkeys(seq))
 
 # }}}
