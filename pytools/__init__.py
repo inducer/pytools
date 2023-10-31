@@ -3003,7 +3003,7 @@ def strtobool(val: Optional[str], default: Optional[bool] = None) -> bool:
 
 def unique(seq: Sequence[T]) -> Iterator[T]:
     """Yield unique elements in *seq*. See also :func:`reversed`."""
-    yield from list(dict.fromkeys(seq))
+    yield from dict.fromkeys(seq)
 
 # }}}
 
