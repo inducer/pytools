@@ -346,6 +346,8 @@ class KeyBuilder:
             key_hash,
             (self.rec(self.new_hash(), key_i).digest() for key_i in key))
 
+    update_for_FrozenOrderedSet = update_for_frozenset  # noqa: N815
+
     @staticmethod
     def update_for_NoneType(key_hash, key):  # noqa
         del key
@@ -386,6 +388,15 @@ class KeyBuilder:
         for fld in attrs.fields(key.__class__):
             self.rec(key_hash, fld.name)
             self.rec(key_hash, getattr(key, fld.name, None))
+
+    def update_for_frozendict(self, key_hash, key):
+        from pytools import unordered_hash
+
+        unordered_hash(
+            key_hash,
+            (self.rec(self.new_hash(), (k, v)).digest() for k, v in key.items()))
+
+    update_for_immutabledict = update_for_frozendict
 
     # }}}
 
