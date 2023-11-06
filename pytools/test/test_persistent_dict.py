@@ -421,6 +421,55 @@ def test_scalar_hashing():
     assert keyb(np.clongdouble(1.1+2.2j)) == keyb(np.clongdouble(1.1+2.2j))
 
 
+def test_frozendict_hashing():
+    pytest.importorskip("frozendict")
+    from frozendict import frozendict
+
+    keyb = KeyBuilder()
+
+    d = {"a": 1, "b": 2}
+
+    assert keyb(frozendict(d)) == keyb(frozendict(d))
+    assert keyb(frozendict(d)) != keyb(frozendict({"a": 1, "b": 3}))
+    assert keyb(frozendict(d)) == keyb(frozendict({"b": 2, "a": 1}))
+
+    with pytest.raises(TypeError):
+        keyb(d)
+
+
+def test_immutabledict_hashing():
+    pytest.importorskip("immutabledict")
+    from immutabledict import immutabledict
+
+    keyb = KeyBuilder()
+
+    d = {"a": 1, "b": 2}
+
+    assert keyb(immutabledict(d)) == keyb(immutabledict(d))
+    assert keyb(immutabledict(d)) != keyb(immutabledict({"a": 1, "b": 3}))
+    assert keyb(immutabledict(d)) == keyb(immutabledict({"b": 2, "a": 1}))
+
+
+def test_frozenset_hashing():
+    keyb = KeyBuilder()
+
+    assert keyb(frozenset([1, 2, 3])) == keyb(frozenset([1, 2, 3]))
+    assert keyb(frozenset([1, 2, 3])) != keyb(frozenset([1, 2, 4]))
+    assert keyb(frozenset([1, 2, 3])) == keyb(frozenset([3, 2, 1]))
+
+
+def test_frozenorderedset_hashing():
+    pytest.importorskip("orderedsets")
+    from orderedsets import FrozenOrderedSet
+    keyb = KeyBuilder()
+
+    assert (keyb(FrozenOrderedSet([1, 2, 3]))
+            == keyb(FrozenOrderedSet([1, 2, 3]))
+            == keyb(frozenset([1, 2, 3])))
+    assert keyb(FrozenOrderedSet([1, 2, 3])) != keyb(FrozenOrderedSet([1, 2, 4]))
+    assert keyb(FrozenOrderedSet([1, 2, 3])) == keyb(FrozenOrderedSet([3, 2, 1]))
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
