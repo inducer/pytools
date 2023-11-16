@@ -7,8 +7,8 @@ from enum import Enum, IntEnum
 import pytest
 
 from pytools.persistent_dict import (
-    CollisionWarning, KeyBuilder, NoSuchEntryError, PersistentDict,
-    ReadOnlyEntryError, WriteOncePersistentDict)
+    CollisionWarning, KeyBuilder, NoSuchEntryCollisionError, NoSuchEntryError,
+    PersistentDict, ReadOnlyEntryError, WriteOncePersistentDict)
 from pytools.tag import Tag, tag_dataclass
 
 
@@ -214,12 +214,12 @@ def test_persistent_dict_cache_collisions():
 
         # check lookup
         with pytest.warns(CollisionWarning):
-            with pytest.raises(NoSuchEntryError):
+            with pytest.raises(NoSuchEntryCollisionError):
                 pdict.fetch(key2)
 
         # check deletion
         with pytest.warns(CollisionWarning):
-            with pytest.raises(NoSuchEntryError):
+            with pytest.raises(NoSuchEntryCollisionError):
                 del pdict[key2]
 
         # check presence after deletion
@@ -342,7 +342,7 @@ def test_write_once_persistent_dict_cache_collisions():
 
         # check lookup
         with pytest.warns(CollisionWarning):
-            with pytest.raises(NoSuchEntryError):
+            with pytest.raises(NoSuchEntryCollisionError):
                 pdict.fetch(key2)
 
         # check update
