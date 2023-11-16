@@ -57,6 +57,9 @@ valid across interpreter invocations, unlike Python's built-in hashes.
 This module also provides a disk-backed dictionary that uses persistent hashing.
 
 .. autoexception:: NoSuchEntryError
+.. autoexception:: NoSuchEntryInvalidKeyError
+.. autoexception:: NoSuchEntryInvalidContentsError
+.. autoexception:: NoSuchEntryCollisionError
 .. autoexception:: ReadOnlyEntryError
 
 .. autoexception:: CollisionWarning
