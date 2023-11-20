@@ -102,6 +102,15 @@ class DottedName:
                              "start with double underscores")
         return cls(name_parts)
 
+    def __repr__(self) -> str:
+        return self.__class__.__name__ + repr(self.name_parts)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, DottedName):
+            return self.name_parts == other.name_parts
+        else:
+            return False
+
 
 # }}}
 

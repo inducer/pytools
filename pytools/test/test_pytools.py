@@ -582,6 +582,15 @@ def test_tag():
     with pytest.raises(ValueError):
         t4.without_tags(red_ribbon)
 
+    # Test DottedName comparison
+    from pytools.tag import DottedName
+    assert FairRibbon() == FairRibbon()
+    assert (FairRibbon().tag_name
+            == FairRibbon().tag_name
+            == DottedName(('test_pytools', 'FairRibbon')))
+    assert FairRibbon() != BlueRibbon()
+    assert FairRibbon().tag_name != BlueRibbon().tag_name
+
 
 def test_unordered_hash():
     import hashlib
