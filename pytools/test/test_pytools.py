@@ -587,7 +587,7 @@ def test_tag():
     assert FairRibbon() == FairRibbon()
     assert (FairRibbon().tag_name
             == FairRibbon().tag_name
-            == DottedName(('test_pytools', 'FairRibbon')))
+            == DottedName(("test_pytools", "FairRibbon")))
     assert FairRibbon() != BlueRibbon()
     assert FairRibbon().tag_name != BlueRibbon().tag_name
 
