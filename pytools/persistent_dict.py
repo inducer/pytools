@@ -57,6 +57,9 @@ valid across interpreter invocations, unlike Python's built-in hashes.
 This module also provides a disk-backed dictionary that uses persistent hashing.
 
 .. autoexception:: NoSuchEntryError
+.. autoexception:: NoSuchEntryInvalidKeyError
+.. autoexception:: NoSuchEntryInvalidContentsError
+.. autoexception:: NoSuchEntryCollisionError
 .. autoexception:: ReadOnlyEntryError
 
 .. autoexception:: CollisionWarning
@@ -528,6 +531,18 @@ class NoSuchEntryError(KeyError):
     pass
 
 
+class NoSuchEntryInvalidKeyError(NoSuchEntryError):
+    pass
+
+
+class NoSuchEntryInvalidContentsError(NoSuchEntryError):
+    pass
+
+
+class NoSuchEntryCollisionError(NoSuchEntryError):
+    pass
+
+
 class ReadOnlyEntryError(KeyError):
     pass
 
@@ -629,7 +644,7 @@ class _PersistentDictBase:
             # This is here so we can step through equality comparison to
             # see what is actually non-equal.
             stored_key == key  # pylint:disable=pointless-statement  # noqa: B015
-            raise NoSuchEntryError(key)
+            raise NoSuchEntryCollisionError(key)
 
     def __getitem__(self, key):
         return self.fetch(key, _stacklevel=1)
@@ -783,7 +798,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
                     f"Remove the directory '{item_dir}' if necessary. "
                     f"(caught: {type(e).__name__}: {e})",
                     stacklevel=1 + _stacklevel)
-            raise NoSuchEntryError(key)
+            raise NoSuchEntryInvalidKeyError(key)
 
         self._collision_check(key, read_key, 1 + _stacklevel)
 
@@ -796,12 +811,13 @@ class WriteOncePersistentDict(_PersistentDictBase):
 
         try:
             read_contents = self._read(contents_file)
-        except Exception:
+        except Exception as e:
             self._warn(f"{type(self).__name__}({self.identifier}) "
-                    f"encountered an invalid key file for key {hexdigest_key}. "
-                    f"Remove the directory '{item_dir}' if necessary.",
+                    f"encountered an invalid contents file for key {hexdigest_key}. "
+                    f"Remove the directory '{item_dir}' if necessary."
+                    f"(caught: {type(e).__name__}: {e})",
                     stacklevel=1 + _stacklevel)
-            raise NoSuchEntryError(key)
+            raise NoSuchEntryInvalidContentsError(key)
 
         # }}}
 
@@ -892,13 +908,14 @@ class PersistentDict(_PersistentDictBase):
 
                 try:
                     read_key = self._read(key_path)
-                except Exception:
+                except Exception as e:
                     item_dir_m.reset()
                     self._warn(f"{type(self).__name__}({self.identifier}) "
                             "encountered an invalid key file for key "
-                            f"{hexdigest_key}. Entry deleted.",
+                            f"{hexdigest_key}. Entry deleted."
+                            f"(caught: {type(e).__name__}: {e})",
                             stacklevel=1 + _stacklevel)
-                    raise NoSuchEntryError(key)
+                    raise NoSuchEntryInvalidKeyError(key)
 
                 self._collision_check(key, read_key, 1 + _stacklevel)
 
@@ -911,13 +928,14 @@ class PersistentDict(_PersistentDictBase):
 
                 try:
                     read_contents = self._read(value_path)
-                except Exception:
+                except Exception as e:
                     item_dir_m.reset()
                     self._warn(f"{type(self).__name__}({self.identifier}) "
-                            "encountered an invalid key file for key "
-                            f"{hexdigest_key}. Entry deleted.",
+                            "encountered an invalid contents file for key "
+                            f"{hexdigest_key}. Entry deleted."
+                            f"(caught: {type(e).__name__}: {e})",
                             stacklevel=1 + _stacklevel)
-                    raise NoSuchEntryError(key)
+                    raise NoSuchEntryInvalidContentsError(key)
 
                 return read_contents
 
@@ -950,13 +968,14 @@ class PersistentDict(_PersistentDictBase):
 
                 try:
                     read_key = self._read(key_file)
-                except Exception:
+                except Exception as e:
                     item_dir_m.reset()
                     self._warn(f"{type(self).__name__}({self.identifier}) "
                             "encountered an invalid key file for key "
-                            f"{hexdigest_key}. Entry deleted",
+                            f"{hexdigest_key}. Entry deleted"
+                            f"(caught: {type(e).__name__}: {e})",
                             stacklevel=1 + _stacklevel)
-                    raise NoSuchEntryError(key)
+                    raise NoSuchEntryInvalidKeyError(key)
 
                 self._collision_check(key, read_key, 1 + _stacklevel)
 
