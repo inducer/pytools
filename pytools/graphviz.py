@@ -33,6 +33,7 @@ Dot helper functions
 
 import html
 import logging
+import os
 from typing import Optional
 
 
@@ -99,7 +100,7 @@ def show_dot(dot_code: str, output_to: Optional[str] = None) -> Optional[str]:
                                  "make sure it is in your $PATH.")
             supported_formats = proc.stderr.read().decode()
 
-            if " x11 " in supported_formats:
+            if " x11 " in supported_formats and "DISPLAY" in os.environ:
                 output_to = "xwindow"
             else:
                 output_to = "browser"
