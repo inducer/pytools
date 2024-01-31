@@ -470,7 +470,7 @@ def test_frozenorderedset_hashing():
     assert keyb(FrozenOrderedSet([1, 2, 3])) == keyb(FrozenOrderedSet([3, 2, 1]))
 
 
-def test_ABC_hashing():
+def test_ABC_hashing():  # noqa: N802
     from abc import ABC, ABCMeta
 
     keyb = KeyBuilder()
