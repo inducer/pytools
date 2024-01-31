@@ -470,6 +470,28 @@ def test_frozenorderedset_hashing():
     assert keyb(FrozenOrderedSet([1, 2, 3])) == keyb(FrozenOrderedSet([3, 2, 1]))
 
 
+def test_class_hashing():
+    keyb = KeyBuilder()
+
+    class WithUpdateMethod:
+        def update_persistent_hash(self, key_hash, key_builder):
+            # Only called for instances of this class, not for the class itself
+            key_builder.rec(key_hash, 42)
+
+    class TagClass(Tag):
+        # Inherits update_persistent_hash from 'Tag'
+        pass
+
+    @tag_dataclass
+    class TagClass2(Tag):
+        # Inherits update_persistent_hash from 'Tag'
+        pass
+
+    assert keyb(WithUpdateMethod) != keyb(WithUpdateMethod())
+    assert keyb(TagClass) != keyb(TagClass())
+    assert keyb(TagClass2) != keyb(TagClass2())
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
