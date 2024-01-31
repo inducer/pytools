@@ -470,6 +470,36 @@ def test_frozenorderedset_hashing():
     assert keyb(FrozenOrderedSet([1, 2, 3])) == keyb(FrozenOrderedSet([3, 2, 1]))
 
 
+def test_ABC_hashing():
+    from abc import ABC, ABCMeta
+
+    keyb = KeyBuilder()
+
+    class MyABC(ABC):
+        pass
+
+    assert keyb(MyABC) != keyb(ABC)
+
+    with pytest.raises(TypeError):
+        keyb(MyABC())
+
+    with pytest.raises(TypeError):
+        keyb(ABC())
+
+    class MyABC2(MyABC):
+        def update_persistent_hash(self, key_hash, key_builder):
+            key_builder.rec(key_hash, 42)
+
+    assert keyb(MyABC2) != keyb(MyABC)
+    assert keyb(MyABC2())
+
+    class MyABC3(metaclass=ABCMeta):  # noqa: B024
+        def update_persistent_hash(self, key_hash, key_builder):
+            key_builder.rec(key_hash, 42)
+
+    assert keyb(MyABC3) != keyb(MyABC) != keyb(MyABC3())
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
