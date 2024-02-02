@@ -304,6 +304,8 @@ class KeyBuilder:
         key_hash.update(
             f"{key.__module__}.{key.__qualname__}.{key.__name__}".encode("utf-8"))
 
+    update_for_ABCMeta = update_for_type  # noqa: N815
+
     @staticmethod
     def update_for_int(key_hash, key):
         sz = 8
@@ -352,7 +354,7 @@ class KeyBuilder:
     update_for_FrozenOrderedSet = update_for_frozenset  # noqa: N815
 
     @staticmethod
-    def update_for_NoneType(key_hash, key):  # noqa
+    def update_for_NoneType(key_hash, key):  # noqa: N802
         del key
         key_hash.update(b"<None>")
 
