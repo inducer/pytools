@@ -224,7 +224,7 @@ class KeyBuilder:
 
         digest = getattr(key, "_pytools_persistent_hash_digest", None)
 
-        if digest is None:
+        if digest is None and not isinstance(key, type):
             try:
                 method = key.update_persistent_hash
             except AttributeError:
