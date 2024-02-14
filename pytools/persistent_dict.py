@@ -402,6 +402,9 @@ class KeyBuilder:
             (self.rec(self.new_hash(), (k, v)).digest() for k, v in key.items()))
 
     update_for_immutabledict = update_for_frozendict
+    update_for_constantdict = update_for_frozendict
+    update_for_PMap = update_for_frozendict  # noqa: N815
+    update_for_Map = update_for_frozendict  # noqa: N815
 
     # }}}
 

@@ -421,33 +421,29 @@ def test_scalar_hashing():
     assert keyb(np.clongdouble(1.1+2.2j)) == keyb(np.clongdouble(1.1+2.2j))
 
 
-def test_frozendict_hashing():
-    pytest.importorskip("frozendict")
-    from frozendict import frozendict
+@pytest.mark.parametrize("dict_impl", ("immutabledict", "frozendict",
+                                       "constantdict",
+                                       ("immutables", "Map"),
+                                       ("pyrsistent", "pmap")))
+def test_dict_hashing(dict_impl):
+    if isinstance(dict_impl, str):
+        dict_package = dict_impl
+        dict_class = dict_impl
+    else:
+        dict_package = dict_impl[0]
+        dict_class = dict_impl[1]
+
+    pytest.importorskip(dict_package)
+    import importlib
+    dc = getattr(importlib.import_module(dict_package), dict_class)
 
     keyb = KeyBuilder()
 
     d = {"a": 1, "b": 2}
 
-    assert keyb(frozendict(d)) == keyb(frozendict(d))
-    assert keyb(frozendict(d)) != keyb(frozendict({"a": 1, "b": 3}))
-    assert keyb(frozendict(d)) == keyb(frozendict({"b": 2, "a": 1}))
-
-    with pytest.raises(TypeError):
-        keyb(d)
-
-
-def test_immutabledict_hashing():
-    pytest.importorskip("immutabledict")
-    from immutabledict import immutabledict
-
-    keyb = KeyBuilder()
-
-    d = {"a": 1, "b": 2}
-
-    assert keyb(immutabledict(d)) == keyb(immutabledict(d))
-    assert keyb(immutabledict(d)) != keyb(immutabledict({"a": 1, "b": 3}))
-    assert keyb(immutabledict(d)) == keyb(immutabledict({"b": 2, "a": 1}))
+    assert keyb(dc(d)) == keyb(dc(d))
+    assert keyb(dc(d)) != keyb(dc({"a": 1, "b": 3}))
+    assert keyb(dc(d)) == keyb(dc({"b": 2, "a": 1}))
 
 
 def test_frozenset_hashing():

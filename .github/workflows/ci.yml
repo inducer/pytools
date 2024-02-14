@@ -83,7 +83,7 @@ jobs:
                 # AK, 2020-12-13
                 rm pytools/mpiwrap.py
 
-                EXTRA_INSTALL="numpy frozendict immutabledict orderedsets"
+                EXTRA_INSTALL="numpy frozendict immutabledict orderedsets constantdict immutables pyrsistent"
                 curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
                 . ./build-and-test-py-project.sh
 
