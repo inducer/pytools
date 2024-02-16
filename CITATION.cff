@@ -46,3 +46,4 @@ version: 2022.1.7
 doi: 10.5281/zenodo.6533949
 date-released: 2022-05-04
 url: "https://github.com/inducer/pytools"
+license: MIT
