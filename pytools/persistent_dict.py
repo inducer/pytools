@@ -178,6 +178,23 @@ class KeyBuilder:
     """A (stateless) object that computes hashes of objects fed to it. Subclassing
     this class permits customizing the computation of hash keys.
 
+    Objects of this class are used to calculate hashes of the keys in a
+    :class:`PersistentDict`.
+
+    This class follows the same general rules as Python's built-in hashing:
+
+    - Only immutable objects can be hashed.
+    - If two objects compare equal, they must hash to the same value.
+    - Objects with the same hash may or may not compare equal.
+
+    In contrast to Python's built-in hashing, using a :class:`KeyBuilder` has
+    several advantages:
+
+    - The hash is persistent across interpreter invocations.
+    - The hash is the same across different Python versions and platforms.
+    - No need to set ``PYTHONHASHSEED`` to get stable hashes for strings/bytes.
+
+
     .. automethod:: __call__
     .. automethod:: rec
     .. staticmethod:: new_hash()
@@ -277,6 +294,7 @@ class KeyBuilder:
         return key_hash
 
     def __call__(self, key):
+        """Return the hash of *key*."""
         key_hash = self.new_hash()
         self.rec(key_hash, key)
         return key_hash.hexdigest()
@@ -517,26 +535,36 @@ class _LRUCache(abc.MutableMapping):
 # {{{ top-level
 
 class NoSuchEntryError(KeyError):
+    """Raised when an entry is not found in a :class:`PersistentDict`."""
     pass
 
 
 class NoSuchEntryInvalidKeyError(NoSuchEntryError):
+    """Raised when an entry is not found in a :class:`PersistentDict` due to an
+    invalid key file."""
     pass
 
 
 class NoSuchEntryInvalidContentsError(NoSuchEntryError):
+    """Raised when an entry is not found in a :class:`PersistentDict` due to an
+    invalid contents file."""
     pass
 
 
 class NoSuchEntryCollisionError(NoSuchEntryError):
+    """Raised when an entry is not found in a :class:`PersistentDict`, but it
+    contains an entry with the same hash key (hash collision)."""
     pass
 
 
 class ReadOnlyEntryError(KeyError):
+    """Raised when an attempt is made to overwrite an entry in a
+    :class:`WriteOncePersistentDict`."""
     pass
 
 
 class CollisionWarning(UserWarning):
+    """Warning raised when a collision is detected in a :class:`PersistentDict`."""
     pass
 
 
