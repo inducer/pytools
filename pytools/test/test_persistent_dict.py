@@ -540,7 +540,8 @@ def test_dataclass_hashing():
     try:
         import attrs
     except ImportError:
-        print("attrs not installed, skipping rest of the test")
+        from warnings import warn
+        warn("attrs not installed, skipping rest of the test")
         return
 
     @attrs.define
