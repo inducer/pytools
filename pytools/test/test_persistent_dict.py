@@ -537,12 +537,11 @@ def test_dataclass_hashing():
     # Class types must be encoded in hash
     assert keyb(MyDC2("hi", 1)) != keyb(MyDC("hi", 1))
 
-    try:
-        import attrs
-    except ImportError:
-        from warnings import warn
-        warn("attrs not installed, skipping rest of the test")
-        return
+
+def test_attrs_hashing():
+    attrs = pytest.importorskip("attrs")
+
+    keyb = KeyBuilder()
 
     @attrs.define
     class MyAttrs:
@@ -550,7 +549,14 @@ def test_dataclass_hashing():
         value: int
 
     assert keyb(MyAttrs("hi", 1)) == \
-        "5a9f884267eaea738c523b9a01fb6333b9655dbb65bde43f4ae7b5be8f69602a"
+        "17f272d114d22c1dc0117354777f2d506b303d90e10840d39fb0eef007252f68"
+
+    assert keyb(MyAttrs("hi", 1)) == keyb(MyAttrs("hi", 1))
+
+    @dataclass
+    class MyDC:
+        name: str
+        value: int
 
     assert keyb(MyDC("hi", 1)) != keyb(MyAttrs("hi", 1))
 
