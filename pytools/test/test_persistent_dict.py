@@ -529,6 +529,9 @@ def test_dataclass_hashing():
     assert keyb(MyDC("hi", 1)) == \
         "2ba6363c3b98f1cc2209bd57388368b3efe3074e3764eee30fbcf15946efb802"
 
+    assert keyb(MyDC("hi", 1)) == keyb(MyDC("hi", 1))
+    assert keyb(MyDC("hi", 1)) != keyb(MyDC("hi", 2))
+
     @dataclass
     class MyDC2:
         name: str
@@ -552,6 +555,7 @@ def test_attrs_hashing():
         "17f272d114d22c1dc0117354777f2d506b303d90e10840d39fb0eef007252f68"
 
     assert keyb(MyAttrs("hi", 1)) == keyb(MyAttrs("hi", 1))
+    assert keyb(MyAttrs("hi", 1)) != keyb(MyAttrs("hi", 2))
 
     @dataclass
     class MyDC:
