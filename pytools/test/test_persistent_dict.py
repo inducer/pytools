@@ -505,12 +505,10 @@ def test_class_hashing():
             key_builder.rec(key_hash, 42)
 
     class TagClass(Tag):
-        # Inherits update_persistent_hash from 'Tag'
         pass
 
     @tag_dataclass
     class TagClass2(Tag):
-        # Inherits update_persistent_hash from 'Tag'
         pass
 
     assert keyb(WithUpdateMethod) != keyb(WithUpdateMethod())
