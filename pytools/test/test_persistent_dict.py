@@ -518,6 +518,61 @@ def test_class_hashing():
     assert keyb(TagClass2) != keyb(TagClass2())
 
 
+def test_dataclass_hashing():
+    keyb = KeyBuilder()
+
+    @dataclass
+    class MyDC:
+        name: str
+        value: int
+
+    assert keyb(MyDC("hi", 1)) == \
+        "2ba6363c3b98f1cc2209bd57388368b3efe3074e3764eee30fbcf15946efb802"
+
+    assert keyb(MyDC("hi", 1)) == keyb(MyDC("hi", 1))
+    assert keyb(MyDC("hi", 1)) != keyb(MyDC("hi", 2))
+
+    @dataclass
+    class MyDC2:
+        name: str
+        value: int
+
+    # Class types must be encoded in hash
+    assert keyb(MyDC2("hi", 1)) != keyb(MyDC("hi", 1))
+
+
+def test_attrs_hashing():
+    attrs = pytest.importorskip("attrs")
+
+    keyb = KeyBuilder()
+
+    @attrs.define
+    class MyAttrs:
+        name: str
+        value: int
+
+    assert keyb(MyAttrs("hi", 1)) == \
+        "17f272d114d22c1dc0117354777f2d506b303d90e10840d39fb0eef007252f68"
+
+    assert keyb(MyAttrs("hi", 1)) == keyb(MyAttrs("hi", 1))
+    assert keyb(MyAttrs("hi", 1)) != keyb(MyAttrs("hi", 2))
+
+    @dataclass
+    class MyDC:
+        name: str
+        value: int
+
+    assert keyb(MyDC("hi", 1)) != keyb(MyAttrs("hi", 1))
+
+    @attrs.define
+    class MyAttrs2:
+        name: str
+        value: int
+
+    # Class types must be encoded in hash
+    assert keyb(MyAttrs2("hi", 1)) != keyb(MyAttrs("hi", 1))
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])

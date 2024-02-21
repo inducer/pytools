@@ -381,14 +381,14 @@ class KeyBuilder:
             key_hash.update(np.array(key).tobytes())
 
     def update_for_dataclass(self, key_hash, key):
-        self.rec(key_hash, type(key_hash).__name__.encode("utf-8"))
+        self.rec(key_hash, f"{type(key).__qualname__}.{type(key).__name__}")
 
         for fld in dc_fields(key):
             self.rec(key_hash, fld.name)
             self.rec(key_hash, getattr(key, fld.name, None))
 
     def update_for_attrs(self, key_hash, key):
-        self.rec(key_hash, type(key_hash).__name__.encode("utf-8"))
+        self.rec(key_hash, f"{type(key).__qualname__}.{type(key).__name__}")
 
         for fld in attrs.fields(key.__class__):
             self.rec(key_hash, fld.name)
