@@ -465,7 +465,7 @@ class RecordWithoutPickling:
         except AttributeError:
             self.__class__.fields = fields = {}
 
-        fields.update(dict.fromkeys(new_fields))
+        fields.update(dict.fromkeys(sorted(new_fields)))
 
     def __getattr__(self, name):
         # This method is implemented to avoid pylint 'no-member' errors for
