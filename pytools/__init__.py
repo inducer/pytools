@@ -473,8 +473,6 @@ class RecordWithoutPickling:
 
 
 class Record(RecordWithoutPickling):
-    __slots__: ClassVar[List[str]] = []
-
     def __getstate__(self):
         return {
                 key: getattr(self, key)
@@ -499,9 +497,6 @@ class Record(RecordWithoutPickling):
             return True
         return (self.__class__ == other.__class__
                 and self.__getstate__() == other.__getstate__())
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
 
 
 class ImmutableRecordWithoutPickling(RecordWithoutPickling):
