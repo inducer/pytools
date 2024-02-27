@@ -411,7 +411,9 @@ class RecordWithoutPickling:
     """
 
     __slots__: ClassVar[List[str]] = []
-    fields: ClassVar[Set[str]]
+
+    # A dict, not a set, to maintain a deterministic iteration order
+    fields: ClassVar[Dict[str, None]]
 
     def __init__(self, valuedict=None, exclude=None, **kwargs):
         assert self.__class__ is not Record
@@ -422,14 +424,17 @@ class RecordWithoutPickling:
         try:
             fields = self.__class__.fields
         except AttributeError:
-            self.__class__.fields = fields = set()
+            self.__class__.fields = fields = {}
+
+        if isinstance(fields, set):
+            self.__class__.fields = fields = dict.fromkeys(sorted(fields))
 
         if valuedict is not None:
             kwargs.update(valuedict)
 
         for key, value in kwargs.items():
             if key not in exclude:
-                fields.add(key)
+                fields[key] = None
                 setattr(self, key, value)
 
     def get_copy_kwargs(self, **kwargs):
@@ -455,9 +460,9 @@ class RecordWithoutPickling:
         try:
             fields = self.__class__.fields
         except AttributeError:
-            self.__class__.fields = fields = set()
+            self.__class__.fields = fields = {}
 
-        fields.update(new_fields)
+        fields.update(dict.fromkeys(new_fields))
 
     def __getattr__(self, name):
         # This method is implemented to avoid pylint 'no-member' errors for
@@ -480,10 +485,10 @@ class Record(RecordWithoutPickling):
         try:
             fields = self.__class__.fields
         except AttributeError:
-            self.__class__.fields = fields = set()
+            self.__class__.fields = fields = {}
 
         for key, value in valuedict.items():
-            fields.add(key)
+            fields[key] = None
             setattr(self, key, value)
 
     def __eq__(self, other):

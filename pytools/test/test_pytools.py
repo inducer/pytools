@@ -784,6 +784,53 @@ def test_unique():
     assert next(unique([]), None) is None
 
 
+def test_record():
+    from pytools import Record
+
+    class SimpleRecord(Record):
+        pass
+
+    r = SimpleRecord(a=1, b=2)
+    assert r.a == 1
+    assert r.b == 2
+
+    r2 = r.copy()
+    assert r2.a == 1
+    assert r == r2
+
+    r3 = r.copy(b=3)
+    assert r3.b == 3
+    assert r != r3
+
+    assert str(r) == "SimpleRecord(a=1, b=2)"
+
+    class SimpleRecord2(Record):
+        pass
+
+    r = SimpleRecord2(b=2, a=1)
+    assert r.a == 1
+    assert r.b == 2
+
+    assert str(r) == "SimpleRecord2(b=2, a=1)"
+
+    class SetBasedRecord(Record):
+        fields = {"c", "b", "a"}
+
+        def __init__(self, c, b, a):
+            super().__init__(c=c, b=b, a=a)
+
+    r = SetBasedRecord(3, 2, 1)
+
+    # Fields are converted to a dict during __init__
+    assert isinstance(r.fields, dict)
+    assert r.a == 1
+    assert r.b == 2
+    assert r.c == 3
+
+    # Fields are sorted alphabetically
+    assert str(r) == "SetBasedRecord(a=1, b=2, c=3)"
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
