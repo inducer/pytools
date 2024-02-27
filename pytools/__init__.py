@@ -416,6 +416,9 @@ class RecordWithoutPickling:
     fields: ClassVar[Dict[str, None]]
 
     def __init__(self, valuedict=None, exclude=None, **kwargs):
+        from warnings import warn
+        warn("pytools.Record is deprecated. Use dataclasses instead.")
+
         assert self.__class__ is not Record
 
         if exclude is None:
