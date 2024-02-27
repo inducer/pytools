@@ -790,28 +790,47 @@ def test_record():
     class SimpleRecord(Record):
         pass
 
-    r = SimpleRecord(a=1, b=2)
-    assert r.a == 1
-    assert r.b == 2
+    r1 = SimpleRecord(a=1, b=2)
+    assert r1.a == 1
+    assert r1.b == 2
 
-    r2 = r.copy()
+    r2 = r1.copy()
     assert r2.a == 1
-    assert r == r2
+    assert r1 == r2
 
-    r3 = r.copy(b=3)
+    r3 = r1.copy(b=3)
     assert r3.b == 3
-    assert r != r3
+    assert r1 != r3
 
-    assert str(r) == "SimpleRecord(a=1, b=2)"
+    assert str(r1) == str(r2) == "SimpleRecord(a=1, b=2)"
+    assert str(r3) == "SimpleRecord(a=1, b=3)"
+
+    # Unregistered fields are (silently) ignored for printing
+    r1.f = 6
+    assert str(r1) == "SimpleRecord(a=1, b=2)"
+
+    with pytest.raises(AttributeError):
+        r1.ff
 
     class SimpleRecord2(Record):
         pass
 
-    r = SimpleRecord2(b=2, a=1)
-    assert r.a == 1
-    assert r.b == 2
+    r_new = SimpleRecord2(b=2, a=1)
+    assert r_new.a == 1
+    assert r_new.b == 2
 
-    assert str(r) == "SimpleRecord2(b=2, a=1)"
+    assert str(r_new) == "SimpleRecord2(b=2, a=1)"
+
+    assert r_new != r1
+
+    r1.register_fields({"d", "e"})
+    assert str(r1) == "SimpleRecord(a=1, b=2)"
+
+    r1.d = 4
+    r1.e = 5
+    assert str(r1) == "SimpleRecord(a=1, b=2, d=4, e=5)"
+
+    # {{{ Legacy set-based record (used in Loopy)
 
     class SetBasedRecord(Record):
         fields = {"c", "b", "a"}
@@ -827,8 +846,24 @@ def test_record():
     assert r.b == 2
     assert r.c == 3
 
-    # Fields are sorted alphabetically
+    # Fields are sorted alphabetically in set-based records
     assert str(r) == "SetBasedRecord(a=1, b=2, c=3)"
+
+    r.register_fields({"d", "e"})
+    assert str(r) == "SetBasedRecord(a=1, b=2, c=3)"
+
+    r.d = 4
+    r.e = 5
+    assert str(r) == "SetBasedRecord(a=1, b=2, c=3, d=4, e=5)"
+
+    # Unregistered fields are (silently) ignored for printing
+    r.f = 6
+    assert str(r) == "SetBasedRecord(a=1, b=2, c=3, d=4, e=5)"
+
+    with pytest.raises(AttributeError):
+        r.ff
+
+    # }}}
 
 
 if __name__ == "__main__":
