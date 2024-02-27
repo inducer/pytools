@@ -26,6 +26,8 @@ import sys
 
 import pytest
 
+from pytools import Record
+
 
 logger = logging.getLogger(__name__)
 from typing import FrozenSet
@@ -784,11 +786,20 @@ def test_unique():
     assert next(unique([]), None) is None
 
 
-def test_record():
-    from pytools import Record
+# These classes must be defined global to be picklable
+class SimpleRecord(Record):
+    pass
 
-    class SimpleRecord(Record):
-        pass
+
+class SetBasedRecord(Record):
+    fields = {"c", "b", "a"}  # type: ignore[assignment]
+
+    def __init__(self, c, b, a):
+        super().__init__(c=c, b=b, a=a)
+
+
+def test_record():
+    # {{{ New, dict-based Record
 
     r1 = SimpleRecord(a=1, b=2)
     assert r1.a == 1
@@ -809,8 +820,22 @@ def test_record():
     r1.f = 6
     assert str(r1) == "SimpleRecord(a=1, b=2)"
 
+    # Registered fields are printed
+    r1.register_fields({"d", "e"})
+    assert str(r1) == "SimpleRecord(a=1, b=2)"
+
+    r1.d = 4
+    r1.e = 5
+    assert str(r1) == "SimpleRecord(a=1, b=2, d=4, e=5)"
+
     with pytest.raises(AttributeError):
         r1.ff
+
+    # Test pickling
+
+    import pickle
+    r1_pickled = pickle.loads(pickle.dumps(r1))
+    assert r1 == r1_pickled
 
     class SimpleRecord2(Record):
         pass
@@ -823,20 +848,9 @@ def test_record():
 
     assert r_new != r1
 
-    r1.register_fields({"d", "e"})
-    assert str(r1) == "SimpleRecord(a=1, b=2)"
-
-    r1.d = 4
-    r1.e = 5
-    assert str(r1) == "SimpleRecord(a=1, b=2, d=4, e=5)"
+    # }}}
 
     # {{{ Legacy set-based record (used in Loopy)
-
-    class SetBasedRecord(Record):
-        fields = {"c", "b", "a"}
-
-        def __init__(self, c, b, a):
-            super().__init__(c=c, b=b, a=a)
 
     r = SetBasedRecord(3, 2, 1)
 
@@ -849,6 +863,11 @@ def test_record():
     # Fields are sorted alphabetically in set-based records
     assert str(r) == "SetBasedRecord(a=1, b=2, c=3)"
 
+    # Unregistered fields are (silently) ignored for printing
+    r.f = 6
+    assert str(r) == "SetBasedRecord(a=1, b=2, c=3)"
+
+    # Registered fields are printed
     r.register_fields({"d", "e"})
     assert str(r) == "SetBasedRecord(a=1, b=2, c=3)"
 
@@ -856,12 +875,12 @@ def test_record():
     r.e = 5
     assert str(r) == "SetBasedRecord(a=1, b=2, c=3, d=4, e=5)"
 
-    # Unregistered fields are (silently) ignored for printing
-    r.f = 6
-    assert str(r) == "SetBasedRecord(a=1, b=2, c=3, d=4, e=5)"
-
     with pytest.raises(AttributeError):
         r.ff
+
+    # Test pickling
+    r_pickled = pickle.loads(pickle.dumps(r))
+    assert r == r_pickled
 
     # }}}
 
