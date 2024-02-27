@@ -487,6 +487,9 @@ class Record(RecordWithoutPickling):
         except AttributeError:
             self.__class__.fields = fields = {}
 
+        if isinstance(fields, set):
+            self.__class__.fields = fields = dict.fromkeys(sorted(fields))
+
         for key, value in valuedict.items():
             fields[key] = None
             setattr(self, key, value)
