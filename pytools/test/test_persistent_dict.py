@@ -408,16 +408,12 @@ def test_scalar_hashing():
     assert keyb(np.float64(1.1)) == keyb(np.float64(1.1))
     if hasattr(np, "float128"):
         assert keyb(np.float128(1.1)) == keyb(np.float128(1.1))
-
-    assert keyb(np.longfloat(1.1)) == keyb(np.longfloat(1.1))
     assert keyb(np.longdouble(1.1)) == keyb(np.longdouble(1.1))
 
     assert keyb(np.complex64(1.1+2.2j)) == keyb(np.complex64(1.1+2.2j))
     assert keyb(np.complex128(1.1+2.2j)) == keyb(np.complex128(1.1+2.2j))
     if hasattr(np, "complex256"):
         assert keyb(np.complex256(1.1+2.2j)) == keyb(np.complex256(1.1+2.2j))
-
-    assert keyb(np.longcomplex(1.1+2.2j)) == keyb(np.longcomplex(1.1+2.2j))
     assert keyb(np.clongdouble(1.1+2.2j)) == keyb(np.clongdouble(1.1+2.2j))
 
 
