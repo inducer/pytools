@@ -70,22 +70,6 @@ This module also provides a disk-backed dictionary that uses persistent hashing.
 """
 
 
-def _make_dir_recursively(dir_):
-    try:
-        os.makedirs(dir_)
-    except OSError as ex:
-        from errno import EEXIST
-        if ex.errno != EEXIST:
-            raise
-
-
-def update_checksum(checksum, obj):
-    if isinstance(obj, str):
-        checksum.update(obj.encode("utf8"))
-    else:
-        checksum.update(obj)
-
-
 # {{{ cleanup managers
 
 class CleanupBase:
@@ -633,7 +617,7 @@ class _PersistentDictBase:
         return join(self.container_dir, str(hexdigest_key) + ".lock")
 
     def _make_container_dir(self):
-        _make_dir_recursively(self.container_dir)
+        os.makedirs(self.container_dir, exist_ok=True)
 
     def _collision_check(self, key, stored_key, _stacklevel):
         if stored_key != key:
