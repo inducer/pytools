@@ -417,7 +417,8 @@ class RecordWithoutPickling:
 
     def __init__(self, valuedict=None, exclude=None, **kwargs):
         from warnings import warn
-        warn("pytools.Record is deprecated. Use dataclasses instead.")
+        warn(f"{self.__class__.__bases__[0]} is deprecated and will be "
+             "removed in 2025. Use dataclasses instead.")
 
         assert self.__class__ is not Record
 
