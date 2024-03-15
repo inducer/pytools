@@ -786,7 +786,7 @@ def test_unique():
     assert next(unique([]), None) is None
 
 
-# These classes must be defined global to be picklable
+# These classes must be defined globally to be picklable
 class SimpleRecord(Record):
     pass
 
