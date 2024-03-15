@@ -476,6 +476,8 @@ class RecordWithoutPickling:
 
 
 class Record(RecordWithoutPickling):
+    __slots__: ClassVar[List[str]] = []
+
     def __getstate__(self):
         return {
                 key: getattr(self, key)

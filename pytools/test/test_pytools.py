@@ -884,6 +884,40 @@ def test_record():
 
     # }}}
 
+    # {{{ __slots__, __dict__, __weakref__ handling
+
+    class RecordWithEmptySlots(Record):
+        __slots__ = []
+
+    assert hasattr(RecordWithEmptySlots(), "__slots__")
+    assert not hasattr(RecordWithEmptySlots(), "__dict__")
+    assert not hasattr(RecordWithEmptySlots(), "__weakref__")
+
+    class RecordWithUnsetSlots(Record):
+        pass
+
+    assert hasattr(RecordWithUnsetSlots(), "__slots__")
+    assert hasattr(RecordWithUnsetSlots(), "__dict__")
+    assert hasattr(RecordWithUnsetSlots(), "__weakref__")
+
+    from pytools import ImmutableRecord
+
+    class ImmutableRecordWithEmptySlots(ImmutableRecord):
+        __slots__ = []
+
+    assert hasattr(ImmutableRecordWithEmptySlots(), "__slots__")
+    assert hasattr(ImmutableRecordWithEmptySlots(), "__dict__")
+    assert hasattr(ImmutableRecordWithEmptySlots(), "__weakref__")
+
+    class ImmutableRecordWithUnsetSlots(ImmutableRecord):
+        pass
+
+    assert hasattr(ImmutableRecordWithUnsetSlots(), "__slots__")
+    assert hasattr(ImmutableRecordWithUnsetSlots(), "__dict__")
+    assert hasattr(ImmutableRecordWithUnsetSlots(), "__weakref__")
+
+    # }}}
+
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
