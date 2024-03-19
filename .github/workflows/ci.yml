@@ -14,9 +14,9 @@ jobs:
         name: Flake8
         runs-on: ubuntu-latest
         steps:
-        -   uses: actions/checkout@v3
+        -   uses: actions/checkout@v4
         -
-            uses: actions/setup-python@v4
+            uses: actions/setup-python@v5
             with:
                 # matches compat target in setup.py
                 python-version: '3.8'
@@ -29,8 +29,8 @@ jobs:
         name: Validate CITATION.cff
         runs-on: ubuntu-latest
         steps:
-        -   uses: actions/checkout@v3
-        -   uses: actions/setup-python@v4
+        -   uses: actions/checkout@v4
+        -   uses: actions/setup-python@v5
         -   run: |
                 pip install cffconvert
                 cffconvert -i CITATION.cff --validate
@@ -39,9 +39,9 @@ jobs:
         name: Pylint
         runs-on: ubuntu-latest
         steps:
-        -   uses: actions/checkout@v3
+        -   uses: actions/checkout@v4
         -
-            uses: actions/setup-python@v4
+            uses: actions/setup-python@v5
             with:
                 python-version: '3.x'
         -   name: "Main Script"
@@ -54,9 +54,9 @@ jobs:
         name: Mypy
         runs-on: ubuntu-latest
         steps:
-        -   uses: actions/checkout@v3
+        -   uses: actions/checkout@v4
         -
-            uses: actions/setup-python@v4
+            uses: actions/setup-python@v5
             with:
                 python-version: '3.x'
         -   name: "Main Script"
@@ -72,9 +72,9 @@ jobs:
             matrix:
                 python-version: ["3.8", "3.9", "3.x", "pypy3.8"]
         steps:
-        -   uses: actions/checkout@v3
+        -   uses: actions/checkout@v4
         -
-            uses: actions/setup-python@v4
+            uses: actions/setup-python@v5
             with:
                 python-version: ${{ matrix.python-version }}
         -   name: "Main Script"
@@ -91,9 +91,9 @@ jobs:
         name: Pytest without Numpy
         runs-on: ubuntu-latest
         steps:
-        -   uses: actions/checkout@v3
+        -   uses: actions/checkout@v4
         -
-            uses: actions/setup-python@v4
+            uses: actions/setup-python@v5
             with:
                 python-version: '3.x'
         -   name: "Main Script"
@@ -106,9 +106,9 @@ jobs:
     #    name: Examples Py3
     #    runs-on: ubuntu-latest
     #    steps:
-    #    -   uses: actions/checkout@v3
+    #    -   uses: actions/checkout@v4
     #    -
-    #        uses: actions/setup-python@v4
+    #        uses: actions/setup-python@v5
     #        with:
     #            python-version: '3.x'
     #    -   name: "Main Script"
@@ -126,7 +126,7 @@ jobs:
         name: Tests for downstream project ${{ matrix.downstream_project }}
         runs-on: ubuntu-latest
         steps:
-        -   uses: actions/checkout@v3
+        -   uses: actions/checkout@v4
         -   name: "Main Script"
             env:
                 DOWNSTREAM_PROJECT: ${{ matrix.downstream_project }}
@@ -139,9 +139,9 @@ jobs:
         name: Documentation
         runs-on: ubuntu-latest
         steps:
-        -   uses: actions/checkout@v3
+        -   uses: actions/checkout@v4
         -
-            uses: actions/setup-python@v4
+            uses: actions/setup-python@v5
             with:
                 python-version: '3.x'
         -   name: "Main Script"
