@@ -606,9 +606,8 @@ class _PersistentDictBase:
         # This doesn't solve that problem, but it makes it much less likely
 
         return join(self.container_dir,
-                hexdigest_key[:3],
-                hexdigest_key[3:6],
-                hexdigest_key[6:])
+                hexdigest_key[:1],
+                hexdigest_key[1:])
 
     def _key_file(self, hexdigest_key):
         from os.path import join
