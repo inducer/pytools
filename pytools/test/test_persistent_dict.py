@@ -582,6 +582,28 @@ def test_attrs_hashing():
     assert keyb(MyAttrs2("hi", 1)) != keyb(MyAttrs("hi", 1))
 
 
+def test_xdg_cache_home():
+    import os
+    xdg_dir = "tmpdir_pytools_xdg_test"
+
+    assert not os.path.exists(xdg_dir)
+
+    try:
+        old_xdg_cache_home = os.getenv("XDG_CACHE_HOME")
+        os.environ["XDG_CACHE_HOME"] = xdg_dir
+
+        PersistentDict("pytools-test")
+
+        assert os.path.exists(xdg_dir)
+    finally:
+        if old_xdg_cache_home is not None:
+            os.environ["XDG_CACHE_HOME"] = old_xdg_cache_home
+        else:
+            del os.environ["XDG_CACHE_HOME"]
+
+        shutil.rmtree(xdg_dir)
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
