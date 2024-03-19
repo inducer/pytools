@@ -68,11 +68,12 @@ jobs:
                 . ./prepare-and-run-mypy.sh python3 mypy
 
     pytest:
-        name: Pytest on Py${{ matrix.python-version }}
-        runs-on: ubuntu-latest
+        name: Pytest on Py${{ matrix.python-version }} ${{ matrix.os }}
+        runs-on: ${{ matrix.os }}
         strategy:
             matrix:
                 python-version: ["3.8", "3.9", "3.x", "pypy3.8"]
+                os: [ubuntu-latest, macos-latest]
         steps:
         -   uses: actions/checkout@v4
         -
