@@ -558,7 +558,7 @@ class _PersistentDictBase:
 
             container_dir = join(
                     appdirs.user_cache_dir("pytools", "pytools"),
-                    "pdict-v4-{}-py{}".format(
+                    "pdict-v5-{}-py{}".format(
                         identifier,
                         ".".join(str(i) for i in sys.version_info)))
 
