@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-from setuptools import setup
+from setuptools import find_packages, setup
 
 ver_dic = {}
 version_file = open("pytools/version.py")
@@ -49,4 +49,4 @@ setup(name="pytools",
       url="http://pypi.python.org/pypi/pytools",
       author_email="inform@tiker.net",
       license="MIT",
-      packages=["pytools"])
+      packages=find_packages())
