@@ -60,7 +60,7 @@ Mypy:
 
 Pylint:
   script:
-  - EXTRA_INSTALL="numpy pymbolic"
+  - EXTRA_INSTALL="numpy pymbolic orderedsets"
   - py_version=3
   - curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-pylint.sh
   - . ./prepare-and-run-pylint.sh "$CI_PROJECT_NAME"
