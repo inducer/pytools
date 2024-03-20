@@ -588,8 +588,8 @@ def test_xdg_cache_home():
 
     assert not os.path.exists(xdg_dir)
 
+    old_xdg_cache_home = os.environ.get("XDG_CACHE_HOME")
     try:
-        old_xdg_cache_home = os.getenv("XDG_CACHE_HOME")
         os.environ["XDG_CACHE_HOME"] = xdg_dir
 
         PersistentDict("pytools-test")
