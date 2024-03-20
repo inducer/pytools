@@ -587,7 +587,7 @@ def test_tag():
     assert FairRibbon() == FairRibbon()
     assert (FairRibbon().tag_name
             == FairRibbon().tag_name
-            == DottedName(("test_pytools", "FairRibbon")))
+            == DottedName(("pytools", "test", "test_pytools", "FairRibbon")))
     assert FairRibbon() != BlueRibbon()
     assert FairRibbon().tag_name != BlueRibbon().tag_name
 
@@ -760,8 +760,8 @@ def test_typedump():
         class D:
             pass
 
-    assert typedump(C()) == "test_pytools.test_typedump.<locals>.C"
-    assert typedump(C.D()) == "test_pytools.test_typedump.<locals>.C.D"
+    assert typedump(C()) == "pytools.test.test_pytools.test_typedump.<locals>.C"
+    assert typedump(C.D()) == "pytools.test.test_pytools.test_typedump.<locals>.C.D"
     assert typedump(C.D(), fully_qualified_name=False) == "D"
 
     from pytools.datatable import DataTable

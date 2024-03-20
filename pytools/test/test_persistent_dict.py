@@ -517,7 +517,7 @@ def test_class_hashing():
     assert keyb(TagClass()) == \
         "f5697a96dde0083e31a290b54ee7a5640b2bb8eb6d18e9c7ee89228b015a6131"
     assert keyb(TagClass2) == \
-        "4bd9487e0dbea99d609233dba7e7105ccb10ab3e4262275c3890d945d1eb7eee"
+        "0833645765e32e7fb4a586614d0e345878eba50199ed2d8e963b28f797fd6e29"
 
     @tag_dataclass
     class TagClass3(Tag):
