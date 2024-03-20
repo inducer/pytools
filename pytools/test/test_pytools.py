@@ -26,6 +26,8 @@ import sys
 
 import pytest
 
+from pytools import Record
+
 
 logger = logging.getLogger(__name__)
 from typing import FrozenSet
@@ -782,6 +784,139 @@ def test_unique():
 
     assert next(unique([1, 2, 1, 3])) == 1
     assert next(unique([]), None) is None
+
+
+# These classes must be defined globally to be picklable
+class SimpleRecord(Record):
+    pass
+
+
+class SetBasedRecord(Record):
+    fields = {"c", "b", "a"}  # type: ignore[assignment]
+
+    def __init__(self, c, b, a):
+        super().__init__(c=c, b=b, a=a)
+
+
+def test_record():
+    # {{{ New, dict-based Record
+
+    r1 = SimpleRecord(a=1, b=2)
+    assert r1.a == 1
+    assert r1.b == 2
+
+    r2 = r1.copy()
+    assert r2.a == 1
+    assert r1 == r2
+
+    r3 = r1.copy(b=3)
+    assert r3.b == 3
+    assert r1 != r3
+
+    assert str(r1) == str(r2) == "SimpleRecord(a=1, b=2)"
+    assert str(r3) == "SimpleRecord(a=1, b=3)"
+
+    # Unregistered fields are (silently) ignored for printing
+    r1.f = 6
+    assert str(r1) == "SimpleRecord(a=1, b=2)"
+
+    # Registered fields are printed
+    r1.register_fields({"d", "e"})
+    assert str(r1) == "SimpleRecord(a=1, b=2)"
+
+    r1.d = 4
+    r1.e = 5
+    assert str(r1) == "SimpleRecord(a=1, b=2, d=4, e=5)"
+
+    with pytest.raises(AttributeError):
+        r1.ff
+
+    # Test pickling
+
+    import pickle
+    r1_pickled = pickle.loads(pickle.dumps(r1))
+    assert r1 == r1_pickled
+
+    class SimpleRecord2(Record):
+        pass
+
+    r_new = SimpleRecord2(b=2, a=1)
+    assert r_new.a == 1
+    assert r_new.b == 2
+
+    assert str(r_new) == "SimpleRecord2(b=2, a=1)"
+
+    assert r_new != r1
+
+    # }}}
+
+    # {{{ Legacy set-based record (used in Loopy)
+
+    r = SetBasedRecord(3, 2, 1)
+
+    # Fields are converted to a dict during __init__
+    assert isinstance(r.fields, dict)
+    assert r.a == 1
+    assert r.b == 2
+    assert r.c == 3
+
+    # Fields are sorted alphabetically in set-based records
+    assert str(r) == "SetBasedRecord(a=1, b=2, c=3)"
+
+    # Unregistered fields are (silently) ignored for printing
+    r.f = 6
+    assert str(r) == "SetBasedRecord(a=1, b=2, c=3)"
+
+    # Registered fields are printed
+    r.register_fields({"d", "e"})
+    assert str(r) == "SetBasedRecord(a=1, b=2, c=3)"
+
+    r.d = 4
+    r.e = 5
+    assert str(r) == "SetBasedRecord(a=1, b=2, c=3, d=4, e=5)"
+
+    with pytest.raises(AttributeError):
+        r.ff
+
+    # Test pickling
+    r_pickled = pickle.loads(pickle.dumps(r))
+    assert r == r_pickled
+
+    # }}}
+
+    # {{{ __slots__, __dict__, __weakref__ handling
+
+    class RecordWithEmptySlots(Record):
+        __slots__ = []
+
+    assert hasattr(RecordWithEmptySlots(), "__slots__")
+    assert not hasattr(RecordWithEmptySlots(), "__dict__")
+    assert not hasattr(RecordWithEmptySlots(), "__weakref__")
+
+    class RecordWithUnsetSlots(Record):
+        pass
+
+    assert hasattr(RecordWithUnsetSlots(), "__slots__")
+    assert hasattr(RecordWithUnsetSlots(), "__dict__")
+    assert hasattr(RecordWithUnsetSlots(), "__weakref__")
+
+    from pytools import ImmutableRecord
+
+    class ImmutableRecordWithEmptySlots(ImmutableRecord):
+        __slots__ = []
+
+    assert hasattr(ImmutableRecordWithEmptySlots(), "__slots__")
+    assert hasattr(ImmutableRecordWithEmptySlots(), "__dict__")
+    assert hasattr(ImmutableRecordWithEmptySlots(), "__weakref__")
+
+    class ImmutableRecordWithUnsetSlots(ImmutableRecord):
+        pass
+
+    assert hasattr(ImmutableRecordWithUnsetSlots(), "__slots__")
+    assert hasattr(ImmutableRecordWithUnsetSlots(), "__dict__")
+    assert hasattr(ImmutableRecordWithUnsetSlots(), "__weakref__")
+
+    # }}}
 
 
 if __name__ == "__main__":
