@@ -39,7 +39,7 @@ setup(name="pytools",
           "typing_extensions>=4.0; python_version<'3.11'",
           ],
 
-      package_data={"pytools": ["py.typed"]},
+      package_data={"pytools": ["py.typed", "test/*"]},
 
     extras_require={
         "numpy":  ["numpy>=1.6.0"],
