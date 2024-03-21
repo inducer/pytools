@@ -507,7 +507,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
                 return
             raise ReadOnlyEntryError(key)
         self.db[hexdigest_key] = value
-        self.db.commit()
+        self.db.commit(blocking=False)
         # try:
         #     try:
         #         LockManager(cleanup_m, self._lock_file(hexdigest_key),
@@ -649,7 +649,7 @@ class PersistentDict(_PersistentDictBase):
             return
 
         self.db[hexdigest_key] = value
-        self.db.commit()
+        self.db.commit(blocking=False)
 
         # cleanup_m = CleanupManager()
         # try:
@@ -757,7 +757,7 @@ class PersistentDict(_PersistentDictBase):
 
         try:
             del self.db[hexdigest_key]
-            self.db.commit()
+            self.db.commit(blocking=False)
         except KeyError:
             raise NoSuchEntryError(key)
         # item_dir = self._item_dir(hexdigest_key)
