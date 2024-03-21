@@ -179,27 +179,27 @@ def test_persistent_dict_deletion():
         shutil.rmtree(tmpdir)
 
 
-# def test_persistent_dict_synchronization():
-#     try:
-#         tmpdir = tempfile.mkdtemp()
-#         pdict1 = PersistentDict("pytools-test", container_dir=tmpdir)
-#         pdict2 = PersistentDict("pytools-test", container_dir=tmpdir)
+def test_persistent_dict_synchronization():
+    try:
+        tmpdir = tempfile.mkdtemp()
+        pdict1 = PersistentDict("pytools-test", container_dir=tmpdir)
+        pdict2 = PersistentDict("pytools-test", container_dir=tmpdir)
 
-#         # check lookup
-#         pdict1[0] = 1
-#         assert pdict2[0] == 1
+        # check lookup
+        pdict1[0] = 1
+        assert pdict2[0] == 1
 
-#         # check updating
-#         pdict1[0] = 2
-#         assert pdict2[0] == 2
+        # check updating
+        pdict1[0] = 2
+        assert pdict2[0] == 2
 
-#         # check deletion
-#         del pdict1[0]
-#         with pytest.raises(NoSuchEntryError):
-#             pdict2.fetch(0)
+        # check deletion
+        del pdict1[0]
+        with pytest.raises(NoSuchEntryError):
+            pdict2.fetch(0)
 
-#     finally:
-#         shutil.rmtree(tmpdir)
+    finally:
+        shutil.rmtree(tmpdir)
 
 
 # def test_persistent_dict_cache_collisions():
@@ -313,22 +313,22 @@ def test_write_once_persistent_dict_storage_and_lookup(in_mem_cache_size):
 #         shutil.rmtree(tmpdir)
 
 
-# def test_write_once_persistent_dict_synchronization():
-#     try:
-#         tmpdir = tempfile.mkdtemp()
-#         pdict1 = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
-#         pdict2 = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+def test_write_once_persistent_dict_synchronization():
+    try:
+        tmpdir = tempfile.mkdtemp()
+        pdict1 = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+        pdict2 = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
 
-#         # check lookup
-#         pdict1[1] = 0
-#         assert pdict2[1] == 0
+        # check lookup
+        pdict1[1] = 0
+        assert pdict2[1] == 0
 
-#         # check updating
-#         with pytest.raises(ReadOnlyEntryError):
-#             pdict2[1] = 1
+        # check updating
+        with pytest.raises(ReadOnlyEntryError):
+            pdict2[1] = 1
 
-#     finally:
-#         shutil.rmtree(tmpdir)
+    finally:
+        shutil.rmtree(tmpdir)
 
 
 # def test_write_once_persistent_dict_cache_collisions():
@@ -602,6 +602,30 @@ def test_xdg_cache_home():
             del os.environ["XDG_CACHE_HOME"]
 
         shutil.rmtree(xdg_dir)
+
+
+def test_speed():
+    import time
+
+    tmpdir = tempfile.mkdtemp()
+    pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+
+    start = time.time()
+    for i in range(10000):
+        pdict[i] = i
+    end = time.time()
+    print("persistent dict write time: ", end-start)
+
+    start = time.time()
+    for i in range(10000):
+        pdict[i]
+    end = time.time()
+    print("persistent dict read time: ", end-start)
+
+    # shutil.rmtree(tmpdir)
+
+# baseline 3.7+1.6
+# sqlitedict zlib: 1.1+1.1
 
 
 if __name__ == "__main__":

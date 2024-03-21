@@ -344,7 +344,7 @@ class _PersistentDictBase:
             #         "pdict-v6-{}-py{}".format(
             #             identifier,
             #             ".".join(str(i) for i in sys.version_info)))
-        filename = join(container_dir + f"pdict-v6-{identifier}" + ".".join(str(i) for i in sys.version_info) + ".sqlite")
+        filename = join(container_dir, f"pdict-v6-{identifier}" + ".".join(str(i) for i in sys.version_info) + ".sqlite")
 
         self.container_dir = container_dir
 
@@ -352,14 +352,14 @@ class _PersistentDictBase:
 
         from sqlitedict import SqliteDict
 
-        import zlib, pickle, sqlite3
+        import blosc, pickle, sqlite3
         def my_encode(obj):
-            return sqlite3.Binary(zlib.compress(pickle.dumps(obj, pickle.HIGHEST_PROTOCOL)))
+            return sqlite3.Binary(blosc.compress(pickle.dumps(obj, pickle.HIGHEST_PROTOCOL)))
         def my_decode(obj):
-            return pickle.loads(zlib.decompress(bytes(obj)))
+            return pickle.loads(blosc.decompress(bytes(obj)))
 
         self.db = SqliteDict(filename, encode=my_encode,
-                                     decode=my_decode)
+                                       decode=my_decode)
 
     @staticmethod
     def _warn(msg, category=UserWarning, stacklevel=0):
@@ -507,6 +507,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
                 return
             raise ReadOnlyEntryError(key)
         self.db[hexdigest_key] = value
+        self.db.commit()
         # try:
         #     try:
         #         LockManager(cleanup_m, self._lock_file(hexdigest_key),
@@ -648,6 +649,7 @@ class PersistentDict(_PersistentDictBase):
             return
 
         self.db[hexdigest_key] = value
+        self.db.commit()
 
         # cleanup_m = CleanupManager()
         # try:
@@ -682,10 +684,12 @@ class PersistentDict(_PersistentDictBase):
     def fetch(self, key, _stacklevel=0):
         hexdigest_key = self.key_builder(key)
 
-        if hexdigest_key not in self.db:
+        # if hexdigest_key not in self.db:
+        #     raise NoSuchEntryError(key)
+        try:
+            return self.db[hexdigest_key]
+        except KeyError:
             raise NoSuchEntryError(key)
-
-        return self.db[hexdigest_key]
         # item_dir = self._item_dir(hexdigest_key)
 
         # from os.path import isdir
@@ -751,11 +755,11 @@ class PersistentDict(_PersistentDictBase):
     def remove(self, key, _stacklevel=0):
         hexdigest_key = self.key_builder(key)
 
-        if hexdigest_key not in self.db:
+        try:
+            del self.db[hexdigest_key]
+            self.db.commit()
+        except KeyError:
             raise NoSuchEntryError(key)
-
-        del self.db[hexdigest_key]
-
         # item_dir = self._item_dir(hexdigest_key)
         # from os.path import isdir
         # if not isdir(item_dir):
