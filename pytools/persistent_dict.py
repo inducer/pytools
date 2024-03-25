@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 """Generic persistent, concurrent dictionary-like facility."""
 
 
@@ -35,7 +38,12 @@ import shutil
 import sys
 from dataclasses import fields as dc_fields, is_dataclass
 from enum import Enum
+from typing import TYPE_CHECKING, Any, Mapping, Protocol
 
+
+if TYPE_CHECKING:
+    from _typeshed import ReadableBuffer
+    from typing_extensions import Self
 
 try:
     import attrs
@@ -64,6 +72,7 @@ This module also provides a disk-backed dictionary that uses persistent hashing.
 
 .. autoexception:: CollisionWarning
 
+.. autoclass:: Hash
 .. autoclass:: KeyBuilder
 .. autoclass:: PersistentDict
 .. autoclass:: WriteOncePersistentDict
@@ -174,9 +183,47 @@ class ItemDirManager(CleanupBase):
 
 # {{{ key generation
 
+class Hash(Protocol):
+    """A protocol for the hashes from :mod:`hashlib`.
+
+    .. automethod:: update
+    .. automethod:: digest
+    .. automethod:: hexdigest
+    .. automethod:: copy
+    """
+    def update(self, data: ReadableBuffer) -> None:
+        ...
+
+    def digest(self) -> bytes:
+        ...
+
+    def hexdigest(self) -> str:
+        ...
+
+    def copy(self) -> Self:
+        ...
+
+
 class KeyBuilder:
-    """A (stateless) object that computes hashes of objects fed to it. Subclassing
-    this class permits customizing the computation of hash keys.
+    """A (stateless) object that computes persistent hashes of objects fed to it.
+    Subclassing this class permits customizing the computation of hash keys.
+
+    This class follows the same general rules as Python's built-in hashing:
+
+    - Only immutable objects can be hashed.
+    - If two objects compare equal, they must hash to the same value.
+    - Objects with the same hash may or may not compare equal.
+
+    In addition, hashes computed with :class:`KeyBuilder` have the following
+    properties:
+
+    - The hash is persistent across interpreter invocations.
+    - The hash is the same across different Python versions and platforms.
+    - The hash is invariant with respect to :envvar:`PYTHONHASHSEED`.
+    - Hashes are computed using functionality from :mod:`hashlib`.
+
+    Key builders of this type are used by :class:`PersistentDict`, but
+    other uses are entirely allowable.
 
     .. automethod:: __call__
     .. automethod:: rec
@@ -195,7 +242,7 @@ class KeyBuilder:
     # down the road
     new_hash = hashlib.sha256
 
-    def rec(self, key_hash, key):
+    def rec(self, key_hash: Hash, key: Any) -> Hash:
         """
         :arg key_hash: the hash object to be updated with the hash of *key*.
         :arg key: the (immutable) Python object to be hashed.
@@ -276,7 +323,8 @@ class KeyBuilder:
         key_hash.update(digest)
         return key_hash
 
-    def __call__(self, key):
+    def __call__(self, key: Any) -> str:
+        """Return the hash of *key*."""
         key_hash = self.new_hash()
         self.rec(key_hash, key)
         return key_hash.hexdigest()
@@ -284,14 +332,14 @@ class KeyBuilder:
     # {{{ updaters
 
     @staticmethod
-    def update_for_type(key_hash, key):
+    def update_for_type(key_hash: Hash, key: type) -> None:
         key_hash.update(
             f"{key.__module__}.{key.__qualname__}.{key.__name__}".encode("utf-8"))
 
     update_for_ABCMeta = update_for_type  # noqa: N815
 
     @staticmethod
-    def update_for_int(key_hash, key):
+    def update_for_int(key_hash: Hash, key: int) -> None:
         sz = 8
         while True:
             try:
@@ -301,34 +349,34 @@ class KeyBuilder:
                 sz *= 2
 
     @classmethod
-    def update_for_enum(cls, key_hash, key):
+    def update_for_enum(cls, key_hash: Hash, key: Enum) -> None:
         cls.update_for_str(key_hash, str(key))
 
     @staticmethod
-    def update_for_bool(key_hash, key):
+    def update_for_bool(key_hash: Hash, key: bool) -> None:
         key_hash.update(str(key).encode("utf8"))
 
     @staticmethod
-    def update_for_float(key_hash, key):
+    def update_for_float(key_hash: Hash, key: float) -> None:
         key_hash.update(key.hex().encode("utf8"))
 
     @staticmethod
-    def update_for_complex(key_hash, key):
+    def update_for_complex(key_hash: Hash, key: float) -> None:
         key_hash.update(repr(key).encode("utf-8"))
 
     @staticmethod
-    def update_for_str(key_hash, key):
+    def update_for_str(key_hash: Hash, key: str) -> None:
         key_hash.update(key.encode("utf8"))
 
     @staticmethod
-    def update_for_bytes(key_hash, key):
+    def update_for_bytes(key_hash: Hash, key: bytes) -> None:
         key_hash.update(key)
 
-    def update_for_tuple(self, key_hash, key):
+    def update_for_tuple(self, key_hash: Hash, key: tuple) -> None:
         for obj_i in key:
             self.rec(key_hash, obj_i)
 
-    def update_for_frozenset(self, key_hash, key):
+    def update_for_frozenset(self, key_hash: Hash, key: frozenset) -> None:
         from pytools import unordered_hash
 
         unordered_hash(
@@ -338,7 +386,7 @@ class KeyBuilder:
     update_for_FrozenOrderedSet = update_for_frozenset  # noqa: N815
 
     @staticmethod
-    def update_for_NoneType(key_hash, key):  # noqa: N802
+    def update_for_NoneType(key_hash: Hash, key: None) -> None:  # noqa: N802
         del key
         key_hash.update(b"<None>")
 
@@ -355,7 +403,7 @@ class KeyBuilder:
         key_hash.update(key.str.encode("utf8"))
 
     @staticmethod
-    def update_for_numpy_scalar(key_hash, key):
+    def update_for_numpy_scalar(key_hash: Hash, key) -> None:
         import numpy as np
         if hasattr(np, "complex256") and key.dtype == np.dtype("complex256"):
             key_hash.update(repr(complex(key)).encode("utf8"))
@@ -364,21 +412,21 @@ class KeyBuilder:
         else:
             key_hash.update(np.array(key).tobytes())
 
-    def update_for_dataclass(self, key_hash, key):
+    def update_for_dataclass(self, key_hash: Hash, key: Any) -> None:
         self.rec(key_hash, f"{type(key).__qualname__}.{type(key).__name__}")
 
         for fld in dc_fields(key):
             self.rec(key_hash, fld.name)
             self.rec(key_hash, getattr(key, fld.name, None))
 
-    def update_for_attrs(self, key_hash, key):
+    def update_for_attrs(self, key_hash: Hash, key) -> None:
         self.rec(key_hash, f"{type(key).__qualname__}.{type(key).__name__}")
 
         for fld in attrs.fields(key.__class__):
             self.rec(key_hash, fld.name)
             self.rec(key_hash, getattr(key, fld.name, None))
 
-    def update_for_frozendict(self, key_hash, key):
+    def update_for_frozendict(self, key_hash: Hash, key: Mapping) -> None:
         from pytools import unordered_hash
 
         unordered_hash(
@@ -482,7 +530,7 @@ class _LRUCache(abc.MutableMapping):
     def __iter__(self):
         return iter(self.cache)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.cache)
 
     def clear(self):
@@ -517,26 +565,36 @@ class _LRUCache(abc.MutableMapping):
 # {{{ top-level
 
 class NoSuchEntryError(KeyError):
+    """Raised when an entry is not found in a :class:`PersistentDict`."""
     pass
 
 
 class NoSuchEntryInvalidKeyError(NoSuchEntryError):
+    """Raised when an entry is not found in a :class:`PersistentDict` due to an
+    invalid key file."""
     pass
 
 
 class NoSuchEntryInvalidContentsError(NoSuchEntryError):
+    """Raised when an entry is not found in a :class:`PersistentDict` due to an
+    invalid contents file."""
     pass
 
 
 class NoSuchEntryCollisionError(NoSuchEntryError):
+    """Raised when an entry is not found in a :class:`PersistentDict`, but it
+    contains an entry with the same hash key (hash collision)."""
     pass
 
 
 class ReadOnlyEntryError(KeyError):
+    """Raised when an attempt is made to overwrite an entry in a
+    :class:`WriteOncePersistentDict`."""
     pass
 
 
 class CollisionWarning(UserWarning):
+    """Warning raised when a collision is detected in a :class:`PersistentDict`."""
     pass
 
 
