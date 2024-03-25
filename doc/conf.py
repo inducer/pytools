@@ -37,6 +37,7 @@ intersphinx_mapping = {
 nitpicky = True
 nitpick_ignore_regex = [
     ["py:class", r"typing_extensions\.(.+)"],
+    ["py:class", r"ReadableBuffer"],
 ]
 
 autodoc_type_aliases = {
