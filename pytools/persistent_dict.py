@@ -413,7 +413,6 @@ class _PersistentDictBase:
         self.db = SQLDict(self.filename, encoder=my_encode, decoder=my_decode)
 
     def __del__(self):
-        self.db.vacuum()
         self.db.close()
 
     def store_if_not_present(self, key, value):
@@ -468,20 +467,20 @@ class WriteOncePersistentDict(_PersistentDictBase):
         pass
 
     def store(self, key, value, _skip_if_present=False):
-        key = pickle.dumps(key)
+        k = pickle.dumps(key)
 
-        if key in self.db:
+        if k in self.db:
             if _skip_if_present:
                 return
             raise ReadOnlyEntryError(key)
 
-        self.db[key] = value
+        self.db[k] = value
 
     def fetch(self, key):
-        key = pickle.dumps(key)
+        k = pickle.dumps(key)
 
         try:
-            return self.db[key]
+            return self.db[k]
         except KeyError:
             raise NoSuchEntryError(key)
 
@@ -508,26 +507,26 @@ class PersistentDict(_PersistentDictBase):
         _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
 
     def store(self, key, value, _skip_if_present=False):
-        key = pickle.dumps(key)
+        k = pickle.dumps(key)
 
-        if _skip_if_present and key in self.db:
+        if _skip_if_present and k in self.db:
             return
 
-        self.db[key] = value
+        self.db[k] = value
 
     def fetch(self, key):
-        key = pickle.dumps(key)
+        k = pickle.dumps(key)
 
         try:
-            return self.db[key]
+            return self.db[k]
         except KeyError:
             raise NoSuchEntryError(key)
 
     def remove(self, key):
-        key = pickle.dumps(key)
+        k = pickle.dumps(key)
 
         try:
-            del self.db[key]
+            del self.db[k]
         except KeyError:
             raise NoSuchEntryError(key)
 
