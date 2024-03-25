@@ -37,6 +37,7 @@ setup(name="pytools",
       install_requires=[
           "platformdirs>=2.2.0",
           "typing_extensions>=4.0; python_version<'3.11'",
+          "litedict",
           ],
 
       package_data={"pytools": ["py.typed"]},

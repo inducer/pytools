@@ -7,8 +7,8 @@ from enum import Enum, IntEnum
 import pytest
 
 from pytools.persistent_dict import (
-    CollisionWarning, KeyBuilder, NoSuchEntryCollisionError, NoSuchEntryError,
-    PersistentDict, ReadOnlyEntryError, WriteOncePersistentDict)
+    KeyBuilder, NoSuchEntryError, PersistentDict, ReadOnlyEntryError,
+    WriteOncePersistentDict)
 from pytools.tag import Tag, tag_dataclass
 
 
@@ -281,36 +281,36 @@ def test_write_once_persistent_dict_storage_and_lookup(in_mem_cache_size):
         shutil.rmtree(tmpdir)
 
 
-# def test_write_once_persistent_dict_lru_policy():
-#     try:
-#         tmpdir = tempfile.mkdtemp()
-#         pdict = WriteOncePersistentDict(
-#                 "pytools-test", container_dir=tmpdir, in_mem_cache_size=3)
+def test_write_once_persistent_dict_lru_policy():
+    try:
+        tmpdir = tempfile.mkdtemp()
+        pdict = WriteOncePersistentDict(
+                "pytools-test", container_dir=tmpdir, in_mem_cache_size=3)
 
-#         pdict[1] = PDictTestingKeyOrValue(1)
-#         pdict[2] = PDictTestingKeyOrValue(2)
-#         pdict[3] = PDictTestingKeyOrValue(3)
-#         pdict[4] = PDictTestingKeyOrValue(4)
+        pdict[1] = PDictTestingKeyOrValue(1)
+        pdict[2] = PDictTestingKeyOrValue(2)
+        pdict[3] = PDictTestingKeyOrValue(3)
+        pdict[4] = PDictTestingKeyOrValue(4)
 
-#         val1 = pdict.fetch(1)
+        val1 = pdict.fetch(1)
 
-#         assert pdict.fetch(1) is val1
-#         pdict.fetch(2)
-#         assert pdict.fetch(1) is val1
-#         pdict.fetch(2)
-#         pdict.fetch(3)
-#         assert pdict.fetch(1) is val1
-#         pdict.fetch(2)
-#         pdict.fetch(3)
-#         pdict.fetch(2)
-#         assert pdict.fetch(1) is val1
-#         pdict.fetch(2)
-#         pdict.fetch(3)
-#         pdict.fetch(4)
-#         assert pdict.fetch(1) is not val1
+        assert pdict.fetch(1) is val1
+        pdict.fetch(2)
+        assert pdict.fetch(1) is val1
+        pdict.fetch(2)
+        pdict.fetch(3)
+        assert pdict.fetch(1) is val1
+        pdict.fetch(2)
+        pdict.fetch(3)
+        pdict.fetch(2)
+        assert pdict.fetch(1) is val1
+        pdict.fetch(2)
+        pdict.fetch(3)
+        pdict.fetch(4)
+        assert pdict.fetch(1) is not val1
 
-#     finally:
-#         shutil.rmtree(tmpdir)
+    finally:
+        shutil.rmtree(tmpdir)
 
 
 def test_write_once_persistent_dict_synchronization():
@@ -608,7 +608,8 @@ def test_speed():
     import time
 
     tmpdir = tempfile.mkdtemp()
-    pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+    pdict = WriteOncePersistentDict("pytools-test", container_dir=tmpdir,
+                                    )
 
     start = time.time()
     for i in range(10000):
@@ -617,15 +618,38 @@ def test_speed():
     print("persistent dict write time: ", end-start)
 
     start = time.time()
-    for i in range(10000):
-        pdict[i]
+    for _ in range(5):
+        for i in range(10000):
+            pdict[i]
     end = time.time()
     print("persistent dict read time: ", end-start)
 
-    # shutil.rmtree(tmpdir)
+    shutil.rmtree(tmpdir)
 
-# baseline 3.7+1.6
-# sqlitedict zlib: 1.1+1.1
+
+def test_size():
+    import os
+    import sqlite3
+
+    tmpdir = tempfile.mkdtemp()
+    pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+
+    for i in range(10000):
+        pdict[f"foobarbazfoobbb{i}"] = i
+
+    # pdict.db.conn.commit()
+
+    db_file = os.path.join(pdict.filename)
+
+    conn = sqlite3.connect(db_file)
+    cur = conn.cursor()
+    cur.execute("SELECT page_size * page_count FROM "
+                "pragma_page_size(), pragma_page_count();")
+    size = cur.fetchone()[0]
+    print("sqlite size: ", size/1024/1024, " MByte")
+    conn.close()
+
+    shutil.rmtree(tmpdir)
 
 
 if __name__ == "__main__":
