@@ -175,8 +175,8 @@ class ItemDirManager(CleanupBase):
 # {{{ key generation
 
 class KeyBuilder:
-    """A (stateless) object that computes hashes of objects fed to it. Subclassing
-    this class permits customizing the computation of hash keys.
+    """A (stateless) object that computes persistent hashes of objects fed to it.
+    Subclassing this class permits customizing the computation of hash keys.
 
     Objects of this class are used to calculate hashes of the keys in a
     :class:`PersistentDict`.
@@ -194,6 +194,8 @@ class KeyBuilder:
     - The hash is the same across different Python versions and platforms.
     - No need to set ``PYTHONHASHSEED`` to get stable hashes for strings/bytes.
 
+    In contrast to the built-in hashing, the type of the returned hash is a ``str``
+    by default, not an ``int``.
 
     .. automethod:: __call__
     .. automethod:: rec
