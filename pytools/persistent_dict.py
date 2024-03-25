@@ -463,11 +463,9 @@ class WriteOncePersistentDict(_PersistentDictBase):
             *in_mem_cache_size* items
         """
         _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
-        from functools import lru_cache
-        self.fetch = lru_cache(maxsize=in_mem_cache_size)(self.fetch)
 
     def clear_in_mem_cache(self):
-        self.fetch.cache_clear()
+        pass
 
     def store(self, key, value, _skip_if_present=False):
         key = pickle.dumps(key)
@@ -486,10 +484,6 @@ class WriteOncePersistentDict(_PersistentDictBase):
             return self.db[key]
         except KeyError:
             raise NoSuchEntryError(key)
-
-    def clear(self):
-        _PersistentDictBase.clear(self)
-        self.fetch.cache_clear()
 
 
 class PersistentDict(_PersistentDictBase):
