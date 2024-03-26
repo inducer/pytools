@@ -467,7 +467,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
         pass
 
     def store(self, key, value, _skip_if_present=False):
-        k = pickle.dumps(key)
+        k = self.key_builder(key)
 
         if k in self.db:
             if _skip_if_present:
@@ -477,10 +477,11 @@ class WriteOncePersistentDict(_PersistentDictBase):
         self.db[k] = value
 
     def fetch(self, key):
-        k = pickle.dumps(key)
+        k = self.key_builder(key)
 
         try:
-            return self.db[k]
+            v = self.db[k]
+            return v
         except KeyError:
             raise NoSuchEntryError(key)
 
@@ -507,7 +508,7 @@ class PersistentDict(_PersistentDictBase):
         _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
 
     def store(self, key, value, _skip_if_present=False):
-        k = pickle.dumps(key)
+        k = self.key_builder(key)
 
         if _skip_if_present and k in self.db:
             return
@@ -515,7 +516,7 @@ class PersistentDict(_PersistentDictBase):
         self.db[k] = value
 
     def fetch(self, key):
-        k = pickle.dumps(key)
+        k = self.key_builder(key)
 
         try:
             return self.db[k]
@@ -523,7 +524,7 @@ class PersistentDict(_PersistentDictBase):
             raise NoSuchEntryError(key)
 
     def remove(self, key):
-        k = pickle.dumps(key)
+        k = self.key_builder(key)
 
         try:
             del self.db[k]
