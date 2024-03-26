@@ -281,36 +281,36 @@ def test_write_once_persistent_dict_storage_and_lookup(in_mem_cache_size):
         shutil.rmtree(tmpdir)
 
 
-# def test_write_once_persistent_dict_lru_policy():
-#     try:
-#         tmpdir = tempfile.mkdtemp()
-#         pdict = WriteOncePersistentDict(
-#                 "pytools-test", container_dir=tmpdir, in_mem_cache_size=3)
+def test_write_once_persistent_dict_lru_policy():
+    try:
+        tmpdir = tempfile.mkdtemp()
+        pdict = WriteOncePersistentDict(
+                "pytools-test", container_dir=tmpdir, in_mem_cache_size=3)
 
-#         pdict[1] = PDictTestingKeyOrValue(1)
-#         pdict[2] = PDictTestingKeyOrValue(2)
-#         pdict[3] = PDictTestingKeyOrValue(3)
-#         pdict[4] = PDictTestingKeyOrValue(4)
+        pdict[1] = PDictTestingKeyOrValue(1)
+        pdict[2] = PDictTestingKeyOrValue(2)
+        pdict[3] = PDictTestingKeyOrValue(3)
+        pdict[4] = PDictTestingKeyOrValue(4)
 
-#         val1 = pdict.fetch(1)
+        val1 = pdict.fetch(1)
 
-#         assert pdict.fetch(1) is val1
-#         pdict.fetch(2)
-#         assert pdict.fetch(1) is val1
-#         pdict.fetch(2)
-#         pdict.fetch(3)
-#         assert pdict.fetch(1) is val1
-#         pdict.fetch(2)
-#         pdict.fetch(3)
-#         pdict.fetch(2)
-#         assert pdict.fetch(1) is val1
-#         pdict.fetch(2)
-#         pdict.fetch(3)
-#         pdict.fetch(4)
-#         assert pdict.fetch(1) is not val1
+        assert pdict.fetch(1) is val1
+        pdict.fetch(2)
+        assert pdict.fetch(1) is val1
+        pdict.fetch(2)
+        pdict.fetch(3)
+        assert pdict.fetch(1) is val1
+        pdict.fetch(2)
+        pdict.fetch(3)
+        pdict.fetch(2)
+        assert pdict.fetch(1) is val1
+        pdict.fetch(2)
+        pdict.fetch(3)
+        pdict.fetch(4)
+        assert pdict.fetch(1) is not val1
 
-#     finally:
-#         shutil.rmtree(tmpdir)
+    finally:
+        shutil.rmtree(tmpdir)
 
 
 def test_write_once_persistent_dict_synchronization():

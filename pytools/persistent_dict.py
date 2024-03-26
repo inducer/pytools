@@ -441,7 +441,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
     """A concurrent disk-backed dictionary that disallows overwriting/deletion.
 
     Compared with :class:`PersistentDict`, this class has faster
-    retrieval times.
+    retrieval times, because it uses an LRU cache to cache entries in memory.
 
     .. automethod:: __init__
     .. automethod:: __getitem__
@@ -462,9 +462,11 @@ class WriteOncePersistentDict(_PersistentDictBase):
             *in_mem_cache_size* items
         """
         _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
+        from functools import lru_cache
+        self._fetch = lru_cache(maxsize=in_mem_cache_size)(self._fetch)
 
     def clear_in_mem_cache(self):
-        pass
+        self._fetch.cache_clear()
 
     def store(self, key, value, _skip_if_present=False):
         k = self.key_builder(key)
@@ -476,14 +478,21 @@ class WriteOncePersistentDict(_PersistentDictBase):
 
         self.db[k] = value
 
+    def _fetch(self, keyhash):  # pylint:disable=method-hidden
+        # This is separate from fetch() to allow for LRU caching
+        return self.db[keyhash]
+
     def fetch(self, key):
         k = self.key_builder(key)
 
         try:
-            v = self.db[k]
-            return v
+            return self._fetch(k)
         except KeyError:
             raise NoSuchEntryError(key)
+
+    def clear(self):
+        _PersistentDictBase.clear(self)
+        self._fetch.cache_clear()
 
 
 class PersistentDict(_PersistentDictBase):
