@@ -29,12 +29,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-import collections.abc as abc
-import errno
 import hashlib
 import logging
 import os
-import shutil
+import pickle
+import sqlite3
 import sys
 from dataclasses import fields as dc_fields, is_dataclass
 from enum import Enum
@@ -65,120 +64,13 @@ valid across interpreter invocations, unlike Python's built-in hashes.
 This module also provides a disk-backed dictionary that uses persistent hashing.
 
 .. autoexception:: NoSuchEntryError
-.. autoexception:: NoSuchEntryInvalidKeyError
-.. autoexception:: NoSuchEntryInvalidContentsError
-.. autoexception:: NoSuchEntryCollisionError
 .. autoexception:: ReadOnlyEntryError
-
-.. autoexception:: CollisionWarning
 
 .. autoclass:: Hash
 .. autoclass:: KeyBuilder
 .. autoclass:: PersistentDict
 .. autoclass:: WriteOncePersistentDict
 """
-
-
-# {{{ cleanup managers
-
-class CleanupBase:
-    pass
-
-
-class CleanupManager(CleanupBase):
-    def __init__(self):
-        self.cleanups = []
-
-    def register(self, c):
-        self.cleanups.insert(0, c)
-
-    def clean_up(self):
-        for c in self.cleanups:
-            c.clean_up()
-
-    def error_clean_up(self):
-        for c in self.cleanups:
-            c.error_clean_up()
-
-
-class LockManager(CleanupBase):
-    def __init__(self, cleanup_m, lock_file, stacklevel=0):
-        self.lock_file = lock_file
-
-        attempts = 0
-        while True:
-            try:
-                self.fd = os.open(self.lock_file,
-                        os.O_CREAT | os.O_WRONLY | os.O_EXCL)
-                break
-            except OSError:
-                pass
-
-            # This value was chosen based on the py-filelock package:
-            # https://github.com/tox-dev/py-filelock/blob/a6c8fabc4192fa7a4ae19b1875ee842ec5eb4f61/src/filelock/_api.py#L113
-            wait_time_seconds = 0.05
-
-            # Warn every 10 seconds if not able to acquire lock
-            warn_attempts = int(10/wait_time_seconds)
-
-            # Exit after 60 seconds if not able to acquire lock
-            exit_attempts = int(60/wait_time_seconds)
-
-            from time import sleep
-            sleep(wait_time_seconds)
-
-            attempts += 1
-
-            if attempts % warn_attempts == 0:
-                from warnings import warn
-                warn("could not obtain lock -- "
-                        f"delete '{self.lock_file}' if necessary",
-                        stacklevel=1 + stacklevel)
-
-            if attempts > exit_attempts:
-                raise RuntimeError("waited more than one minute "
-                        f"on the lock file '{self.lock_file}' "
-                        "-- something is wrong")
-
-        cleanup_m.register(self)
-
-    def clean_up(self):
-        os.close(self.fd)
-        os.unlink(self.lock_file)
-
-    def error_clean_up(self):
-        pass
-
-
-class ItemDirManager(CleanupBase):
-    def __init__(self, cleanup_m, path, delete_on_error):
-        from os.path import isdir
-
-        self.existed = isdir(path)
-        self.path = path
-        self.delete_on_error = delete_on_error
-
-        cleanup_m.register(self)
-
-    def reset(self):
-        try:
-            shutil.rmtree(self.path)
-        except OSError as e:
-            if e.errno != errno.ENOENT:
-                raise
-
-    def mkdir(self):
-        from os import makedirs
-        makedirs(self.path, exist_ok=True)
-
-    def clean_up(self):
-        pass
-
-    def error_clean_up(self):
-        if self.delete_on_error:
-            self.reset()
-
-# }}}
 
 
 # {{{ key generation
@@ -443,147 +335,10 @@ class KeyBuilder:
 # }}}
 
 
-# {{{ lru cache
-
-class _LinkedList:
-    """The list operates on nodes of the form [value, leftptr, rightpr]. To create a
-    node of this form you can use `LinkedList.new_node().`
-
-    Supports inserting at the left and deleting from an arbitrary location.
-    """
-    def __init__(self):
-        self.count = 0
-        self.head = None
-        self.end = None
-
-    @staticmethod
-    def new_node(element):
-        return [element, None, None]
-
-    def __len__(self):
-        return self.count
-
-    def appendleft_node(self, node):
-        self.count += 1
-
-        if self.head is None:
-            self.head = self.end = node
-            return
-
-        self.head[1] = node
-        node[2] = self.head
-
-        self.head = node
-
-    def pop_node(self):
-        end = self.end
-        self.remove_node(end)
-        return end
-
-    def remove_node(self, node):
-        self.count -= 1
-
-        if self.head is self.end:
-            assert node is self.head
-            self.head = self.end = None
-            return
-
-        left = node[1]
-        right = node[2]
-
-        if left is None:
-            self.head = right
-        else:
-            left[2] = right
-
-        if right is None:
-            self.end = left
-        else:
-            right[1] = left
-
-        node[1] = node[2] = None
-
-
-class _LRUCache(abc.MutableMapping):
-    """A mapping that keeps at most *maxsize* items with an LRU replacement policy.
-    """
-    def __init__(self, maxsize):
-        self.lru_order = _LinkedList()
-        self.maxsize = maxsize
-        self.cache = {}
-
-    def __delitem__(self, item):
-        node = self.cache[item]
-        self.lru_order.remove_node(node)
-        del self.cache[item]
-
-    def __getitem__(self, item):
-        node = self.cache[item]
-        self.lru_order.remove_node(node)
-        self.lru_order.appendleft_node(node)
-        # A linked list node contains a tuple of the form (item, value).
-        return node[0][1]
-
-    def __contains__(self, item):
-        return item in self.cache
-
-    def __iter__(self):
-        return iter(self.cache)
-
-    def __len__(self) -> int:
-        return len(self.cache)
-
-    def clear(self):
-        self.cache.clear()
-        self.lru_order = _LinkedList()
-
-    def __setitem__(self, item, value):
-        if self.maxsize < 1:
-            return
-
-        try:
-            node = self.cache[item]
-            self.lru_order.remove_node(node)
-        except KeyError:
-            if len(self.lru_order) >= self.maxsize:
-                # Make room for new elements.
-                end_node = self.lru_order.pop_node()
-                del self.cache[end_node[0][0]]
-
-            node = self.lru_order.new_node((item, value))
-            self.cache[item] = node
-
-        self.lru_order.appendleft_node(node)
-
-        assert len(self.cache) == len(self.lru_order), \
-                (len(self.cache), len(self.lru_order))
-        assert len(self.lru_order) <= self.maxsize
-
-# }}}
-
-
 # {{{ top-level
 
 class NoSuchEntryError(KeyError):
     """Raised when an entry is not found in a :class:`PersistentDict`."""
-    pass
-
-
-class NoSuchEntryInvalidKeyError(NoSuchEntryError):
-    """Raised when an entry is not found in a :class:`PersistentDict` due to an
-    invalid key file."""
-    pass
-
-
-class NoSuchEntryInvalidContentsError(NoSuchEntryError):
-    """Raised when an entry is not found in a :class:`PersistentDict` due to an
-    invalid contents file."""
-    pass
-
-
-class NoSuchEntryCollisionError(NoSuchEntryError):
-    """Raised when an entry is not found in a :class:`PersistentDict`, but it
-    contains an entry with the same hash key (hash collision)."""
     pass
 
 
@@ -593,14 +348,10 @@ class ReadOnlyEntryError(KeyError):
     pass
 
 
-class CollisionWarning(UserWarning):
-    """Warning raised when a collision is detected in a :class:`PersistentDict`."""
-    pass
-
-
 class _PersistentDictBase:
     def __init__(self, identifier, key_builder=None, container_dir=None):
         self.identifier = identifier
+        self.conn = None
 
         if key_builder is None:
             key_builder = KeyBuilder()
@@ -609,118 +360,91 @@ class _PersistentDictBase:
 
         from os.path import join
         if container_dir is None:
-            try:
-                import platformdirs as appdirs
-            except ImportError:
-                import appdirs
+            import platformdirs
 
             if sys.platform == "darwin" and os.getenv("XDG_CACHE_HOME") is not None:
-                # appdirs and platformdirs do not handle XDG_CACHE_HOME on macOS
+                # platformdirs does not handle XDG_CACHE_HOME on macOS
                 # https://github.com/platformdirs/platformdirs/issues/269
-                cache_dir = join(os.getenv("XDG_CACHE_HOME"), "pytools")
+                container_dir = join(os.getenv("XDG_CACHE_HOME"), "pytools")
             else:
-                cache_dir = appdirs.user_cache_dir("pytools", "pytools")
+                container_dir = platformdirs.user_cache_dir("pytools", "pytools")
 
-            container_dir = join(
-                    cache_dir,
-                    "pdict-v4-{}-py{}".format(
-                        identifier,
-                        ".".join(str(i) for i in sys.version_info)))
+        self.filename = join(container_dir, f"pdict-v6-{identifier}"
+                             + ".".join(str(i) for i in sys.version_info)
+                             + ".sqlite")
 
         self.container_dir = container_dir
-
         self._make_container_dir()
 
-    @staticmethod
-    def _warn(msg, category=UserWarning, stacklevel=0):
-        from warnings import warn
-        warn(msg, category, stacklevel=1 + stacklevel)
+        self.conn = sqlite3.connect(self.filename, isolation_level=None)
+        self.conn.execute(
+            "CREATE TABLE IF NOT EXISTS dict (key text NOT NULL PRIMARY KEY, value);"
+            )
 
-    def store_if_not_present(self, key, value, _stacklevel=0):
-        self.store(key, value, _skip_if_present=True, _stacklevel=1 + _stacklevel)
+        import platform
+        if platform.python_implementation() != "PyPy":
+            self.conn.execute("PRAGMA journal_mode = 'WAL';")
+        self.conn.execute("PRAGMA temp_store = 2;")
+        self.conn.execute("PRAGMA synchronous = 1;")
+        self.conn.execute("PRAGMA cache_size = -64000;")
 
-    def store(self, key, value, _skip_if_present=False, _stacklevel=0):
+    def __del__(self):
+        if self.conn:
+            self.conn.close()
+
+    def store_if_not_present(self, key, value):
+        self.store(key, value, _skip_if_present=True)
+
+    def store(self, key, value, _skip_if_present=False):
         raise NotImplementedError()
 
-    def fetch(self, key, _stacklevel=0):
+    def fetch(self, key):
         raise NotImplementedError()
-
-    @staticmethod
-    def _read(path):
-        from pickle import load
-        with open(path, "rb") as inf:
-            return load(inf)
-
-    @staticmethod
-    def _write(path, value):
-        from pickle import HIGHEST_PROTOCOL, dump
-        with open(path, "wb") as outf:
-            dump(value, outf, protocol=HIGHEST_PROTOCOL)
-
-    def _item_dir(self, hexdigest_key):
-        from os.path import join
-
-        # Some file systems limit the number of directories in a directory.
-        # For ext4, that limit appears to be 64K for example.
-        # This doesn't solve that problem, but it makes it much less likely
-
-        return join(self.container_dir,
-                hexdigest_key[:3],
-                hexdigest_key[3:6],
-                hexdigest_key[6:])
-
-    def _key_file(self, hexdigest_key):
-        from os.path import join
-        return join(self._item_dir(hexdigest_key), "key")
-
-    def _contents_file(self, hexdigest_key):
-        from os.path import join
-        return join(self._item_dir(hexdigest_key), "contents")
-
-    def _lock_file(self, hexdigest_key):
-        from os.path import join
-        return join(self.container_dir, str(hexdigest_key) + ".lock")
 
     def _make_container_dir(self):
         os.makedirs(self.container_dir, exist_ok=True)
 
-    def _collision_check(self, key, stored_key, _stacklevel):
-        if stored_key != key:
-            # Key collision, oh well.
-            self._warn(f"{self.identifier}: key collision in cache at "
-                    f"'{self.container_dir}' -- these are sufficiently unlikely "
-                    "that they're often indicative of a broken hash key "
-                    "implementation (that is not considering some elements "
-                    "relevant for equality comparison)",
-                    CollisionWarning,
-                    1 + _stacklevel)
-
-            # This is here so we can step through equality comparison to
-            # see what is actually non-equal.
-            stored_key == key  # pylint:disable=pointless-statement  # noqa: B015
-            raise NoSuchEntryCollisionError(key)
-
     def __getitem__(self, key):
-        return self.fetch(key, _stacklevel=1)
+        return self.fetch(key)
 
     def __setitem__(self, key, value):
-        self.store(key, value, _stacklevel=1)
+        self.store(key, value)
+
+    def __len__(self) -> int:
+        return next(self.conn.execute("SELECT COUNT(*) FROM dict"))[0]
+
+    def __iter__(self):
+        for row in self.conn.execute("SELECT key FROM dict ORDER BY rowid"):
+            yield row[0]
+
+    def keys(self):
+        for row in self.conn.execute("SELECT key FROM dict ORDER BY rowid"):
+            yield row[0]
+
+    def values(self):
+        for row in self.conn.execute("SELECT value FROM dict ORDER BY rowid"):
+            yield pickle.loads(row[0])
+
+    def items(self):
+        for row in self.conn.execute("SELECT key, value FROM dict ORDER BY rowid"):
+            yield (row[0], pickle.loads(row[1]))
+
+    def size(self):
+        return next(self.conn.execute("SELECT page_size * page_count FROM "
+                          "pragma_page_size(), pragma_page_count();"))[0]
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({self.filename}, nitems={len(self)})"
 
     def clear(self):
-        try:
-            shutil.rmtree(self.container_dir)
-        except OSError as e:
-            if e.errno != errno.ENOENT:
-                raise
-
-        self._make_container_dir()
+        self.conn.execute("DELETE FROM dict;")
 
 
 class WriteOncePersistentDict(_PersistentDictBase):
     """A concurrent disk-backed dictionary that disallows overwriting/deletion.
 
     Compared with :class:`PersistentDict`, this class has faster
-    retrieval times.
+    retrieval times, because it uses an LRU cache to cache entries in memory.
 
     .. automethod:: __init__
     .. automethod:: __getitem__
@@ -732,7 +456,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
     .. automethod:: fetch
     """
     def __init__(self, identifier, key_builder=None, container_dir=None,
-             in_mem_cache_size=256):
+                 in_mem_cache_size=256):
         """
         :arg identifier: a file-name-compatible string identifying this
             dictionary
@@ -741,146 +465,42 @@ class WriteOncePersistentDict(_PersistentDictBase):
             *in_mem_cache_size* items
         """
         _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
-        self._in_mem_cache_size = in_mem_cache_size
-        self.clear_in_mem_cache()
+        from functools import lru_cache
+        self._fetch = lru_cache(maxsize=in_mem_cache_size)(self._fetch)
 
-    def clear_in_mem_cache(self) -> None:
-        """
-        .. versionadded:: 2023.1.1
-        """
+    def clear_in_mem_cache(self):
+        self._fetch.cache_clear()
 
-        self._cache = _LRUCache(self._in_mem_cache_size)
-
-    def _spin_until_removed(self, lock_file, stacklevel):
-        from os.path import exists
-
-        attempts = 0
-        while exists(lock_file):
-            from time import sleep
-            sleep(1)
-
-            attempts += 1
-
-            if attempts > 10:
-                self._warn(
-                        f"waiting until unlocked--delete '{lock_file}' if necessary",
-                        stacklevel=1 + stacklevel)
-
-            if attempts > 3 * 60:
-                raise RuntimeError("waited more than three minutes "
-                        f"on the lock file '{lock_file}'"
-                        "--something is wrong")
-
-    def store(self, key, value, _skip_if_present=False, _stacklevel=0):
-        hexdigest_key = self.key_builder(key)
-
-        cleanup_m = CleanupManager()
-        try:
-            try:
-                LockManager(cleanup_m, self._lock_file(hexdigest_key),
-                        1 + _stacklevel)
-                item_dir_m = ItemDirManager(
-                        cleanup_m, self._item_dir(hexdigest_key),
-                        delete_on_error=False)
-
-                if item_dir_m.existed:
-                    if _skip_if_present:
-                        return
-                    raise ReadOnlyEntryError(key)
-
-                item_dir_m.mkdir()
-
-                key_path = self._key_file(hexdigest_key)
-                value_path = self._contents_file(hexdigest_key)
-
-                self._write(value_path, value)
-                self._write(key_path, key)
-
-                logger.debug("%s: disk cache store [key=%s]",
-                        self.identifier, hexdigest_key)
-            except Exception:
-                cleanup_m.error_clean_up()
-                raise
-        finally:
-            cleanup_m.clean_up()
-
-    def fetch(self, key, _stacklevel=0):
-        hexdigest_key = self.key_builder(key)
-
-        # {{{ in memory cache
+    def store(self, key, value, _skip_if_present=False):
+        k = self.key_builder(key)
+        v = pickle.dumps(value)
 
         try:
-            stored_key, stored_value = self._cache[hexdigest_key]
+            self.conn.execute("INSERT INTO dict VALUES (?, ?)", (k, v))
+        except sqlite3.IntegrityError:
+            if not _skip_if_present:
+                raise ReadOnlyEntryError("WriteOncePersistentDict, "
+                                         "tried overwriting key")
+
+    def _fetch(self, keyhash):  # pylint:disable=method-hidden
+        # This is separate from fetch() to allow for LRU caching
+        c = self.conn.execute("SELECT value FROM dict WHERE key=?", (keyhash,))
+        row = c.fetchone()
+        if row is None:
+            raise KeyError
+        return pickle.loads(row[0])
+
+    def fetch(self, key):
+        k = self.key_builder(key)
+
+        try:
+            return self._fetch(k)
         except KeyError:
-            pass
-        else:
-            logger.debug("%s: in mem cache hit [key=%s]",
-                    self.identifier, hexdigest_key)
-            self._collision_check(key, stored_key, 1 + _stacklevel)
-            return stored_value
-
-        # }}}
-
-        # {{{ check path exists and is unlocked
-
-        item_dir = self._item_dir(hexdigest_key)
-
-        from os.path import isdir
-        if not isdir(item_dir):
-            logger.debug("%s: disk cache miss [key=%s]",
-                    self.identifier, hexdigest_key)
             raise NoSuchEntryError(key)
-
-        lock_file = self._lock_file(hexdigest_key)
-        self._spin_until_removed(lock_file, 1 + _stacklevel)
-
-        # }}}
-
-        key_file = self._key_file(hexdigest_key)
-        contents_file = self._contents_file(hexdigest_key)
-
-        # Note: Unlike PersistentDict, this doesn't autodelete invalid entires,
-        # because that would lead to a race condition.
-
-        # {{{ load key file and do equality check
-
-        try:
-            read_key = self._read(key_file)
-        except Exception as e:
-            self._warn(f"{type(self).__name__}({self.identifier}) "
-                    f"encountered an invalid key file for key {hexdigest_key}. "
-                    f"Remove the directory '{item_dir}' if necessary. "
-                    f"(caught: {type(e).__name__}: {e})",
-                    stacklevel=1 + _stacklevel)
-            raise NoSuchEntryInvalidKeyError(key)
-
-        self._collision_check(key, read_key, 1 + _stacklevel)
-
-        # }}}
-
-        logger.debug("%s: disk cache hit [key=%s]",
-                self.identifier, hexdigest_key)
-
-        # {{{ load contents
-
-        try:
-            read_contents = self._read(contents_file)
-        except Exception as e:
-            self._warn(f"{type(self).__name__}({self.identifier}) "
-                    f"encountered an invalid contents file for key {hexdigest_key}. "
-                    f"Remove the directory '{item_dir}' if necessary."
-                    f"(caught: {type(e).__name__}: {e})",
-                    stacklevel=1 + _stacklevel)
-            raise NoSuchEntryInvalidContentsError(key)
-
-        # }}}
-
-        self._cache[hexdigest_key] = (key, read_contents)
-        return read_contents
 
     def clear(self):
         _PersistentDictBase.clear(self)
-        self._cache.clear()
+        self._fetch.cache_clear()
 
 
 class PersistentDict(_PersistentDictBase):
@@ -904,147 +524,38 @@ class PersistentDict(_PersistentDictBase):
         """
         _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
 
-    def store(self, key, value, _skip_if_present=False, _stacklevel=0):
-        hexdigest_key = self.key_builder(key)
+    def store(self, key, value, _skip_if_present=False):
+        k = self.key_builder(key)
+        v = pickle.dumps(value)
 
-        cleanup_m = CleanupManager()
-        try:
+        if _skip_if_present:
             try:
-                LockManager(cleanup_m, self._lock_file(hexdigest_key),
-                        1 + _stacklevel)
-                item_dir_m = ItemDirManager(
-                        cleanup_m, self._item_dir(hexdigest_key),
-                        delete_on_error=True)
+                self.conn.execute("INSERT INTO dict VALUES (?, ?)", (k, v))
+            except sqlite3.IntegrityError:
+                # Key was already present
+                return
+        else:
+            self.conn.execute("INSERT OR REPLACE INTO dict VALUES (?, ?)", (k, v))
 
-                if item_dir_m.existed:
-                    if _skip_if_present:
-                        return
-                    item_dir_m.reset()
+    def fetch(self, key):
+        k = self.key_builder(key)
 
-                item_dir_m.mkdir()
-
-                key_path = self._key_file(hexdigest_key)
-                value_path = self._contents_file(hexdigest_key)
-
-                self._write(value_path, value)
-                self._write(key_path, key)
-
-                logger.debug("%s: cache store [key=%s]",
-                        self.identifier, hexdigest_key)
-            except Exception:
-                cleanup_m.error_clean_up()
-                raise
-        finally:
-            cleanup_m.clean_up()
-
-    def fetch(self, key, _stacklevel=0):
-        hexdigest_key = self.key_builder(key)
-        item_dir = self._item_dir(hexdigest_key)
-
-        from os.path import isdir
-        if not isdir(item_dir):
-            logger.debug("%s: cache miss [key=%s]",
-                    self.identifier, hexdigest_key)
+        c = self.conn.execute("SELECT value FROM dict WHERE key=?", (k,))
+        row = c.fetchone()
+        if row is None:
             raise NoSuchEntryError(key)
+        return pickle.loads(row[0])
 
-        cleanup_m = CleanupManager()
-        try:
-            try:
-                LockManager(cleanup_m, self._lock_file(hexdigest_key),
-                        1 + _stacklevel)
-                item_dir_m = ItemDirManager(
-                        cleanup_m, item_dir, delete_on_error=False)
+    def remove(self, key):
+        k = self.key_builder(key)
 
-                key_path = self._key_file(hexdigest_key)
-                value_path = self._contents_file(hexdigest_key)
-
-                # {{{ load key
-
-                try:
-                    read_key = self._read(key_path)
-                except Exception as e:
-                    item_dir_m.reset()
-                    self._warn(f"{type(self).__name__}({self.identifier}) "
-                            "encountered an invalid key file for key "
-                            f"{hexdigest_key}. Entry deleted."
-                            f"(caught: {type(e).__name__}: {e})",
-                            stacklevel=1 + _stacklevel)
-                    raise NoSuchEntryInvalidKeyError(key)
-
-                self._collision_check(key, read_key, 1 + _stacklevel)
-
-                # }}}
-
-                logger.debug("%s: cache hit [key=%s]",
-                        self.identifier, hexdigest_key)
-
-                # {{{ load value
-
-                try:
-                    read_contents = self._read(value_path)
-                except Exception as e:
-                    item_dir_m.reset()
-                    self._warn(f"{type(self).__name__}({self.identifier}) "
-                            "encountered an invalid contents file for key "
-                            f"{hexdigest_key}. Entry deleted."
-                            f"(caught: {type(e).__name__}: {e})",
-                            stacklevel=1 + _stacklevel)
-                    raise NoSuchEntryInvalidContentsError(key)
-
-                return read_contents
-
-                # }}}
-
-            except Exception:
-                cleanup_m.error_clean_up()
-                raise
-        finally:
-            cleanup_m.clean_up()
-
-    def remove(self, key, _stacklevel=0):
-        hexdigest_key = self.key_builder(key)
-
-        item_dir = self._item_dir(hexdigest_key)
-        from os.path import isdir
-        if not isdir(item_dir):
+        self.conn.execute("DELETE FROM dict WHERE key=?", (k,))
+        changes = next(self.conn.execute("SELECT changes()"))[0]
+        if changes == 0:
             raise NoSuchEntryError(key)
-
-        cleanup_m = CleanupManager()
-        try:
-            try:
-                LockManager(cleanup_m, self._lock_file(hexdigest_key),
-                        1 + _stacklevel)
-                item_dir_m = ItemDirManager(
-                        cleanup_m, item_dir, delete_on_error=False)
-                key_file = self._key_file(hexdigest_key)
-
-                # {{{ load key
-
-                try:
-                    read_key = self._read(key_file)
-                except Exception as e:
-                    item_dir_m.reset()
-                    self._warn(f"{type(self).__name__}({self.identifier}) "
-                            "encountered an invalid key file for key "
-                            f"{hexdigest_key}. Entry deleted"
-                            f"(caught: {type(e).__name__}: {e})",
-                            stacklevel=1 + _stacklevel)
-                    raise NoSuchEntryInvalidKeyError(key)
-
-                self._collision_check(key, read_key, 1 + _stacklevel)
-
-                # }}}
-
-                item_dir_m.reset()
-
-            except Exception:
-                cleanup_m.error_clean_up()
-                raise
-        finally:
-            cleanup_m.clean_up()
 
     def __delitem__(self, key):
-        self.remove(key, _stacklevel=1)
+        self.remove(key)
 
 # }}}
 

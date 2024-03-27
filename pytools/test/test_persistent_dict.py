@@ -7,8 +7,8 @@ from enum import Enum, IntEnum
 import pytest
 
 from pytools.persistent_dict import (
-    CollisionWarning, KeyBuilder, NoSuchEntryCollisionError, NoSuchEntryError,
-    PersistentDict, ReadOnlyEntryError, WriteOncePersistentDict)
+    KeyBuilder, NoSuchEntryError, PersistentDict, ReadOnlyEntryError,
+    WriteOncePersistentDict)
 from pytools.tag import Tag, tag_dataclass
 
 
@@ -202,37 +202,6 @@ def test_persistent_dict_synchronization():
         shutil.rmtree(tmpdir)
 
 
-def test_persistent_dict_cache_collisions():
-    try:
-        tmpdir = tempfile.mkdtemp()
-        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
-
-        key1 = PDictTestingKeyOrValue(1, hash_key=0)
-        key2 = PDictTestingKeyOrValue(2, hash_key=0)
-
-        pdict[key1] = 1
-
-        # check lookup
-        with pytest.warns(CollisionWarning):
-            with pytest.raises(NoSuchEntryCollisionError):
-                pdict.fetch(key2)
-
-        # check deletion
-        with pytest.warns(CollisionWarning):
-            with pytest.raises(NoSuchEntryCollisionError):
-                del pdict[key2]
-
-        # check presence after deletion
-        assert pdict[key1] == 1
-
-        # check store_if_not_present
-        pdict.store_if_not_present(key2, 2)
-        assert pdict[key1] == 1
-
-    finally:
-        shutil.rmtree(tmpdir)
-
-
 def test_persistent_dict_clear():
     try:
         tmpdir = tempfile.mkdtemp()
@@ -326,32 +295,6 @@ def test_write_once_persistent_dict_synchronization():
         # check updating
         with pytest.raises(ReadOnlyEntryError):
             pdict2[1] = 1
-
-    finally:
-        shutil.rmtree(tmpdir)
-
-
-def test_write_once_persistent_dict_cache_collisions():
-    try:
-        tmpdir = tempfile.mkdtemp()
-        pdict = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
-
-        key1 = PDictTestingKeyOrValue(1, hash_key=0)
-        key2 = PDictTestingKeyOrValue(2, hash_key=0)
-        pdict[key1] = 1
-
-        # check lookup
-        with pytest.warns(CollisionWarning):
-            with pytest.raises(NoSuchEntryCollisionError):
-                pdict.fetch(key2)
-
-        # check update
-        with pytest.raises(ReadOnlyEntryError):
-            pdict[key2] = 1
-
-        # check store_if_not_present
-        pdict.store_if_not_present(key2, 2)
-        assert pdict[key1] == 1
 
     finally:
         shutil.rmtree(tmpdir)
@@ -602,6 +545,94 @@ def test_xdg_cache_home():
             del os.environ["XDG_CACHE_HOME"]
 
         shutil.rmtree(xdg_dir)
+
+
+def test_speed():
+    import time
+
+    tmpdir = tempfile.mkdtemp()
+    pdict = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+
+    start = time.time()
+    for i in range(10000):
+        pdict[i] = i
+    end = time.time()
+    print("persistent dict write time: ", end-start)
+
+    start = time.time()
+    for _ in range(5):
+        for i in range(10000):
+            pdict[i]
+    end = time.time()
+    print("persistent dict read time: ", end-start)
+
+    shutil.rmtree(tmpdir)
+
+
+def test_size():
+    try:
+        tmpdir = tempfile.mkdtemp()
+        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+
+        for i in range(10000):
+            pdict[f"foobarbazfoobbb{i}"] = i
+
+        size = pdict.size()
+        print("sqlite size: ", size/1024/1024, " MByte")
+        assert 1*1024*1024 < size < 2*1024*1024
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+def test_len():
+    try:
+        tmpdir = tempfile.mkdtemp()
+        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+
+        assert len(pdict) == 0
+
+        for i in range(10000):
+            pdict[i] = i
+
+        assert len(pdict) == 10000
+
+        pdict.clear()
+
+        assert len(pdict) == 0
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+def test_repr():
+    try:
+        tmpdir = tempfile.mkdtemp()
+        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+
+        assert repr(pdict)[:15] == "PersistentDict("
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+def test_keys_values_items():
+    try:
+        tmpdir = tempfile.mkdtemp()
+        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+
+        for i in range(10000):
+            pdict[i] = i
+
+        # This also tests deterministic iteration order
+        assert len(list(pdict.keys())) == 10000 == len(set(pdict.keys()))
+        assert list(pdict.values()) == list(range(10000))
+        assert list(pdict.items()) == list(zip(list(pdict.keys()), range(10000)))
+
+        assert ([k for k in pdict.keys()]  # noqa: C416
+                == list(pdict.keys())
+                == list(pdict)
+                == [k for k in pdict])  # noqa: C416
+
+    finally:
+        shutil.rmtree(tmpdir)
 
 
 if __name__ == "__main__":
