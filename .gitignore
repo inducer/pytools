@@ -16,3 +16,6 @@ distribute*tar.gz
 .mypy_cache
 
 *.dat
+
+.pylintrc.yml
+.run-pylint.py
