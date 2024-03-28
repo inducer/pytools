@@ -489,17 +489,14 @@ class _PersistentDictBase:
 
         from os.path import join
         if container_dir is None:
-            try:
-                import platformdirs as appdirs
-            except ImportError:
-                import appdirs
+            import platformdirs
 
             if sys.platform == "darwin" and os.getenv("XDG_CACHE_HOME") is not None:
-                # appdirs and platformdirs do not handle XDG_CACHE_HOME on macOS
+                # platformdirs does not handle XDG_CACHE_HOME on macOS
                 # https://github.com/platformdirs/platformdirs/issues/269
                 cache_dir = join(os.getenv("XDG_CACHE_HOME"), "pytools")
             else:
-                cache_dir = appdirs.user_cache_dir("pytools", "pytools")
+                cache_dir = platformdirs.user_cache_dir("pytools", "pytools")
 
             container_dir = join(
                     cache_dir,
