@@ -32,6 +32,7 @@ intersphinx_mapping = {
     "pytest": ("https://docs.pytest.org/en/stable/", None),
     "setuptools": ("https://setuptools.pypa.io/en/latest/", None),
     "python": ("https://docs.python.org/3", None),
+    "platformdirs": ("https://platformdirs.readthedocs.io/en/latest/", None),
 }
 
 nitpicky = True
