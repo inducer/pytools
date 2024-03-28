@@ -29,6 +29,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+
 import hashlib
 import logging
 import os
@@ -444,7 +445,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
     """A concurrent disk-backed dictionary that disallows overwriting/deletion.
 
     Compared with :class:`PersistentDict`, this class has faster
-    retrieval times, because it uses an LRU cache to cache entries in memory.
+    retrieval times because it uses an LRU cache to cache entries in memory.
 
     .. automethod:: __init__
     .. automethod:: __getitem__
@@ -468,7 +469,10 @@ class WriteOncePersistentDict(_PersistentDictBase):
         from functools import lru_cache
         self._fetch = lru_cache(maxsize=in_mem_cache_size)(self._fetch)
 
-    def clear_in_mem_cache(self):
+    def clear_in_mem_cache(self) -> None:
+        """
+        .. versionadded:: 2023.1.1
+        """
         self._fetch.cache_clear()
 
     def store(self, key, value, _skip_if_present=False):
