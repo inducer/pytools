@@ -309,6 +309,14 @@ def test_write_once_persistent_dict_lru_policy():
         pdict.fetch(4)
         assert pdict.fetch(1) is not val1
 
+        # test clear_in_mem_cache
+        val1 = pdict.fetch(1)
+        pdict.clear_in_mem_cache()
+        assert pdict.fetch(1) is not val1
+
+        val1 = pdict.fetch(1)
+        assert pdict.fetch(1) is val1
+
     finally:
         shutil.rmtree(tmpdir)
 
