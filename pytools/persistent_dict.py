@@ -38,7 +38,7 @@ import sqlite3
 import sys
 from dataclasses import fields as dc_fields, is_dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Mapping, Protocol
+from typing import TYPE_CHECKING, Any, Generator, Mapping, Optional, Protocol
 
 
 if TYPE_CHECKING:
@@ -350,7 +350,9 @@ class ReadOnlyEntryError(KeyError):
 
 
 class _PersistentDictBase:
-    def __init__(self, identifier, key_builder=None, container_dir=None):
+    def __init__(self, identifier: str,
+                 key_builder: Optional[KeyBuilder] = None,
+                 container_dir: Optional[str] = None) -> None:
         self.identifier = identifier
         self.conn = None
 
@@ -389,55 +391,68 @@ class _PersistentDictBase:
         self.conn.execute("PRAGMA synchronous = 1;")
         self.conn.execute("PRAGMA cache_size = -64000;")
 
-    def __del__(self):
+    def __del__(self) -> None:
         if self.conn:
             self.conn.close()
 
-    def store_if_not_present(self, key, value):
+    def store_if_not_present(self, key: Any, value: Any) -> None:
+        """Store (*key*, *value*) if *key* is not already present."""
         self.store(key, value, _skip_if_present=True)
 
-    def store(self, key, value, _skip_if_present=False):
+    def store(self, key: Any, value: Any, _skip_if_present: bool = False) -> None:
+        """Store (*key*, *value*) in the dictionary."""
         raise NotImplementedError()
 
-    def fetch(self, key):
+    def fetch(self, key: Any) -> Any:
+        """Return the value associated with *key* in the dictionary."""
         raise NotImplementedError()
 
-    def _make_container_dir(self):
+    def _make_container_dir(self) -> None:
+        """Create the container directory to store the dictionary."""
         os.makedirs(self.container_dir, exist_ok=True)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: Any) -> Any:
+        """Return the value associated with *key* in the dictionary."""
         return self.fetch(key)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: Any, value: Any) -> None:
+        """Store (*key*, *value*) in the dictionary."""
         self.store(key, value)
 
     def __len__(self) -> int:
+        """Return the number of entries in the dictionary."""
         return next(self.conn.execute("SELECT COUNT(*) FROM dict"))[0]
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[str, None, None]:
+        """Return an iterator over the key hashes in the dictionary."""
+        return self.keys()
+
+    def keys(self) -> Generator[str, None, None]:
+        """Return an iterator over the key hashes in the dictionary."""
         for row in self.conn.execute("SELECT key FROM dict ORDER BY rowid"):
             yield row[0]
 
-    def keys(self):
-        for row in self.conn.execute("SELECT key FROM dict ORDER BY rowid"):
-            yield row[0]
-
-    def values(self):
+    def values(self) -> Generator[Any, None, None]:
+        """Return an iterator over the values in the dictionary."""
         for row in self.conn.execute("SELECT value FROM dict ORDER BY rowid"):
             yield pickle.loads(row[0])
 
-    def items(self):
+    def items(self) -> Generator[tuple[str, Any], None, None]:
+        """Return an iterator over the items in the dictionary."""
         for row in self.conn.execute("SELECT key, value FROM dict ORDER BY rowid"):
             yield (row[0], pickle.loads(row[1]))
 
-    def size(self):
+    def size(self) -> int:
+        """Return the size of the dictionary in bytes."""
         return next(self.conn.execute("SELECT page_size * page_count FROM "
                           "pragma_page_size(), pragma_page_count();"))[0]
 
     def __repr__(self) -> str:
+        """Return a string representation of the dictionary."""
         return f"{type(self).__name__}({self.filename}, nitems={len(self)})"
 
-    def clear(self):
+    def clear(self) -> None:
+        """Remove all entries from the dictionary."""
         self.conn.execute("DELETE FROM dict;")
 
 
@@ -456,14 +471,19 @@ class WriteOncePersistentDict(_PersistentDictBase):
     .. automethod:: store_if_not_present
     .. automethod:: fetch
     """
-    def __init__(self, identifier, key_builder=None, container_dir=None,
-                 in_mem_cache_size=256):
+    def __init__(self, identifier: str,
+                 key_builder: Optional[KeyBuilder] = None,
+                 container_dir: Optional[str] = None,
+                 in_mem_cache_size: int = 256) -> None:
         """
         :arg identifier: a file-name-compatible string identifying this
             dictionary
         :arg key_builder: a subclass of :class:`KeyBuilder`
+        :arg container_dir: the directory in which to store this
+            dictionary. If ``None``, the default cache directory from
+            :func:`platformdirs.user_cache_dir` is used
         :arg in_mem_cache_size: retain an in-memory cache of up to
-            *in_mem_cache_size* items
+            *in_mem_cache_size* items (with an LRU replacement policy)
         """
         _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
         from functools import lru_cache
@@ -471,11 +491,13 @@ class WriteOncePersistentDict(_PersistentDictBase):
 
     def clear_in_mem_cache(self) -> None:
         """
+        Clear the in-memory cache of this dictionary.
+
         .. versionadded:: 2023.1.1
         """
         self._fetch.cache_clear()
 
-    def store(self, key, value, _skip_if_present=False):
+    def store(self, key: Any, value: Any, _skip_if_present: bool = False) -> None:
         k = self.key_builder(key)
         v = pickle.dumps(value)
 
@@ -486,7 +508,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
                 raise ReadOnlyEntryError("WriteOncePersistentDict, "
                                          "tried overwriting key")
 
-    def _fetch(self, keyhash):  # pylint:disable=method-hidden
+    def _fetch(self, keyhash: str) -> Any:  # pylint:disable=method-hidden
         # This is separate from fetch() to allow for LRU caching
         c = self.conn.execute("SELECT value FROM dict WHERE key=?", (keyhash,))
         row = c.fetchone()
@@ -494,7 +516,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
             raise KeyError
         return pickle.loads(row[0])
 
-    def fetch(self, key):
+    def fetch(self, key: Any) -> Any:
         k = self.key_builder(key)
 
         try:
@@ -502,7 +524,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
         except KeyError:
             raise NoSuchEntryError(key)
 
-    def clear(self):
+    def clear(self) -> None:
         _PersistentDictBase.clear(self)
         self._fetch.cache_clear()
 
@@ -520,15 +542,21 @@ class PersistentDict(_PersistentDictBase):
     .. automethod:: fetch
     .. automethod:: remove
     """
-    def __init__(self, identifier, key_builder=None, container_dir=None):
+    def __init__(self,
+                 identifier: str,
+                 key_builder: Optional[KeyBuilder] = None,
+                 container_dir: Optional[str] = None) -> None:
         """
         :arg identifier: a file-name-compatible string identifying this
             dictionary
         :arg key_builder: a subclass of :class:`KeyBuilder`
+        :arg container_dir: the directory in which to store this
+            dictionary. If ``None``, the default cache directory from
+            :func:`platformdirs.user_cache_dir` is used
         """
         _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
 
-    def store(self, key, value, _skip_if_present=False):
+    def store(self, key: Any, value: Any, _skip_if_present: bool = False) -> None:
         k = self.key_builder(key)
         v = pickle.dumps(value)
 
@@ -541,7 +569,7 @@ class PersistentDict(_PersistentDictBase):
         else:
             self.conn.execute("INSERT OR REPLACE INTO dict VALUES (?, ?)", (k, v))
 
-    def fetch(self, key):
+    def fetch(self, key: Any) -> Any:
         k = self.key_builder(key)
 
         c = self.conn.execute("SELECT value FROM dict WHERE key=?", (k,))
@@ -550,7 +578,8 @@ class PersistentDict(_PersistentDictBase):
             raise NoSuchEntryError(key)
         return pickle.loads(row[0])
 
-    def remove(self, key):
+    def remove(self, key: Any) -> None:
+        """Remove the entry associated with *key* from the dictionary."""
         k = self.key_builder(key)
 
         self.conn.execute("DELETE FROM dict WHERE key=?", (k,))
@@ -558,7 +587,8 @@ class PersistentDict(_PersistentDictBase):
         if changes == 0:
             raise NoSuchEntryError(key)
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: Any) -> None:
+        """Remove the entry associated with *key* from the dictionary."""
         self.remove(key)
 
 # }}}
