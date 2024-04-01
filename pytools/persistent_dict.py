@@ -37,7 +37,7 @@ import shutil
 import sys
 from dataclasses import fields as dc_fields, is_dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Mapping, Optional, Protocol
+from typing import TYPE_CHECKING, Any, Generic, Mapping, Optional, Protocol, TypeVar
 
 
 if TYPE_CHECKING:
@@ -478,7 +478,11 @@ class CollisionWarning(UserWarning):
     pass
 
 
-class _PersistentDictBase:
+K = TypeVar("K")
+V = TypeVar("V")
+
+
+class _PersistentDictBase(Generic[K, V]):
     def __init__(self, identifier: str,
                  key_builder: Optional[KeyBuilder] = None,
                  container_dir: Optional[str] = None) -> None:
@@ -515,33 +519,33 @@ class _PersistentDictBase:
         from warnings import warn
         warn(msg, category, stacklevel=1 + stacklevel)
 
-    def store_if_not_present(self, key: Any, value: Any,
+    def store_if_not_present(self, key: K, value: V,
                              _stacklevel: int = 0) -> None:
         """Store (*key*, *value*) if *key* is not already present."""
         self.store(key, value, _skip_if_present=True, _stacklevel=1 + _stacklevel)
 
-    def store(self, key: Any, value: Any, _skip_if_present: bool = False,
+    def store(self, key: K, value: V, _skip_if_present: bool = False,
               _stacklevel: int = 0) -> None:
         """Store (*key*, *value*) in the dictionary."""
         raise NotImplementedError()
 
-    def fetch(self, key: Any, _stacklevel: int = 0) -> Any:
+    def fetch(self, key: K, _stacklevel: int = 0) -> V:
         """Return the value associated with *key* in the dictionary."""
         raise NotImplementedError()
 
     @staticmethod
-    def _read(path):
+    def _read(path: str) -> V:
         from pickle import load
         with open(path, "rb") as inf:
             return load(inf)
 
     @staticmethod
-    def _write(path, value):
+    def _write(path: str, value: V) -> None:
         from pickle import HIGHEST_PROTOCOL, dump
         with open(path, "wb") as outf:
             dump(value, outf, protocol=HIGHEST_PROTOCOL)
 
-    def _item_dir(self, hexdigest_key):
+    def _item_dir(self, hexdigest_key: str) -> str:
         from os.path import join
 
         # Some file systems limit the number of directories in a directory.
@@ -553,15 +557,15 @@ class _PersistentDictBase:
                 hexdigest_key[3:6],
                 hexdigest_key[6:])
 
-    def _key_file(self, hexdigest_key):
+    def _key_file(self, hexdigest_key: str) -> str:
         from os.path import join
         return join(self._item_dir(hexdigest_key), "key")
 
-    def _contents_file(self, hexdigest_key):
+    def _contents_file(self, hexdigest_key: str) -> str:
         from os.path import join
         return join(self._item_dir(hexdigest_key), "contents")
 
-    def _lock_file(self, hexdigest_key):
+    def _lock_file(self, hexdigest_key: str) -> str:
         from os.path import join
         return join(self.container_dir, str(hexdigest_key) + ".lock")
 
@@ -569,7 +573,7 @@ class _PersistentDictBase:
         """Create the container directory to store the dictionary."""
         os.makedirs(self.container_dir, exist_ok=True)
 
-    def _collision_check(self, key, stored_key, _stacklevel):
+    def _collision_check(self, key: K, stored_key: K, _stacklevel: int) -> None:
         if stored_key != key:
             # Key collision, oh well.
             self._warn(f"{self.identifier}: key collision in cache at "
@@ -585,11 +589,11 @@ class _PersistentDictBase:
             stored_key == key  # pylint:disable=pointless-statement  # noqa: B015
             raise NoSuchEntryCollisionError(key)
 
-    def __getitem__(self, key: Any) -> Any:
+    def __getitem__(self, key: K) -> V:
         """Return the value associated with *key* in the dictionary."""
         return self.fetch(key, _stacklevel=1)
 
-    def __setitem__(self, key: Any, value: Any) -> None:
+    def __setitem__(self, key: K, value: V) -> None:
         """Store (*key*, *value*) in the dictionary."""
         self.store(key, value, _stacklevel=1)
 
@@ -647,7 +651,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
 
         self._fetch.cache_clear()
 
-    def _spin_until_removed(self, lock_file, stacklevel):
+    def _spin_until_removed(self, lock_file: str, stacklevel: int) -> None:
         from os.path import exists
 
         attempts = 0
@@ -667,7 +671,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
                         f"on the lock file '{lock_file}'"
                         "--something is wrong")
 
-    def store(self, key: Any, value: Any, _skip_if_present: bool = False,
+    def store(self, key: K, value: V, _skip_if_present: bool = False,
               _stacklevel: int = 0) -> None:
         hexdigest_key = self.key_builder(key)
 
@@ -701,7 +705,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
         finally:
             cleanup_m.clean_up()
 
-    def fetch(self, key: Any, _stacklevel: int = 0) -> Any:
+    def fetch(self, key: K, _stacklevel: int = 0) -> Any:
         hexdigest_key = self.key_builder(key)
 
         (stored_key, stored_value) = self._fetch(hexdigest_key, 1 + _stacklevel)
@@ -711,7 +715,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
         return stored_value
 
     def _fetch(self, hexdigest_key: str,  # pylint:disable=method-hidden
-               _stacklevel: int = 0) -> Any:
+               _stacklevel: int = 0) -> V:
         # This is separate from fetch() to allow for LRU caching
 
         # {{{ check path exists and is unlocked
@@ -800,7 +804,7 @@ class PersistentDict(_PersistentDictBase):
         """
         _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
 
-    def store(self, key: Any, value: Any, _skip_if_present: bool = False,
+    def store(self, key: K, value: V, _skip_if_present: bool = False,
               _stacklevel: int = 0) -> None:
         hexdigest_key = self.key_builder(key)
 
@@ -834,7 +838,7 @@ class PersistentDict(_PersistentDictBase):
         finally:
             cleanup_m.clean_up()
 
-    def fetch(self, key: Any, _stacklevel: int = 0) -> Any:
+    def fetch(self, key: K, _stacklevel: int = 0) -> V:
         hexdigest_key = self.key_builder(key)
         item_dir = self._item_dir(hexdigest_key)
 
@@ -898,7 +902,7 @@ class PersistentDict(_PersistentDictBase):
         finally:
             cleanup_m.clean_up()
 
-    def remove(self, key: Any, _stacklevel: int = 0) -> None:
+    def remove(self, key: K, _stacklevel: int = 0) -> None:
         """Remove the entry associated with *key* from the dictionary."""
         hexdigest_key = self.key_builder(key)
 
@@ -941,7 +945,7 @@ class PersistentDict(_PersistentDictBase):
         finally:
             cleanup_m.clean_up()
 
-    def __delitem__(self, key: Any) -> None:
+    def __delitem__(self, key: K) -> None:
         """Remove the entry associated with *key* from the dictionary."""
         self.remove(key, _stacklevel=1)
 
