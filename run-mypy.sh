@@ -2,6 +2,6 @@
 
 set -ex
 
-mypy --show-error-codes pytools
+mypy pytools
 
-mypy --strict --follow-imports=skip pytools/datatable.py
+mypy --strict pytools/datatable.py
