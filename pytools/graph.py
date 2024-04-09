@@ -5,6 +5,7 @@ __copyright__ = """
 Copyright (C) 2009-2013 Andreas Kloeckner
 Copyright (C) 2020 Matt Wala
 Copyright (C) 2020 James Stevens
+Copyright (C) 2024 Addison Alvey-Blanco
 """
 
 __license__ = """
@@ -47,6 +48,8 @@ Graph Algorithms
 .. autofunction:: as_graphviz_dot
 .. autofunction:: validate_graph
 .. autofunction:: is_connected
+.. autofunction:: undirected_graph_from_edges
+.. autofunction:: get_reachable_nodes
 
 Type Variables Used
 -------------------
@@ -71,8 +74,10 @@ from typing import (
     Callable,
     Collection,
     Dict,
+    FrozenSet,
     Generic,
     Hashable,
+    Iterable,
     Iterator,
     List,
     Mapping,
@@ -97,7 +102,6 @@ else:
 
 
 NodeT = TypeVar("NodeT", bound=Hashable)
-
 
 GraphT: TypeAlias[NodeT] = Mapping[NodeT, Collection[NodeT]]
 
@@ -511,7 +515,7 @@ def validate_graph(graph: GraphT[NodeT]) -> None:
 # }}}
 
 
-# {{{
+# {{{ is_connected
 
 def is_connected(graph: GraphT[NodeT]) -> bool:
     """
@@ -541,6 +545,53 @@ def is_connected(graph: GraphT[NodeT]) -> bool:
     dfs(next(iter(graph.keys())))
 
     return visited == graph.keys()
+
+# }}}
+
+
+def undirected_graph_from_edges(
+            edges: Iterable[Tuple[NodeT, NodeT]],
+        ) -> GraphT[NodeT]:
+    """
+    Constructs an undirected graph using *edges*.
+
+    :arg edges: An :class:`Iterable` of pairs of related :class:`NodeT` s.
+
+    :returns: A :class:`GraphT` that is the undirected graph.
+    """
+    undirected_graph: Dict[NodeT, Set[NodeT]] = {}
+
+    for lhs, rhs in edges:
+        if lhs == rhs:
+            raise TypeError("Found loop in edges,"
+                            f" LHS, RHS = {lhs}")
+
+        undirected_graph.setdefault(lhs, set()).add(rhs)
+        undirected_graph.setdefault(rhs, set()).add(lhs)
+
+    return undirected_graph
+
+
+def get_reachable_nodes(
+        undirected_graph: GraphT[NodeT],
+        source_node: NodeT) -> FrozenSet[NodeT]:
+    """
+    Returns a :class:`frozenset` of all nodes in *undirected_graph* that are
+    reachable from *source_node*.
+    """
+    nodes_visited: Set[NodeT] = set()
+    nodes_to_visit = {source_node}
+
+    while nodes_to_visit:
+        current_node = nodes_to_visit.pop()
+        nodes_visited.add(current_node)
+
+        neighbors = undirected_graph[current_node]
+        nodes_to_visit.update({node
+                               for node in neighbors
+                               if node not in nodes_visited})
+
+    return frozenset(nodes_visited)
 
 
 # vim: foldmethod=marker

@@ -431,6 +431,38 @@ def test_is_connected():
     assert is_connected({})
 
 
+def test_propagation_graph_tools():
+    from pytools.graph import (
+        get_reachable_nodes,
+        undirected_graph_from_edges,
+    )
+
+    vars = {"a", "b", "c", "d", "e", "f", "g"}
+
+    constraints = [
+        ("a", "b"),
+        ("a", "d"),
+        ("c", "d"),
+        ("e", "f"),
+        ("f", "g")
+    ]
+
+    all_reachable_nodes = {
+        "a": frozenset({"a", "b", "c", "d"}),
+        "b": frozenset({"a", "b", "c", "d"}),
+        "c": frozenset({"a", "b", "c", "d"}),
+        "e": frozenset({"e", "f", "g"}),
+        "f": frozenset({"e", "f", "g"}),
+        "g": frozenset({"e", "f", "g"})
+    }
+
+    propagation_graph = undirected_graph_from_edges(constraints)
+    assert (
+        all_reachable_nodes[var] == get_reachable_nodes(propagation_graph, var)
+        for var in vars
+    )
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
