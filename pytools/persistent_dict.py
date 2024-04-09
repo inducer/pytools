@@ -500,7 +500,7 @@ class _PersistentDictBase:
 
             container_dir = join(
                     cache_dir,
-                    "pdict-v4-{}-py{}".format(
+                    "pdict-v5-{}-py{}".format(
                         identifier,
                         ".".join(str(i) for i in sys.version_info)))
 
@@ -524,14 +524,20 @@ class _PersistentDictBase:
 
     @staticmethod
     def _read(path):
+        import lzma
         from pickle import load
-        with open(path, "rb") as inf:
-            return load(inf)
+        try:
+            with lzma.open(path, "rb") as inf:
+                return load(inf)
+        except lzma.LZMAError:
+            with open(path, "rb") as inf:
+                return load(inf)
 
     @staticmethod
     def _write(path, value):
+        import lzma
         from pickle import HIGHEST_PROTOCOL, dump
-        with open(path, "wb") as outf:
+        with lzma.open(path, "wb") as outf:
             dump(value, outf, protocol=HIGHEST_PROTOCOL)
 
     def _item_dir(self, hexdigest_key):
@@ -542,9 +548,8 @@ class _PersistentDictBase:
         # This doesn't solve that problem, but it makes it much less likely
 
         return join(self.container_dir,
-                hexdigest_key[:3],
-                hexdigest_key[3:6],
-                hexdigest_key[6:])
+                hexdigest_key[:1],
+                hexdigest_key[1:])
 
     def _key_file(self, hexdigest_key):
         from os.path import join
