@@ -75,6 +75,18 @@ This module also provides a disk-backed dictionary that uses persistent hashing.
 .. autoclass:: KeyBuilder
 .. autoclass:: PersistentDict
 .. autoclass:: WriteOncePersistentDict
+
+
+Internal stuff that is only here because the documentation tool wants it
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. class:: K
+
+    A type variable for the key type of a :class:`PersistentDict`.
+
+.. class:: V
+
+    A type variable for the value type of a :class:`PersistentDict`.
 """
 
 
