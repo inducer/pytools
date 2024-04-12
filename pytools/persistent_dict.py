@@ -38,7 +38,8 @@ import sqlite3
 import sys
 from dataclasses import fields as dc_fields, is_dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Generator, Mapping, Optional, Protocol
+from typing import (
+    TYPE_CHECKING, Any, Generator, Mapping, Optional, Protocol, TypeVar)
 
 
 if TYPE_CHECKING:
@@ -372,7 +373,11 @@ class CollisionWarning(UserWarning):
     pass
 
 
-class _PersistentDictBase:
+K = TypeVar("K")
+V = TypeVar("V")
+
+
+class _PersistentDictBase(Mapping[K, V]):
     def __init__(self, identifier: str,
                  key_builder: Optional[KeyBuilder] = None,
                  container_dir: Optional[str] = None) -> None:
