@@ -343,6 +343,18 @@ class NoSuchEntryError(KeyError):
     pass
 
 
+class NoSuchEntryInvalidKeyError(NoSuchEntryError):
+    """Raised when an entry is not found in a :class:`PersistentDict` due to an
+    invalid key file."""
+    pass
+
+
+class NoSuchEntryInvalidContentsError(NoSuchEntryError):
+    """Raised when an entry is not found in a :class:`PersistentDict` due to an
+    invalid contents file."""
+    pass
+
+
 class NoSuchEntryCollisionError(NoSuchEntryError):
     """Raised when an entry is not found in a :class:`PersistentDict`, but it
     contains an entry with the same hash key (hash collision)."""
