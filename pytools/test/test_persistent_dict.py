@@ -7,8 +7,8 @@ from enum import Enum, IntEnum
 import pytest
 
 from pytools.persistent_dict import (
-    KeyBuilder, NoSuchEntryError, PersistentDict, ReadOnlyEntryError,
-    WriteOncePersistentDict)
+    CollisionWarning, KeyBuilder, NoSuchEntryCollisionError, NoSuchEntryError,
+    PersistentDict, ReadOnlyEntryError, WriteOncePersistentDict)
 from pytools.tag import Tag, tag_dataclass
 
 
@@ -202,6 +202,37 @@ def test_persistent_dict_synchronization():
         shutil.rmtree(tmpdir)
 
 
+def test_persistent_dict_cache_collisions():
+    try:
+        tmpdir = tempfile.mkdtemp()
+        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+
+        key1 = PDictTestingKeyOrValue(1, hash_key=0)
+        key2 = PDictTestingKeyOrValue(2, hash_key=0)
+
+        pdict[key1] = 1
+
+        # check lookup
+        with pytest.warns(CollisionWarning):
+            with pytest.raises(NoSuchEntryCollisionError):
+                pdict.fetch(key2)
+
+        # check deletion
+        with pytest.warns(CollisionWarning):
+            with pytest.raises(NoSuchEntryCollisionError):
+                del pdict[key2]
+
+        # check presence after deletion
+        assert pdict[key1] == 1
+
+        # check store_if_not_present
+        pdict.store_if_not_present(key2, 2)
+        assert pdict[key1] == 1
+
+    finally:
+        shutil.rmtree(tmpdir)
+
+
 def test_persistent_dict_clear():
     try:
         tmpdir = tempfile.mkdtemp()
@@ -303,6 +334,32 @@ def test_write_once_persistent_dict_synchronization():
         # check updating
         with pytest.raises(ReadOnlyEntryError):
             pdict2[1] = 1
+
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+def test_write_once_persistent_dict_cache_collisions():
+    try:
+        tmpdir = tempfile.mkdtemp()
+        pdict = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+
+        key1 = PDictTestingKeyOrValue(1, hash_key=0)
+        key2 = PDictTestingKeyOrValue(2, hash_key=0)
+        pdict[key1] = 1
+
+        # check lookup
+        with pytest.warns(CollisionWarning):
+            with pytest.raises(NoSuchEntryCollisionError):
+                pdict.fetch(key2)
+
+        # check update
+        with pytest.raises(ReadOnlyEntryError):
+            pdict[key2] = 1
+
+        # check store_if_not_present
+        pdict.store_if_not_present(key2, 2)
+        assert pdict[key1] == 1
 
     finally:
         shutil.rmtree(tmpdir)
