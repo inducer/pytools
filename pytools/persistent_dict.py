@@ -395,25 +395,25 @@ class _PersistentDictBase:
         self.conn = sqlite3.connect(self.filename, isolation_level=None)
 
         self.conn.execute(
-            "CREATE TABLE IF NOT EXISTS dict (key text NOT NULL PRIMARY KEY, value);"
+            "CREATE TABLE IF NOT EXISTS dict (key text NOT NULL PRIMARY KEY, value)"
             )
 
         # WAL mode disabled for now
         # https://www.sqlite.org/wal.html
         # import platform
         # if platform.python_implementation() != "PyPy":
-        #     self.conn.execute("PRAGMA journal_mode = 'WAL';")
+        #     self.conn.execute("PRAGMA journal_mode = 'WAL'")
 
         # temp_store=2: use in-memory temp store
         # https://www.sqlite.org/pragma.html#pragma_temp_store
-        self.conn.execute("PRAGMA temp_store = 2;")
+        self.conn.execute("PRAGMA temp_store = 2")
 
         # https://www.sqlite.org/pragma.html#pragma_synchronous
-        self.conn.execute("PRAGMA synchronous = NORMAL;")
+        self.conn.execute("PRAGMA synchronous = NORMAL")
 
         # 64 MByte of cache
         # https://www.sqlite.org/pragma.html#pragma_cache_size
-        self.conn.execute("PRAGMA cache_size = -64000;")
+        self.conn.execute("PRAGMA cache_size = -64000")
 
     def __del__(self) -> None:
         if self.conn:
@@ -487,7 +487,7 @@ class _PersistentDictBase:
     def size(self) -> int:
         """Return the size of the dictionary in bytes."""
         return next(self.conn.execute("SELECT page_size * page_count FROM "
-                          "pragma_page_size(), pragma_page_count();"))[0]
+                          "pragma_page_size(), pragma_page_count()"))[0]
 
     def __repr__(self) -> str:
         """Return a string representation of the dictionary."""
@@ -495,7 +495,7 @@ class _PersistentDictBase:
 
     def clear(self) -> None:
         """Remove all entries from the dictionary."""
-        self.conn.execute("DELETE FROM dict;")
+        self.conn.execute("DELETE FROM dict")
 
 
 class WriteOncePersistentDict(_PersistentDictBase):
