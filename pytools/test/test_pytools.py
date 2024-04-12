@@ -784,6 +784,39 @@ def test_unique():
     assert next(unique([]), None) is None
 
 
+from pytools import deprecation_warning_on_import
+
+
+@deprecation_warning_on_import
+class Foobar:
+    pass
+
+
+class Baz:
+    pass
+
+
+@deprecation_warning_on_import
+def foobar():
+    pass
+
+
+def test_deprecation_warning_on_import():
+    with pytest.warns(UserWarning):
+        from .test_pytools import Foobar  # noqa: F401
+
+    with pytest.warns(UserWarning):
+        from .test_pytools import foobar  # noqa: F401
+
+    with pytest.warns(UserWarning):
+        from .test_pytools import Foobar, Baz  # noqa: F401, F811
+
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        from .test_pytools import Baz  # noqa: F401, F811
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])

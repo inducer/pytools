@@ -282,6 +282,38 @@ def deprecate_keyword(oldkey: str,
 
     return wrapper
 
+
+from collections import defaultdict
+from warnings import warn
+
+
+_import_with_deprecation_warnings_dict: Dict[str, Set[str]] = defaultdict(set)
+_old_import = None
+
+
+def _import_with_deprecation_warnings(name, globals=None, locals=None,
+                                      fromlist=(), level=0):
+    global _old_import
+    if name in _import_with_deprecation_warnings_dict:
+        for f in fromlist:
+            if f in _import_with_deprecation_warnings_dict[name]:
+                warn(f + " is deprecated")
+    return _old_import(name, globals, locals, fromlist, level)
+
+
+def deprecation_warning_on_import(cls):
+    import builtins
+
+    global _old_import
+    if _old_import is None:
+        _old_import = builtins.__import__
+        builtins.__import__ = _import_with_deprecation_warnings
+
+    _import_with_deprecation_warnings_dict[
+        cls.__module__.split(".")[-1]].add(cls.__name__)
+
+    return cls
+
 # }}}
 
 
