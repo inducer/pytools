@@ -343,9 +343,20 @@ class NoSuchEntryError(KeyError):
     pass
 
 
+class NoSuchEntryCollisionError(NoSuchEntryError):
+    """Raised when an entry is not found in a :class:`PersistentDict`, but it
+    contains an entry with the same hash key (hash collision)."""
+    pass
+
+
 class ReadOnlyEntryError(KeyError):
     """Raised when an attempt is made to overwrite an entry in a
     :class:`WriteOncePersistentDict`."""
+    pass
+
+
+class CollisionWarning(UserWarning):
+    """Warning raised when a collision is detected in a :class:`PersistentDict`."""
     pass
 
 
@@ -408,6 +419,24 @@ class _PersistentDictBase:
         if self.conn:
             self.conn.close()
 
+    def _collision_check(self, key, stored_key):
+        if stored_key != key:
+            print(stored_key, key)
+            # Key collision, oh well.
+            from warnings import warn
+            warn(f"{self.identifier}: key collision in cache at "
+                    f"'{self.container_dir}' -- these are sufficiently unlikely "
+                    "that they're often indicative of a broken hash key "
+                    "implementation (that is not considering some elements "
+                    "relevant for equality comparison)",
+                    CollisionWarning
+                 )
+
+            # This is here so we can step through equality comparison to
+            # see what is actually non-equal.
+            stored_key == key  # pylint:disable=pointless-statement  # noqa: B015
+            raise NoSuchEntryCollisionError(key)
+
     def store_if_not_present(self, key: Any, value: Any) -> None:
         """Store (*key*, *value*) if *key* is not already present."""
         self.store(key, value, _skip_if_present=True)
@@ -448,12 +477,12 @@ class _PersistentDictBase:
     def values(self) -> Generator[Any, None, None]:
         """Return an iterator over the values in the dictionary."""
         for row in self.conn.execute("SELECT value FROM dict ORDER BY rowid"):
-            yield pickle.loads(row[0])
+            yield pickle.loads(row[0])[1]
 
     def items(self) -> Generator[tuple[str, Any], None, None]:
         """Return an iterator over the items in the dictionary."""
         for row in self.conn.execute("SELECT key, value FROM dict ORDER BY rowid"):
-            yield (row[0], pickle.loads(row[1]))
+            yield (row[0], pickle.loads(row[1])[1])
 
     def size(self) -> int:
         """Return the size of the dictionary in bytes."""
@@ -511,18 +540,18 @@ class WriteOncePersistentDict(_PersistentDictBase):
         self._fetch.cache_clear()
 
     def store(self, key: Any, value: Any, _skip_if_present: bool = False) -> None:
-        k = self.key_builder(key)
-        v = pickle.dumps(value)
+        keyhash = self.key_builder(key)
+        v = pickle.dumps((key, value))
 
         try:
-            self.conn.execute("INSERT INTO dict VALUES (?, ?)", (k, v))
+            self.conn.execute("INSERT INTO dict VALUES (?, ?)", (keyhash, v))
         except sqlite3.IntegrityError:
             if not _skip_if_present:
                 raise ReadOnlyEntryError("WriteOncePersistentDict, "
                                          "tried overwriting key")
 
     def _fetch(self, keyhash: str) -> Any:  # pylint:disable=method-hidden
-        # This is separate from fetch() to allow for LRU caching
+        # This method is separate from fetch() to allow for LRU caching
         c = self.conn.execute("SELECT value FROM dict WHERE key=?", (keyhash,))
         row = c.fetchone()
         if row is None:
@@ -530,12 +559,15 @@ class WriteOncePersistentDict(_PersistentDictBase):
         return pickle.loads(row[0])
 
     def fetch(self, key: Any) -> Any:
-        k = self.key_builder(key)
+        keyhash = self.key_builder(key)
 
         try:
-            return self._fetch(k)
+            stored_key, value = self._fetch(keyhash)
         except KeyError:
             raise NoSuchEntryError(key)
+        else:
+            self._collision_check(key, stored_key)
+            return value
 
     def clear(self) -> None:
         _PersistentDictBase.clear(self)
@@ -570,32 +602,33 @@ class PersistentDict(_PersistentDictBase):
         _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
 
     def store(self, key: Any, value: Any, _skip_if_present: bool = False) -> None:
-        k = self.key_builder(key)
-        v = pickle.dumps(value)
+        keyhash = self.key_builder(key)
+        v = pickle.dumps((key, value))
 
         if _skip_if_present:
-            try:
-                self.conn.execute("INSERT INTO dict VALUES (?, ?)", (k, v))
-            except sqlite3.IntegrityError:
-                # Key was already present
-                return
+            self.conn.execute("INSERT OR IGNORE INTO dict VALUES (?, ?)",
+                              (keyhash, v))
         else:
-            self.conn.execute("INSERT OR REPLACE INTO dict VALUES (?, ?)", (k, v))
+            self.conn.execute("INSERT OR REPLACE INTO dict VALUES (?, ?)",
+                              (keyhash, v))
 
     def fetch(self, key: Any) -> Any:
-        k = self.key_builder(key)
+        keyhash = self.key_builder(key)
 
-        c = self.conn.execute("SELECT value FROM dict WHERE key=?", (k,))
+        c = self.conn.execute("SELECT value FROM dict WHERE key=?", (keyhash,))
         row = c.fetchone()
         if row is None:
             raise NoSuchEntryError(key)
-        return pickle.loads(row[0])
+
+        stored_key, value = pickle.loads(row[0])
+        self._collision_check(key, stored_key)
+        return value
 
     def remove(self, key: Any) -> None:
         """Remove the entry associated with *key* from the dictionary."""
-        k = self.key_builder(key)
+        keyhash = self.key_builder(key)
 
-        self.conn.execute("DELETE FROM dict WHERE key=?", (k,))
+        self.conn.execute("DELETE FROM dict WHERE key=?", (keyhash,))
         changes = next(self.conn.execute("SELECT changes()"))[0]
         if changes == 0:
             raise NoSuchEntryError(key)
