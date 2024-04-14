@@ -28,7 +28,6 @@ Internal stuff that is only here because the documentation tool wants it
     A type variable with lower bound :class:`Taggable`.
 """
 
-import sys
 from dataclasses import dataclass
 from typing import (  # noqa: F401
     Any, FrozenSet, Iterable, Set, Tuple, Type, TypeVar, Union)
@@ -378,23 +377,18 @@ _depr_name_to_replacement_and_obj = {
         }
 
 
-if sys.version_info >= (3, 7):
-    def __getattr__(name):
-        replacement_and_obj = _depr_name_to_replacement_and_obj.get(name, None)
-        if replacement_and_obj is not None:
-            replacement, obj, year = replacement_and_obj
-            from warnings import warn
-            warn(f"'arraycontext.{name}' is deprecated. "
-                    f"Use '{replacement}' instead. "
-                    f"'arraycontext.{name}' will continue to work until {year}.",
-                    DeprecationWarning, stacklevel=2)
-            return obj
-        else:
-            raise AttributeError(name)
-else:
-    TagsType = FrozenSet[Tag]
-    TagOrIterableType = ToTagSetConvertible
-    T_co = TypeVar("TaggableT", bound="Taggable")
+def __getattr__(name):
+    replacement_and_obj = _depr_name_to_replacement_and_obj.get(name, None)
+    if replacement_and_obj is not None:
+        replacement, obj, year = replacement_and_obj
+        from warnings import warn
+        warn(f"'arraycontext.{name}' is deprecated. "
+                f"Use '{replacement}' instead. "
+                f"'arraycontext.{name}' will continue to work until {year}.",
+                DeprecationWarning, stacklevel=2)
+        return obj
+    else:
+        raise AttributeError(name)
 
 # }}}
 
