@@ -347,18 +347,6 @@ class NoSuchEntryError(KeyError):
     pass
 
 
-class NoSuchEntryInvalidKeyError(NoSuchEntryError):
-    """Raised when an entry is not found in a :class:`PersistentDict` due to an
-    invalid key file."""
-    pass
-
-
-class NoSuchEntryInvalidContentsError(NoSuchEntryError):
-    """Raised when an entry is not found in a :class:`PersistentDict` due to an
-    invalid contents file."""
-    pass
-
-
 class NoSuchEntryCollisionError(NoSuchEntryError):
     """Raised when an entry is not found in a :class:`PersistentDict`, but it
     contains an entry with the same hash key (hash collision)."""
@@ -374,6 +362,16 @@ class ReadOnlyEntryError(KeyError):
 class CollisionWarning(UserWarning):
     """Warning raised when a collision is detected in a :class:`PersistentDict`."""
     pass
+
+
+def __getattr__(name: str) -> Any:
+    if name in ("NoSuchEntryInvalidKeyError",
+                "NoSuchEntryInvalidContentsError"):
+        from warnings import warn
+        warn(f"pytools.persistent_dict.{name} has been removed.")
+        return NoSuchEntryError
+
+    raise AttributeError(name)
 
 
 K = TypeVar("K")
