@@ -620,8 +620,9 @@ class _PersistentDictBase(Generic[K, V]):
         self._make_container_dir()
 
 
-class WriteOncePersistentDict(_PersistentDictBase):
-    """A concurrent disk-backed dictionary that disallows overwriting/deletion.
+class WriteOncePersistentDict(_PersistentDictBase[K, V]):
+    """A concurrent disk-backed dictionary that disallows overwriting/
+    deletion (but allows removing all entries).
 
     Compared with :class:`PersistentDict`, this class has faster
     retrieval times because it uses an LRU cache to cache entries in memory.
@@ -789,7 +790,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
         self._fetch.cache_clear()
 
 
-class PersistentDict(_PersistentDictBase):
+class PersistentDict(_PersistentDictBase[K, V]):
     """A concurrent disk-backed dictionary.
 
     .. automethod:: __init__

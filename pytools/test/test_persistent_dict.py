@@ -63,7 +63,8 @@ class MyStruct:
 def test_persistent_dict_storage_and_lookup() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+        pdict: PersistentDict[Any, int] = PersistentDict("pytools-test",
+                                                         container_dir=tmpdir)
 
         from random import randrange
 
@@ -161,7 +162,8 @@ def test_persistent_dict_storage_and_lookup() -> None:
 def test_persistent_dict_deletion() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+        pdict: PersistentDict[int, int] = PersistentDict("pytools-test",
+                                                         container_dir=tmpdir)
 
         pdict[0] = 0
         del pdict[0]
@@ -179,8 +181,10 @@ def test_persistent_dict_deletion() -> None:
 def test_persistent_dict_synchronization() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict1 = PersistentDict("pytools-test", container_dir=tmpdir)
-        pdict2 = PersistentDict("pytools-test", container_dir=tmpdir)
+        pdict1: PersistentDict[int, int] = PersistentDict("pytools-test",
+                                                          container_dir=tmpdir)
+        pdict2: PersistentDict[int, int] = PersistentDict("pytools-test",
+                                                          container_dir=tmpdir)
 
         # check lookup
         pdict1[0] = 1
@@ -202,7 +206,8 @@ def test_persistent_dict_synchronization() -> None:
 def test_persistent_dict_cache_collisions() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+        pdict: PersistentDict[PDictTestingKeyOrValue, int] = \
+            PersistentDict("pytools-test", container_dir=tmpdir)
 
         key1 = PDictTestingKeyOrValue(1, hash_key=0)
         key2 = PDictTestingKeyOrValue(2, hash_key=0)
@@ -233,7 +238,8 @@ def test_persistent_dict_cache_collisions() -> None:
 def test_persistent_dict_clear() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+        pdict: PersistentDict[int, int] = PersistentDict("pytools-test",
+                                                         container_dir=tmpdir)
 
         pdict[0] = 1
         pdict.fetch(0)
@@ -250,7 +256,7 @@ def test_persistent_dict_clear() -> None:
 def test_write_once_persistent_dict_storage_and_lookup(in_mem_cache_size) -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = WriteOncePersistentDict(
+        pdict: WriteOncePersistentDict[int, int] = WriteOncePersistentDict(
                 "pytools-test", container_dir=tmpdir,
                 in_mem_cache_size=in_mem_cache_size)
 
@@ -281,7 +287,7 @@ def test_write_once_persistent_dict_storage_and_lookup(in_mem_cache_size) -> Non
 def test_write_once_persistent_dict_lru_policy() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = WriteOncePersistentDict(
+        pdict: WriteOncePersistentDict[Any, Any] = WriteOncePersistentDict(
                 "pytools-test", container_dir=tmpdir, in_mem_cache_size=3)
 
         pdict[1] = PDictTestingKeyOrValue(1)
@@ -321,8 +327,10 @@ def test_write_once_persistent_dict_lru_policy() -> None:
 def test_write_once_persistent_dict_synchronization() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict1 = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
-        pdict2 = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+        pdict1: WriteOncePersistentDict[int, int] = \
+            WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+        pdict2: WriteOncePersistentDict[int, int] = \
+            WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
 
         # check lookup
         pdict1[1] = 0
@@ -339,7 +347,8 @@ def test_write_once_persistent_dict_synchronization() -> None:
 def test_write_once_persistent_dict_cache_collisions() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+        pdict: WriteOncePersistentDict[Any, int] = \
+            WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
 
         key1 = PDictTestingKeyOrValue(1, hash_key=0)
         key2 = PDictTestingKeyOrValue(2, hash_key=0)
@@ -365,7 +374,8 @@ def test_write_once_persistent_dict_cache_collisions() -> None:
 def test_write_once_persistent_dict_clear() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+        pdict: WriteOncePersistentDict[int, int] = \
+            WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
 
         pdict[0] = 1
         pdict.fetch(0)
