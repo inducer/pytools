@@ -220,9 +220,12 @@ def test_persistent_dict_cache_collisions() -> None:
                 pdict.fetch(key2)
 
         # check deletion
-        with pytest.warns(CollisionWarning):
-            with pytest.raises(NoSuchEntryCollisionError):
-                del pdict[key2]
+        import sqlite3
+        # same version restriction as in PersistentDict.remove
+        if sqlite3.sqlite_version_info >= (3, 35, 0):
+            with pytest.warns(CollisionWarning):
+                with pytest.raises(NoSuchEntryCollisionError):
+                    del pdict[key2]
 
         # check presence after deletion
         assert pdict[key1] == 1
