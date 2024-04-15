@@ -39,7 +39,7 @@ import sys
 from dataclasses import fields as dc_fields, is_dataclass
 from enum import Enum
 from typing import (
-    TYPE_CHECKING, Any, Generator, Mapping, Optional, Protocol, TypeVar)
+    TYPE_CHECKING, Any, Generator, Mapping, Optional, Protocol, Tuple, TypeVar)
 
 
 if TYPE_CHECKING:
@@ -75,6 +75,18 @@ This module also provides a disk-backed dictionary that uses persistent hashing.
 .. autoclass:: KeyBuilder
 .. autoclass:: PersistentDict
 .. autoclass:: WriteOncePersistentDict
+
+
+Internal stuff that is only here because the documentation tool wants it
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. class:: K
+
+    A type variable for the key type of a :class:`PersistentDict`.
+
+.. class:: V
+
+    A type variable for the value type of a :class:`PersistentDict`.
 """
 
 
@@ -437,7 +449,7 @@ class _PersistentDictBase(Mapping[K, V]):
         if self.conn:
             self.conn.close()
 
-    def _collision_check(self, key, stored_key):
+    def _collision_check(self, key, stored_key) -> None:
         if stored_key != key:
             print(stored_key, key)
             # Key collision, oh well.
@@ -455,15 +467,15 @@ class _PersistentDictBase(Mapping[K, V]):
             stored_key == key  # pylint:disable=pointless-statement  # noqa: B015
             raise NoSuchEntryCollisionError(key)
 
-    def store_if_not_present(self, key: Any, value: Any) -> None:
+    def store_if_not_present(self, key: K, value: V) -> None:
         """Store (*key*, *value*) if *key* is not already present."""
         self.store(key, value, _skip_if_present=True)
 
-    def store(self, key: Any, value: Any, _skip_if_present: bool = False) -> None:
+    def store(self, key: K, value: V, _skip_if_present: bool = False) -> None:
         """Store (*key*, *value*) in the dictionary."""
         raise NotImplementedError()
 
-    def fetch(self, key: Any) -> Any:
+    def fetch(self, key: K) -> V:
         """Return the value associated with *key* in the dictionary."""
         raise NotImplementedError()
 
@@ -471,11 +483,11 @@ class _PersistentDictBase(Mapping[K, V]):
         """Create the container directory to store the dictionary."""
         os.makedirs(self.container_dir, exist_ok=True)
 
-    def __getitem__(self, key: Any) -> Any:
+    def __getitem__(self, key: K) -> V:
         """Return the value associated with *key* in the dictionary."""
         return self.fetch(key)
 
-    def __setitem__(self, key: Any, value: Any) -> None:
+    def __setitem__(self, key: K, value: V) -> None:
         """Store (*key*, *value*) in the dictionary."""
         self.store(key, value)
 
@@ -492,12 +504,12 @@ class _PersistentDictBase(Mapping[K, V]):
         for row in self.conn.execute("SELECT key FROM dict ORDER BY rowid"):
             yield row[0]
 
-    def values(self) -> Generator[Any, None, None]:
+    def values(self) -> Generator[V, None, None]:
         """Return an iterator over the values in the dictionary."""
         for row in self.conn.execute("SELECT value FROM dict ORDER BY rowid"):
             yield pickle.loads(row[0])[1]
 
-    def items(self) -> Generator[tuple[str, Any], None, None]:
+    def items(self) -> Generator[tuple[str, V], None, None]:
         """Return an iterator over the items in the dictionary."""
         for row in self.conn.execute("SELECT key, value FROM dict ORDER BY rowid"):
             yield (row[0], pickle.loads(row[1])[1])
@@ -516,8 +528,9 @@ class _PersistentDictBase(Mapping[K, V]):
         self.conn.execute("DELETE FROM dict")
 
 
-class WriteOncePersistentDict(_PersistentDictBase):
-    """A concurrent disk-backed dictionary that disallows overwriting/deletion.
+class WriteOncePersistentDict(_PersistentDictBase[K, V]):
+    """A concurrent disk-backed dictionary that disallows overwriting/
+    deletion (but allows removing all entries).
 
     Compared with :class:`PersistentDict`, this class has faster
     retrieval times because it uses an LRU cache to cache entries in memory.
@@ -557,7 +570,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
         """
         self._fetch.cache_clear()
 
-    def store(self, key: Any, value: Any, _skip_if_present: bool = False) -> None:
+    def store(self, key: K, value: V, _skip_if_present: bool = False) -> None:
         keyhash = self.key_builder(key)
         v = pickle.dumps((key, value))
 
@@ -568,7 +581,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
                 raise ReadOnlyEntryError("WriteOncePersistentDict, "
                                          "tried overwriting key")
 
-    def _fetch(self, keyhash: str) -> Any:  # pylint:disable=method-hidden
+    def _fetch(self, keyhash: str) -> Tuple[K, V]:  # pylint:disable=method-hidden
         # This method is separate from fetch() to allow for LRU caching
         c = self.conn.execute("SELECT value FROM dict WHERE key=?", (keyhash,))
         row = c.fetchone()
@@ -576,7 +589,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
             raise KeyError
         return pickle.loads(row[0])
 
-    def fetch(self, key: Any) -> Any:
+    def fetch(self, key: K) -> V:
         keyhash = self.key_builder(key)
 
         try:
@@ -592,7 +605,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
         self._fetch.cache_clear()
 
 
-class PersistentDict(_PersistentDictBase):
+class PersistentDict(_PersistentDictBase[K, V]):
     """A concurrent disk-backed dictionary.
 
     .. automethod:: __init__
@@ -619,7 +632,7 @@ class PersistentDict(_PersistentDictBase):
         """
         _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
 
-    def store(self, key: Any, value: Any, _skip_if_present: bool = False) -> None:
+    def store(self, key: K, value: V, _skip_if_present: bool = False) -> None:
         keyhash = self.key_builder(key)
         v = pickle.dumps((key, value))
 
@@ -630,7 +643,7 @@ class PersistentDict(_PersistentDictBase):
             self.conn.execute("INSERT OR REPLACE INTO dict VALUES (?, ?)",
                               (keyhash, v))
 
-    def fetch(self, key: Any) -> Any:
+    def fetch(self, key: K) -> V:
         keyhash = self.key_builder(key)
 
         c = self.conn.execute("SELECT value FROM dict WHERE key=?", (keyhash,))
@@ -642,7 +655,7 @@ class PersistentDict(_PersistentDictBase):
         self._collision_check(key, stored_key)
         return value
 
-    def remove(self, key: Any) -> None:
+    def remove(self, key: K) -> None:
         """Remove the entry associated with *key* from the dictionary."""
         keyhash = self.key_builder(key)
 
@@ -673,7 +686,7 @@ class PersistentDict(_PersistentDictBase):
             if num_changes == 0:
                 raise NoSuchEntryError(key)
 
-    def __delitem__(self, key: Any) -> None:
+    def __delitem__(self, key: K) -> None:
         """Remove the entry associated with *key* from the dictionary."""
         self.remove(key)
 
