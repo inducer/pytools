@@ -413,7 +413,7 @@ class _PersistentDictBase(Mapping[K, V]):
             else:
                 container_dir = platformdirs.user_cache_dir("pytools", "pytools")
 
-        self.filename = join(container_dir, f"pdict-v6-{identifier}"
+        self.filename = join(container_dir, f"pdict-v5-{identifier}"
                              + ".".join(str(i) for i in sys.version_info)
                              + ".sqlite")
 
@@ -550,7 +550,7 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
                  container_dir: Optional[str] = None,
                  in_mem_cache_size: int = 256) -> None:
         """
-        :arg identifier: a file-name-compatible string identifying this
+        :arg identifier: a filename-compatible string identifying this
             dictionary
         :arg key_builder: a subclass of :class:`KeyBuilder`
         :arg container_dir: the directory in which to store this
@@ -625,7 +625,7 @@ class PersistentDict(_PersistentDictBase[K, V]):
                  key_builder: Optional[KeyBuilder] = None,
                  container_dir: Optional[str] = None) -> None:
         """
-        :arg identifier: a file-name-compatible string identifying this
+        :arg identifier: a filename-compatible string identifying this
             dictionary
         :arg key_builder: a subclass of :class:`KeyBuilder`
         :arg container_dir: the directory in which to store this
