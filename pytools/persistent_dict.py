@@ -425,7 +425,8 @@ class _PersistentDictBase(Mapping[K, V]):
         self.conn = sqlite3.connect(self.filename, isolation_level=None)
 
         self.conn.execute(
-            "CREATE TABLE IF NOT EXISTS dict (key text NOT NULL PRIMARY KEY, value)"
+            "CREATE TABLE IF NOT EXISTS dict "
+            "(keyhash TEXT NOT NULL PRIMARY KEY, key_value TEXT NOT NULL)"
             )
 
         # WAL mode disabled for now
@@ -501,17 +502,17 @@ class _PersistentDictBase(Mapping[K, V]):
 
     def keys(self) -> Generator[K, None, None]:
         """Return an iterator over the keys in the dictionary."""
-        for row in self.conn.execute("SELECT value FROM dict ORDER BY rowid"):
+        for row in self.conn.execute("SELECT key_value FROM dict ORDER BY rowid"):
             yield pickle.loads(row[0])[0]
 
     def values(self) -> Generator[V, None, None]:
         """Return an iterator over the values in the dictionary."""
-        for row in self.conn.execute("SELECT value FROM dict ORDER BY rowid"):
+        for row in self.conn.execute("SELECT key_value FROM dict ORDER BY rowid"):
             yield pickle.loads(row[0])[1]
 
     def items(self) -> Generator[tuple[K, V], None, None]:
         """Return an iterator over the items in the dictionary."""
-        for row in self.conn.execute("SELECT value FROM dict ORDER BY rowid"):
+        for row in self.conn.execute("SELECT key_value FROM dict ORDER BY rowid"):
             yield pickle.loads(row[0])
 
     def size(self) -> int:
@@ -583,7 +584,8 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
 
     def _fetch(self, keyhash: str) -> Tuple[K, V]:  # pylint:disable=method-hidden
         # This method is separate from fetch() to allow for LRU caching
-        c = self.conn.execute("SELECT value FROM dict WHERE key=?", (keyhash,))
+        c = self.conn.execute("SELECT key_value FROM dict WHERE keyhash=?",
+                              (keyhash,))
         row = c.fetchone()
         if row is None:
             raise KeyError
@@ -646,7 +648,8 @@ class PersistentDict(_PersistentDictBase[K, V]):
     def fetch(self, key: K) -> V:
         keyhash = self.key_builder(key)
 
-        c = self.conn.execute("SELECT value FROM dict WHERE key=?", (keyhash,))
+        c = self.conn.execute("SELECT key_value FROM dict WHERE keyhash=?",
+                              (keyhash,))
         row = c.fetchone()
         if row is None:
             raise NoSuchEntryError(key)
@@ -663,7 +666,7 @@ class PersistentDict(_PersistentDictBase[K, V]):
         # but these don't work well with the autocommit mode of SQLite.
         if sqlite3.sqlite_version_info >= (3, 35, 0):
             # SQLite >= 3.35.0 (released 2021-03-12) supports RETURNING
-            c = self.conn.execute("DELETE FROM dict WHERE key=? RETURNING *",
+            c = self.conn.execute("DELETE FROM dict WHERE keyhash=? RETURNING *",
                                   (keyhash,))
             row = c.fetchone()
             if row is None:
@@ -680,7 +683,7 @@ class PersistentDict(_PersistentDictBase[K, V]):
                 raise exc
         else:
             # No way to check for collisions in SQLite < 3.35.0
-            self.conn.execute("DELETE FROM dict WHERE key=?", (keyhash,))
+            self.conn.execute("DELETE FROM dict WHERE keyhash=?", (keyhash,))
             num_changes = next(self.conn.execute("SELECT changes()"))[0]
             assert num_changes in (0, 1)
             if num_changes == 0:
