@@ -382,9 +382,9 @@ def __getattr__(name):
     if replacement_and_obj is not None:
         replacement, obj, year = replacement_and_obj
         from warnings import warn
-        warn(f"'arraycontext.{name}' is deprecated. "
+        warn(f"'pytools.tag.{name}' is deprecated. "
                 f"Use '{replacement}' instead. "
-                f"'arraycontext.{name}' will continue to work until {year}.",
+                f"'pytools.tag.{name}' will continue to work until {year}.",
                 DeprecationWarning, stacklevel=2)
         return obj
     else:
