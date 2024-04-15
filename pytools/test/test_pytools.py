@@ -31,7 +31,6 @@ logger = logging.getLogger(__name__)
 from typing import FrozenSet
 
 
-@pytest.mark.skipif("sys.version_info < (2, 5)")
 def test_memoize_method_clear():
     from pytools import memoize_method
 
