@@ -24,6 +24,7 @@ nonetheless, here's what's on offer:
   GvR's monkeypatch_xxx() hack, the elusive `flatten`, and much more.
 * Batch job submission, `pytools.batchjob`.
 * A lexer, `pytools.lex`.
+* A persistent key-value store, `pytools.persistent_dict`.
 
 Links:
 

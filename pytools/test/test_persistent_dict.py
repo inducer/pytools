@@ -3,6 +3,7 @@ import sys  # noqa
 import tempfile
 from dataclasses import dataclass
 from enum import Enum, IntEnum
+from typing import Any, Dict
 
 import pytest
 
@@ -16,29 +17,24 @@ from pytools.tag import Tag, tag_dataclass
 
 class PDictTestingKeyOrValue:
 
-    def __init__(self, val, hash_key=None):
+    def __init__(self, val: Any, hash_key=None) -> None:
         self.val = val
         if hash_key is None:
             hash_key = val
         self.hash_key = hash_key
 
-    def __getstate__(self):
+    def __getstate__(self) -> Dict[str, Any]:
         return {"val": self.val, "hash_key": self.hash_key}
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return self.val == other.val
 
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def update_persistent_hash(self, key_hash, key_builder):
+    def update_persistent_hash(self, key_hash: Any, key_builder: KeyBuilder) -> None:
         key_builder.rec(key_hash, self.hash_key)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "PDictTestingKeyOrValue(val={!r},hash_key={!r})".format(
                 self.val, self.hash_key)
-
-    __str__ = __repr__
 
 # }}}
 
@@ -64,10 +60,11 @@ class MyStruct:
     value: int
 
 
-def test_persistent_dict_storage_and_lookup():
+def test_persistent_dict_storage_and_lookup() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+        pdict: PersistentDict[Any, int] = PersistentDict("pytools-test",
+                                                         container_dir=tmpdir)
 
         from random import randrange
 
@@ -77,7 +74,8 @@ def test_persistent_dict_storage_and_lookup():
                     for i in range(n))
 
         keys = [
-                (randrange(2000)-1000, rand_str(), None, SomeTag(rand_str()),
+                (randrange(2000)-1000, rand_str(), None,
+                 SomeTag(rand_str()),  # type: ignore[call-arg]
                     frozenset({"abc", 123}))
                 for i in range(20)]
         values = [randrange(2000) for i in range(20)]
@@ -161,10 +159,11 @@ def test_persistent_dict_storage_and_lookup():
         shutil.rmtree(tmpdir)
 
 
-def test_persistent_dict_deletion():
+def test_persistent_dict_deletion() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+        pdict: PersistentDict[int, int] = PersistentDict("pytools-test",
+                                                         container_dir=tmpdir)
 
         pdict[0] = 0
         del pdict[0]
@@ -179,11 +178,13 @@ def test_persistent_dict_deletion():
         shutil.rmtree(tmpdir)
 
 
-def test_persistent_dict_synchronization():
+def test_persistent_dict_synchronization() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict1 = PersistentDict("pytools-test", container_dir=tmpdir)
-        pdict2 = PersistentDict("pytools-test", container_dir=tmpdir)
+        pdict1: PersistentDict[int, int] = PersistentDict("pytools-test",
+                                                          container_dir=tmpdir)
+        pdict2: PersistentDict[int, int] = PersistentDict("pytools-test",
+                                                          container_dir=tmpdir)
 
         # check lookup
         pdict1[0] = 1
@@ -202,10 +203,11 @@ def test_persistent_dict_synchronization():
         shutil.rmtree(tmpdir)
 
 
-def test_persistent_dict_cache_collisions():
+def test_persistent_dict_cache_collisions() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+        pdict: PersistentDict[PDictTestingKeyOrValue, int] = \
+            PersistentDict("pytools-test", container_dir=tmpdir)
 
         key1 = PDictTestingKeyOrValue(1, hash_key=0)
         key2 = PDictTestingKeyOrValue(2, hash_key=0)
@@ -233,10 +235,11 @@ def test_persistent_dict_cache_collisions():
         shutil.rmtree(tmpdir)
 
 
-def test_persistent_dict_clear():
+def test_persistent_dict_clear() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+        pdict: PersistentDict[int, int] = PersistentDict("pytools-test",
+                                                         container_dir=tmpdir)
 
         pdict[0] = 1
         pdict.fetch(0)
@@ -250,10 +253,10 @@ def test_persistent_dict_clear():
 
 
 @pytest.mark.parametrize("in_mem_cache_size", (0, 256))
-def test_write_once_persistent_dict_storage_and_lookup(in_mem_cache_size):
+def test_write_once_persistent_dict_storage_and_lookup(in_mem_cache_size) -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = WriteOncePersistentDict(
+        pdict: WriteOncePersistentDict[int, int] = WriteOncePersistentDict(
                 "pytools-test", container_dir=tmpdir,
                 in_mem_cache_size=in_mem_cache_size)
 
@@ -281,10 +284,10 @@ def test_write_once_persistent_dict_storage_and_lookup(in_mem_cache_size):
         shutil.rmtree(tmpdir)
 
 
-def test_write_once_persistent_dict_lru_policy():
+def test_write_once_persistent_dict_lru_policy() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = WriteOncePersistentDict(
+        pdict: WriteOncePersistentDict[Any, Any] = WriteOncePersistentDict(
                 "pytools-test", container_dir=tmpdir, in_mem_cache_size=3)
 
         pdict[1] = PDictTestingKeyOrValue(1)
@@ -321,11 +324,13 @@ def test_write_once_persistent_dict_lru_policy():
         shutil.rmtree(tmpdir)
 
 
-def test_write_once_persistent_dict_synchronization():
+def test_write_once_persistent_dict_synchronization() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict1 = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
-        pdict2 = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+        pdict1: WriteOncePersistentDict[int, int] = \
+            WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+        pdict2: WriteOncePersistentDict[int, int] = \
+            WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
 
         # check lookup
         pdict1[1] = 0
@@ -339,10 +344,11 @@ def test_write_once_persistent_dict_synchronization():
         shutil.rmtree(tmpdir)
 
 
-def test_write_once_persistent_dict_cache_collisions():
+def test_write_once_persistent_dict_cache_collisions() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+        pdict: WriteOncePersistentDict[Any, int] = \
+            WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
 
         key1 = PDictTestingKeyOrValue(1, hash_key=0)
         key2 = PDictTestingKeyOrValue(2, hash_key=0)
@@ -365,10 +371,11 @@ def test_write_once_persistent_dict_cache_collisions():
         shutil.rmtree(tmpdir)
 
 
-def test_write_once_persistent_dict_clear():
+def test_write_once_persistent_dict_clear() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+        pdict: WriteOncePersistentDict[int, int] = \
+            WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
 
         pdict[0] = 1
         pdict.fetch(0)
@@ -380,7 +387,7 @@ def test_write_once_persistent_dict_clear():
         shutil.rmtree(tmpdir)
 
 
-def test_dtype_hashing():
+def test_dtype_hashing() -> None:
     np = pytest.importorskip("numpy")
 
     keyb = KeyBuilder()
@@ -388,7 +395,7 @@ def test_dtype_hashing():
     assert keyb(np.dtype(np.float32)) == keyb(np.dtype(np.float32))
 
 
-def test_scalar_hashing():
+def test_scalar_hashing() -> None:
     keyb = KeyBuilder()
 
     assert keyb(1) == keyb(1)
@@ -429,7 +436,7 @@ def test_scalar_hashing():
                                        "constantdict",
                                        ("immutables", "Map"),
                                        ("pyrsistent", "pmap")))
-def test_dict_hashing(dict_impl):
+def test_dict_hashing(dict_impl) -> None:
     if isinstance(dict_impl, str):
         dict_package = dict_impl
         dict_class = dict_impl
@@ -450,7 +457,7 @@ def test_dict_hashing(dict_impl):
     assert keyb(dc(d)) == keyb(dc({"b": 2, "a": 1}))
 
 
-def test_frozenset_hashing():
+def test_frozenset_hashing() -> None:
     keyb = KeyBuilder()
 
     assert keyb(frozenset([1, 2, 3])) == keyb(frozenset([1, 2, 3]))
@@ -458,7 +465,7 @@ def test_frozenset_hashing():
     assert keyb(frozenset([1, 2, 3])) == keyb(frozenset([3, 2, 1]))
 
 
-def test_frozenorderedset_hashing():
+def test_frozenorderedset_hashing() -> None:
     pytest.importorskip("orderedsets")
     from orderedsets import FrozenOrderedSet
     keyb = KeyBuilder()
@@ -470,7 +477,7 @@ def test_frozenorderedset_hashing():
     assert keyb(FrozenOrderedSet([1, 2, 3])) == keyb(FrozenOrderedSet([3, 2, 1]))
 
 
-def test_ABC_hashing():  # noqa: N802
+def test_ABC_hashing() -> None:  # noqa: N802
     from abc import ABC, ABCMeta
 
     keyb = KeyBuilder()
@@ -500,7 +507,7 @@ def test_ABC_hashing():  # noqa: N802
     assert keyb(MyABC3) != keyb(MyABC) != keyb(MyABC3())
 
 
-def test_class_hashing():
+def test_class_hashing() -> None:
     keyb = KeyBuilder()
 
     class WithUpdateMethod:
@@ -531,11 +538,11 @@ def test_class_hashing():
     class TagClass3(Tag):
         s: str
 
-    assert keyb(TagClass3("foo")) == \
-        "c6521f4157ed530d04e956b7046db85e038c120b047cd1b848340d81f9fd8b4a"
+    assert (keyb(TagClass3("foo"))  # type: ignore[call-arg]
+        == "c6521f4157ed530d04e956b7046db85e038c120b047cd1b848340d81f9fd8b4a")
 
 
-def test_dataclass_hashing():
+def test_dataclass_hashing() -> None:
     keyb = KeyBuilder()
 
     @dataclass
@@ -558,7 +565,7 @@ def test_dataclass_hashing():
     assert keyb(MyDC2("hi", 1)) != keyb(MyDC("hi", 1))
 
 
-def test_attrs_hashing():
+def test_attrs_hashing() -> None:
     attrs = pytest.importorskip("attrs")
 
     keyb = KeyBuilder()
@@ -568,18 +575,18 @@ def test_attrs_hashing():
         name: str
         value: int
 
-    assert keyb(MyAttrs("hi", 1)) == \
-        "17f272d114d22c1dc0117354777f2d506b303d90e10840d39fb0eef007252f68"
+    assert (keyb(MyAttrs("hi", 1))  # type: ignore[call-arg]
+        == "17f272d114d22c1dc0117354777f2d506b303d90e10840d39fb0eef007252f68")
 
-    assert keyb(MyAttrs("hi", 1)) == keyb(MyAttrs("hi", 1))
-    assert keyb(MyAttrs("hi", 1)) != keyb(MyAttrs("hi", 2))
+    assert keyb(MyAttrs("hi", 1)) == keyb(MyAttrs("hi", 1))  # type: ignore[call-arg]
+    assert keyb(MyAttrs("hi", 1)) != keyb(MyAttrs("hi", 2))  # type: ignore[call-arg]
 
     @dataclass
     class MyDC:
         name: str
         value: int
 
-    assert keyb(MyDC("hi", 1)) != keyb(MyAttrs("hi", 1))
+    assert keyb(MyDC("hi", 1)) != keyb(MyAttrs("hi", 1))  # type: ignore[call-arg]
 
     @attrs.define
     class MyAttrs2:
@@ -587,10 +594,11 @@ def test_attrs_hashing():
         value: int
 
     # Class types must be encoded in hash
-    assert keyb(MyAttrs2("hi", 1)) != keyb(MyAttrs("hi", 1))
+    assert (keyb(MyAttrs2("hi", 1))  # type: ignore[call-arg]
+            != keyb(MyAttrs("hi", 1)))  # type: ignore[call-arg]
 
 
-def test_xdg_cache_home():
+def test_xdg_cache_home() -> None:
     import os
     xdg_dir = "tmpdir_pytools_xdg_test"
 

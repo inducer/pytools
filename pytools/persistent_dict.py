@@ -37,7 +37,7 @@ import shutil
 import sys
 from dataclasses import fields as dc_fields, is_dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Mapping, Protocol
+from typing import TYPE_CHECKING, Any, Generic, Mapping, Optional, Protocol, TypeVar
 
 
 if TYPE_CHECKING:
@@ -75,6 +75,18 @@ This module also provides a disk-backed dictionary that uses persistent hashing.
 .. autoclass:: KeyBuilder
 .. autoclass:: PersistentDict
 .. autoclass:: WriteOncePersistentDict
+
+
+Internal stuff that is only here because the documentation tool wants it
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. class:: K
+
+    A type variable for the key type of a :class:`PersistentDict`.
+
+.. class:: V
+
+    A type variable for the value type of a :class:`PersistentDict`.
 """
 
 
@@ -478,8 +490,14 @@ class CollisionWarning(UserWarning):
     pass
 
 
-class _PersistentDictBase:
-    def __init__(self, identifier, key_builder=None, container_dir=None):
+K = TypeVar("K")
+V = TypeVar("V")
+
+
+class _PersistentDictBase(Generic[K, V]):
+    def __init__(self, identifier: str,
+                 key_builder: Optional[KeyBuilder] = None,
+                 container_dir: Optional[str] = None) -> None:
         self.identifier = identifier
 
         if key_builder is None:
@@ -509,32 +527,37 @@ class _PersistentDictBase:
         self._make_container_dir()
 
     @staticmethod
-    def _warn(msg, category=UserWarning, stacklevel=0):
+    def _warn(msg: str, category: Any = UserWarning, stacklevel: int = 0) -> None:
         from warnings import warn
         warn(msg, category, stacklevel=1 + stacklevel)
 
-    def store_if_not_present(self, key, value, _stacklevel=0):
+    def store_if_not_present(self, key: K, value: V,
+                             _stacklevel: int = 0) -> None:
+        """Store (*key*, *value*) if *key* is not already present."""
         self.store(key, value, _skip_if_present=True, _stacklevel=1 + _stacklevel)
 
-    def store(self, key, value, _skip_if_present=False, _stacklevel=0):
+    def store(self, key: K, value: V, _skip_if_present: bool = False,
+              _stacklevel: int = 0) -> None:
+        """Store (*key*, *value*) in the dictionary."""
         raise NotImplementedError()
 
-    def fetch(self, key, _stacklevel=0):
+    def fetch(self, key: K, _stacklevel: int = 0) -> V:
+        """Return the value associated with *key* in the dictionary."""
         raise NotImplementedError()
 
     @staticmethod
-    def _read(path):
+    def _read(path: str) -> V:
         from pickle import load
         with open(path, "rb") as inf:
             return load(inf)
 
     @staticmethod
-    def _write(path, value):
+    def _write(path: str, value: V) -> None:
         from pickle import HIGHEST_PROTOCOL, dump
         with open(path, "wb") as outf:
             dump(value, outf, protocol=HIGHEST_PROTOCOL)
 
-    def _item_dir(self, hexdigest_key):
+    def _item_dir(self, hexdigest_key: str) -> str:
         from os.path import join
 
         # Some file systems limit the number of directories in a directory.
@@ -546,22 +569,23 @@ class _PersistentDictBase:
                 hexdigest_key[3:6],
                 hexdigest_key[6:])
 
-    def _key_file(self, hexdigest_key):
+    def _key_file(self, hexdigest_key: str) -> str:
         from os.path import join
         return join(self._item_dir(hexdigest_key), "key")
 
-    def _contents_file(self, hexdigest_key):
+    def _contents_file(self, hexdigest_key: str) -> str:
         from os.path import join
         return join(self._item_dir(hexdigest_key), "contents")
 
-    def _lock_file(self, hexdigest_key):
+    def _lock_file(self, hexdigest_key: str) -> str:
         from os.path import join
         return join(self.container_dir, str(hexdigest_key) + ".lock")
 
-    def _make_container_dir(self):
+    def _make_container_dir(self) -> None:
+        """Create the container directory to store the dictionary."""
         os.makedirs(self.container_dir, exist_ok=True)
 
-    def _collision_check(self, key, stored_key, _stacklevel):
+    def _collision_check(self, key: K, stored_key: K, _stacklevel: int) -> None:
         if stored_key != key:
             # Key collision, oh well.
             self._warn(f"{self.identifier}: key collision in cache at "
@@ -577,13 +601,16 @@ class _PersistentDictBase:
             stored_key == key  # pylint:disable=pointless-statement  # noqa: B015
             raise NoSuchEntryCollisionError(key)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: K) -> V:
+        """Return the value associated with *key* in the dictionary."""
         return self.fetch(key, _stacklevel=1)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: K, value: V) -> None:
+        """Store (*key*, *value*) in the dictionary."""
         self.store(key, value, _stacklevel=1)
 
-    def clear(self):
+    def clear(self) -> None:
+        """Remove all entries from the dictionary."""
         try:
             shutil.rmtree(self.container_dir)
         except OSError as e:
@@ -593,8 +620,9 @@ class _PersistentDictBase:
         self._make_container_dir()
 
 
-class WriteOncePersistentDict(_PersistentDictBase):
-    """A concurrent disk-backed dictionary that disallows overwriting/deletion.
+class WriteOncePersistentDict(_PersistentDictBase[K, V]):
+    """A concurrent disk-backed dictionary that disallows overwriting/
+    deletion (but allows removing all entries).
 
     Compared with :class:`PersistentDict`, this class has faster
     retrieval times because it uses an LRU cache to cache entries in memory.
@@ -608,14 +636,19 @@ class WriteOncePersistentDict(_PersistentDictBase):
     .. automethod:: store_if_not_present
     .. automethod:: fetch
     """
-    def __init__(self, identifier, key_builder=None, container_dir=None,
-             in_mem_cache_size=256):
+    def __init__(self, identifier: str,
+                 key_builder: Optional[KeyBuilder] = None,
+                 container_dir: Optional[str] = None,
+                 in_mem_cache_size: int = 256) -> None:
         """
         :arg identifier: a file-name-compatible string identifying this
             dictionary
         :arg key_builder: a subclass of :class:`KeyBuilder`
+        :arg container_dir: the directory in which to store this
+            dictionary. If ``None``, the default cache directory from
+            :func:`platformdirs.user_cache_dir` is used
         :arg in_mem_cache_size: retain an in-memory cache of up to
-            *in_mem_cache_size* items
+            *in_mem_cache_size* items (with an LRU replacement policy)
         """
         _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
         self._in_mem_cache_size = in_mem_cache_size
@@ -624,12 +657,14 @@ class WriteOncePersistentDict(_PersistentDictBase):
 
     def clear_in_mem_cache(self) -> None:
         """
+        Clear the in-memory cache of this dictionary.
+
         .. versionadded:: 2023.1.1
         """
 
         self._fetch.cache_clear()
 
-    def _spin_until_removed(self, lock_file, stacklevel):
+    def _spin_until_removed(self, lock_file: str, stacklevel: int) -> None:
         from os.path import exists
 
         attempts = 0
@@ -649,7 +684,8 @@ class WriteOncePersistentDict(_PersistentDictBase):
                         f"on the lock file '{lock_file}'"
                         "--something is wrong")
 
-    def store(self, key, value, _skip_if_present=False, _stacklevel=0):
+    def store(self, key: K, value: V, _skip_if_present: bool = False,
+              _stacklevel: int = 0) -> None:
         hexdigest_key = self.key_builder(key)
 
         cleanup_m = CleanupManager()
@@ -682,7 +718,7 @@ class WriteOncePersistentDict(_PersistentDictBase):
         finally:
             cleanup_m.clean_up()
 
-    def fetch(self, key, _stacklevel=0):
+    def fetch(self, key: K, _stacklevel: int = 0) -> Any:
         hexdigest_key = self.key_builder(key)
 
         (stored_key, stored_value) = self._fetch(hexdigest_key, 1 + _stacklevel)
@@ -691,7 +727,8 @@ class WriteOncePersistentDict(_PersistentDictBase):
 
         return stored_value
 
-    def _fetch(self, hexdigest_key, _stacklevel=0):  # pylint:disable=method-hidden
+    def _fetch(self, hexdigest_key: str,  # pylint:disable=method-hidden
+               _stacklevel: int = 0) -> V:
         # This is separate from fetch() to allow for LRU caching
 
         # {{{ check path exists and is unlocked
@@ -748,12 +785,12 @@ class WriteOncePersistentDict(_PersistentDictBase):
 
         return (read_key, read_contents)
 
-    def clear(self):
+    def clear(self) -> None:
         _PersistentDictBase.clear(self)
         self._fetch.cache_clear()
 
 
-class PersistentDict(_PersistentDictBase):
+class PersistentDict(_PersistentDictBase[K, V]):
     """A concurrent disk-backed dictionary.
 
     .. automethod:: __init__
@@ -766,15 +803,22 @@ class PersistentDict(_PersistentDictBase):
     .. automethod:: fetch
     .. automethod:: remove
     """
-    def __init__(self, identifier, key_builder=None, container_dir=None):
+    def __init__(self,
+                 identifier: str,
+                 key_builder: Optional[KeyBuilder] = None,
+                 container_dir: Optional[str] = None) -> None:
         """
         :arg identifier: a file-name-compatible string identifying this
             dictionary
         :arg key_builder: a subclass of :class:`KeyBuilder`
+        :arg container_dir: the directory in which to store this
+            dictionary. If ``None``, the default cache directory from
+            :func:`platformdirs.user_cache_dir` is used
         """
         _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
 
-    def store(self, key, value, _skip_if_present=False, _stacklevel=0):
+    def store(self, key: K, value: V, _skip_if_present: bool = False,
+              _stacklevel: int = 0) -> None:
         hexdigest_key = self.key_builder(key)
 
         cleanup_m = CleanupManager()
@@ -807,7 +851,7 @@ class PersistentDict(_PersistentDictBase):
         finally:
             cleanup_m.clean_up()
 
-    def fetch(self, key, _stacklevel=0):
+    def fetch(self, key: K, _stacklevel: int = 0) -> V:
         hexdigest_key = self.key_builder(key)
         item_dir = self._item_dir(hexdigest_key)
 
@@ -871,7 +915,8 @@ class PersistentDict(_PersistentDictBase):
         finally:
             cleanup_m.clean_up()
 
-    def remove(self, key, _stacklevel=0):
+    def remove(self, key: K, _stacklevel: int = 0) -> None:
+        """Remove the entry associated with *key* from the dictionary."""
         hexdigest_key = self.key_builder(key)
 
         item_dir = self._item_dir(hexdigest_key)
@@ -913,7 +958,8 @@ class PersistentDict(_PersistentDictBase):
         finally:
             cleanup_m.clean_up()
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: K) -> None:
+        """Remove the entry associated with *key* from the dictionary."""
         self.remove(key, _stacklevel=1)
 
 # }}}
