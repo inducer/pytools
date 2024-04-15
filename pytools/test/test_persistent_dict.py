@@ -696,6 +696,7 @@ def test_keys_values_items():
 
         # This also tests deterministic iteration order
         assert len(list(pdict.keys())) == 10000 == len(set(pdict.keys()))
+        assert list(pdict.keys()) == list(range(10000))
         assert list(pdict.values()) == list(range(10000))
         assert list(pdict.items()) == list(zip(list(pdict.keys()), range(10000)))
 

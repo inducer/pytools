@@ -449,7 +449,7 @@ class _PersistentDictBase(Mapping[K, V]):
         if self.conn:
             self.conn.close()
 
-    def _collision_check(self, key, stored_key) -> None:
+    def _collision_check(self, key: K, stored_key: K) -> None:
         if stored_key != key:
             print(stored_key, key)
             # Key collision, oh well.
@@ -495,24 +495,24 @@ class _PersistentDictBase(Mapping[K, V]):
         """Return the number of entries in the dictionary."""
         return next(self.conn.execute("SELECT COUNT(*) FROM dict"))[0]
 
-    def __iter__(self) -> Generator[str, None, None]:
-        """Return an iterator over the key hashes in the dictionary."""
+    def __iter__(self) -> Generator[K, None, None]:
+        """Return an iterator over the keys in the dictionary."""
         return self.keys()
 
-    def keys(self) -> Generator[str, None, None]:
-        """Return an iterator over the key hashes in the dictionary."""
-        for row in self.conn.execute("SELECT key FROM dict ORDER BY rowid"):
-            yield row[0]
+    def keys(self) -> Generator[K, None, None]:
+        """Return an iterator over the keys in the dictionary."""
+        for row in self.conn.execute("SELECT value FROM dict ORDER BY rowid"):
+            yield pickle.loads(row[0])[0]
 
     def values(self) -> Generator[V, None, None]:
         """Return an iterator over the values in the dictionary."""
         for row in self.conn.execute("SELECT value FROM dict ORDER BY rowid"):
             yield pickle.loads(row[0])[1]
 
-    def items(self) -> Generator[tuple[str, V], None, None]:
+    def items(self) -> Generator[tuple[K, V], None, None]:
         """Return an iterator over the items in the dictionary."""
-        for row in self.conn.execute("SELECT key, value FROM dict ORDER BY rowid"):
-            yield (row[0], pickle.loads(row[1])[1])
+        for row in self.conn.execute("SELECT value FROM dict ORDER BY rowid"):
+            yield pickle.loads(row[0])
 
     def size(self) -> int:
         """Return the size of the dictionary in bytes."""
