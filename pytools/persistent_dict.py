@@ -449,6 +449,9 @@ class KeyBuilder:
     update_for_PMap = update_for_frozendict  # noqa: N815
     update_for_Map = update_for_frozendict  # noqa: N815
 
+    def update_for_datetime(self, key_hash: Hash, key: Any) -> None:
+        self.rec(key_hash, key.isoformat(timespec="microseconds"))
+
     # }}}
 
 # }}}

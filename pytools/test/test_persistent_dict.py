@@ -598,6 +598,18 @@ def test_attrs_hashing() -> None:
             != keyb(MyAttrs("hi", 1)))  # type: ignore[call-arg]
 
 
+def test_datetime_hashing() -> None:
+    keyb = KeyBuilder()
+
+    import datetime
+
+    assert (keyb(datetime.datetime(2020, 1, 1))
+            == keyb(datetime.datetime(2020, 1, 1))
+            == keyb(datetime.datetime(2020, 1, 1, 0, 0, 0, 0))
+            == "2d99f1efa2a8c0742697fc0e48bfd32b32e3a8b42196f0edfa5f72bc8222798e")
+    assert keyb(datetime.datetime(2020, 1, 1)) != keyb(datetime.datetime(2020, 1, 2))
+
+
 def test_xdg_cache_home() -> None:
     import os
     xdg_dir = "tmpdir_pytools_xdg_test"
