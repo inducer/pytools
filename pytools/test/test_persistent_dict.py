@@ -614,7 +614,10 @@ def test_datetime_hashing() -> None:
 
     # must distinguish between naive and aware time objects
 
-    assert keyb(datetime.time(12, 0)) == keyb(datetime.time(12, 0))
+    assert (keyb(datetime.time(12, 0))
+            == keyb(datetime.time(12, 0))
+            == keyb(datetime.time(12, 0, 0))
+            == keyb(datetime.time(12, 0, 0, 0)))
     assert keyb(datetime.time(12, 0)) != keyb(datetime.time(12, 1))
 
     t1 = datetime.time(12, 0, tzinfo=datetime.timezone.utc)
