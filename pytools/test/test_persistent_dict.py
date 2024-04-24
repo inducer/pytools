@@ -604,7 +604,6 @@ def test_datetime_hashing() -> None:
     import datetime
 
     # {{{ date
-
     # No timezone info; date is always naive
     assert (keyb(datetime.date(2020, 1, 1))
             == keyb(datetime.date(2020, 1, 1))
@@ -622,18 +621,23 @@ def test_datetime_hashing() -> None:
             == keyb(datetime.time(12, 0))
             == keyb(datetime.time(12, 0, 0))
             == keyb(datetime.time(12, 0, 0, 0))
-            == "a7a30177cad0f7303d2a53bc72e081bc902cd12a32457c253cd538a85628ac57")
+            == "bf73f48b2f2666b5c42f6993e628fdc15e0b6c3127186c3ab44ce08ed83d0472")
     assert keyb(datetime.time(12, 0)) != keyb(datetime.time(12, 1))
 
     # Aware time
     t1 = datetime.time(12, 0, tzinfo=datetime.timezone.utc)
     t2 = datetime.time(7, 0,
                             tzinfo=datetime.timezone(datetime.timedelta(hours=-5)))
+    t3 = datetime.time(7, 0,
+                            tzinfo=datetime.timezone(datetime.timedelta(hours=-4)))
 
     assert t1 == t2
     assert (keyb(t1)
             == keyb(t2)
-            == "b7da0aac745d364a635a7cdbda9b1b7502d877f802e8555c63600697f02a4ee9")
+            == "c0947587c92ab6e2df90475dd497aff1d83df55fbd5af6c55b2a0a221b2437a4")
+
+    assert t1 != t3
+    assert keyb(t1) != keyb(t3)
 
     # }}}
 
