@@ -604,35 +604,36 @@ def test_datetime_hashing() -> None:
     import datetime
 
     # {{{ date
+
     # No timezone info; date is always naive
-    assert keyb(datetime.date(2020, 1, 1)) == keyb(datetime.date(2020, 1, 1))
+    assert (keyb(datetime.date(2020, 1, 1))
+            == keyb(datetime.date(2020, 1, 1))
+            == "9fb97d7faabc3603f3e334ca5eb1eb0fe0c92665e5611cb1b5aa77fa0f70f5e3")
     assert keyb(datetime.date(2020, 1, 1)) != keyb(datetime.date(2020, 1, 2))
 
     # }}}
 
     # {{{ time
 
-    # must distinguish between naive and aware time objects
+    # Must distinguish between naive and aware time objects
 
+    # Naive time
     assert (keyb(datetime.time(12, 0))
             == keyb(datetime.time(12, 0))
             == keyb(datetime.time(12, 0, 0))
-            == keyb(datetime.time(12, 0, 0, 0)))
+            == keyb(datetime.time(12, 0, 0, 0))
+            == "a7a30177cad0f7303d2a53bc72e081bc902cd12a32457c253cd538a85628ac57")
     assert keyb(datetime.time(12, 0)) != keyb(datetime.time(12, 1))
 
+    # Aware time
     t1 = datetime.time(12, 0, tzinfo=datetime.timezone.utc)
     t2 = datetime.time(7, 0,
                             tzinfo=datetime.timezone(datetime.timedelta(hours=-5)))
 
     assert t1 == t2
-    assert keyb(t1) == keyb(t2)
-
-    # Naive time
-    for hr in range(24):
-        for minute in range(60):
-            t3 = datetime.time(hr, minute)
-            assert t1 != t3  # naive and aware time objects are never equal
-            assert keyb(t1) != keyb(t3)
+    assert (keyb(t1)
+            == keyb(t2)
+            == "b7da0aac745d364a635a7cdbda9b1b7502d877f802e8555c63600697f02a4ee9")
 
     # }}}
 
@@ -640,12 +641,15 @@ def test_datetime_hashing() -> None:
 
     # must distinguish between naive and aware datetime objects
 
+    # Aware datetime
     dt1 = datetime.datetime(2020, 1, 1, 12, tzinfo=datetime.timezone.utc)
     dt2 = datetime.datetime(2020, 1, 1, 7,
                             tzinfo=datetime.timezone(datetime.timedelta(hours=-5)))
 
     assert dt1 == dt2
-    assert keyb(dt1) == keyb(dt2)
+    assert (keyb(dt1)
+            == keyb(dt2)
+            == "cd35722af47e42cb3bc81c389b87eb2e78ee8e20298bb1d8a193b30940d1c142")
 
     dt3 = datetime.datetime(2020, 1, 1, 7,
                             tzinfo=datetime.timezone(datetime.timedelta(hours=-4)))
@@ -653,7 +657,7 @@ def test_datetime_hashing() -> None:
     assert dt1 != dt3
     assert keyb(dt1) != keyb(dt3)
 
-    # naive datetime
+    # Naive datetime
     dt4 = datetime.datetime(2020, 1, 1, 6)  # matches dt1 'naively'
     assert dt1 != dt4  # naive and aware datetime objects are never equal
     assert keyb(dt1) != keyb(dt4)
@@ -661,7 +665,7 @@ def test_datetime_hashing() -> None:
     assert (keyb(datetime.datetime(2020, 1, 1))
             == keyb(datetime.datetime(2020, 1, 1))
             == keyb(datetime.datetime(2020, 1, 1, 0, 0, 0, 0))
-            == "638cca0554dc1aefb7637061c416ec34098867fdd8e6345692e84ef7a5844ccd"
+            == "8f3b843d7b9176afd8e2ce97ebc19789098a1c7774c4ec00d4054ec954ce2b88"
             )
     assert keyb(datetime.datetime(2020, 1, 1)) != keyb(datetime.datetime(2020, 1, 2))
     assert (keyb(datetime.datetime(2020, 1, 1))
@@ -682,7 +686,9 @@ def test_datetime_hashing() -> None:
     assert keyb(tz1) != keyb(tz3)
 
     assert tz2 == tz3
-    assert keyb(tz2) == keyb(tz3)
+    assert (keyb(tz2)
+            == keyb(tz3)
+            == "89bd615f32c1f209b0853b1fc7d06ddb6fda7f367a00a8621d60337d52cb8d10")
 
     # }}}
 

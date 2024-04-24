@@ -456,7 +456,7 @@ class KeyBuilder:
         self.rec(key_hash, key.isoformat())
 
     def update_for_time(self, key_hash: Hash, key: Any) -> None:
-        # This should differentiate between naive and aware times
+        # 'time' should differentiate between naive and aware
         import datetime
         dt = datetime.datetime.combine(datetime.date.today(), key)
         self.rec(key_hash,
@@ -469,13 +469,15 @@ class KeyBuilder:
             self.rec(key_hash, "<naive>")
 
     def update_for_datetime(self, key_hash: Hash, key: Any) -> None:
-        # This should differentiate between naive and aware datetimes
-        self.rec(key_hash, key.timestamp())
+        # 'datetime' should differentiate between naive and aware
 
         # https://docs.python.org/3.11/library/datetime.html#determining-if-an-object-is-aware-or-naive
         if key.tzinfo is not None and key.tzinfo.utcoffset(key) is not None:
+            self.rec(key_hash, key.timestamp())
             self.rec(key_hash, "<aware>")
         else:
+            from datetime import timezone
+            self.rec(key_hash, key.replace(tzinfo=timezone.utc).timestamp())
             self.rec(key_hash, "<naive>")
 
     def update_for_timezone(self, key_hash: Hash, key: Any) -> None:
