@@ -598,6 +598,105 @@ def test_attrs_hashing() -> None:
             != keyb(MyAttrs("hi", 1)))  # type: ignore[call-arg]
 
 
+def test_datetime_hashing() -> None:
+    keyb = KeyBuilder()
+
+    import datetime
+
+    # {{{ date
+    # No timezone info; date is always naive
+    assert (keyb(datetime.date(2020, 1, 1))
+            == keyb(datetime.date(2020, 1, 1))
+            == "9fb97d7faabc3603f3e334ca5eb1eb0fe0c92665e5611cb1b5aa77fa0f70f5e3")
+    assert keyb(datetime.date(2020, 1, 1)) != keyb(datetime.date(2020, 1, 2))
+
+    # }}}
+
+    # {{{ time
+
+    # Must distinguish between naive and aware time objects
+
+    # Naive time
+    assert (keyb(datetime.time(12, 0))
+            == keyb(datetime.time(12, 0))
+            == keyb(datetime.time(12, 0, 0))
+            == keyb(datetime.time(12, 0, 0, 0))
+            == "bf73f48b2f2666b5c42f6993e628fdc15e0b6c3127186c3ab44ce08ed83d0472")
+    assert keyb(datetime.time(12, 0)) != keyb(datetime.time(12, 1))
+
+    # Aware time
+    t1 = datetime.time(12, 0, tzinfo=datetime.timezone.utc)
+    t2 = datetime.time(7, 0,
+                            tzinfo=datetime.timezone(datetime.timedelta(hours=-5)))
+    t3 = datetime.time(7, 0,
+                            tzinfo=datetime.timezone(datetime.timedelta(hours=-4)))
+
+    assert t1 == t2
+    assert (keyb(t1)
+            == keyb(t2)
+            == "c0947587c92ab6e2df90475dd497aff1d83df55fbd5af6c55b2a0a221b2437a4")
+
+    assert t1 != t3
+    assert keyb(t1) != keyb(t3)
+
+    # }}}
+
+    # {{{ datetime
+
+    # must distinguish between naive and aware datetime objects
+
+    # Aware datetime
+    dt1 = datetime.datetime(2020, 1, 1, 12, tzinfo=datetime.timezone.utc)
+    dt2 = datetime.datetime(2020, 1, 1, 7,
+                            tzinfo=datetime.timezone(datetime.timedelta(hours=-5)))
+
+    assert dt1 == dt2
+    assert (keyb(dt1)
+            == keyb(dt2)
+            == "cd35722af47e42cb3bc81c389b87eb2e78ee8e20298bb1d8a193b30940d1c142")
+
+    dt3 = datetime.datetime(2020, 1, 1, 7,
+                            tzinfo=datetime.timezone(datetime.timedelta(hours=-4)))
+
+    assert dt1 != dt3
+    assert keyb(dt1) != keyb(dt3)
+
+    # Naive datetime
+    dt4 = datetime.datetime(2020, 1, 1, 6)  # matches dt1 'naively'
+    assert dt1 != dt4  # naive and aware datetime objects are never equal
+    assert keyb(dt1) != keyb(dt4)
+
+    assert (keyb(datetime.datetime(2020, 1, 1))
+            == keyb(datetime.datetime(2020, 1, 1))
+            == keyb(datetime.datetime(2020, 1, 1, 0, 0, 0, 0))
+            == "8f3b843d7b9176afd8e2ce97ebc19789098a1c7774c4ec00d4054ec954ce2b88"
+            )
+    assert keyb(datetime.datetime(2020, 1, 1)) != keyb(datetime.datetime(2020, 1, 2))
+    assert (keyb(datetime.datetime(2020, 1, 1))
+            != keyb(datetime.datetime(2020, 1, 1, tzinfo=datetime.timezone.utc)))
+
+    # }}}
+
+    # {{{ timezone
+
+    tz1 = datetime.timezone(datetime.timedelta(hours=-4))
+    tz2 = datetime.timezone(datetime.timedelta(hours=0))
+    tz3 = datetime.timezone.utc
+
+    assert tz1 != tz2
+    assert keyb(tz1) != keyb(tz2)
+
+    assert tz1 != tz3
+    assert keyb(tz1) != keyb(tz3)
+
+    assert tz2 == tz3
+    assert (keyb(tz2)
+            == keyb(tz3)
+            == "89bd615f32c1f209b0853b1fc7d06ddb6fda7f367a00a8621d60337d52cb8d10")
+
+    # }}}
+
+
 def test_xdg_cache_home() -> None:
     import os
     xdg_dir = "tmpdir_pytools_xdg_test"
