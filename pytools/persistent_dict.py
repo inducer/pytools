@@ -460,7 +460,7 @@ class KeyBuilder:
         import datetime
 
         # Convert to datetime object
-        self.rec(key_hash, datetime.datetime.combine(datetime.date.today(), key))
+        self.rec(key_hash, datetime.datetime.combine(datetime.date.min, key))
         self.rec(key_hash, "<time>")
 
     def update_for_datetime(self, key_hash: Hash, key: Any) -> None:

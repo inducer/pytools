@@ -621,7 +621,7 @@ def test_datetime_hashing() -> None:
             == keyb(datetime.time(12, 0))
             == keyb(datetime.time(12, 0, 0))
             == keyb(datetime.time(12, 0, 0, 0))
-            == "bf73f48b2f2666b5c42f6993e628fdc15e0b6c3127186c3ab44ce08ed83d0472")
+            == "288ec82f6a00ac15968d4d257d4aca1089b863c61ef2ee200e64351238397705")
     assert keyb(datetime.time(12, 0)) != keyb(datetime.time(12, 1))
 
     # Aware time
@@ -634,7 +634,7 @@ def test_datetime_hashing() -> None:
     assert t1 == t2
     assert (keyb(t1)
             == keyb(t2)
-            == "c0947587c92ab6e2df90475dd497aff1d83df55fbd5af6c55b2a0a221b2437a4")
+            == "3587427ca9d581779d532b397df206ddeadfcf4e38b1ee69c19174e8e1268cc4")
 
     assert t1 != t3
     assert keyb(t1) != keyb(t3)
