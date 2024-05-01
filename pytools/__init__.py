@@ -448,7 +448,7 @@ class RecordWithoutPickling:
         return "{}({})".format(
                 self.__class__.__name__,
                 ", ".join(f"{fld}={getattr(self, fld)!r}"
-                    for fld in self.__class__.fields
+                    for fld in sorted(self.__class__.fields)
                     if hasattr(self, fld)))
 
     def register_fields(self, new_fields):
