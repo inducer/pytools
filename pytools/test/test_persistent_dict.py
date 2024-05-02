@@ -169,6 +169,9 @@ def test_persistent_dict_deletion() -> None:
         del pdict[0]
 
         with pytest.raises(NoSuchEntryError):
+            pdict.remove(0)
+
+        with pytest.raises(NoSuchEntryError):
             pdict.fetch(0)
 
         with pytest.raises(NoSuchEntryError):
