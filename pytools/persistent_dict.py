@@ -393,7 +393,8 @@ V = TypeVar("V")
 class _PersistentDictBase(Mapping[K, V]):
     def __init__(self, identifier: str,
                  key_builder: Optional[KeyBuilder] = None,
-                 container_dir: Optional[str] = None) -> None:
+                 container_dir: Optional[str] = None,
+                 enable_wal: bool = False) -> None:
         self.identifier = identifier
         self.conn = None
 
@@ -429,11 +430,9 @@ class _PersistentDictBase(Mapping[K, V]):
             "(keyhash TEXT NOT NULL PRIMARY KEY, key_value TEXT NOT NULL)"
             )
 
-        # WAL mode disabled for now
         # https://www.sqlite.org/wal.html
-        # import platform
-        # if platform.python_implementation() != "PyPy":
-        #     self.conn.execute("PRAGMA journal_mode = 'WAL'")
+        if enable_wal:
+            self.conn.execute("PRAGMA journal_mode = 'WAL'")
 
         # temp_store=2: use in-memory temp store
         # https://www.sqlite.org/pragma.html#pragma_temp_store
@@ -548,6 +547,7 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
     def __init__(self, identifier: str,
                  key_builder: Optional[KeyBuilder] = None,
                  container_dir: Optional[str] = None,
+                 enable_wal: bool = False,
                  in_mem_cache_size: int = 256) -> None:
         """
         :arg identifier: a filename-compatible string identifying this
@@ -556,10 +556,14 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
         :arg container_dir: the directory in which to store this
             dictionary. If ``None``, the default cache directory from
             :func:`platformdirs.user_cache_dir` is used
+        :arg enable_wal: enable write-ahead logging (WAL) mode. This mode
+            is faster than the default rollback journal mode, but it is
+            not compatible with network filesystems.
         :arg in_mem_cache_size: retain an in-memory cache of up to
             *in_mem_cache_size* items (with an LRU replacement policy)
         """
-        _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
+        _PersistentDictBase.__init__(self, identifier, key_builder,
+                                     container_dir, enable_wal)
         from functools import lru_cache
         self._fetch = lru_cache(maxsize=in_mem_cache_size)(self._fetch)
 
@@ -623,7 +627,8 @@ class PersistentDict(_PersistentDictBase[K, V]):
     def __init__(self,
                  identifier: str,
                  key_builder: Optional[KeyBuilder] = None,
-                 container_dir: Optional[str] = None) -> None:
+                 container_dir: Optional[str] = None,
+                 enable_wal: bool = False) -> None:
         """
         :arg identifier: a filename-compatible string identifying this
             dictionary
@@ -631,8 +636,12 @@ class PersistentDict(_PersistentDictBase[K, V]):
         :arg container_dir: the directory in which to store this
             dictionary. If ``None``, the default cache directory from
             :func:`platformdirs.user_cache_dir` is used
+        :arg enable_wal: enable write-ahead logging (WAL) mode. This mode
+            is faster than the default rollback journal mode, but it is
+            not compatible with network filesystems.
         """
-        _PersistentDictBase.__init__(self, identifier, key_builder, container_dir)
+        _PersistentDictBase.__init__(self, identifier, key_builder,
+                                     container_dir, enable_wal)
 
     def store(self, key: K, value: V, _skip_if_present: bool = False) -> None:
         keyhash = self.key_builder(key)
