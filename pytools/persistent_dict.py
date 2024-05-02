@@ -702,22 +702,24 @@ class PersistentDict(_PersistentDictBase[K, V]):
         """Remove the entry associated with *key* from the dictionary."""
         keyhash = self.key_builder(key)
 
-        self.conn.execute("BEGIN TRANSACTION")
+        self.conn.execute("BEGIN EXCLUSIVE TRANSACTION")
 
-        c = self.conn.execute("SELECT key_value FROM dict WHERE keyhash=?",
-                              (keyhash,))
-        row = c.fetchone()
-        if row is None:
-            self.conn.execute("ROLLBACK")
-            raise NoSuchEntryError(key)
+        try:
+            # This is split into SELECT/DELETE to allow for a collision check
+            c = self.conn.execute("SELECT key_value FROM dict WHERE keyhash=?",
+                                (keyhash,))
+            row = c.fetchone()
+            if row is None:
+                raise NoSuchEntryError(key)
 
-        stored_key, _value = pickle.loads(row[0])
-        if key != stored_key:
-            self.conn.execute("ROLLBACK")
+            stored_key, _value = pickle.loads(row[0])
             self._collision_check(key, stored_key)
 
-        self.conn.execute("DELETE FROM dict WHERE keyhash=?", (keyhash,))
-        self.conn.execute("COMMIT")
+            self.conn.execute("DELETE FROM dict WHERE keyhash=?", (keyhash,))
+            self.conn.execute("COMMIT")
+        except Exception as e:
+            self.conn.execute("ROLLBACK")
+            raise e
 
     def __delitem__(self, key: K) -> None:
         """Remove the entry associated with *key* from the dictionary."""
