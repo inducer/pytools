@@ -300,7 +300,7 @@ class KeyBuilder:
         key_hash.update(b"<None>")
 
     @staticmethod
-    def update_for_dtype(key_hash, key):
+    def update_for_dtype(key_hash: Hash, key: Any) -> None:
         key_hash.update(key.str.encode("utf8"))
 
     # Handling numpy >= 1.20, for which
@@ -308,11 +308,11 @@ class KeyBuilder:
     # Introducing this method allows subclasses to specially handle all those
     # dtypes.
     @staticmethod
-    def update_for_specific_dtype(key_hash, key):
+    def update_for_specific_dtype(key_hash: Hash, key: Any) -> None:
         key_hash.update(key.str.encode("utf8"))
 
     @staticmethod
-    def update_for_numpy_scalar(key_hash: Hash, key) -> None:
+    def update_for_numpy_scalar(key_hash: Hash, key: Any) -> None:
         import numpy as np
         if hasattr(np, "complex256") and key.dtype == np.dtype("complex256"):
             key_hash.update(repr(complex(key)).encode("utf8"))
@@ -328,7 +328,7 @@ class KeyBuilder:
             self.rec(key_hash, fld.name)
             self.rec(key_hash, getattr(key, fld.name, None))
 
-    def update_for_attrs(self, key_hash: Hash, key) -> None:
+    def update_for_attrs(self, key_hash: Hash, key: Any) -> None:
         self.rec(key_hash, f"{type(key).__qualname__}.{type(key).__name__}")
 
         for fld in attrs.fields(key.__class__):
@@ -346,6 +346,37 @@ class KeyBuilder:
     update_for_constantdict = update_for_frozendict
     update_for_PMap = update_for_frozendict  # noqa: N815
     update_for_Map = update_for_frozendict  # noqa: N815
+
+    # {{{ date, time, datetime, timezone
+
+    def update_for_date(self, key_hash: Hash, key: Any) -> None:
+        # 'date' has no timezone information; it is always naive
+        self.rec(key_hash, key.isoformat())
+
+    def update_for_time(self, key_hash: Hash, key: Any) -> None:
+        # 'time' should differentiate between naive and aware
+        import datetime
+
+        # Convert to datetime object
+        self.rec(key_hash, datetime.datetime.combine(datetime.date.min, key))
+        self.rec(key_hash, "<time>")
+
+    def update_for_datetime(self, key_hash: Hash, key: Any) -> None:
+        # 'datetime' should differentiate between naive and aware
+
+        # https://docs.python.org/3.11/library/datetime.html#determining-if-an-object-is-aware-or-naive
+        if key.tzinfo is not None and key.tzinfo.utcoffset(key) is not None:
+            self.rec(key_hash, key.timestamp())
+            self.rec(key_hash, "<aware>")
+        else:
+            from datetime import timezone
+            self.rec(key_hash, key.replace(tzinfo=timezone.utc).timestamp())
+            self.rec(key_hash, "<naive>")
+
+    def update_for_timezone(self, key_hash: Hash, key: Any) -> None:
+        self.rec(key_hash, repr(key))
+
+    # }}}
 
     # }}}
 

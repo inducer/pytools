@@ -26,6 +26,8 @@ import sys
 
 import pytest
 
+from pytools import Record
+
 
 logger = logging.getLogger(__name__)
 from typing import FrozenSet
@@ -781,6 +783,78 @@ def test_unique():
 
     assert next(unique([1, 2, 1, 3])) == 1
     assert next(unique([]), None) is None
+
+
+# This class must be defined globally to be picklable
+class SimpleRecord(Record):
+    pass
+
+
+def test_record():
+    r = SimpleRecord(c=3, b=2, a=1)
+
+    assert r.a == 1
+    assert r.b == 2
+    assert r.c == 3
+
+    # Fields are sorted alphabetically in records
+    assert str(r) == "SimpleRecord(a=1, b=2, c=3)"
+
+    # Unregistered fields are (silently) ignored for printing
+    r.f = 6
+    assert str(r) == "SimpleRecord(a=1, b=2, c=3)"
+
+    # Registered fields are printed
+    r.register_fields({"d", "e"})
+    assert str(r) == "SimpleRecord(a=1, b=2, c=3)"
+
+    r.d = 4
+    r.e = 5
+    assert str(r) == "SimpleRecord(a=1, b=2, c=3, d=4, e=5)"
+
+    with pytest.raises(AttributeError):
+        r.ff
+
+    # Test pickling
+    import pickle
+    r_pickled = pickle.loads(pickle.dumps(r))
+    assert r == r_pickled
+
+    # }}}
+
+    # {{{ __slots__, __dict__, __weakref__ handling
+
+    class RecordWithEmptySlots(Record):
+        __slots__ = []
+
+    assert hasattr(RecordWithEmptySlots(), "__slots__")
+    assert not hasattr(RecordWithEmptySlots(), "__dict__")
+    assert not hasattr(RecordWithEmptySlots(), "__weakref__")
+
+    class RecordWithUnsetSlots(Record):
+        pass
+
+    assert hasattr(RecordWithUnsetSlots(), "__slots__")
+    assert hasattr(RecordWithUnsetSlots(), "__dict__")
+    assert hasattr(RecordWithUnsetSlots(), "__weakref__")
+
+    from pytools import ImmutableRecord
+
+    class ImmutableRecordWithEmptySlots(ImmutableRecord):
+        __slots__ = []
+
+    assert hasattr(ImmutableRecordWithEmptySlots(), "__slots__")
+    assert hasattr(ImmutableRecordWithEmptySlots(), "__dict__")
+    assert hasattr(ImmutableRecordWithEmptySlots(), "__weakref__")
+
+    class ImmutableRecordWithUnsetSlots(ImmutableRecord):
+        pass
+
+    assert hasattr(ImmutableRecordWithUnsetSlots(), "__slots__")
+    assert hasattr(ImmutableRecordWithUnsetSlots(), "__dict__")
+    assert hasattr(ImmutableRecordWithUnsetSlots(), "__weakref__")
+
+    # }}}
 
 
 if __name__ == "__main__":
