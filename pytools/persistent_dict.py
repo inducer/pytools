@@ -702,32 +702,22 @@ class PersistentDict(_PersistentDictBase[K, V]):
         """Remove the entry associated with *key* from the dictionary."""
         keyhash = self.key_builder(key)
 
-        # FIXME: Ideally, the following code should use an explicit transaction,
-        # but these don't work well with the autocommit mode of SQLite.
-        if sqlite3.sqlite_version_info >= (3, 35, 0):
-            # SQLite >= 3.35.0 (released 2021-03-12) supports RETURNING
-            c = self.conn.execute("DELETE FROM dict WHERE keyhash=? RETURNING *",
-                                  (keyhash,))
-            row = c.fetchone()
-            if row is None:
-                raise NoSuchEntryError(key)
+        self.conn.execute("BEGIN TRANSACTION")
 
-            stored_key, _value = pickle.loads(row[1])
+        c = self.conn.execute("SELECT key_value FROM dict WHERE keyhash=?",
+                              (keyhash,))
+        row = c.fetchone()
+        if row is None:
+            self.conn.execute("ROLLBACK")
+            raise NoSuchEntryError(key)
 
-            try:
-                self._collision_check(key, stored_key)
-            except NoSuchEntryCollisionError as exc:
-                # Restore the just removed entry on collision
-                self.conn.execute("INSERT OR IGNORE INTO dict VALUES (?, ?)",
-                                  (keyhash, row[1]))
-                raise exc
-        else:
-            # No way to check for collisions in SQLite < 3.35.0
-            self.conn.execute("DELETE FROM dict WHERE keyhash=?", (keyhash,))
-            num_changes = next(self.conn.execute("SELECT changes()"))[0]
-            assert num_changes in (0, 1)
-            if num_changes == 0:
-                raise NoSuchEntryError(key)
+        stored_key, _value = pickle.loads(row[0])
+        if key != stored_key:
+            self.conn.execute("ROLLBACK")
+            self._collision_check(key, stored_key)
+
+        self.conn.execute("DELETE FROM dict WHERE keyhash=?", (keyhash,))
+        self.conn.execute("COMMIT")
 
     def __delitem__(self, key: K) -> None:
         """Remove the entry associated with *key* from the dictionary."""
