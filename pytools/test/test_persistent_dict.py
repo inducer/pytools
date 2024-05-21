@@ -719,6 +719,44 @@ def test_xdg_cache_home() -> None:
         shutil.rmtree(xdg_dir)
 
 
+def global_fun():
+    pass
+
+
+def global_fun2():
+    pass
+
+
+def test_hash_function() -> None:
+    keyb = KeyBuilder()
+
+    assert keyb(global_fun) == keyb(global_fun) == \
+        "51b5980dd3a8aa13f6e83869e4a04c22973d7aaf96cb22899abdfdc55e15c9b2"
+    assert keyb(global_fun) != keyb(global_fun2)
+
+    def local_fun():
+        pass
+
+    def local_fun2():
+        pass
+
+    assert keyb(local_fun) == keyb(local_fun) == \
+        "fc58f5b0130df821913c848749eb03f5dcd4da7a568c6130f1c0cfb96ed0d12d"
+    assert keyb(local_fun) != keyb(local_fun2)
+
+    class C1:
+        def method(self):
+            pass
+
+    class C2:
+        def method(self):
+            pass
+
+    assert keyb(C1.method) == keyb(C1.method) == \
+        "3013eb424dac133a57bd70cb6084d2a2f349a247714efc508fe3b10b99b6f717"
+    assert keyb(C1.method) != keyb(C2.method)
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
