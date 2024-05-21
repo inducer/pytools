@@ -746,10 +746,22 @@ def test_hash_function() -> None:
         return add_x
 
     f1 = get_fun(1)
+    f11 = get_fun(1)
     f2 = get_fun(2)
+
+    fa = get_fun
+    fb = get_fun
+
+    assert fa == fb
+    assert keyb(fa) == keyb(fb)
 
     assert f1 != f2
     assert keyb(f1) != keyb(f2)
+
+    # FIXME: inconsistency!
+    assert f1 != f11
+    assert hash(f1) != hash(f11)
+    assert keyb(f1) == keyb(f11)
 
     # }}}
 
