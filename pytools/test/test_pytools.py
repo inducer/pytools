@@ -740,6 +740,23 @@ def test_strtobool():
     assert strtobool(None, False) is False
 
 
+def test_to_identifier() -> None:
+    from pytools import to_identifier
+
+    assert to_identifier("_a_123_") == "_a_123_"
+    assert to_identifier("a_123") == "a_123"
+    assert to_identifier("a 123") == "a123"
+    assert to_identifier("123") == "_123"
+    assert to_identifier("_123") == "_123"
+    assert to_identifier("123A") == "_123A"
+    assert to_identifier("") == "_"
+
+    assert not "a 123".isidentifier()
+    assert to_identifier("a 123").isidentifier()
+    assert to_identifier("123").isidentifier()
+    assert to_identifier("").isidentifier()
+
+
 def test_typedump():
     from pytools import typedump
     assert typedump("") == "str"
