@@ -480,6 +480,9 @@ class KeyBuilder:
 
     # }}}
 
+    def update_for_function(self, key_hash: Hash, key: Any) -> None:
+        self.rec(key_hash, key.__module__ + key.__qualname__)
+
     # }}}
 
 # }}}
