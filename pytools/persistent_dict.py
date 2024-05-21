@@ -483,6 +483,9 @@ class KeyBuilder:
     def update_for_function(self, key_hash: Hash, key: Any) -> None:
         self.rec(key_hash, key.__module__ + key.__qualname__)
 
+        if key.__closure__:
+            self.rec(key_hash, tuple(c.cell_contents for c in key.__closure__))
+
     # }}}
 
 # }}}

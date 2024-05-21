@@ -730,9 +730,30 @@ def global_fun2():
 def test_hash_function() -> None:
     keyb = KeyBuilder()
 
+    # {{{ global functions
+
     assert keyb(global_fun) == keyb(global_fun) == \
         "51b5980dd3a8aa13f6e83869e4a04c22973d7aaf96cb22899abdfdc55e15c9b2"
     assert keyb(global_fun) != keyb(global_fun2)
+
+    # }}}
+
+    # {{{ closures
+
+    def get_fun(x):
+        def add_x(y):
+            return x + y
+        return add_x
+
+    f1 = get_fun(1)
+    f2 = get_fun(2)
+
+    assert f1 != f2
+    assert keyb(f1) != keyb(f2)
+
+    # }}}
+
+    # {{{ local functions
 
     def local_fun():
         pass
@@ -743,6 +764,10 @@ def test_hash_function() -> None:
     assert keyb(local_fun) == keyb(local_fun) == \
         "fc58f5b0130df821913c848749eb03f5dcd4da7a568c6130f1c0cfb96ed0d12d"
     assert keyb(local_fun) != keyb(local_fun2)
+
+    # }}}
+
+    # {{{ methods
 
     class C1:
         def method(self):
@@ -755,6 +780,8 @@ def test_hash_function() -> None:
     assert keyb(C1.method) == keyb(C1.method) == \
         "3013eb424dac133a57bd70cb6084d2a2f349a247714efc508fe3b10b99b6f717"
     assert keyb(C1.method) != keyb(C2.method)
+
+    # }}}
 
 
 if __name__ == "__main__":
