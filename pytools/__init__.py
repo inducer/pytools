@@ -189,6 +189,7 @@ String utilities
 ----------------
 
 .. autofunction:: strtobool
+.. autofunction:: to_identifier
 
 Sequence utilities
 ------------------
@@ -2995,6 +2996,33 @@ def strtobool(val: Optional[str], default: Optional[bool] = None) -> bool:
                           "Valid values are ('y', 'yes', 't', 'true', 'on', '1') "
                           "for 'True' and ('n', 'no', 'f', 'false', 'off', '0') "
                           "for 'False'. Uppercase versions are also accepted.")
+
+# }}}
+
+
+# {{{ to_identifier
+
+def to_identifier(s: str) -> str:
+    """Convert a string to a valid Python identifier, by removing
+    non-alphanumeric, non-underscore characters, and prepending an underscore
+    if the string starts with a numeric character.
+
+    :param s: The string to convert to an identifier.
+
+    :returns: The converted string.
+    """
+    if s.isidentifier():
+        return s
+
+    s = "".join(c for c in s if c.isalnum() or c == "_")
+
+    if len(s) == 0:
+        return "_"
+
+    if s[0].isdigit():
+        s = "_" + s
+
+    return s
 
 # }}}
 
