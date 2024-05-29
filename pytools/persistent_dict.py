@@ -471,6 +471,11 @@ class _PersistentDictBase(Mapping[K, V]):
         if enable_wal:
             self.conn.execute("PRAGMA journal_mode = 'WAL'")
 
+        # Note: the following configuration values were taken from litedict:
+        # https://github.com/litements/litedict/blob/377603fa597453ffd9997186a493ed4fd23e5399/litedict.py#L67-L70
+        # They result in fast operations while maintaining database integrity
+        # even in the face of concurrent accesses and power loss.
+
         # temp_store=2: use in-memory temp store
         # https://www.sqlite.org/pragma.html#pragma_temp_store
         self.conn.execute("PRAGMA temp_store = 2")
