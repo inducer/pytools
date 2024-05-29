@@ -488,7 +488,6 @@ class _PersistentDictBase(Mapping[K, V]):
 
     def _collision_check(self, key: K, stored_key: K) -> None:
         if stored_key != key:
-            print(stored_key, key)
             # Key collision, oh well.
             from warnings import warn
             warn(f"{self.identifier}: key collision in cache at "
