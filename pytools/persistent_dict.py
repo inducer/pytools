@@ -576,6 +576,13 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
     Compared with :class:`PersistentDict`, this class has faster
     retrieval times because it uses an LRU cache to cache entries in memory.
 
+    .. note::
+
+        This class intentionally does not store all values with a certain
+        key, based on the assumption that key conflicts are highly unlikely,
+        and if they occur, almost always due to a bug in the hash key
+        generation code (:class:`KeyBuilder`).
+
     .. automethod:: __init__
     .. automethod:: __getitem__
     .. automethod:: __setitem__
@@ -654,6 +661,13 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
 
 class PersistentDict(_PersistentDictBase[K, V]):
     """A concurrent disk-backed dictionary.
+
+    .. note::
+
+        This class intentionally does not store all values with a certain
+        key, based on the assumption that key conflicts are highly unlikely,
+        and if they occur, almost always due to a bug in the hash key
+        generation code (:class:`KeyBuilder`).
 
     .. automethod:: __init__
     .. automethod:: __getitem__
