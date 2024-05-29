@@ -752,7 +752,7 @@ def test_size():
         for i in range(10000):
             pdict[f"foobarbazfoobbb{i}"] = i
 
-        size = pdict.size()
+        size = pdict.nbytes()
         print("sqlite size: ", size/1024/1024, " MByte")
         assert 1*1024*1024 < size < 2*1024*1024
     finally:

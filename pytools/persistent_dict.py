@@ -550,7 +550,7 @@ class _PersistentDictBase(Mapping[K, V]):
         for row in self.conn.execute("SELECT key_value FROM dict ORDER BY rowid"):
             yield pickle.loads(row[0])
 
-    def size(self) -> int:
+    def nbytes(self) -> int:
         """Return the size of the dictionary in bytes."""
         return next(self.conn.execute("SELECT page_size * page_count FROM "
                           "pragma_page_size(), pragma_page_count()"))[0]
