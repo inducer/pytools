@@ -460,7 +460,8 @@ class _PersistentDictBase(Mapping[K, V]):
 
         # isolation_level=None: enable autocommit mode
         # https://www.sqlite.org/lang_transaction.html#implicit_versus_explicit_transactions
-        self.conn = sqlite3.connect(self.filename, isolation_level=None)
+        self.conn = sqlite3.connect(self.filename, isolation_level=None,
+                                    timeout=60)
 
         self.conn.execute(
             "CREATE TABLE IF NOT EXISTS dict "

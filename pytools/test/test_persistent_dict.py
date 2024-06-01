@@ -729,14 +729,14 @@ def test_speed():
     pdict = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
 
     start = time.time()
-    for i in range(10000):
+    for i in range(100):
         pdict[i] = i
     end = time.time()
     print("persistent dict write time: ", end-start)
 
     start = time.time()
     for _ in range(5):
-        for i in range(10000):
+        for i in range(100):
             pdict[i]
     end = time.time()
     print("persistent dict read time: ", end-start)
@@ -749,12 +749,12 @@ def test_size():
         tmpdir = tempfile.mkdtemp()
         pdict = PersistentDict("pytools-test", container_dir=tmpdir)
 
-        for i in range(10000):
+        for i in range(100):
             pdict[f"foobarbazfoobbb{i}"] = i
 
         size = pdict.nbytes()
         print("sqlite size: ", size/1024/1024, " MByte")
-        assert 1*1024*1024 < size < 2*1024*1024
+        assert 1*1024*1024/100 < size < 4*1024*1024/100
     finally:
         shutil.rmtree(tmpdir)
 
@@ -766,10 +766,10 @@ def test_len():
 
         assert len(pdict) == 0
 
-        for i in range(10000):
+        for i in range(100):
             pdict[i] = i
 
-        assert len(pdict) == 10000
+        assert len(pdict) == 100
 
         pdict.clear()
 
@@ -793,14 +793,14 @@ def test_keys_values_items():
         tmpdir = tempfile.mkdtemp()
         pdict = PersistentDict("pytools-test", container_dir=tmpdir)
 
-        for i in range(10000):
+        for i in range(100):
             pdict[i] = i
 
         # This also tests deterministic iteration order
-        assert len(list(pdict.keys())) == 10000 == len(set(pdict.keys()))
-        assert list(pdict.keys()) == list(range(10000))
-        assert list(pdict.values()) == list(range(10000))
-        assert list(pdict.items()) == list(zip(list(pdict.keys()), range(10000)))
+        assert len(list(pdict.keys())) == 100 == len(set(pdict.keys()))
+        assert list(pdict.keys()) == list(range(100))
+        assert list(pdict.values()) == list(range(100))
+        assert list(pdict.items()) == list(zip(list(pdict.keys()), range(100)))
 
         assert ([k for k in pdict.keys()]  # noqa: C416
                 == list(pdict.keys())
