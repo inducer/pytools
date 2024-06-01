@@ -637,12 +637,24 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
         keyhash = self.key_builder(key)
         v = pickle.dumps((key, value))
 
-        try:
-            self.conn.execute("INSERT INTO dict VALUES (?, ?)", (keyhash, v))
-        except sqlite3.IntegrityError:
-            if not _skip_if_present:
-                raise ReadOnlyEntryError("WriteOncePersistentDict, "
-                                         "tried overwriting key")
+        if _skip_if_present:
+            self.conn.execute("INSERT OR IGNORE INTO dict VALUES (?, ?)",
+                              (keyhash, v))
+        else:
+            try:
+                self.conn.execute("INSERT INTO dict VALUES (?, ?)", (keyhash, v))
+            except sqlite3.IntegrityError as e:
+                if hasattr(e, "sqlite_errorcode"):
+                    if e.sqlite_errorcode == 1555:
+                        # 1555 == SQLITE_CONSTRAINT_PRIMARYKEY
+                        # https://sqlite.org/rescode.html#constraint_primarykey
+                        raise ReadOnlyEntryError("WriteOncePersistentDict, "
+                                                 "tried overwriting key")
+                    else:
+                        raise
+                else:
+                    raise ReadOnlyEntryError("WriteOncePersistentDict, "
+                                             "tried overwriting key")
 
     def _fetch(self, keyhash: str) -> Tuple[K, V]:  # pylint:disable=method-hidden
         # This method is separate from fetch() to allow for LRU caching
