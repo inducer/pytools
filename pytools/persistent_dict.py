@@ -651,9 +651,7 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
                 self.conn.execute("INSERT INTO dict VALUES (?, ?)", (keyhash, v))
             except sqlite3.IntegrityError as e:
                 if hasattr(e, "sqlite_errorcode"):
-                    if e.sqlite_errorcode == 1555:
-                        # 1555 == SQLITE_CONSTRAINT_PRIMARYKEY
-                        # https://sqlite.org/rescode.html#constraint_primarykey
+                    if e.sqlite_errorcode == sqlite3.SQLITE_CONSTRAINT_PRIMARYKEY:
                         raise ReadOnlyEntryError("WriteOncePersistentDict, "
                                                  "tried overwriting key")
                     else:
