@@ -609,6 +609,7 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
     def __init__(self, identifier: str,
                  key_builder: Optional[KeyBuilder] = None,
                  container_dir: Optional[str] = None,
+                 *,
                  enable_wal: bool = False,
                  safe_sync: Optional[bool] = None,
                  in_mem_cache_size: int = 256) -> None:
@@ -698,6 +699,7 @@ class PersistentDict(_PersistentDictBase[K, V]):
                  identifier: str,
                  key_builder: Optional[KeyBuilder] = None,
                  container_dir: Optional[str] = None,
+                 *,
                  enable_wal: bool = False,
                  safe_sync: Optional[bool] = None) -> None:
         """
