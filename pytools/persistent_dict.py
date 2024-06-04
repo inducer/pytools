@@ -485,9 +485,14 @@ class _PersistentDictBase(Mapping[K, V]):
         if safe_sync is None or safe_sync:
             if safe_sync is None:
                 from warnings import warn
-                warn(f"pytools.persistent_dict '{identifier}': enabling "
-                      "safe_sync, please pass 'safe_sync=True' to suppress this "
-                      "warning")
+                warn(f"pytools.persistent_dict '{identifier}': "
+                     "enabling safe_sync as default. "
+                     "This provides strong protection against data loss, "
+                     "but can be unnecessarily expensive for use cases such as "
+                     "caches."
+                     "Pass 'safe_sync=False' if occasional data loss is tolerable. "
+                     "Pass 'safe_sync=True' to suppress this warning.",
+                     stacklevel=3)
             self.conn.execute("PRAGMA synchronous = 'NORMAL'")
         else:
             self.conn.execute("PRAGMA synchronous = 'OFF'")
