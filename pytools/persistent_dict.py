@@ -431,7 +431,8 @@ class _PersistentDictBase(Mapping[K, V]):
     def __init__(self, identifier: str,
                  key_builder: Optional[KeyBuilder] = None,
                  container_dir: Optional[str] = None,
-                 enable_wal: bool = False) -> None:
+                 enable_wal: bool = False,
+                 safe_sync: Optional[bool] = None) -> None:
         self.identifier = identifier
         self.conn = None
 
@@ -471,17 +472,30 @@ class _PersistentDictBase(Mapping[K, V]):
         if enable_wal:
             self.conn.execute("PRAGMA journal_mode = 'WAL'")
 
-        # Note: the following configuration values were taken from litedict:
+        # Note: the following configuration values were taken mostly from litedict:
         # https://github.com/litements/litedict/blob/377603fa597453ffd9997186a493ed4fd23e5399/litedict.py#L67-L70
-        # They result in fast operations while maintaining database integrity
-        # even in the face of concurrent accesses and power loss.
 
-        # temp_store=2: use in-memory temp store
+        # Use in-memory temp store
         # https://www.sqlite.org/pragma.html#pragma_temp_store
-        self.conn.execute("PRAGMA temp_store = 2")
+        self.conn.execute("PRAGMA temp_store = 'MEMORY'")
 
+        # fsync() can be extremely slow on some systems.
+        # See https://github.com/inducer/pytools/issues/227 for context.
         # https://www.sqlite.org/pragma.html#pragma_synchronous
-        self.conn.execute("PRAGMA synchronous = NORMAL")
+        if safe_sync is None or safe_sync:
+            if safe_sync is None:
+                from warnings import warn
+                warn(f"pytools.persistent_dict '{identifier}': "
+                     "enabling safe_sync as default. "
+                     "This provides strong protection against data loss, "
+                     "but can be unnecessarily expensive for use cases such as "
+                     "caches."
+                     "Pass 'safe_sync=False' if occasional data loss is tolerable. "
+                     "Pass 'safe_sync=True' to suppress this warning.",
+                     stacklevel=3)
+            self.conn.execute("PRAGMA synchronous = 'NORMAL'")
+        else:
+            self.conn.execute("PRAGMA synchronous = 'OFF'")
 
         # 64 MByte of cache
         # https://www.sqlite.org/pragma.html#pragma_cache_size
@@ -595,7 +609,9 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
     def __init__(self, identifier: str,
                  key_builder: Optional[KeyBuilder] = None,
                  container_dir: Optional[str] = None,
+                 *,
                  enable_wal: bool = False,
+                 safe_sync: Optional[bool] = None,
                  in_mem_cache_size: int = 256) -> None:
         """
         :arg identifier: a filename-compatible string identifying this
@@ -611,7 +627,7 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
             *in_mem_cache_size* items (with an LRU replacement policy)
         """
         _PersistentDictBase.__init__(self, identifier, key_builder,
-                                     container_dir, enable_wal)
+                                     container_dir, enable_wal, safe_sync)
         from functools import lru_cache
         self._fetch = lru_cache(maxsize=in_mem_cache_size)(self._fetch)
 
@@ -683,7 +699,9 @@ class PersistentDict(_PersistentDictBase[K, V]):
                  identifier: str,
                  key_builder: Optional[KeyBuilder] = None,
                  container_dir: Optional[str] = None,
-                 enable_wal: bool = False) -> None:
+                 *,
+                 enable_wal: bool = False,
+                 safe_sync: Optional[bool] = None) -> None:
         """
         :arg identifier: a filename-compatible string identifying this
             dictionary
@@ -696,7 +714,7 @@ class PersistentDict(_PersistentDictBase[K, V]):
             not compatible with network filesystems.
         """
         _PersistentDictBase.__init__(self, identifier, key_builder,
-                                     container_dir, enable_wal)
+                                     container_dir, enable_wal, safe_sync)
 
     def store(self, key: K, value: V, _skip_if_present: bool = False) -> None:
         keyhash = self.key_builder(key)

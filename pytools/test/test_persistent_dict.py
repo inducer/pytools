@@ -64,7 +64,8 @@ def test_persistent_dict_storage_and_lookup() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
         pdict: PersistentDict[Any, int] = PersistentDict("pytools-test",
-                                                         container_dir=tmpdir)
+                                                         container_dir=tmpdir,
+                                                         safe_sync=False)
 
         from random import randrange
 
@@ -163,7 +164,8 @@ def test_persistent_dict_deletion() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
         pdict: PersistentDict[int, int] = PersistentDict("pytools-test",
-                                                         container_dir=tmpdir)
+                                                         container_dir=tmpdir,
+                                                         safe_sync=False)
 
         pdict[0] = 0
         del pdict[0]
@@ -185,9 +187,11 @@ def test_persistent_dict_synchronization() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
         pdict1: PersistentDict[int, int] = PersistentDict("pytools-test",
-                                                          container_dir=tmpdir)
+                                                          container_dir=tmpdir,
+                                                          safe_sync=False)
         pdict2: PersistentDict[int, int] = PersistentDict("pytools-test",
-                                                          container_dir=tmpdir)
+                                                          container_dir=tmpdir,
+                                                          safe_sync=False)
 
         # check lookup
         pdict1[0] = 1
@@ -210,7 +214,7 @@ def test_persistent_dict_cache_collisions() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
         pdict: PersistentDict[PDictTestingKeyOrValue, int] = \
-            PersistentDict("pytools-test", container_dir=tmpdir)
+            PersistentDict("pytools-test", container_dir=tmpdir, safe_sync=False)
 
         key1 = PDictTestingKeyOrValue(1, hash_key=0)
         key2 = PDictTestingKeyOrValue(2, hash_key=0)
@@ -242,7 +246,8 @@ def test_persistent_dict_clear() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
         pdict: PersistentDict[int, int] = PersistentDict("pytools-test",
-                                                         container_dir=tmpdir)
+                                                         container_dir=tmpdir,
+                                                         safe_sync=False)
 
         pdict[0] = 1
         pdict.fetch(0)
@@ -261,7 +266,7 @@ def test_write_once_persistent_dict_storage_and_lookup(in_mem_cache_size) -> Non
         tmpdir = tempfile.mkdtemp()
         pdict: WriteOncePersistentDict[int, int] = WriteOncePersistentDict(
                 "pytools-test", container_dir=tmpdir,
-                in_mem_cache_size=in_mem_cache_size)
+                in_mem_cache_size=in_mem_cache_size, safe_sync=False)
 
         # check lookup
         pdict[0] = 1
@@ -291,7 +296,8 @@ def test_write_once_persistent_dict_lru_policy() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
         pdict: WriteOncePersistentDict[Any, Any] = WriteOncePersistentDict(
-                "pytools-test", container_dir=tmpdir, in_mem_cache_size=3)
+                "pytools-test", container_dir=tmpdir, in_mem_cache_size=3,
+                safe_sync=False)
 
         pdict[1] = PDictTestingKeyOrValue(1)
         pdict[2] = PDictTestingKeyOrValue(2)
@@ -331,9 +337,11 @@ def test_write_once_persistent_dict_synchronization() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
         pdict1: WriteOncePersistentDict[int, int] = \
-            WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+            WriteOncePersistentDict("pytools-test", container_dir=tmpdir,
+                                    safe_sync=False)
         pdict2: WriteOncePersistentDict[int, int] = \
-            WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+            WriteOncePersistentDict("pytools-test", container_dir=tmpdir,
+                                    safe_sync=False)
 
         # check lookup
         pdict1[1] = 0
@@ -351,7 +359,8 @@ def test_write_once_persistent_dict_cache_collisions() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
         pdict: WriteOncePersistentDict[Any, int] = \
-            WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+            WriteOncePersistentDict("pytools-test", container_dir=tmpdir,
+                                    safe_sync=False)
 
         key1 = PDictTestingKeyOrValue(1, hash_key=0)
         key2 = PDictTestingKeyOrValue(2, hash_key=0)
@@ -378,7 +387,8 @@ def test_write_once_persistent_dict_clear() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
         pdict: WriteOncePersistentDict[int, int] = \
-            WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+            WriteOncePersistentDict("pytools-test", container_dir=tmpdir,
+                                    safe_sync=False)
 
         pdict[0] = 1
         pdict.fetch(0)
@@ -710,7 +720,7 @@ def test_xdg_cache_home() -> None:
     try:
         os.environ["XDG_CACHE_HOME"] = xdg_dir
 
-        PersistentDict("pytools-test")
+        PersistentDict("pytools-test", safe_sync=False)
 
         assert os.path.exists(xdg_dir)
     finally:
@@ -726,7 +736,8 @@ def test_speed():
     import time
 
     tmpdir = tempfile.mkdtemp()
-    pdict = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+    pdict = WriteOncePersistentDict("pytools-test", container_dir=tmpdir,
+                                    safe_sync=False)
 
     start = time.time()
     for i in range(10000):
@@ -747,7 +758,7 @@ def test_speed():
 def test_size():
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+        pdict = PersistentDict("pytools-test", container_dir=tmpdir, safe_sync=False)
 
         for i in range(10000):
             pdict[f"foobarbazfoobbb{i}"] = i
@@ -762,7 +773,7 @@ def test_size():
 def test_len():
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+        pdict = PersistentDict("pytools-test", container_dir=tmpdir, safe_sync=False)
 
         assert len(pdict) == 0
 
@@ -781,7 +792,7 @@ def test_len():
 def test_repr():
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+        pdict = PersistentDict("pytools-test", container_dir=tmpdir, safe_sync=False)
 
         assert repr(pdict)[:15] == "PersistentDict("
     finally:
@@ -791,7 +802,7 @@ def test_repr():
 def test_keys_values_items():
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+        pdict = PersistentDict("pytools-test", container_dir=tmpdir, safe_sync=False)
 
         for i in range(10000):
             pdict[i] = i
