@@ -463,21 +463,21 @@ class _PersistentDictBase(Mapping[K, V]):
         # https://www.sqlite.org/lang_transaction.html#implicit_versus_explicit_transactions
         self.conn = sqlite3.connect(self.filename, isolation_level=None)
 
-        self.conn.execute(
+        self._exec_sql(
             "CREATE TABLE IF NOT EXISTS dict "
             "(keyhash TEXT NOT NULL PRIMARY KEY, key_value TEXT NOT NULL)"
             )
 
         # https://www.sqlite.org/wal.html
         if enable_wal:
-            self.conn.execute("PRAGMA journal_mode = 'WAL'")
+            self._exec_sql("PRAGMA journal_mode = 'WAL'")
 
         # Note: the following configuration values were taken mostly from litedict:
         # https://github.com/litements/litedict/blob/377603fa597453ffd9997186a493ed4fd23e5399/litedict.py#L67-L70
 
         # Use in-memory temp store
         # https://www.sqlite.org/pragma.html#pragma_temp_store
-        self.conn.execute("PRAGMA temp_store = 'MEMORY'")
+        self._exec_sql("PRAGMA temp_store = 'MEMORY'")
 
         # fsync() can be extremely slow on some systems.
         # See https://github.com/inducer/pytools/issues/227 for context.
@@ -488,13 +488,13 @@ class _PersistentDictBase(Mapping[K, V]):
                 warn(f"pytools.persistent_dict '{identifier}': enabling "
                       "safe_sync, please pass 'safe_sync=True' to suppress this "
                       "warning")
-            self.conn.execute("PRAGMA synchronous = 'NORMAL'")
+            self._exec_sql("PRAGMA synchronous = 'NORMAL'")
         else:
-            self.conn.execute("PRAGMA synchronous = 'OFF'")
+            self._exec_sql("PRAGMA synchronous = 'OFF'")
 
         # 64 MByte of cache
         # https://www.sqlite.org/pragma.html#pragma_cache_size
-        self.conn.execute("PRAGMA cache_size = -64000")
+        self._exec_sql("PRAGMA cache_size = -64000")
 
     def __del__(self) -> None:
         if self.conn:
@@ -516,6 +516,25 @@ class _PersistentDictBase(Mapping[K, V]):
             # see what is actually non-equal.
             stored_key == key  # pylint:disable=pointless-statement  # noqa: B015
             raise NoSuchEntryCollisionError(key)
+
+    def _exec_sql(self, *args: Any) -> Any:
+        n = 0
+
+        while True:
+            n += 1
+            try:
+                return self.conn.execute(*args)
+            except sqlite3.OperationalError as e:
+                # If the database is busy, retry
+                if (hasattr(e, "sqlite_errorcode")
+                        and not e.sqlite_errorcode == sqlite3.SQLITE_BUSY):
+                    raise
+                if n % 20 == 0:
+                    from warnings import warn
+                    warn(f"PersistentDict: database '{self.filename}' busy, {n} "
+                         "retries")
+            else:
+                break
 
     def store_if_not_present(self, key: K, value: V) -> None:
         """Store (*key*, *value*) if *key* is not already present."""
@@ -543,7 +562,7 @@ class _PersistentDictBase(Mapping[K, V]):
 
     def __len__(self) -> int:
         """Return the number of entries in the dictionary."""
-        return next(self.conn.execute("SELECT COUNT(*) FROM dict"))[0]
+        return next(self._exec_sql("SELECT COUNT(*) FROM dict"))[0]
 
     def __iter__(self) -> Generator[K, None, None]:
         """Return an iterator over the keys in the dictionary."""
@@ -551,22 +570,22 @@ class _PersistentDictBase(Mapping[K, V]):
 
     def keys(self) -> Generator[K, None, None]:
         """Return an iterator over the keys in the dictionary."""
-        for row in self.conn.execute("SELECT key_value FROM dict ORDER BY rowid"):
+        for row in self._exec_sql("SELECT key_value FROM dict ORDER BY rowid"):
             yield pickle.loads(row[0])[0]
 
     def values(self) -> Generator[V, None, None]:
         """Return an iterator over the values in the dictionary."""
-        for row in self.conn.execute("SELECT key_value FROM dict ORDER BY rowid"):
+        for row in self._exec_sql("SELECT key_value FROM dict ORDER BY rowid"):
             yield pickle.loads(row[0])[1]
 
     def items(self) -> Generator[tuple[K, V], None, None]:
         """Return an iterator over the items in the dictionary."""
-        for row in self.conn.execute("SELECT key_value FROM dict ORDER BY rowid"):
+        for row in self._exec_sql("SELECT key_value FROM dict ORDER BY rowid"):
             yield pickle.loads(row[0])
 
     def nbytes(self) -> int:
         """Return the size of the dictionary in bytes."""
-        return next(self.conn.execute("SELECT page_size * page_count FROM "
+        return next(self._exec_sql("SELECT page_size * page_count FROM "
                           "pragma_page_size(), pragma_page_count()"))[0]
 
     def __repr__(self) -> str:
@@ -575,7 +594,7 @@ class _PersistentDictBase(Mapping[K, V]):
 
     def clear(self) -> None:
         """Remove all entries from the dictionary."""
-        self.conn.execute("DELETE FROM dict")
+        self._exec_sql("DELETE FROM dict")
 
 
 class WriteOncePersistentDict(_PersistentDictBase[K, V]):
@@ -638,11 +657,11 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
         v = pickle.dumps((key, value))
 
         if _skip_if_present:
-            self.conn.execute("INSERT OR IGNORE INTO dict VALUES (?, ?)",
+            self._exec_sql("INSERT OR IGNORE INTO dict VALUES (?, ?)",
                               (keyhash, v))
         else:
             try:
-                self.conn.execute("INSERT INTO dict VALUES (?, ?)", (keyhash, v))
+                self._exec_sql("INSERT INTO dict VALUES (?, ?)", (keyhash, v))
             except sqlite3.IntegrityError as e:
                 if hasattr(e, "sqlite_errorcode"):
                     if e.sqlite_errorcode == 1555:
@@ -658,7 +677,7 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
 
     def _fetch(self, keyhash: str) -> Tuple[K, V]:  # pylint:disable=method-hidden
         # This method is separate from fetch() to allow for LRU caching
-        c = self.conn.execute("SELECT key_value FROM dict WHERE keyhash=?",
+        c = self._exec_sql("SELECT key_value FROM dict WHERE keyhash=?",
                               (keyhash,))
         row = c.fetchone()
         if row is None:
@@ -725,17 +744,15 @@ class PersistentDict(_PersistentDictBase[K, V]):
         keyhash = self.key_builder(key)
         v = pickle.dumps((key, value))
 
-        if _skip_if_present:
-            self.conn.execute("INSERT OR IGNORE INTO dict VALUES (?, ?)",
-                              (keyhash, v))
-        else:
-            self.conn.execute("INSERT OR REPLACE INTO dict VALUES (?, ?)",
+        mode = "IGNORE" if _skip_if_present else "REPLACE"
+
+        self._exec_sql(f"INSERT OR {mode} INTO dict VALUES (?, ?)",
                               (keyhash, v))
 
     def fetch(self, key: K) -> V:
         keyhash = self.key_builder(key)
 
-        c = self.conn.execute("SELECT key_value FROM dict WHERE keyhash=?",
+        c = self._exec_sql("SELECT key_value FROM dict WHERE keyhash=?",
                               (keyhash,))
         row = c.fetchone()
         if row is None:
@@ -749,24 +766,32 @@ class PersistentDict(_PersistentDictBase[K, V]):
         """Remove the entry associated with *key* from the dictionary."""
         keyhash = self.key_builder(key)
 
-        self.conn.execute("BEGIN EXCLUSIVE TRANSACTION")
+        while True:
+            try:
+                self.conn.execute("BEGIN EXCLUSIVE TRANSACTION")
+                try:
+                    # This is split into SELECT/DELETE to allow for a collision check
+                    c = self.conn.execute("SELECT key_value FROM dict WHERE "
+                                          "keyhash=?", (keyhash,))
+                    row = c.fetchone()
+                    if row is None:
+                        raise NoSuchEntryError(key)
 
-        try:
-            # This is split into SELECT/DELETE to allow for a collision check
-            c = self.conn.execute("SELECT key_value FROM dict WHERE keyhash=?",
-                                (keyhash,))
-            row = c.fetchone()
-            if row is None:
-                raise NoSuchEntryError(key)
+                    stored_key, _value = pickle.loads(row[0])
+                    self._collision_check(key, stored_key)
 
-            stored_key, _value = pickle.loads(row[0])
-            self._collision_check(key, stored_key)
-
-            self.conn.execute("DELETE FROM dict WHERE keyhash=?", (keyhash,))
-            self.conn.execute("COMMIT")
-        except Exception as e:
-            self.conn.execute("ROLLBACK")
-            raise e
+                    self.conn.execute("DELETE FROM dict WHERE keyhash=?", (keyhash,))
+                    self.conn.execute("COMMIT")
+                except Exception as e:
+                    self.conn.execute("ROLLBACK")
+                    raise e
+            except sqlite3.OperationalError as e:
+                # If the database is busy, retry
+                if (hasattr(e, "sqlite_errorcode")
+                        and not e.sqlite_errorcode == sqlite3.SQLITE_BUSY):
+                    raise
+            else:
+                break
 
     def __delitem__(self, key: K) -> None:
         """Remove the entry associated with *key* from the dictionary."""
