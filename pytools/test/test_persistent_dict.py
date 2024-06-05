@@ -899,8 +899,109 @@ def test_hash_function() -> None:
     # }}}
 
 
+# {{{ mpi test infrastructure
+
+def run_test_with_mpi(num_ranks, f, *args, extra_env_vars=None):
+    pytest.importorskip("mpi4py")
+
+    if extra_env_vars is None:
+        extra_env_vars = {}
+
+    from base64 import b64encode
+    from pickle import dumps
+    from subprocess import check_call
+
+    env_vars = {
+            "RUN_WITHIN_MPI": "1",
+            "INVOCATION_INFO": b64encode(dumps((f, args))).decode(),
+            }
+    env_vars.update(extra_env_vars)
+
+    # NOTE: CI uses OpenMPI; -x to pass env vars. MPICH uses -env
+    check_call([
+        "mpiexec", "-np", str(num_ranks),
+        "--oversubscribe",
+        ] + [
+            item
+            for env_name, env_val in env_vars.items()
+            for item in ["-x", f"{env_name}={env_val}"]
+        ] + [sys.executable, "-m", "mpi4py", __file__])
+
+
+def run_test_with_mpi_inner():
+    import os
+    from base64 import b64decode
+    from pickle import loads
+
+    f, args = loads(b64decode(os.environ["INVOCATION_INFO"].encode()))
+
+    f(*args)
+
+# }}}
+
+
+# {{{ basic MPI test
+
+def test_concurrency():
+    run_test_with_mpi(4, _do_test_concurrency)
+
+
+def _do_test_concurrency():
+    import time
+
+    from mpi4py import MPI
+
+    n = 10000
+
+    MPI.COMM_WORLD.Barrier()
+    rank = MPI.COMM_WORLD.Get_rank()
+
+    try:
+        tmpdir = "_tmp/"  # must be the same across all ranks
+        pdict: PersistentDict[int, int] = PersistentDict("pytools-test",
+                                                         container_dir=tmpdir,
+                                                         safe_sync=False)
+
+        s = 0
+
+        start = time.time()
+
+        for i in range(n):
+            if i % 100 == 0:
+                print(f"rank={rank} i={i}")
+            pdict[i] = i
+
+            try:
+                s += pdict[i]
+            except NoSuchEntryError:
+                # Someone else already deleted the entry
+                pass
+
+            try:
+                del pdict[i]
+            except NoSuchEntryError:
+                # Someone else already deleted the entry
+                pass
+
+        end = time.time()
+
+        print(f"rank={rank} PersistentDict: time taken to write {n} entries to "
+              f"{pdict.filename}: {end-start} s={s}")
+
+    finally:
+        MPI.COMM_WORLD.Barrier()
+        if rank == 0:
+            shutil.rmtree(tmpdir)
+
+# }}}
+
+
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
+    import os
+    if "RUN_WITHIN_MPI" in os.environ:
+        run_test_with_mpi_inner()
+    elif len(sys.argv) > 1:
         exec(sys.argv[1])
     else:
-        pytest.main([__file__])
+        from pytest import main
+        main([__file__])
