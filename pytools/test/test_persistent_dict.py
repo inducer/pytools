@@ -949,7 +949,7 @@ def test_concurrency():
 def _do_test_concurrency():
     import time
 
-    from mpi4py import MPI
+    from mpi4py import MPI  # pylint: disable=import-error
 
     n = 10000
 
