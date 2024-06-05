@@ -1,0 +1,9 @@
+name: test-conda-env
+channels:
+- conda-forge
+- nodefaults
+
+dependencies:
+- python=3
+- mpi4py
+- openmpi  # Force using Open MPI since our pytest infrastructure needs it

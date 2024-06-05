@@ -86,9 +86,10 @@ jobs:
                 # AK, 2020-12-13
                 rm pytools/mpiwrap.py
 
-                EXTRA_INSTALL="numpy frozendict immutabledict orderedsets constantdict immutables pyrsistent attrs"
-                curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
-                . ./build-and-test-py-project.sh
+                EXTRA_INSTALL="numpy frozendict immutabledict orderedsets constantdict immutables pyrsistent attrs mpi4py"
+
+                curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project-within-miniconda.sh
+                . ./build-and-test-py-project-within-miniconda.sh
 
     pytest_nonumpy:
         name: Pytest without Numpy
