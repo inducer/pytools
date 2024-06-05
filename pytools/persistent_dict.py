@@ -485,9 +485,14 @@ class _PersistentDictBase(Mapping[K, V]):
         if safe_sync is None or safe_sync:
             if safe_sync is None:
                 from warnings import warn
-                warn(f"pytools.persistent_dict '{identifier}': enabling "
-                      "safe_sync, please pass 'safe_sync=True' to suppress this "
-                      "warning")
+                warn(f"pytools.persistent_dict '{identifier}': "
+                     "enabling safe_sync as default. "
+                     "This provides strong protection against data loss, "
+                     "but can be unnecessarily expensive for use cases such as "
+                     "caches."
+                     "Pass 'safe_sync=False' if occasional data loss is tolerable. "
+                     "Pass 'safe_sync=True' to suppress this warning.",
+                     stacklevel=3)
             self._exec_sql("PRAGMA synchronous = 'NORMAL'")
         else:
             self._exec_sql("PRAGMA synchronous = 'OFF'")
@@ -623,6 +628,7 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
     def __init__(self, identifier: str,
                  key_builder: Optional[KeyBuilder] = None,
                  container_dir: Optional[str] = None,
+                 *,
                  enable_wal: bool = False,
                  safe_sync: Optional[bool] = None,
                  in_mem_cache_size: int = 256) -> None:
@@ -664,9 +670,7 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
                 self._exec_sql("INSERT INTO dict VALUES (?, ?)", (keyhash, v))
             except sqlite3.IntegrityError as e:
                 if hasattr(e, "sqlite_errorcode"):
-                    if e.sqlite_errorcode == 1555:
-                        # 1555 == SQLITE_CONSTRAINT_PRIMARYKEY
-                        # https://sqlite.org/rescode.html#constraint_primarykey
+                    if e.sqlite_errorcode == sqlite3.SQLITE_CONSTRAINT_PRIMARYKEY:
                         raise ReadOnlyEntryError("WriteOncePersistentDict, "
                                                  "tried overwriting key")
                     else:
@@ -724,6 +728,7 @@ class PersistentDict(_PersistentDictBase[K, V]):
                  identifier: str,
                  key_builder: Optional[KeyBuilder] = None,
                  container_dir: Optional[str] = None,
+                 *,
                  enable_wal: bool = False,
                  safe_sync: Optional[bool] = None) -> None:
         """
