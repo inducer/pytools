@@ -522,13 +522,16 @@ class _PersistentDictBase(Mapping[K, V]):
             stored_key == key  # pylint:disable=pointless-statement  # noqa: B015
             raise NoSuchEntryCollisionError(key)
 
-    def _exec_sql(self, *args: Any) -> Any:
+    def _exec_sql(self, *args: Any) -> sqlite3.Cursor:
+        return self._exec_sql_fn(lambda: self.conn.execute(*args))
+
+    def _exec_sql_fn(self, fn: Any) -> Any:
         n = 0
 
         while True:
             n += 1
             try:
-                return self.conn.execute(*args)
+                return fn()
             except sqlite3.OperationalError as e:
                 # If the database is busy, retry
                 if (hasattr(e, "sqlite_errorcode")
@@ -771,32 +774,26 @@ class PersistentDict(_PersistentDictBase[K, V]):
         """Remove the entry associated with *key* from the dictionary."""
         keyhash = self.key_builder(key)
 
-        while True:
+        def remove_inner() -> None:
+            self.conn.execute("BEGIN EXCLUSIVE TRANSACTION")
             try:
-                self.conn.execute("BEGIN EXCLUSIVE TRANSACTION")
-                try:
-                    # This is split into SELECT/DELETE to allow for a collision check
-                    c = self.conn.execute("SELECT key_value FROM dict WHERE "
-                                          "keyhash=?", (keyhash,))
-                    row = c.fetchone()
-                    if row is None:
-                        raise NoSuchEntryError(key)
+                # This is split into SELECT/DELETE to allow for a collision check
+                c = self.conn.execute("SELECT key_value FROM dict WHERE "
+                                        "keyhash=?", (keyhash,))
+                row = c.fetchone()
+                if row is None:
+                    raise NoSuchEntryError(key)
 
-                    stored_key, _value = pickle.loads(row[0])
-                    self._collision_check(key, stored_key)
+                stored_key, _value = pickle.loads(row[0])
+                self._collision_check(key, stored_key)
 
-                    self.conn.execute("DELETE FROM dict WHERE keyhash=?", (keyhash,))
-                    self.conn.execute("COMMIT")
-                except Exception as e:
-                    self.conn.execute("ROLLBACK")
-                    raise e
-            except sqlite3.OperationalError as e:
-                # If the database is busy, retry
-                if (hasattr(e, "sqlite_errorcode")
-                        and not e.sqlite_errorcode == sqlite3.SQLITE_BUSY):
-                    raise
-            else:
-                break
+                self.conn.execute("DELETE FROM dict WHERE keyhash=?", (keyhash,))
+                self.conn.execute("COMMIT")
+            except Exception as e:
+                self.conn.execute("ROLLBACK")
+                raise e
+
+        self._exec_sql_fn(remove_inner)
 
     def __delitem__(self, key: K) -> None:
         """Remove the entry associated with *key* from the dictionary."""
