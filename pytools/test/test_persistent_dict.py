@@ -899,6 +899,60 @@ def test_hash_function() -> None:
     # }}}
 
 
+# {{{ basic concurrency test
+
+def _mp_fn(tmpdir: str) -> None:
+    import time
+    pdict: PersistentDict[int, int] = PersistentDict("pytools-test",
+                                                    container_dir=tmpdir,
+                                                    safe_sync=False)
+    n = 10000
+    s = 0
+
+    start = time.time()
+
+    for i in range(n):
+        if i % 100 == 0:
+            print(f"i={i}")
+        pdict[i] = i
+
+        try:
+            s += pdict[i]
+        except NoSuchEntryError:
+            # Someone else already deleted the entry
+            pass
+
+        try:
+            del pdict[i]
+        except NoSuchEntryError:
+            # Someone else already deleted the entry
+            pass
+
+    end = time.time()
+
+    print(f"PersistentDict: time taken to write {n} entries to "
+        f"{pdict.filename}: {end-start} s={s}")
+
+
+def test_concurrency() -> None:
+    from multiprocessing import Process
+
+    tmpdir = "_tmp/"  # must be the same across all processes in this test
+
+    try:
+        p = [Process(target=_mp_fn, args=(tmpdir, )) for _ in range(4)]
+        for pp in p:
+            pp.start()
+        for pp in p:
+            pp.join()
+
+        assert all(pp.exitcode == 0 for pp in p), [pp.exitcode for pp in p]
+    finally:
+        shutil.rmtree(tmpdir)
+
+# }}}
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
