@@ -2989,7 +2989,9 @@ def get_sqlite3_thread_safety_level() -> int:
 
     .. note::
 
-        Based on https://ricardoanderegg.com/posts/python-sqlite-thread-safety/
+        Based on https://ricardoanderegg.com/posts/python-sqlite-thread-safety/.
+        SQLite thread safety is discussed in detail
+        `here <https://sqlite.org/threadsafe.html>`__.
     """
     import sqlite3
 
@@ -3027,7 +3029,8 @@ where compile_options like 'THREADSAFE=%'
 def is_sqlite3_fully_threadsafe() -> bool:
     """Check if the underlying SQLite library is fully thread-safe, i.e.,
     whether the library was built with the ``THREADSAFE=1`` option, thus
-    running in serialized mode by default.
+    running in serialized mode by default. In serialized mode, threads may
+    share the module, connections, and cursors.
 
     :returns: *True* if the SQLite library is fully thread-safe, *False* otherwise.
 
