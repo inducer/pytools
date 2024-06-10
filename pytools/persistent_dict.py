@@ -461,6 +461,13 @@ class _PersistentDictBase(Mapping[K, V]):
 
         from pytools import is_sqlite3_fully_threadsafe
 
+        if not is_sqlite3_fully_threadsafe():
+            from warnings import warn
+            warn(f"pytools.persistent_dict '{identifier}': "
+                 "SQLite3 is not fully threadsafe on this platform. "
+                 "You cannot use this dictionary from multiple threads.",
+                 stacklevel=3)
+
         # isolation_level=None: enable autocommit mode
         # https://www.sqlite.org/lang_transaction.html#implicit_versus_explicit_transactions
         self.conn = sqlite3.connect(self.filename,
