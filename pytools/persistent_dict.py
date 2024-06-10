@@ -461,18 +461,18 @@ class _PersistentDictBase(Mapping[K, V]):
 
         from pytools import is_sqlite3_fully_threadsafe
 
-        if not is_sqlite3_fully_threadsafe():
-            from warnings import warn
-            warn(f"pytools.persistent_dict '{identifier}': "
-                 "SQLite3 is not fully threadsafe on this platform. "
-                 "You cannot use this dictionary from multiple threads.",
-                 stacklevel=3)
+        if is_sqlite3_fully_threadsafe():
+            from contextlib import nullcontext
+            self.mutex = nullcontext()
+        else:
+            from threading import Lock
+            self.mutex = Lock()
 
         # isolation_level=None: enable autocommit mode
         # https://www.sqlite.org/lang_transaction.html#implicit_versus_explicit_transactions
         self.conn = sqlite3.connect(self.filename,
                                 isolation_level=None,
-                                check_same_thread=not is_sqlite3_fully_threadsafe())
+                                check_same_thread=False)
 
         self._exec_sql(
             "CREATE TABLE IF NOT EXISTS dict "
@@ -513,8 +513,9 @@ class _PersistentDictBase(Mapping[K, V]):
         self._exec_sql("PRAGMA cache_size = -64000")
 
     def __del__(self) -> None:
-        if self.conn:
-            self.conn.close()
+        with self.mutex:
+            if self.conn:
+                self.conn.close()
 
     def _collision_check(self, key: K, stored_key: K) -> None:
         if stored_key != key:
@@ -539,21 +540,22 @@ class _PersistentDictBase(Mapping[K, V]):
     def _exec_sql_fn(self, fn: Any) -> Any:
         n = 0
 
-        while True:
-            n += 1
-            try:
-                return fn()
-            except sqlite3.OperationalError as e:
-                # If the database is busy, retry
-                if (hasattr(e, "sqlite_errorcode")
-                        and not e.sqlite_errorcode == sqlite3.SQLITE_BUSY):
-                    raise
-                if n % 20 == 0:
-                    from warnings import warn
-                    warn(f"PersistentDict: database '{self.filename}' busy, {n} "
-                         "retries")
-            else:
-                break
+        with self.mutex:
+            while True:
+                n += 1
+                try:
+                    return fn()
+                except sqlite3.OperationalError as e:
+                    # If the database is busy, retry
+                    if (hasattr(e, "sqlite_errorcode")
+                            and not e.sqlite_errorcode == sqlite3.SQLITE_BUSY):
+                        raise
+                    if n % 20 == 0:
+                        from warnings import warn
+                        warn(f"PersistentDict: database '{self.filename}' busy, {n} "
+                            "retries")
+                else:
+                    break
 
     def store_if_not_present(self, key: K, value: V) -> None:
         """Store (*key*, *value*) if *key* is not already present."""
