@@ -2985,8 +2985,12 @@ def unique(seq: Sequence[T]) -> Iterator[T]:
 
 def get_sqlite3_thread_safety_level() -> int:
     """Return the thread safety value of the underlying SQLite library in
-    Python's DBAPI 2.0 format."""
-    # Based on https://ricardoanderegg.com/posts/python-sqlite-thread-safety/
+    Python's `DBAPI 2.0 format <https://peps.python.org/pep-0249/#threadsafety>`__.
+
+    .. note::
+
+        Based on https://ricardoanderegg.com/posts/python-sqlite-thread-safety/
+    """
     import sqlite3
 
     # Map value from SQLite's THREADSAFE to Python's DBAPI 2.0
@@ -3009,15 +3013,30 @@ where compile_options like 'THREADSAFE=%'
 
     if platform.python_implementation() == "CPython":
         if sys.version_info < (3, 11):
-            assert threadsafety_value == 1
+            # Python 3.10 and below always have sqlite3.threadsafety == 1
+            assert sqlite3.threadsafety == 1
         else:
+            # Python 3.11 and above derive sqlite3.threadsafety from the
+            # build-time configuration of the SQLite library.
+
             assert threadsafety_value_db == sqlite3.threadsafety
 
     return threadsafety_value_db
 
 
 def is_sqlite3_fully_threadsafe() -> bool:
-    """Check if the underlying SQLite library is fully thread-safe."""
+    """Check if the underlying SQLite library is fully thread-safe, i.e.,
+    whether the library was built with the ``THREADSAFE=1`` option, thus
+    running in serialized mode by default.
+
+    :returns: *True* if the SQLite library is fully thread-safe, *False* otherwise.
+
+    .. note::
+
+        There is no way to change the thread safety level within Python,
+        Python always uses the default thread safety level (selected at build
+        time) of the SQLite library.
+    """
     if get_sqlite3_thread_safety_level() == 3:
         return True
     else:
