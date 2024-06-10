@@ -907,7 +907,7 @@ def _conc_fn(tmpdir: Optional[str] = None,
 
     assert (pdict is None) ^ (tmpdir is None)
 
-    if not pdict:
+    if pdict is None:
         pdict = PersistentDict("pytools-test",
                                 container_dir=tmpdir,
                                 safe_sync=False)
