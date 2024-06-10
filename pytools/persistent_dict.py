@@ -783,26 +783,30 @@ class PersistentDict(_PersistentDictBase[K, V]):
         """Remove the entry associated with *key* from the dictionary."""
         keyhash = self.key_builder(key)
 
-        def remove_inner() -> None:
-            self.conn.execute("BEGIN EXCLUSIVE TRANSACTION")
+        if sqlite3.sqlite_version_info >= (3, 35, 0):
+            # SQLite >= 3.35.0 (released 2021-03-12) supports RETURNING
+            c = self._exec_sql("DELETE FROM dict WHERE keyhash=? RETURNING *",
+                                  (keyhash,))
+            row = c.fetchone()
+            if row is None:
+                raise NoSuchEntryError(key)
+
+            stored_key, _value = pickle.loads(row[1])
+
             try:
-                # This is split into SELECT/DELETE to allow for a collision check
-                c = self.conn.execute("SELECT key_value FROM dict WHERE "
-                                        "keyhash=?", (keyhash,))
-                row = c.fetchone()
-                if row is None:
-                    raise NoSuchEntryError(key)
-
-                stored_key, _value = pickle.loads(row[0])
                 self._collision_check(key, stored_key)
-
-                self.conn.execute("DELETE FROM dict WHERE keyhash=?", (keyhash,))
-                self.conn.execute("COMMIT")
-            except Exception as e:
-                self.conn.execute("ROLLBACK")
-                raise e
-
-        self._exec_sql_fn(remove_inner)
+            except NoSuchEntryCollisionError as exc:
+                # Restore the just removed entry on collision
+                self._exec_sql("INSERT OR IGNORE INTO dict VALUES (?, ?)",
+                                  (keyhash, row[1]))
+                raise exc
+        else:
+            # No way to check for collisions in SQLite < 3.35.0
+            self._exec_sql("DELETE FROM dict WHERE keyhash=?", (keyhash,))
+            num_changes = next(self._exec_sql("SELECT changes()"))[0]
+            assert num_changes in (0, 1)
+            if num_changes == 0:
+                raise NoSuchEntryError(key)
 
     def __delitem__(self, key: K) -> None:
         """Remove the entry associated with *key* from the dictionary."""
