@@ -11,8 +11,7 @@ An in-memory relational database table
 """
 
 
-# type-ignore-reason: Record is untyped
-class Row(Record):  # type: ignore[misc]
+class Row(Record):
     pass
 
 
