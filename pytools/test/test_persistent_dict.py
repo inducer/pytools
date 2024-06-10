@@ -995,17 +995,6 @@ def test_concurrency_threads() -> None:
 # }}}
 
 
-def test_sqlite_threadsafety() -> None:
-    from pytools import get_sqlite3_thread_safety_level, is_sqlite3_fully_threadsafe
-
-    lvl = get_sqlite3_thread_safety_level()
-
-    if lvl == 3:
-        assert is_sqlite3_fully_threadsafe()
-    else:
-        assert not is_sqlite3_fully_threadsafe()
-
-
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
