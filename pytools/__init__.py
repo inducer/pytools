@@ -196,6 +196,12 @@ Sequence utilities
 
 .. autofunction:: unique
 
+SQLite-related functions
+------------------------
+
+.. autofunction:: get_sqlite3_thread_safety_level
+.. autofunction:: is_sqlite3_fully_threadsafe
+
 Type Variables Used
 -------------------
 
@@ -2971,6 +2977,51 @@ def unique(seq: Sequence[T]) -> Iterator[T]:
     """Yield unique elements in *seq*, removing all duplicates. See also
     :func:`itertools.groupby` (which removes consecutive duplicates)."""
     return iter(dict.fromkeys(seq))
+
+# }}}
+
+
+# {{{ SQLite-related functions
+
+def get_sqlite3_thread_safety_level() -> int:
+    """Return the thread safety value of the underlying SQLite library in
+    Python's DBAPI 2.0 format."""
+    # Based on https://ricardoanderegg.com/posts/python-sqlite-thread-safety/
+    import sqlite3
+
+    # Map value from SQLite's THREADSAFE to Python's DBAPI 2.0
+    # threadsafety attribute.
+    sqlite_threadsafe2python_dbapi = {0: 0, 2: 1, 1: 3}
+    conn = sqlite3.connect(":memory:")
+    threadsafety = conn.execute(
+        """
+select * from pragma_compile_options
+where compile_options like 'THREADSAFE=%'
+"""
+    ).fetchone()[0]
+    conn.close()
+
+    threadsafety_value = int(threadsafety.split("=")[1])
+    threadsafety_value_db = sqlite_threadsafe2python_dbapi[threadsafety_value]
+
+    import platform
+    import sys
+
+    if platform.python_implementation() == "CPython":
+        if sys.version_info < (3, 11):
+            assert threadsafety_value == 1
+        else:
+            assert threadsafety_value_db == sqlite3.threadsafety
+
+    return threadsafety_value_db
+
+
+def is_sqlite3_fully_threadsafe() -> bool:
+    """Check if the underlying SQLite library is fully thread-safe."""
+    if get_sqlite3_thread_safety_level() == 3:
+        return True
+    else:
+        return False
 
 # }}}
 

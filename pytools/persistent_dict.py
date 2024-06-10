@@ -459,9 +459,13 @@ class _PersistentDictBase(Mapping[K, V]):
         self.container_dir = container_dir
         self._make_container_dir()
 
+        from pytools import is_sqlite3_fully_threadsafe
+
         # isolation_level=None: enable autocommit mode
         # https://www.sqlite.org/lang_transaction.html#implicit_versus_explicit_transactions
-        self.conn = sqlite3.connect(self.filename, isolation_level=None)
+        self.conn = sqlite3.connect(self.filename,
+                                isolation_level=None,
+                                check_same_thread=not is_sqlite3_fully_threadsafe())
 
         self._exec_sql(
             "CREATE TABLE IF NOT EXISTS dict "
