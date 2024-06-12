@@ -693,9 +693,15 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
 
     def _fetch(self, keyhash: str) -> Tuple[K, V]:  # pylint:disable=method-hidden
         # This method is separate from fetch() to allow for LRU caching
-        c = self._exec_sql("SELECT key_value FROM dict WHERE keyhash=?",
-                              (keyhash,))
-        row = c.fetchone()
+
+        def fetch_inner() -> Tuple[Any]:
+            # This is separate from fetch() so that the mutex covers the
+            # fetchone() call
+            c = self.conn.execute("SELECT key_value FROM dict WHERE keyhash=?",
+                                (keyhash,))
+            return c.fetchone()
+
+        row = self._exec_sql_fn(fetch_inner)
         if row is None:
             raise KeyError
         return pickle.loads(row[0])
@@ -769,9 +775,15 @@ class PersistentDict(_PersistentDictBase[K, V]):
     def fetch(self, key: K) -> V:
         keyhash = self.key_builder(key)
 
-        c = self._exec_sql("SELECT key_value FROM dict WHERE keyhash=?",
-                              (keyhash,))
-        row = c.fetchone()
+        def fetch_inner() -> Tuple[Any]:
+            # This is separate from fetch() so that the mutex covers the
+            # fetchone() call
+            c = self.conn.execute("SELECT key_value FROM dict WHERE keyhash=?",
+                                (keyhash,))
+            return c.fetchone()
+
+        row = self._exec_sql_fn(fetch_inner)
+
         if row is None:
             raise NoSuchEntryError(key)
 
