@@ -917,9 +917,16 @@ def _conc_fn(tmpdir: Optional[str] = None,
     start = time.time()
 
     for i in range(n):
-        if i % 100 == 0:
+        if i % 1000 == 0:
             print(f"i={i}")
-        pdict[i] = i
+
+        if isinstance(pdict, WriteOncePersistentDict):
+            try:
+                pdict[i] = i
+            except ReadOnlyEntryError:
+                pass
+        else:
+            pdict[i] = i
 
         try:
             s += pdict[i]
@@ -927,11 +934,12 @@ def _conc_fn(tmpdir: Optional[str] = None,
             # Someone else already deleted the entry
             pass
 
-        try:
-            del pdict[i]
-        except NoSuchEntryError:
-            # Someone else already deleted the entry
-            pass
+        if not isinstance(pdict, WriteOncePersistentDict):
+            try:
+                del pdict[i]
+            except NoSuchEntryError:
+                # Someone else already deleted the entry
+                pass
 
     end = time.time()
 
@@ -984,6 +992,21 @@ def test_concurrency_threads() -> None:
                                                     container_dir=tmpdir,
                                                     safe_sync=False)
         t = [RaisingThread(target=_conc_fn, args=(None, pdict)) for _ in range(4)]
+        for tt in t:
+            tt.start()
+        for tt in t:
+            tt.join()
+            # Threads will raise in join() if they encountered an exception
+    finally:
+        shutil.rmtree(tmpdir)
+
+    try:
+        # Share this pdict object among all threads to test thread safety
+        pdict2: WriteOncePersistentDict[int, int] = WriteOncePersistentDict(
+                                                    "pytools-test",
+                                                    container_dir=tmpdir,
+                                                    safe_sync=False)
+        t = [RaisingThread(target=_conc_fn, args=(None, pdict2)) for _ in range(4)]
         for tt in t:
             tt.start()
         for tt in t:
