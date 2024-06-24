@@ -943,10 +943,7 @@ class memoize_in(Generic[P, R]):  # noqa
                 self.cache_dict[args] = result
                 return result
 
-        # NOTE: mypy gets confused because it types `wraps` as
-        #   Callable[[VarArg(Any)], Any]
-        # which, for some reason, is not compatible with `F`
-        return new_inner                # type: ignore[return-value]
+        return new_inner
 
 
 class keyed_memoize_in(Generic[P, R]):  # noqa
