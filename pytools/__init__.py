@@ -37,7 +37,7 @@ from functools import reduce, wraps
 from sys import intern
 from typing import (
     Any, Callable, ClassVar, Dict, Generic, Hashable, Iterable, Iterator, List,
-    Mapping, Optional, Sequence, Set, Tuple, Type, TypeVar, Union)
+    Mapping, Optional, Set, Tuple, Type, TypeVar, Union)
 
 
 try:
@@ -2967,8 +2967,9 @@ def to_identifier(s: str) -> str:
 
 # {{{ unique
 
-def unique(seq: Sequence[T]) -> Iterator[T]:
-    """Yield unique elements in *seq*, removing all duplicates. See also
+def unique(seq: Iterable[T]) -> Iterator[T]:
+    """Yield unique elements in *seq*, removing all duplicates. The internal
+    order of the elements is preserved. See also
     :func:`itertools.groupby` (which removes consecutive duplicates)."""
     return iter(dict.fromkeys(seq))
 

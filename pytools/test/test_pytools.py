@@ -801,6 +801,12 @@ def test_unique():
     assert next(unique([1, 2, 1, 3])) == 1
     assert next(unique([]), None) is None
 
+    # Also test strings since their ordering would be thrown off by
+    # set-based 'unique' implementations.
+    assert list(unique(["A", "B", "A"])) == ["A", "B"]
+    assert tuple(unique(("A", "B", "A"))) == ("A", "B")
+    assert next(unique(["A", "B", "A", "C"])) == "A"
+
 
 # This class must be defined globally to be picklable
 class SimpleRecord(Record):
