@@ -172,7 +172,7 @@ def test_memoize_keyfunc():
     assert count[0] == 2
 
 
-def test_memoize_frozen():
+def test_memoize_frozen() -> None:
     from dataclasses import dataclass
 
     from pytools import memoize_method
@@ -187,9 +187,11 @@ def test_memoize_frozen():
         def double_value(self):
             return 2 * self.value
 
-    c = FrozenDataclass(10)
-    assert c.double_value() == 20
-    c.double_value.clear_cache(c)       # pylint: disable=no-member
+    c0 = FrozenDataclass(10)
+    assert c0.double_value() == 20
+
+    # pylint: disable=no-member
+    c0.double_value.clear_cache(c0)  # type: ignore[attr-defined]
 
     # }}}
 
@@ -208,9 +210,11 @@ def test_memoize_frozen():
         def double_value(self):
             return 2 * self.value
 
-    c = FrozenClass(10)
-    assert c.double_value() == 20
-    c.double_value.clear_cache(c)       # pylint: disable=no-member
+    c1 = FrozenClass(10)
+    assert c1.double_value() == 20
+
+    # pylint: disable=no-member
+    c1.double_value.clear_cache(c1)  # type: ignore[attr-defined]
 
     # }}}
 
