@@ -1,3 +1,11 @@
+"""
+.. autofunction:: estimate_order_of_convergence
+.. autoclass:: EOCRecorder
+.. autofunction:: stringify_eocs
+.. autoclass:: PConvergenceVerifier
+"""
+
+
 import numbers
 from typing import List, Optional, Tuple
 
@@ -7,9 +15,11 @@ import numpy as np
 # {{{ eoc estimation --------------------------------------------------------------
 
 def estimate_order_of_convergence(abscissae, errors):
-    """Assuming that abscissae and errors are connected by a law of the form
+    r"""Assuming that abscissae and errors are connected by a law of the form
 
-    error = constant * abscissa ^ (order),
+    .. math::
+
+        \text{Error} =  \text{constant} \cdot \text{abscissa }^{\text{order}},
 
     this function finds, in a least-squares sense, the best approximation of
     constant and order for the given data set. It returns a tuple (constant, order).
