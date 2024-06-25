@@ -414,7 +414,10 @@ class RecordWithoutPickling:
     __slots__: ClassVar[List[str]] = []
     fields: ClassVar[Set[str]]
 
-    def __init__(self, valuedict=None, exclude=None, **kwargs):
+    def __init__(self,
+                 valuedict: Optional[Mapping[str, Any]] = None,
+                 exclude: Optional[Sequence[str]] = None,
+                 **kwargs: Any) -> None:
         assert self.__class__ is not Record
 
         if exclude is None:
