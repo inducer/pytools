@@ -11,8 +11,7 @@ An in-memory relational database table
 """
 
 
-# type-ignore-reason: Record is untyped
-class Row(Record):  # type: ignore[misc]
+class Row(Record):
     pass
 
 
@@ -119,7 +118,8 @@ class DataTable:
         if len(filtered) > 1:
             raise RuntimeError("more than one matching entry for get()")
 
-        return Row(dict(list(zip(self.column_names, filtered.data[0]))))
+        return Row(  # type: ignore[no-untyped-call]
+            dict(list(zip(self.column_names, filtered.data[0]))))
 
     def clear(self) -> None:
         del self.data[:]
