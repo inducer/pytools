@@ -2768,7 +2768,9 @@ def resolve_name(name):
 
 # {{{ unordered_hash
 
-def unordered_hash(hash_instance, iterable, hash_constructor=None):
+def unordered_hash(hash_instance: Any,
+                   iterable: Iterable[Any],
+                   hash_constructor: Optional[Callable[[], Any]] = None) -> Any:
     """Using a hash algorithm given by the parameter-less constructor
     *hash_constructor*, return a hash object whose internal state
     depends on the entries of *iterable*, but not their order. If *hash*
@@ -2793,6 +2795,8 @@ def unordered_hash(hash_instance, iterable, hash_constructor=None):
         import hashlib
         from functools import partial
         hash_constructor = partial(hashlib.new, hash_instance.name)
+
+    assert hash_constructor is not None
 
     h_int = 0
     for i in iterable:
