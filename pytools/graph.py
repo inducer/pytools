@@ -465,7 +465,7 @@ def as_graphviz_dot(graph: GraphT[NodeT],
          for (node, targets) in graph.items()
          for t in targets])
 
-    return f"digraph mygraph {{\n{ content }\n}}\n"
+    return f"digraph mygraph {{\n{content}\n}}\n"
 
 # }}}
 
