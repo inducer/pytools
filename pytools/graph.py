@@ -5,6 +5,7 @@ __copyright__ = """
 Copyright (C) 2009-2013 Andreas Kloeckner
 Copyright (C) 2020 Matt Wala
 Copyright (C) 2020 James Stevens
+Copyright (C) 2024 Addison Alvey-Blanco
 """
 
 __license__ = """
@@ -47,6 +48,7 @@ Graph Algorithms
 .. autofunction:: as_graphviz_dot
 .. autofunction:: validate_graph
 .. autofunction:: is_connected
+.. autofunction:: get_propagation_graph_from_constraints
 
 Type Variables Used
 -------------------
@@ -65,8 +67,8 @@ Type Variables Used
 """
 
 from typing import (
-    Any, Callable, Collection, Dict, Hashable, Iterator, List, Mapping, MutableSet,
-    Optional, Set, Tuple, TypeVar)
+    Any, Callable, Collection, Dict, Hashable, Iterator, List, Mapping,
+    MutableSet, Optional, Set, Tuple, TypeVar, FrozenSet, Iterable)
 
 
 try:
@@ -76,6 +78,7 @@ except ImportError:
 
 
 NodeT = TypeVar("NodeT", bound=Hashable)
+GraphNodeT = TypeVar("GraphNodeT")
 
 
 GraphT: TypeAlias[NodeT] = Mapping[NodeT, Collection[NodeT]]
@@ -489,7 +492,7 @@ def validate_graph(graph: GraphT[NodeT]) -> None:
 # }}}
 
 
-# {{{
+# {{{ is_connected
 
 def is_connected(graph: GraphT[NodeT]) -> bool:
     """
@@ -519,6 +522,62 @@ def is_connected(graph: GraphT[NodeT]) -> bool:
     dfs(next(iter(graph.keys())))
 
     return visited == graph.keys()
+
+# }}}
+
+
+# {{{ tag propagation graph processing
+
+def get_propagation_graph_from_constraints(
+        constraints: Iterable[Tuple[str, str]],
+    ) -> Mapping[str, FrozenSet[str]]:
+    """
+    :arg constraints: An :class:`Iterable` of pairs of variable strings
+    representing an equality between the variables.
+
+    Constructs an undirected graph using *constraints* whose nodes are the
+    variables in *constraints*. Edges represent equality between the nodes. Can
+    be processed to tag all :class:`Taggable`s with connected :class:`Tag`s.
+
+    :returns: A :class:`Mapping` that represents the propagation graph
+    """
+    from immutabledict import immutabledict
+    propagation_graph: Dict[str, Set[str]] = {}
+
+    for lhs, rhs in constraints:
+        if lhs == rhs:
+            raise TypeError("Found matching LHS and RHS in constraints,"
+                            f" LHS, RHS = {lhs}")
+
+        propagation_graph.setdefault(lhs, set()).add(rhs)
+        propagation_graph.setdefault(rhs, set()).add(lhs)
+
+    return immutabledict({k: frozenset(v)
+                           for k, v in propagation_graph.items()})
+
+
+def get_reachable_nodes(
+    undirected_graph: Mapping[GraphNodeT, Iterable[GraphNodeT]],
+    source_node: GraphNodeT) -> FrozenSet[GraphNodeT]:
+    """
+    Returns a :class:`frozenset` of all nodes in *undirected_graph* that are
+    reachable from *source_node*.
+    """
+    nodes_visited: Set[GraphNodeT] = set()
+    nodes_to_visit = {source_node}
+
+    while nodes_to_visit:
+        current_node = nodes_to_visit.pop()
+        nodes_visited.add(current_node)
+
+        neighbors = undirected_graph[current_node]
+        nodes_to_visit.update({node
+                               for node in neighbors
+                               if node not in nodes_visited})
+
+    return frozenset(nodes_visited)
+
+# }}}
 
 
 # vim: foldmethod=marker
