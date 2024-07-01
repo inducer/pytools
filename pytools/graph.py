@@ -287,7 +287,7 @@ def compute_topological_order(graph: GraphT[NodeT],
 
     # {{{ compute nodes_to_num_predecessors
 
-    nodes_to_num_predecessors = {node: 0 for node in graph}
+    nodes_to_num_predecessors = dict.fromkeys(graph, 0)
 
     for node in graph:
         for child in graph[node]:
