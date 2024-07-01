@@ -1,0 +1,97 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [
+    "setuptools>=63",
+]
+
+[project]
+name = "pytools"
+version = "2024.1.6"
+description = "A collection of tools for Python"
+readme = "README.rst"
+license = { text = "MIT" }
+requires-python = "~=3.8"
+authors = [
+    { name = "Andreas Kloeckner", email = "inform@tiker.net" },
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Other Audience",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "platformdirs>=2.2.0",
+    "typing_extensions>=4.0; python_version<'3.11'",
+]
+
+[project.optional-dependencies]
+numpy = [
+    "numpy>=1.6.0",
+]
+
+test = [
+    "mypy",
+    "pytest",
+    "ruff",
+]
+
+[project.urls]
+Homepage = "https://github.com/inducer/pytools/"
+Documentation = "https://documen.tician.de/pytools/"
+
+[tool.setuptools.package-data]
+pytools = [
+    "py.typed",
+]
+
+[tool.ruff]
+target-version = "py38"
+line-length = 85
+
+preview = true
+[tool.ruff.lint]
+extend-select = [
+    "B",   # flake8-bugbear
+    "C",   # flake8-comprehensions
+    "E",   # pycodestyle
+    "F",   # pyflakes
+    "I",   # flake8-isort
+    "N",   # pep8-naming
+    "NPY", # numpy
+    "Q",   # flake8-quotes
+    "W",   # pycodestyle
+]
+extend-ignore = [
+    "C90",  # McCabe complexity
+    "E221", # multiple spaces before operator
+    "E226", # missing whitespace around arithmetic operator
+    "E402", # module-level import not at top of file
+]
+[tool.ruff.lint.flake8-quotes]
+docstring-quotes = "double"
+inline-quotes = "double"
+multiline-quotes = "double"
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+
+known-local-folder = [
+    "pytools",
+]
+lines-after-imports = 2
+
+[tool.mypy]
+ignore_missing_imports = true
+warn_unused_ignores = true
+

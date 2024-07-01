@@ -36,8 +36,24 @@ import sys
 from functools import reduce, wraps
 from sys import intern
 from typing import (
-    Any, Callable, ClassVar, Dict, Generic, Hashable, Iterable, Iterator, List,
-    Mapping, Optional, Sequence, Set, Tuple, Type, TypeVar, Union)
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    Generic,
+    Hashable,
+    Iterable,
+    Iterator,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 
 try:
@@ -414,7 +430,10 @@ class RecordWithoutPickling:
     __slots__: ClassVar[List[str]] = []
     fields: ClassVar[Set[str]]
 
-    def __init__(self, valuedict=None, exclude=None, **kwargs):
+    def __init__(self,
+                 valuedict: Optional[Mapping[str, Any]] = None,
+                 exclude: Optional[Sequence[str]] = None,
+                 **kwargs: Any) -> None:
         assert self.__class__ is not Record
 
         if exclude is None:
@@ -525,7 +544,8 @@ class Reference:
 
     def get(self):
         from warnings import warn
-        warn("Reference.get() is deprecated -- use ref.value instead")
+        warn("Reference.get() is deprecated -- use ref.value instead. "
+             "This will stop working in 2025.", stacklevel=2)
         return self.value
 
     def set(self, value):
@@ -604,7 +624,7 @@ def one(iterable: Iterable[T]) -> T:
     try:
         v = next(it)
     except StopIteration:
-        raise ValueError("empty iterable passed to 'one()'")
+        raise ValueError("empty iterable passed to 'one()'") from None
 
     def no_more():
         try:
@@ -626,7 +646,7 @@ def is_single_valued(
     try:
         first_item = next(it)
     except StopIteration:
-        raise ValueError("empty iterable passed to 'single_valued()'")
+        raise ValueError("empty iterable passed to 'single_valued()'") from None
 
     for other_item in it:
         if not equality_pred(other_item, first_item):
@@ -653,7 +673,7 @@ def single_valued(
     try:
         first_item = next(it)
     except StopIteration:
-        raise ValueError("empty iterable passed to 'single_valued()'")
+        raise ValueError("empty iterable passed to 'single_valued()'") from None
 
     def others_same():
         for other_item in it:
@@ -940,10 +960,7 @@ class memoize_in(Generic[P, R]):  # noqa
                 self.cache_dict[args] = result
                 return result
 
-        # NOTE: mypy gets confused because it types `wraps` as
-        #   Callable[[VarArg(Any)], Any]
-        # which, for some reason, is not compatible with `F`
-        return new_inner                # type: ignore[return-value]
+        return new_inner
 
 
 class keyed_memoize_in(Generic[P, R]):  # noqa
@@ -1241,7 +1258,7 @@ def argmin2(iterable, return_value=False):
     try:
         current_argmin, current_min = next(it)
     except StopIteration:
-        raise ValueError("argmin of empty iterable")
+        raise ValueError("argmin of empty iterable") from None
 
     for arg, item in it:
         if item < current_min:
@@ -1259,7 +1276,7 @@ def argmax2(iterable, return_value=False):
     try:
         current_argmax, current_max = next(it)
     except StopIteration:
-        raise ValueError("argmax of empty iterable")
+        raise ValueError("argmax of empty iterable") from None
 
     for arg, item in it:
         if item > current_max:
@@ -1326,7 +1343,7 @@ def average(iterable):
         s = next(it)
         count = 1
     except StopIteration:
-        raise ValueError("empty average")
+        raise ValueError("empty average") from None
 
     for value in it:
         s = s + value
@@ -1441,7 +1458,7 @@ def generate_decreasing_nonnegative_tuples_summing_to(
         yield ()
     elif length == 1:
         if n <= max_value:
-            #print "MX", n, max_value
+            # print "MX", n, max_value
             yield (n,)
         else:
             return
@@ -1450,7 +1467,7 @@ def generate_decreasing_nonnegative_tuples_summing_to(
             max_value = n
 
         for i in range(min_value, max_value+1):
-            #print "SIG", sig, i
+            # print "SIG", sig, i
             for remainder in generate_decreasing_nonnegative_tuples_summing_to(
                     n-i, length-1, min_value, i):
                 yield (i,) + remainder
@@ -1502,7 +1519,7 @@ def generate_permutations(original):
     else:
         for perm_ in generate_permutations(original[1:]):
             for i in range(len(perm_)+1):
-                #nb str[0:1] works in both string and list contexts
+                # nb str[0:1] works in both string and list contexts
                 yield perm_[:i] + original[0:1] + perm_[i:]
 
 
@@ -1527,7 +1544,7 @@ def enumerate_basic_directions(dimensions):
 
 # {{{ graph algorithms
 
-from pytools.graph import a_star as a_star_moved
+from pytools.graph import a_star as a_star_moved  # noqa: E402
 
 
 a_star = MovedFunctionDeprecationWrapper(a_star_moved)
@@ -1808,7 +1825,7 @@ def string_histogram(  # pylint: disable=too-many-arguments,too-many-locals
     for value in iterable:
         if max_value is not None and value > max_value or value < bin_starts[0]:
             from warnings import warn
-            warn("string_histogram: out-of-bounds value ignored")
+            warn("string_histogram: out-of-bounds value ignored", stacklevel=2)
         else:
             bin_nr = bisect(bin_starts, value)-1
             try:
@@ -2425,7 +2442,7 @@ def find_git_revision(tree_root):  # pylint: disable=too-many-locals
     assert retcode is not None
     if retcode != 0:
         from warnings import warn
-        warn("unable to find git revision")
+        warn("unable to find git revision", stacklevel=1)
         return None
 
     return git_rev
@@ -2704,7 +2721,8 @@ def natsorted(iterable, key=None, reverse=False):
     .. versionadded:: 2020.1
     """
     if key is None:
-        key = lambda x: x
+        def key(x):
+            return x
     return sorted(iterable, key=lambda y: natorder(key(y)), reverse=reverse)
 
 # }}}
@@ -2768,7 +2786,9 @@ def resolve_name(name):
 
 # {{{ unordered_hash
 
-def unordered_hash(hash_instance, iterable, hash_constructor=None):
+def unordered_hash(hash_instance: Any,
+                   iterable: Iterable[Any],
+                   hash_constructor: Optional[Callable[[], Any]] = None) -> Any:
     """Using a hash algorithm given by the parameter-less constructor
     *hash_constructor*, return a hash object whose internal state
     depends on the entries of *iterable*, but not their order. If *hash*
@@ -2793,6 +2813,8 @@ def unordered_hash(hash_instance, iterable, hash_constructor=None):
         import hashlib
         from functools import partial
         hash_constructor = partial(hashlib.new, hash_instance.name)
+
+    assert hash_constructor is not None
 
     h_int = 0
     for i in iterable:
@@ -2967,8 +2989,9 @@ def to_identifier(s: str) -> str:
 
 # {{{ unique
 
-def unique(seq: Sequence[T]) -> Iterator[T]:
-    """Yield unique elements in *seq*, removing all duplicates. See also
+def unique(seq: Iterable[T]) -> Iterator[T]:
+    """Yield unique elements in *seq*, removing all duplicates. The internal
+    order of the elements is preserved. See also
     :func:`itertools.groupby` (which removes consecutive duplicates)."""
     return iter(dict.fromkeys(seq))
 

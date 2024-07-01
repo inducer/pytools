@@ -23,6 +23,7 @@ THE SOFTWARE.
 
 import logging
 import sys
+from typing import FrozenSet
 
 import pytest
 
@@ -30,7 +31,6 @@ from pytools import Record
 
 
 logger = logging.getLogger(__name__)
-from typing import FrozenSet
 
 
 def test_memoize_method_clear():
@@ -172,7 +172,7 @@ def test_memoize_keyfunc():
     assert count[0] == 2
 
 
-def test_memoize_frozen():
+def test_memoize_frozen() -> None:
     from dataclasses import dataclass
 
     from pytools import memoize_method
@@ -187,9 +187,11 @@ def test_memoize_frozen():
         def double_value(self):
             return 2 * self.value
 
-    c = FrozenDataclass(10)
-    assert c.double_value() == 20
-    c.double_value.clear_cache(c)       # pylint: disable=no-member
+    c0 = FrozenDataclass(10)
+    assert c0.double_value() == 20
+
+    # pylint: disable=no-member
+    c0.double_value.clear_cache(c0)  # type: ignore[attr-defined]
 
     # }}}
 
@@ -208,9 +210,11 @@ def test_memoize_frozen():
         def double_value(self):
             return 2 * self.value
 
-    c = FrozenClass(10)
-    assert c.double_value() == 20
-    c.double_value.clear_cache(c)       # pylint: disable=no-member
+    c1 = FrozenClass(10)
+    assert c1.double_value() == 20
+
+    # pylint: disable=no-member
+    c1.double_value.clear_cache(c1)  # type: ignore[attr-defined]
 
     # }}}
 
@@ -219,8 +223,10 @@ def test_memoize_frozen():
 def test_spatial_btree(dims, do_plot=False):
     pytest.importorskip("numpy")
     import numpy as np
+
+    rng = np.random.default_rng()
     nparticles = 2000
-    x = -1 + 2*np.random.rand(dims, nparticles)
+    x = -1 + 2*rng.uniform(size=(dims, nparticles))
     x = np.sign(x)*np.abs(x)**1.9
     x = (1.4 + x) % 2 - 1
 
@@ -355,8 +361,6 @@ def test_eoc():
     # }}}
 
     # {{{ test invalid inputs
-
-    import numpy as np
 
     eoc = EOCRecorder()
 
@@ -496,7 +500,12 @@ def test_obj_array_vectorize(c=1):
 
 def test_tag():
     from pytools.tag import (
-        NonUniqueTagError, Tag, Taggable, UniqueTag, check_tag_uniqueness)
+        NonUniqueTagError,
+        Tag,
+        Taggable,
+        UniqueTag,
+        check_tag_uniqueness,
+    )
 
     # Need a subclass that defines the copy function in order to test.
     class TaggableWithCopy(Taggable):
@@ -801,6 +810,12 @@ def test_unique():
     assert next(unique([1, 2, 1, 3])) == 1
     assert next(unique([]), None) is None
 
+    # Also test strings since their ordering would be thrown off by
+    # set-based 'unique' implementations.
+    assert list(unique(["A", "B", "A"])) == ["A", "B"]
+    assert tuple(unique(("A", "B", "A"))) == ("A", "B")
+    assert next(unique(["A", "B", "A", "C"])) == "A"
+
 
 # This class must be defined globally to be picklable
 class SimpleRecord(Record):
@@ -830,7 +845,7 @@ def test_record():
     assert str(r) == "SimpleRecord(a=1, b=2, c=3, d=4, e=5)"
 
     with pytest.raises(AttributeError):
-        r.ff
+        r.ff  # noqa: B018
 
     # Test pickling
     import pickle

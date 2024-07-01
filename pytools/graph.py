@@ -65,8 +65,20 @@ Type Variables Used
 """
 
 from typing import (
-    Any, Callable, Collection, Dict, Hashable, Iterator, List, Mapping, MutableSet,
-    Optional, Set, Tuple, TypeVar)
+    Any,
+    Callable,
+    Collection,
+    Dict,
+    Hashable,
+    Iterator,
+    List,
+    Mapping,
+    MutableSet,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+)
 
 
 try:
@@ -287,7 +299,7 @@ def compute_topological_order(graph: GraphT[NodeT],
 
     # {{{ compute nodes_to_num_predecessors
 
-    nodes_to_num_predecessors = {node: 0 for node in graph}
+    nodes_to_num_predecessors = dict.fromkeys(graph, 0)
 
     for node in graph:
         for child in graph[node]:
@@ -437,10 +449,12 @@ def as_graphviz_dot(graph: GraphT[NodeT],
     from pytools.graphviz import dot_escape
 
     if node_labels is None:
-        node_labels = lambda x: str(x)
+        def node_labels(x):
+            return str(x)
 
     if edge_labels is None:
-        edge_labels = lambda x, y: ""
+        def edge_labels(x, y):
+            return ""
 
     node_to_id = {}
 
@@ -465,7 +479,7 @@ def as_graphviz_dot(graph: GraphT[NodeT],
          for (node, targets) in graph.items()
          for t in targets])
 
-    return f"digraph mygraph {{\n{ content }\n}}\n"
+    return f"digraph mygraph {{\n{content}\n}}\n"
 
 # }}}
 

@@ -8,8 +8,14 @@ from typing import Any, Dict, Optional
 import pytest
 
 from pytools.persistent_dict import (
-    CollisionWarning, KeyBuilder, NoSuchEntryCollisionError, NoSuchEntryError,
-    PersistentDict, ReadOnlyEntryError, WriteOncePersistentDict)
+    CollisionWarning,
+    KeyBuilder,
+    NoSuchEntryCollisionError,
+    NoSuchEntryError,
+    PersistentDict,
+    ReadOnlyEntryError,
+    WriteOncePersistentDict,
+)
 from pytools.tag import Tag, tag_dataclass
 
 
@@ -495,7 +501,7 @@ def test_ABC_hashing() -> None:  # noqa: N802
 
     keyb = KeyBuilder()
 
-    class MyABC(ABC):
+    class MyABC(ABC):  # noqa: B024
         pass
 
     assert keyb(MyABC) != keyb(ABC)
