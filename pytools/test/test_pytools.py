@@ -23,6 +23,7 @@ THE SOFTWARE.
 
 import logging
 import sys
+from typing import FrozenSet
 
 import pytest
 
@@ -30,7 +31,6 @@ from pytools import Record
 
 
 logger = logging.getLogger(__name__)
-from typing import FrozenSet
 
 
 def test_memoize_method_clear():
@@ -223,8 +223,10 @@ def test_memoize_frozen() -> None:
 def test_spatial_btree(dims, do_plot=False):
     pytest.importorskip("numpy")
     import numpy as np
+
+    rng = np.random.default_rng()
     nparticles = 2000
-    x = -1 + 2*np.random.rand(dims, nparticles)
+    x = -1 + 2*rng.uniform(size=(dims, nparticles))
     x = np.sign(x)*np.abs(x)**1.9
     x = (1.4 + x) % 2 - 1
 
@@ -359,8 +361,6 @@ def test_eoc():
     # }}}
 
     # {{{ test invalid inputs
-
-    import numpy as np
 
     eoc = EOCRecorder()
 
@@ -500,7 +500,12 @@ def test_obj_array_vectorize(c=1):
 
 def test_tag():
     from pytools.tag import (
-        NonUniqueTagError, Tag, Taggable, UniqueTag, check_tag_uniqueness)
+        NonUniqueTagError,
+        Tag,
+        Taggable,
+        UniqueTag,
+        check_tag_uniqueness,
+    )
 
     # Need a subclass that defines the copy function in order to test.
     class TaggableWithCopy(Taggable):
@@ -840,7 +845,7 @@ def test_record():
     assert str(r) == "SimpleRecord(a=1, b=2, c=3, d=4, e=5)"
 
     with pytest.raises(AttributeError):
-        r.ff
+        r.ff  # noqa: B018
 
     # Test pickling
     import pickle

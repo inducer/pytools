@@ -65,8 +65,20 @@ Type Variables Used
 """
 
 from typing import (
-    Any, Callable, Collection, Dict, Hashable, Iterator, List, Mapping, MutableSet,
-    Optional, Set, Tuple, TypeVar)
+    Any,
+    Callable,
+    Collection,
+    Dict,
+    Hashable,
+    Iterator,
+    List,
+    Mapping,
+    MutableSet,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+)
 
 
 try:
@@ -437,10 +449,12 @@ def as_graphviz_dot(graph: GraphT[NodeT],
     from pytools.graphviz import dot_escape
 
     if node_labels is None:
-        node_labels = lambda x: str(x)
+        def node_labels(x):
+            return str(x)
 
     if edge_labels is None:
-        edge_labels = lambda x, y: ""
+        def edge_labels(x, y):
+            return ""
 
     node_to_id = {}
 

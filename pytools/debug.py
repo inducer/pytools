@@ -51,7 +51,7 @@ def open_unique_debug_file(stem, extension=""):
 
 # {{{ refcount debugging ------------------------------------------------------
 
-class RefDebugQuit(Exception):
+class RefDebugQuit(Exception):  # noqa: N818
     pass
 
 
@@ -159,7 +159,7 @@ def setup_readline():
             e = sys.exc_info()[1]
 
             from warnings import warn
-            warn(f"Error opening readline history file: {e}")
+            warn(f"Error opening readline history file: {e}", stacklevel=2)
 
     readline.parse_and_bind("tab: complete")
 
