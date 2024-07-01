@@ -39,8 +39,18 @@ import sys
 from dataclasses import fields as dc_fields, is_dataclass
 from enum import Enum
 from typing import (
-    TYPE_CHECKING, Any, Callable, FrozenSet, Iterator, Mapping, Optional, Protocol,
-    Tuple, TypeVar, cast)
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    FrozenSet,
+    Iterator,
+    Mapping,
+    Optional,
+    Protocol,
+    Tuple,
+    TypeVar,
+    cast,
+)
 
 
 if TYPE_CHECKING:
@@ -224,7 +234,7 @@ class KeyBuilder:
         if not isinstance(key, type):
             try:
                 # pylint:disable=protected-access
-                object.__setattr__(key, "_pytools_persistent_hash_digest",  digest)
+                object.__setattr__(key, "_pytools_persistent_hash_digest", digest)
             except AttributeError:
                 pass
             except TypeError:
@@ -418,7 +428,7 @@ def __getattr__(name: str) -> Any:
     if name in ("NoSuchEntryInvalidKeyError",
                 "NoSuchEntryInvalidContentsError"):
         from warnings import warn
-        warn(f"pytools.persistent_dict.{name} has been removed.")
+        warn(f"pytools.persistent_dict.{name} has been removed.", stacklevel=2)
         return NoSuchEntryError
 
     raise AttributeError(name)
@@ -517,7 +527,8 @@ class _PersistentDictBase(Mapping[K, V]):
                     "that they're often indicative of a broken hash key "
                     "implementation (that is not considering some elements "
                     "relevant for equality comparison)",
-                    CollisionWarning
+                    CollisionWarning,
+                    stacklevel=3
                  )
 
             # This is here so we can step through equality comparison to
@@ -551,7 +562,7 @@ class _PersistentDictBase(Mapping[K, V]):
                 if n % 20 == 0:
                     from warnings import warn
                     warn(f"PersistentDict: database '{self.filename}' busy, {n} "
-                         "retries")
+                         "retries", stacklevel=3)
             else:
                 break
 
@@ -696,12 +707,12 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
                 if hasattr(e, "sqlite_errorcode"):
                     if e.sqlite_errorcode == sqlite3.SQLITE_CONSTRAINT_PRIMARYKEY:
                         raise ReadOnlyEntryError("WriteOncePersistentDict, "
-                                                 "tried overwriting key")
+                                                 "tried overwriting key") from e
                     else:
                         raise
                 else:
                     raise ReadOnlyEntryError("WriteOncePersistentDict, "
-                                             "tried overwriting key")
+                                             "tried overwriting key") from e
 
     def _fetch_uncached(self, keyhash: str) -> Tuple[K, V]:
         # This method is separate from fetch() to allow for LRU caching
@@ -719,8 +730,8 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
 
         try:
             stored_key, value = self._fetch(keyhash)
-        except KeyError:
-            raise NoSuchEntryError(key)
+        except KeyError as err:
+            raise NoSuchEntryError(key) from err
         else:
             self._collision_check(key, stored_key)
             return value
