@@ -3,7 +3,7 @@ import sys  # noqa
 import tempfile
 from dataclasses import dataclass
 from enum import Enum, IntEnum
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import pytest
 
@@ -905,22 +905,34 @@ def test_hash_function() -> None:
     # }}}
 
 
-# {{{ basic concurrency test
+# {{{ basic concurrency tests
 
-def _mp_fn(tmpdir: str) -> None:
+def _conc_fn(tmpdir: Optional[str] = None,
+             pdict: Optional[PersistentDict[int, int]] = None) -> None:
     import time
-    pdict: PersistentDict[int, int] = PersistentDict("pytools-test",
-                                                    container_dir=tmpdir,
-                                                    safe_sync=False)
+
+    assert (pdict is None) ^ (tmpdir is None)
+
+    if pdict is None:
+        pdict = PersistentDict("pytools-test",
+                                container_dir=tmpdir,
+                                safe_sync=False)
     n = 10000
     s = 0
 
     start = time.time()
 
     for i in range(n):
-        if i % 100 == 0:
+        if i % 1000 == 0:
             print(f"i={i}")
-        pdict[i] = i
+
+        if isinstance(pdict, WriteOncePersistentDict):
+            try:
+                pdict[i] = i
+            except ReadOnlyEntryError:
+                pass
+        else:
+            pdict[i] = i
 
         try:
             s += pdict[i]
@@ -928,11 +940,12 @@ def _mp_fn(tmpdir: str) -> None:
             # Someone else already deleted the entry
             pass
 
-        try:
-            del pdict[i]
-        except NoSuchEntryError:
-            # Someone else already deleted the entry
-            pass
+        if not isinstance(pdict, WriteOncePersistentDict):
+            try:
+                del pdict[i]
+            except NoSuchEntryError:
+                # Someone else already deleted the entry
+                pass
 
     end = time.time()
 
@@ -940,19 +953,71 @@ def _mp_fn(tmpdir: str) -> None:
         f"{pdict.filename}: {end-start} s={s}")
 
 
-def test_concurrency() -> None:
+def test_concurrency_processes() -> None:
     from multiprocessing import Process
 
-    tmpdir = "_tmp/"  # must be the same across all processes in this test
+    tmpdir = "_tmp_proc/"  # must be the same across all processes in this test
 
     try:
-        p = [Process(target=_mp_fn, args=(tmpdir, )) for _ in range(4)]
+        # multiprocessing needs to pickle function arguments, so we can't pass
+        # the PersistentDict object (which is unpicklable) directly.
+        p = [Process(target=_conc_fn, args=(tmpdir, None)) for _ in range(4)]
         for pp in p:
             pp.start()
         for pp in p:
             pp.join()
 
         assert all(pp.exitcode == 0 for pp in p), [pp.exitcode for pp in p]
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+from threading import Thread
+
+
+class RaisingThread(Thread):
+    def run(self) -> None:
+        self._exc = None
+        try:
+            super().run()
+        except Exception as e:
+            self._exc = e
+
+    def join(self, timeout: Optional[float] = None) -> None:
+        super().join(timeout=timeout)
+        if self._exc:
+            raise self._exc
+
+
+def test_concurrency_threads() -> None:
+    tmpdir = "_tmp_threads/"  # must be the same across all threads in this test
+
+    try:
+        # Share this pdict object among all threads to test thread safety
+        pdict: PersistentDict[int, int] = PersistentDict("pytools-test",
+                                                    container_dir=tmpdir,
+                                                    safe_sync=False)
+        t = [RaisingThread(target=_conc_fn, args=(None, pdict)) for _ in range(4)]
+        for tt in t:
+            tt.start()
+        for tt in t:
+            tt.join()
+            # Threads will raise in join() if they encountered an exception
+    finally:
+        shutil.rmtree(tmpdir)
+
+    try:
+        # Share this pdict object among all threads to test thread safety
+        pdict2: WriteOncePersistentDict[int, int] = WriteOncePersistentDict(
+                                                    "pytools-test",
+                                                    container_dir=tmpdir,
+                                                    safe_sync=False)
+        t = [RaisingThread(target=_conc_fn, args=(None, pdict2)) for _ in range(4)]
+        for tt in t:
+            tt.start()
+        for tt in t:
+            tt.join()
+            # Threads will raise in join() if they encountered an exception
     finally:
         shutil.rmtree(tmpdir)
 
