@@ -726,12 +726,16 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
     def _fetch_uncached(self, keyhash: str) -> Tuple[K, V]:
         # This method is separate from fetch() to allow for LRU caching
 
-        def fetch_inner() -> Tuple[Any]:
+        def fetch_inner() -> Optional[Tuple[Any]]:
+            assert self.conn is not None
+
             # This is separate from fetch() so that the mutex covers the
             # fetchone() call
             c = self.conn.execute("SELECT key_value FROM dict WHERE keyhash=?",
                                 (keyhash,))
-            return c.fetchone()
+            res = c.fetchone()
+            assert res is None or isinstance(res, tuple)
+            return res
 
         row = self._exec_sql_fn(fetch_inner)
         if row is None:
@@ -812,12 +816,16 @@ class PersistentDict(_PersistentDictBase[K, V]):
     def fetch(self, key: K) -> V:
         keyhash = self.key_builder(key)
 
-        def fetch_inner() -> Tuple[Any]:
+        def fetch_inner() -> Optional[Tuple[Any]]:
+            assert self.conn is not None
+
             # This is separate from fetch() so that the mutex covers the
             # fetchone() call
             c = self.conn.execute("SELECT key_value FROM dict WHERE keyhash=?",
                                 (keyhash,))
-            return c.fetchone()
+            res = c.fetchone()
+            assert res is None or isinstance(res, tuple)
+            return res
 
         row = self._exec_sql_fn(fetch_inner)
 
