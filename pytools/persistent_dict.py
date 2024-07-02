@@ -571,7 +571,7 @@ class _PersistentDictBase(Mapping[K, V]):
                     if n % 20 == 0:
                         from warnings import warn
                         warn(f"PersistentDict: database '{self.filename}' busy, {n} "
-                             "retries")
+                             "retries", stacklevel=3)
                 else:
                     break
 
