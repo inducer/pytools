@@ -472,9 +472,16 @@ class _PersistentDictBase(Mapping[K, V]):
         self.container_dir = container_dir
         self._make_container_dir()
 
-        # isolation_level=None: enable autocommit mode
-        # https://www.sqlite.org/lang_transaction.html#implicit_versus_explicit_transactions
-        self.conn = sqlite3.connect(self.filename, isolation_level=None)
+        from threading import Lock
+        self.mutex = Lock()
+
+        # * isolation_level=None: enable autocommit mode
+        #   https://www.sqlite.org/lang_transaction.html#implicit_versus_explicit_transactions
+        # * check_same_thread=False: thread-level concurrency is handled by the
+        #   mutex above
+        self.conn = sqlite3.connect(self.filename,
+                                    isolation_level=None,
+                                    check_same_thread=False)
 
         self._exec_sql(
             "CREATE TABLE IF NOT EXISTS dict "
@@ -515,8 +522,9 @@ class _PersistentDictBase(Mapping[K, V]):
         self._exec_sql("PRAGMA cache_size = -64000")
 
     def __del__(self) -> None:
-        if self.conn:
-            self.conn.close()
+        with self.mutex:
+            if self.conn:
+                self.conn.close()
 
     def _collision_check(self, key: K, stored_key: K) -> None:
         if stored_key != key:
@@ -550,21 +558,22 @@ class _PersistentDictBase(Mapping[K, V]):
     def _exec_sql_fn(self, fn: Callable[[], T]) -> Optional[T]:
         n = 0
 
-        while True:
-            n += 1
-            try:
-                return fn()
-            except sqlite3.OperationalError as e:
-                # If the database is busy, retry
-                if (hasattr(e, "sqlite_errorcode")
-                        and not e.sqlite_errorcode == sqlite3.SQLITE_BUSY):
-                    raise
-                if n % 20 == 0:
-                    from warnings import warn
-                    warn(f"PersistentDict: database '{self.filename}' busy, {n} "
-                         "retries", stacklevel=3)
-            else:
-                break
+        with self.mutex:
+            while True:
+                n += 1
+                try:
+                    return fn()
+                except sqlite3.OperationalError as e:
+                    # If the database is busy, retry
+                    if (hasattr(e, "sqlite_errorcode")
+                            and not e.sqlite_errorcode == sqlite3.SQLITE_BUSY):
+                        raise
+                    if n % 20 == 0:
+                        from warnings import warn
+                        warn(f"PersistentDict: database '{self.filename}' busy, {n} "
+                             "retries", stacklevel=3)
+                else:
+                    break
 
     def store_if_not_present(self, key: K, value: V) -> None:
         """Store (*key*, *value*) if *key* is not already present."""
@@ -716,9 +725,19 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
 
     def _fetch_uncached(self, keyhash: str) -> Tuple[K, V]:
         # This method is separate from fetch() to allow for LRU caching
-        c = self._exec_sql("SELECT key_value FROM dict WHERE keyhash=?",
-                              (keyhash,))
-        row = c.fetchone()
+
+        def fetch_inner() -> Optional[Tuple[Any]]:
+            assert self.conn is not None
+
+            # This is separate from fetch() so that the mutex covers the
+            # fetchone() call
+            c = self.conn.execute("SELECT key_value FROM dict WHERE keyhash=?",
+                                (keyhash,))
+            res = c.fetchone()
+            assert res is None or isinstance(res, tuple)
+            return res
+
+        row = self._exec_sql_fn(fetch_inner)
         if row is None:
             raise KeyError
 
@@ -797,9 +816,19 @@ class PersistentDict(_PersistentDictBase[K, V]):
     def fetch(self, key: K) -> V:
         keyhash = self.key_builder(key)
 
-        c = self._exec_sql("SELECT key_value FROM dict WHERE keyhash=?",
-                              (keyhash,))
-        row = c.fetchone()
+        def fetch_inner() -> Optional[Tuple[Any]]:
+            assert self.conn is not None
+
+            # This is separate from fetch() so that the mutex covers the
+            # fetchone() call
+            c = self.conn.execute("SELECT key_value FROM dict WHERE keyhash=?",
+                                (keyhash,))
+            res = c.fetchone()
+            assert res is None or isinstance(res, tuple)
+            return res
+
+        row = self._exec_sql_fn(fetch_inner)
+
         if row is None:
             raise NoSuchEntryError(key)
 
