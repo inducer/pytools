@@ -57,7 +57,6 @@ pytools = [
 
 [tool.ruff]
 target-version = "py38"
-line-length = 85
 
 preview = true
 [tool.ruff.lint]
