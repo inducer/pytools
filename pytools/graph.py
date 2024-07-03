@@ -137,7 +137,7 @@ def a_star(  # pylint: disable=too-many-locals
                 return 0
 
     class AStarNode:
-        __slots__ = ["state", "parent", "path_cost"]
+        __slots__ = ["parent", "path_cost", "state"]
 
         def __init__(self, state: NodeT, parent: Any, path_cost: float) -> None:
             self.state = state

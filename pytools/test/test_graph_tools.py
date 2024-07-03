@@ -30,7 +30,7 @@ def test_compute_sccs():
                 result = []
                 for child in graph[node]:
                     result = result + visit(child)
-                return result + [node]
+                return [*result, node]
 
         for scc in sccs:
             scc = set(scc)

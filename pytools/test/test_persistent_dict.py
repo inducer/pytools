@@ -1,5 +1,5 @@
 import shutil
-import sys  # noqa
+import sys
 import tempfile
 from dataclasses import dataclass
 from enum import Enum, IntEnum

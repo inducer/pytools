@@ -60,7 +60,7 @@ class BatchJob:
         setup.close()
 
 
-class INHERIT:  # noqa
+class INHERIT:
     pass
 
 
@@ -86,7 +86,7 @@ class GridEngineJob(BatchJob):
 
         args.extend(extra_args)
 
-        subproc = Popen(["qsub"] + args + ["run.sh"], cwd=self.path)
+        subproc = Popen(["qsub", *args, "run.sh"], cwd=self.path)
         if subproc.wait() != 0:
             raise RuntimeError(f"Process submission of {self.moniker} failed")
 
@@ -114,7 +114,7 @@ class PBSJob(BatchJob):
 
         args.extend(extra_args)
 
-        subproc = Popen(["qsub"] + args + ["run.sh"], cwd=self.path)
+        subproc = Popen(["qsub", *args, "run.sh"], cwd=self.path)
         if subproc.wait() != 0:
             raise RuntimeError(f"Process submission of {self.moniker} failed")
 
@@ -145,7 +145,7 @@ class ConstructorPlaceholder:
         return "{}({})".format(self.classname,
                 ",".join(
                     [str(arg) for arg in self.args]
-                    + [f"{kw}={repr(val)}"
+                    + [f"{kw}={val!r}"
                         for kw, val in self.kwargs.items()]
                     )
                 )
