@@ -267,7 +267,7 @@ class HeapEntry:
         self.node = node
         self.key = key
 
-    def __lt__(self, other: "HeapEntry") -> bool:
+    def __lt__(self, other: HeapEntry) -> bool:
         return self.key < other.key
 
 
