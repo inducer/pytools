@@ -254,7 +254,7 @@ class KeyBuilder:
     @staticmethod
     def update_for_type(key_hash: Hash, key: type) -> None:
         key_hash.update(
-            f"{key.__module__}.{key.__qualname__}.{key.__name__}".encode("utf-8"))
+            f"{key.__module__}.{key.__qualname__}.{key.__name__}".encode())
 
     update_for_ABCMeta = update_for_type  # noqa: N815
 
