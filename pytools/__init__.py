@@ -597,7 +597,7 @@ class DependentDictionary:
     def __setitem__(self, key, value):
         self._Dictionary[key] = value
 
-    def genuineKeys(self):  # noqa
+    def genuineKeys(self):  # noqa: N802
         return list(self._Dictionary.keys())
 
     def iteritems(self):
@@ -914,7 +914,7 @@ class keyed_memoize_method(keyed_memoize_on_first_arg):  # noqa: N801
         return intern(f"_memoize_dic_{function.__name__}")
 
 
-class memoize_in(Generic[P, R]):  # noqa
+class memoize_in:  # noqa: N801
     """Adds a cache to the function it decorates. The cache is attached
     to *container* and must be uniquely specified by *identifier* (i.e.
     all functions using the same *container* and *identifier* will be using
@@ -963,7 +963,7 @@ class memoize_in(Generic[P, R]):  # noqa
         return new_inner
 
 
-class keyed_memoize_in(Generic[P, R]):  # noqa
+class keyed_memoize_in(Generic[P, R]):  # noqa: N801
     """Like :class:`memoize_in`, but additionally uses a function *key* to
     compute the key under which the function result is memoized.
 
@@ -1066,7 +1066,7 @@ def shift(vec, dist):
 
     result = vec[:]
 
-    N = len(vec)  # noqa
+    N = len(vec)  # noqa: N806
     dist = dist % N
 
     # modulo only returns positive distances!
