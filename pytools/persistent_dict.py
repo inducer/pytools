@@ -30,7 +30,6 @@ THE SOFTWARE.
 """
 
 
-import hashlib
 import logging
 import os
 import pickle
@@ -51,6 +50,8 @@ from typing import (
     TypeVar,
     cast,
 )
+
+from siphash24 import siphash13
 
 
 if TYPE_CHECKING:
@@ -160,7 +161,7 @@ class KeyBuilder:
 
     # this exists so that we can (conceivably) switch algorithms at some point
     # down the road
-    new_hash: Callable[..., Hash] = hashlib.sha256
+    new_hash: Callable[..., Hash] = siphash13
 
     def rec(self, key_hash: Hash, key: Any) -> Hash:
         """
@@ -301,7 +302,8 @@ class KeyBuilder:
 
         unordered_hash(
             key_hash,
-            (self.rec(self.new_hash(), key_i).digest() for key_i in key))
+            (self.rec(self.new_hash(), key_i).digest() for key_i in key),
+            hash_constructor=self.new_hash)
 
     update_for_FrozenOrderedSet = update_for_frozenset  # noqa: N815
 
@@ -351,7 +353,8 @@ class KeyBuilder:
 
         unordered_hash(
             key_hash,
-            (self.rec(self.new_hash(), (k, v)).digest() for k, v in key.items()))
+            (self.rec(self.new_hash(), (k, v)).digest() for k, v in key.items()),
+            hash_constructor=self.new_hash)
 
     update_for_immutabledict = update_for_frozendict
     update_for_constantdict = update_for_frozendict
