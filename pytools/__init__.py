@@ -525,9 +525,10 @@ class ImmutableRecordWithoutPickling(RecordWithoutPickling):
     def __hash__(self):
         # This attribute may vanish during pickling.
         if getattr(self, "_cached_hash", None) is None:
-            self._cached_hash = hash(
-                (type(self),) + tuple(getattr(self, field)
-                    for field in self.__class__.fields))
+            self._cached_hash = hash((
+                    type(self),
+                    *(getattr(self, field) for field in self.__class__.fields)
+                    ))
 
         return self._cached_hash
 
@@ -706,7 +707,7 @@ def memoize(*args: F, **kwargs: Any) -> F:
     default_key_func: Optional[Callable[..., Any]]
 
     if use_kw:
-        def default_key_func(*inner_args, **inner_kwargs):  # noqa pylint:disable=function-redefined
+        def default_key_func(*inner_args, **inner_kwargs):  # pylint:disable=function-redefined
             return inner_args, frozenset(inner_kwargs.items())
     else:
         default_key_func = None
@@ -723,15 +724,15 @@ def memoize(*args: F, **kwargs: Any) -> F:
             def wrapper(*args, **kwargs):
                 key = key_func(*args, **kwargs)
                 try:
-                    return func._memoize_dic[key]  # noqa: E501 # pylint: disable=protected-access
+                    return func._memoize_dic[key]  # pylint: disable=protected-access
                 except AttributeError:
                     # _memoize_dic doesn't exist yet.
                     result = func(*args, **kwargs)
-                    func._memoize_dic = {key: result}  # noqa: E501 # pylint: disable=protected-access
+                    func._memoize_dic = {key: result}  # pylint: disable=protected-access
                     return result
                 except KeyError:
                     result = func(*args, **kwargs)
-                    func._memoize_dic[key] = result  # noqa: E501 # pylint: disable=protected-access
+                    func._memoize_dic[key] = result  # pylint: disable=protected-access
                     return result
 
             from functools import update_wrapper
@@ -742,15 +743,15 @@ def memoize(*args: F, **kwargs: Any) -> F:
         def _decorator(func):
             def wrapper(*args):
                 try:
-                    return func._memoize_dic[args]  # noqa: E501 # pylint: disable=protected-access
+                    return func._memoize_dic[args]  # pylint: disable=protected-access
                 except AttributeError:
                     # _memoize_dic doesn't exist yet.
                     result = func(*args)
-                    func._memoize_dic = {args: result}  # noqa: E501 # pylint:disable=protected-access
+                    func._memoize_dic = {args: result}  # pylint:disable=protected-access
                     return result
                 except KeyError:
                     result = func(*args)
-                    func._memoize_dic[args] = result  # noqa: E501 # pylint: disable=protected-access
+                    func._memoize_dic[args] = result  # pylint: disable=protected-access
                     return result
 
             from functools import update_wrapper
@@ -788,7 +789,7 @@ def memoize_on_first_arg(
 
     def wrapper(obj: T, *args: P.args, **kwargs: P.kwargs) -> R:
         if kwargs:
-            key = (_HasKwargs, frozenset(kwargs.items())) + args
+            key = (_HasKwargs, frozenset(kwargs.items()), *args)
         else:
             key = args
 
@@ -1309,7 +1310,7 @@ def cartesian_product(*args):
     first = args[:-1]
     for prod in cartesian_product(*first):
         for i in args[-1]:
-            yield prod + (i,)
+            yield (*prod, i)
 
 
 def distinct_pairs(list1, list2):
@@ -1423,7 +1424,7 @@ def indices_in_shape(shape):
         remainder = shape[1:]
         for i in range(0, shape[0]):
             for rest in indices_in_shape(remainder):
-                yield (i,)+rest
+                yield (i, *rest)
 
 
 def generate_nonnegative_integer_tuples_below(n, length=None, least=0):
@@ -1470,7 +1471,7 @@ def generate_decreasing_nonnegative_tuples_summing_to(
             # print "SIG", sig, i
             for remainder in generate_decreasing_nonnegative_tuples_summing_to(
                     n-i, length-1, min_value, i):
-                yield (i,) + remainder
+                yield (i, *remainder)
 
 
 def generate_nonnegative_integer_tuples_summing_to_at_most(n, length):
@@ -1485,7 +1486,7 @@ def generate_nonnegative_integer_tuples_summing_to_at_most(n, length):
         for i in range(n+1):
             for remainder in generate_nonnegative_integer_tuples_summing_to_at_most(
                     n-i, length-1):
-                yield remainder + (i,)
+                yield (*remainder, i)
 
 
 # backwards compatibility
@@ -1544,7 +1545,7 @@ def enumerate_basic_directions(dimensions):
 
 # {{{ graph algorithms
 
-from pytools.graph import a_star as a_star_moved  # noqa: E402
+from pytools.graph import a_star as a_star_moved
 
 
 a_star = MovedFunctionDeprecationWrapper(a_star_moved)
@@ -1665,7 +1666,7 @@ class Table:
             :--|-------:
             10 | 20\|\|
 
-        """  # noqa: W605
+        """
         if not self.rows:
             return ""
 
@@ -1823,7 +1824,7 @@ def string_histogram(  # pylint: disable=too-many-arguments,too-many-locals
 
     from bisect import bisect
     for value in iterable:
-        if max_value is not None and value > max_value or value < bin_starts[0]:
+        if (max_value is not None and value > max_value) or value < bin_starts[0]:
             from warnings import warn
             warn("string_histogram: out-of-bounds value ignored", stacklevel=2)
         else:
@@ -2330,7 +2331,7 @@ class UniqueNameGenerator:
 
         # }}}
 
-        for counter, var_name in generate_numbered_unique_names(based_on, counter):  # noqa: B020,B007,E501
+        for counter, var_name in generate_numbered_unique_names(based_on, counter):  # noqa: B020,B007
             if not self.is_name_conflicting(var_name):
                 break
 
@@ -2450,7 +2451,7 @@ def find_git_revision(tree_root):  # pylint: disable=too-many-locals
 
 def find_module_git_revision(module_file, n_levels_up):
     from os.path import dirname, join
-    tree_root = join(*([dirname(module_file)] + [".." * n_levels_up]))
+    tree_root = join(*([dirname(module_file), ".." * n_levels_up]))
 
     return find_git_revision(tree_root)
 
@@ -2895,7 +2896,7 @@ def sphere_sample_fibonacci(
         lattice.
 
     :returns: an :class:`~numpy.ndarray` of shape ``(3, npoints)``.
-    """     # noqa: E501
+    """
 
     import numpy as np
     if optimize is None:

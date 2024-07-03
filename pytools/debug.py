@@ -55,7 +55,7 @@ class RefDebugQuit(Exception):  # noqa: N818
     pass
 
 
-def refdebug(obj, top_level=True, exclude=()):  # noqa: E501  pylint:disable=too-many-locals,too-many-branches,too-many-statements
+def refdebug(obj, top_level=True, exclude=()):  # pylint:disable=too-many-locals,too-many-branches,too-many-statements
     from types import FrameType
 
     def is_excluded(o):

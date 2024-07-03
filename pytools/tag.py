@@ -29,7 +29,7 @@ Internal stuff that is only here because the documentation tool wants it
 """
 
 from dataclasses import dataclass
-from typing import (  # noqa: F401
+from typing import (
     Any,
     FrozenSet,
     Iterable,
@@ -285,7 +285,7 @@ class Taggable:
         # mypy is right: we're not promising this attribute is defined.
         # Once this deprecation expires, this will go back to being an
         # abstract method.
-        return self.copy(tags=tags)  # type: ignore[attr-defined]  # pylint: disable=no-member  # noqa: E501
+        return self.copy(tags=tags)  # type: ignore[attr-defined]  # pylint: disable=no-member
 
     def tagged(self: _Self_Taggable, tags: ToTagSetConvertible) -> _Self_Taggable:
         """

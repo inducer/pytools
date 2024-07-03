@@ -151,7 +151,7 @@ class LexIterator:
     def expected(self, what_expected):
         if self.is_at_end():
             self.raise_parse_error(
-                    "{what_expected} expected, end of input found instead")
+                    f"{what_expected} expected, end of input found instead")
         else:
             self.raise_parse_error(
                     f"{what_expected} expected, {self.next_tag()} found instead")

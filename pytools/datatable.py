@@ -164,7 +164,7 @@ class DataTable:
             this_values = tuple(row[i] for i in gb_indices)
             if first or this_values != last_values:
                 if not first:
-                    result_data.append(last_values + (aggregate_func(agg_values),))
+                    result_data.append((*last_values, aggregate_func(agg_values)))
 
                 agg_values = [row[agg_index]]
                 last_values = this_values
@@ -173,7 +173,7 @@ class DataTable:
                 agg_values.append(row[agg_index])
 
         if not first and agg_values:
-            result_data.append(this_values + (aggregate_func(agg_values),))
+            result_data.append((*this_values, aggregate_func(agg_values)))
 
         return DataTable(
                 [self.column_names[i] for i in gb_indices] + [agg_column],
@@ -243,7 +243,7 @@ class DataTable:
                 if outer:
                     this_batch = [(None,) * len(self.column_names)]
 
-            if run_other and not other_over:  # pylint: disable=used-before-assignment  # noqa: E501
+            if run_other and not other_over:  # pylint: disable=used-before-assignment
                 key = other_key
                 while other_row[other_key_idx] == other_key:
                     other_batch.append(other_row)
@@ -258,9 +258,10 @@ class DataTable:
 
             for this_batch_row in this_batch:
                 for other_batch_row in other_batch:
-                    result_data.append((key,)
-                            + without(this_batch_row, this_key_idx)
-                            + without(other_batch_row, other_key_idx))
+                    result_data.append((
+                            key,
+                            *without(this_batch_row, this_key_idx),
+                            *without(other_batch_row, other_key_idx)))
 
             if outer:
                 if this_over and other_over:
