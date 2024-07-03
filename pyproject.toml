@@ -56,9 +56,8 @@ pytools = [
 ]
 
 [tool.ruff]
-target-version = "py38"
-
 preview = true
+
 [tool.ruff.lint]
 extend-select = [
     "B",   # flake8-bugbear
