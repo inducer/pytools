@@ -33,6 +33,7 @@ classifiers = [
 dependencies = [
     "platformdirs>=2.2",
     "typing-extensions>=4; python_version<'3.11'",
+    "siphash24>=1.6",
 ]
 
 [project.optional-dependencies]

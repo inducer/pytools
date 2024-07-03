@@ -4,3 +4,4 @@
 - arg: ignored-modules
   val:
   - matplotlib
+  - siphash24
