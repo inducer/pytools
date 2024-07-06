@@ -103,7 +103,7 @@ class SpatialBinaryTreeBucket:
             # No subdivisions yet.
             if len(self.elements) > self.max_elements_per_box:
                 # Too many elements. Need to subdivide.
-                self.all_buckets = []  # pylint:disable=attribute-defined-outside-init
+                self.all_buckets = []
                 self.buckets = make_buckets(
                         self.bottom_left, self.top_right,
                         self.all_buckets,

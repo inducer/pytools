@@ -141,7 +141,7 @@ def _fork_server(sock):
         sock.close()
 
     import os
-    os._exit(0)  # pylint:disable=protected-access
+    os._exit(0)
 
 
 class IndirectForker:
@@ -191,7 +191,7 @@ forker = DirectForker()
 
 
 def enable_prefork():
-    global forker  # pylint:disable=global-statement
+    global forker
 
     if isinstance(forker, IndirectForker):
         return

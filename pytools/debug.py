@@ -55,7 +55,7 @@ class RefDebugQuit(Exception):  # noqa: N818
     pass
 
 
-def refdebug(obj, top_level=True, exclude=()):  # pylint:disable=too-many-locals,too-many-branches,too-many-statements
+def refdebug(obj, top_level=True, exclude=()):
     from types import FrameType
 
     def is_excluded(o):
@@ -154,7 +154,7 @@ def setup_readline():
         try:
             readline.read_history_file(hist_filename)
         except Exception:  # pylint:disable=broad-except
-            # http://docs.python.org/3/howto/pyporting.html#capturing-the-currently-raised-exception  # noqa: E501  pylint:disable=line-too-long
+            # http://docs.python.org/3/howto/pyporting.html#capturing-the-currently-raised-exception  # noqa: E501
             import sys
             e = sys.exc_info()[1]
 

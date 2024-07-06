@@ -1,7 +1,3 @@
-# pylint:  disable=too-many-lines
-# (Yes, it has a point!)
-
-
 __copyright__ = """
 Copyright (C) 2009-2013 Andreas Kloeckner
 Copyright (C) 2020 Matt Wala
@@ -584,7 +580,7 @@ class DependentDictionary:
 
     def __contains__(self, key):
         try:
-            self[key]  # pylint: disable=pointless-statement
+            self[key]
             return True
         except KeyError:
             return False
@@ -707,7 +703,7 @@ def memoize(*args: F, **kwargs: Any) -> F:
     default_key_func: Optional[Callable[..., Any]]
 
     if use_kw:
-        def default_key_func(*inner_args, **inner_kwargs):  # pylint:disable=function-redefined
+        def default_key_func(*inner_args, **inner_kwargs):
             return inner_args, frozenset(inner_kwargs.items())
     else:
         default_key_func = None
@@ -724,15 +720,15 @@ def memoize(*args: F, **kwargs: Any) -> F:
             def wrapper(*args, **kwargs):
                 key = key_func(*args, **kwargs)
                 try:
-                    return func._memoize_dic[key]  # pylint: disable=protected-access
+                    return func._memoize_dic[key]
                 except AttributeError:
                     # _memoize_dic doesn't exist yet.
                     result = func(*args, **kwargs)
-                    func._memoize_dic = {key: result}  # pylint: disable=protected-access
+                    func._memoize_dic = {key: result}
                     return result
                 except KeyError:
                     result = func(*args, **kwargs)
-                    func._memoize_dic[key] = result  # pylint: disable=protected-access
+                    func._memoize_dic[key] = result
                     return result
 
             from functools import update_wrapper
@@ -743,15 +739,15 @@ def memoize(*args: F, **kwargs: Any) -> F:
         def _decorator(func):
             def wrapper(*args):
                 try:
-                    return func._memoize_dic[args]  # pylint: disable=protected-access
+                    return func._memoize_dic[args]
                 except AttributeError:
                     # _memoize_dic doesn't exist yet.
                     result = func(*args)
-                    func._memoize_dic = {args: result}  # pylint:disable=protected-access
+                    func._memoize_dic = {args: result}
                     return result
                 except KeyError:
                     result = func(*args)
-                    func._memoize_dic[args] = result  # pylint: disable=protected-access
+                    func._memoize_dic[args] = result
                     return result
 
             from functools import update_wrapper
@@ -1808,7 +1804,7 @@ def merge_tables(*tables: Table,
 
 # {{{ histogram formatting
 
-def string_histogram(  # pylint: disable=too-many-arguments,too-many-locals
+def string_histogram(
         iterable, min_value=None, max_value=None,
         bin_count=20, width=70, bin_starts=None, use_unicode=True):
     if bin_starts is None:
@@ -1969,7 +1965,6 @@ class CPyUserInterface:
 
 class StderrToStdout:
     def __enter__(self):
-        # pylint: disable=attribute-defined-outside-init
         self.stderr_backup = sys.stderr
         sys.stderr = sys.stdout
 
@@ -2079,7 +2074,7 @@ def invoke_editor(s, filename="edit.txt", descr="the file"):
 
 # {{{ progress bars
 
-class ProgressBar:  # pylint: disable=too-many-instance-attributes
+class ProgressBar:
     """
     .. automethod:: draw
     .. automethod:: progress
@@ -2353,8 +2348,6 @@ class MinRecursionLimit:
         self.min_rec_limit = min_rec_limit
 
     def __enter__(self):
-        # pylint: disable=attribute-defined-outside-init
-
         self.prev_recursion_limit = sys.getrecursionlimit()
         new_limit = max(self.prev_recursion_limit, self.min_rec_limit)
         sys.setrecursionlimit(new_limit)
@@ -2405,7 +2398,7 @@ def download_from_web_if_not_present(url, local_name=None):
 
 # {{{ find git revisions
 
-def find_git_revision(tree_root):  # pylint: disable=too-many-locals
+def find_git_revision(tree_root):
     # Keep this routine self-contained so that it can be copy-pasted into
     # setup.py.
 
@@ -2545,7 +2538,7 @@ def _log_start_if_long(logger, sleep_duration, done_indicator,
                 sleep_duration)
 
 
-class ProcessLogger:  # pylint: disable=too-many-instance-attributes
+class ProcessLogger:
     """Logs the completion time of a (presumably) lengthy process to :mod:`logging`.
     Only uses a high log level if the process took perceptible time.
 
@@ -2557,7 +2550,7 @@ class ProcessLogger:  # pylint: disable=too-many-instance-attributes
 
     default_noisy_level = logging.INFO
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
             self, logger, description,
             silent_level=None, noisy_level=None, long_threshold_seconds=None):
         self.logger = logger
@@ -2616,7 +2609,7 @@ class ProcessLogger:  # pylint: disable=too-many-instance-attributes
 
         self.timer = ProcessTimer()
 
-    def done(  # pylint: disable=keyword-arg-before-vararg
+    def done(
             self, extra_msg=None, *extra_fmt_args):
         self.timer.done()
         self._done_indicator[0] = True
@@ -2747,7 +2740,7 @@ def resolve_name(name):
     if sys.version_info >= (3, 9):
         # use the official version
         import pkgutil
-        return pkgutil.resolve_name(name)  # pylint: disable=no-member
+        return pkgutil.resolve_name(name)
 
     import importlib
 

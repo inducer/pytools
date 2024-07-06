@@ -234,7 +234,6 @@ class KeyBuilder:
 
         if not isinstance(key, type):
             try:
-                # pylint:disable=protected-access
                 object.__setattr__(key, "_pytools_persistent_hash_digest", digest)
             except AttributeError:
                 pass
@@ -544,7 +543,7 @@ class _PersistentDictBase(Mapping[K, V]):
 
             # This is here so we can step through equality comparison to
             # see what is actually non-equal.
-            stored_key == key  # pylint:disable=pointless-statement  # noqa: B015
+            stored_key == key  # noqa: B015
             raise NoSuchEntryCollisionError(key)
 
     def _exec_sql(self, *args: Any) -> sqlite3.Cursor:
