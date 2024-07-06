@@ -117,7 +117,7 @@ def reverse_graph(graph: GraphT[NodeT]) -> GraphT[NodeT]:
 
 # {{{ a_star
 
-def a_star(  # pylint: disable=too-many-locals
+def a_star(
         initial_state: NodeT, goal_state: NodeT, neighbor_map: GraphT[NodeT],
         estimate_remaining_cost: Optional[Callable[[NodeT], float]] = None,
         get_step_cost: Callable[[Any, NodeT], float] = lambda x, y: 1
@@ -129,7 +129,6 @@ def a_star(  # pylint: disable=too-many-locals
     from heapq import heappop, heappush
 
     if estimate_remaining_cost is None:
-        # pylint: disable=function-redefined
         def estimate_remaining_cost(x: NodeT) -> float:
             if x != goal_state:
                 return 1

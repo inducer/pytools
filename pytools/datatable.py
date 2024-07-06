@@ -190,7 +190,7 @@ class DataTable:
 
         Assumes both tables are sorted ascendingly by the column
         by which they are joined.
-        """  # pylint:disable=too-many-locals,too-many-branches
+        """
 
         def without(indexable: Tuple[str, ...], idx: int) -> Tuple[str, ...]:
             return indexable[:idx] + indexable[idx+1:]
@@ -243,7 +243,7 @@ class DataTable:
                 if outer:
                     this_batch = [(None,) * len(self.column_names)]
 
-            if run_other and not other_over:  # pylint: disable=used-before-assignment
+            if run_other and not other_over:
                 key = other_key
                 while other_row[other_key_idx] == other_key:
                     other_batch.append(other_row)

@@ -50,7 +50,7 @@ def test_memoize_method_clear():
     sc.f()
     assert sc.run_count == 1
 
-    sc.f.clear_cache(sc)  # pylint: disable=no-member
+    sc.f.clear_cache(sc)
 
 
 def test_keyed_memoize_method_with_uncached():
@@ -73,7 +73,7 @@ def test_keyed_memoize_method_with_uncached():
     sc.f(18, 19, z=20)
     assert sc.run_count == 2
 
-    sc.f.clear_cache(sc)  # pylint: disable=no-member
+    sc.f.clear_cache(sc)
 
 
 def test_memoize_in():
@@ -190,7 +190,6 @@ def test_memoize_frozen() -> None:
     c0 = FrozenDataclass(10)
     assert c0.double_value() == 20
 
-    # pylint: disable=no-member
     c0.double_value.clear_cache(c0)  # type: ignore[attr-defined]
 
     # }}}
@@ -213,7 +212,6 @@ def test_memoize_frozen() -> None:
     c1 = FrozenClass(10)
     assert c1.double_value() == 20
 
-    # pylint: disable=no-member
     c1.double_value.clear_cache(c1)  # type: ignore[attr-defined]
 
     # }}}
