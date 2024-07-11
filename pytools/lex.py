@@ -38,11 +38,11 @@ class ParseError(RuntimeError):
 
 
 class RE:
-    def __init__(self, s, flags=0):
+    def __init__(self, s: str, flags: int = 0) -> None:
         self.Content = s
         self.RE = re.compile(s, flags)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"RE({self.Content})"
 
 
