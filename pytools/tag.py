@@ -7,7 +7,6 @@ Tag Interface
 .. autoclass:: Taggable
 .. autoclass:: Tag
 .. autoclass:: UniqueTag
-.. autoclass:: IgnoredForEqualityTag
 
 Supporting Functionality
 ------------------------
@@ -22,14 +21,13 @@ Internal stuff that is only here because the documentation tool wants it
 .. class:: TagT
 
     A type variable with lower bound :class:`Tag`.
-
-.. class:: _Self_Taggable
-
-    A type variable with lower bound :class:`Taggable`.
 """
+
+from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import (
+    TYPE_CHECKING,
     Any,
     FrozenSet,
     Iterable,
@@ -39,6 +37,8 @@ from typing import (
     TypeVar,
     Union,
 )
+
+from typing_extensions import Self, dataclass_transform
 
 from pytools import memoize, memoize_method
 
@@ -100,7 +100,7 @@ class DottedName:
         self.name_parts = name_parts
 
     @classmethod
-    def from_class(cls, argcls: Any) -> "DottedName":
+    def from_class(cls, argcls: Any) -> DottedName:
         name_parts = tuple(
                 [str(part) for part in argcls.__module__.split(".")]
                 + [str(argcls.__name__)])
@@ -124,7 +124,12 @@ class DottedName:
 
 # {{{ tag
 
-tag_dataclass = dataclass(init=True, eq=True, frozen=True, repr=True)
+T = TypeVar("T")
+
+
+@dataclass_transform(eq_default=True, frozen_default=True)
+def tag_dataclass(cls: type[T]) -> type[T]:
+    return dataclass(init=True, frozen=True, eq=True, repr=True)(cls)
 
 
 @tag_dataclass
@@ -155,6 +160,7 @@ class Tag:
 
 # {{{ unique tag
 
+@tag_dataclass
 class UniqueTag(Tag):
     """
     A superclass for tags that are unique on each :class:`Taggable`.
@@ -164,25 +170,22 @@ class UniqueTag(Tag):
     set of `tags`. Multiple `UniqueTag` instances of
     different (immediate) subclasses are allowed.
     """
-    pass
 
 # }}}
 
 
 ToTagSetConvertible = Union[Iterable[Tag], Tag, None]
 TagT = TypeVar("TagT", bound="Tag")
-# FIXME: Replace by Self type
-_Self_Taggable = TypeVar("_Self_Taggable", bound="Taggable")
 
 
 # {{{ UniqueTag rules checking
 
 @memoize
-def _immediate_unique_tag_descendants(cls):
+def _immediate_unique_tag_descendants(cls: type[Tag]) -> FrozenSet[type[Tag]]:
     if UniqueTag in cls.__bases__:
         return frozenset([cls])
     else:
-        result = frozenset()
+        result: FrozenSet[type[Tag]] = frozenset()
         for base in cls.__bases__:
             result = result | _immediate_unique_tag_descendants(base)
         return result
@@ -197,14 +200,14 @@ class NonUniqueTagError(ValueError):
     pass
 
 
-def check_tag_uniqueness(tags: FrozenSet[Tag]):
+def check_tag_uniqueness(tags: FrozenSet[Tag]) -> FrozenSet[Tag]:
     """Ensure that *tags* obeys the rules set forth in :class:`UniqueTag`.
     If not, raise :exc:`NonUniqueTagError`. If any *tags* are not
     subclasses of :class:`Tag`, a :exc:`TypeError` will be raised.
 
     :returns: *tags*
     """
-    unique_tag_descendants: Set[Tag] = set()
+    unique_tag_descendants: Set[type[Tag]] = set()
     for tag in tags:
         if not isinstance(tag, Tag):
             raise TypeError(f"'{tag}' is not an instance of pytools.tag.Tag")
@@ -239,9 +242,7 @@ class Taggable:
     """
     Parent class for objects with a `tags` attribute.
 
-    .. attribute:: tags
-
-        A :class:`frozenset` of :class:`Tag` instances
+    .. autoattribute:: tags
 
     .. automethod:: __init__
 
@@ -257,37 +258,20 @@ class Taggable:
     # ReST references in docstrings must be fully qualified, as docstrings may
     # be inherited and appear in different contexts.
 
-    def __init__(self, tags: FrozenSet[Tag] = frozenset()):
-        """
-        Constructor for all objects that possess a `tags` attribute.
+    # type-checking only so that self.tags = ... in subclasses still works
+    if TYPE_CHECKING:
+        @property
+        def tags(self) -> FrozenSet[Tag]:
+            ...
 
-        :arg tags: a :class:`frozenset` of :class:`~pytools.tag.Tag` objects.
-            Tags can be modified via the :meth:`~pytools.tag.Taggable.tagged` and
-            :meth:`~pytools.tag.Taggable.without_tags` routines. Input checking
-            of *tags* should be performed before creating a
-            :class:`~pytools.tag.Taggable` instance, using
-            :func:`~pytools.tag.check_tag_uniqueness`.
-        """
-        self.tags = tags
-
-    def _with_new_tags(self: _Self_Taggable, tags: FrozenSet[Tag]) -> _Self_Taggable:
+    def _with_new_tags(self, tags: FrozenSet[Tag]) -> Self:
         """
         Returns a copy of *self* with the specified tags. This method
         should be overridden by subclasses.
         """
-        from warnings import warn
-        warn(f"_with_new_tags() for {self.__class__} fell back "
-                "to using copy(). This is deprecated and will stop working in "
-                "July of 2022. Instead, override _with_new_tags to specify "
-                "how tags should be applied to an instance.",
-                DeprecationWarning, stacklevel=2)
+        raise NotImplementedError
 
-        # mypy is right: we're not promising this attribute is defined.
-        # Once this deprecation expires, this will go back to being an
-        # abstract method.
-        return self.copy(tags=tags)  # type: ignore[attr-defined]  # pylint: disable=no-member
-
-    def tagged(self: _Self_Taggable, tags: ToTagSetConvertible) -> _Self_Taggable:
+    def tagged(self, tags: ToTagSetConvertible) -> Self:
         """
         Return a copy of *self* with the specified
         tag or tags added to the set of tags. If the resulting set of
@@ -300,9 +284,9 @@ class Taggable:
         return self._with_new_tags(
                 tags=check_tag_uniqueness(normalize_tags(tags) | self.tags))
 
-    def without_tags(self: _Self_Taggable,
+    def without_tags(self,
                      tags: ToTagSetConvertible, verify_existence: bool = True
-                     ) -> _Self_Taggable:
+                     ) -> Self:
         """
         Return a copy of *self* without the specified tags.
 
@@ -340,32 +324,12 @@ class Taggable:
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Taggable):
-            return (self.tags_not_of_type(IgnoredForEqualityTag)
-                    == other.tags_not_of_type(IgnoredForEqualityTag))
+            return self.tags == other.tags
         else:
             return super().__eq__(other)
 
     def __hash__(self) -> int:
-        return hash(self.tags_not_of_type(IgnoredForEqualityTag))
-
-
-# }}}
-
-
-# {{{ IgnoredForEqualityTag
-
-class IgnoredForEqualityTag(Tag):
-    """
-    A superclass for tags that are ignored when testing equality of instances of
-    :class:`Taggable`.
-
-    When testing equality of two instances of :class:`Taggable`, the equality
-    of the ``tags`` of both instances is tested after removing all
-    instances of :class:`IgnoredForEqualityTag`. Instances of
-    :class:`IgnoredForEqualityTag` are removed for hashing instances of
-    :class:`Taggable`.
-    """
-    pass
+        return hash(self.tags)
 
 # }}}
 
@@ -385,7 +349,7 @@ _depr_name_to_replacement_and_obj = {
         }
 
 
-def __getattr__(name):
+def __getattr__(name: str) -> Any:
     replacement_and_obj = _depr_name_to_replacement_and_obj.get(name, None)
     if replacement_and_obj is not None:
         replacement, obj, year = replacement_and_obj
