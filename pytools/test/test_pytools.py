@@ -23,11 +23,13 @@ THE SOFTWARE.
 
 import logging
 import sys
+from dataclasses import dataclass
 from typing import FrozenSet
 
 import pytest
 
 from pytools import Record
+from pytools.tag import tag_dataclass
 
 
 logger = logging.getLogger(__name__)
@@ -173,7 +175,6 @@ def test_memoize_keyfunc():
 
 
 def test_memoize_frozen() -> None:
-    from dataclasses import dataclass
 
     from pytools import memoize_method
 
@@ -506,7 +507,9 @@ def test_tag():
     )
 
     # Need a subclass that defines the copy function in order to test.
+    @tag_dataclass
     class TaggableWithCopy(Taggable):
+        tags: FrozenSet[Tag]
 
         def _with_new_tags(self, tags):
             return TaggableWithCopy(tags)
@@ -688,40 +691,6 @@ def test_unique_name_gen_conflicting_ok():
         ung.add_names({"a"})
 
     ung.add_names({"a", "b", "c"}, conflicting_ok=True)
-
-
-def test_ignoredforequalitytag():
-    from pytools.tag import IgnoredForEqualityTag, Tag, Taggable
-
-    # Need a subclass that defines _with_new_tags in order to test.
-    class TaggableWithNewTags(Taggable):
-
-        def _with_new_tags(self, tags: FrozenSet[Tag]):
-            return TaggableWithNewTags(tags)
-
-    class Eq1(IgnoredForEqualityTag):
-        pass
-
-    class Eq2(IgnoredForEqualityTag):
-        pass
-
-    class Eq3(Tag):
-        pass
-
-    eq1 = TaggableWithNewTags(frozenset([Eq1()]))
-    eq2 = TaggableWithNewTags(frozenset([Eq2()]))
-    eq12 = TaggableWithNewTags(frozenset([Eq1(), Eq2()]))
-    eq3 = TaggableWithNewTags(frozenset([Eq1(), Eq3()]))
-
-    assert eq1 == eq2 == eq12
-    assert eq1 != eq3
-
-    assert eq1.without_tags(Eq1())
-    with pytest.raises(ValueError):
-        eq3.without_tags(Eq2())
-
-    assert hash(eq1) == hash(eq2) == hash(eq12)
-    assert hash(eq1) != hash(eq3)
 
 
 def test_strtobool():

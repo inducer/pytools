@@ -82,7 +82,7 @@ def test_persistent_dict_storage_and_lookup() -> None:
 
         keys = [
                 (randrange(2000)-1000, rand_str(), None,
-                 SomeTag(rand_str()),  # type: ignore[call-arg]
+                 SomeTag(rand_str()),
                     frozenset({"abc", 123}))
                 for i in range(20)]
         values = [randrange(2000) for i in range(20)]
@@ -555,7 +555,7 @@ def test_class_hashing() -> None:
     class TagClass3(Tag):
         s: str
 
-    assert (keyb(TagClass3("foo")) == "cf1a33652cc75b9c")  # type: ignore[call-arg]
+    assert (keyb(TagClass3("foo")) == "cf1a33652cc75b9c")
 
 
 def test_dataclass_hashing() -> None:

@@ -4,4 +4,7 @@ set -ex
 
 mypy --show-error-codes pytools
 
-mypy --strict --follow-imports=silent pytools/datatable.py pytools/persistent_dict.py
+mypy --strict --follow-imports=silent \
+    pytools/tag.py \
+    pytools/datatable.py \
+    pytools/persistent_dict.py
