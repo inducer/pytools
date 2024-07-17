@@ -21,6 +21,13 @@ jobs:
                 pip install ruff
                 ruff check
 
+    typos:
+        name: Typos
+        runs-on: ubuntu-latest
+        steps:
+        -   uses: actions/checkout@v4
+        -   uses: crate-ci/typos@v1
+
     validate_cff:
         name: Validate CITATION.cff
         runs-on: ubuntu-latest
