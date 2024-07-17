@@ -826,7 +826,7 @@ def memoize_method(
     .. versionchanged:: 2021.2
 
         Can memoize methods on classes that do not allow setting attributes
-        (e.g. by overwritting ``__setattr__``), e.g. frozen :mod:`dataclasses`.
+        (e.g. by overwriting ``__setattr__``), e.g. frozen :mod:`dataclasses`.
     """
 
     return memoize_on_first_arg(method,
@@ -905,7 +905,7 @@ class keyed_memoize_method(keyed_memoize_on_first_arg):  # noqa: N801
     .. versionchanged:: 2021.2
 
         Can memoize methods on classes that do not allow setting attributes
-        (e.g. by overwritting ``__setattr__``), e.g. frozen :mod:`dataclasses`.
+        (e.g. by overwriting ``__setattr__``), e.g. frozen :mod:`dataclasses`.
     """
     def _default_cache_dict_name(self, function):
         return intern(f"_memoize_dic_{function.__name__}")
@@ -931,7 +931,7 @@ class memoize_in:  # noqa: N801
     .. versionchanged:: 2021.2.1
 
         Can now use instances of classes as *container* that do not allow
-        setting attributes (e.g. by overwritting ``__setattr__``),
+        setting attributes (e.g. by overwriting ``__setattr__``),
         e.g. frozen :mod:`dataclasses`.
     """
 
@@ -2787,7 +2787,7 @@ def unordered_hash(hash_instance: Any,
     *hash_constructor*, return a hash object whose internal state
     depends on the entries of *iterable*, but not their order. If *hash*
     is the instance returned by evaluating ``hash_constructor()``, then
-    the each entry *i* of the iterable must permit ``hash.upate(i)`` to
+    the each entry *i* of the iterable must permit ``hash.update(i)`` to
     succeed. An example of *hash_constructor* is ``hashlib.sha256``
     from :mod:`hashlib`.  ``hash.digest_size`` must also be defined.
     If *hash_constructor* is not provided, ``hash_instance.name`` is
