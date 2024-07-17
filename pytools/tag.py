@@ -37,6 +37,7 @@ from typing import (
     TypeVar,
     Union,
 )
+from warnings import warn
 
 from typing_extensions import Self, dataclass_transform
 
@@ -244,8 +245,6 @@ class Taggable:
 
     .. autoattribute:: tags
 
-    .. automethod:: __init__
-
     .. automethod:: _with_new_tags
     .. automethod:: tagged
     .. automethod:: without_tags
@@ -254,6 +253,15 @@ class Taggable:
 
     .. versionadded:: 2021.1
     """
+
+    if not TYPE_CHECKING:
+        def __init__(self, tags: FrozenSet[Tag] = frozenset()):
+            warn("The Taggable constructor is deprecated. "
+                 "Subclasses must declare their onwn storage for .tags. "
+                 "The constructor will disappear in 2025.x.",
+                 DeprecationWarning, stacklevel=2)
+
+            self.tags = tags
 
     # ReST references in docstrings must be fully qualified, as docstrings may
     # be inherited and appear in different contexts.
