@@ -683,7 +683,7 @@ def test_datetime_hashing() -> None:
     assert (keyb(datetime.datetime(2020, 1, 1))
             == keyb(datetime.datetime(2020, 1, 1))
             == keyb(datetime.datetime(2020, 1, 1, 0, 0, 0, 0))
-            == "215dbe82add7a55c"
+            == "215dbe82add7a55c"  # spellchecker: disable-line
             )
     assert keyb(datetime.datetime(2020, 1, 1)) != keyb(datetime.datetime(2020, 1, 2))
     assert (keyb(datetime.datetime(2020, 1, 1))

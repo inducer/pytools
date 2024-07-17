@@ -1,6 +1,6 @@
-"""OpenMPI, once intialized, prohibits forking. This helper module
+"""OpenMPI, once initialized, prohibits forking. This helper module
 allows the forking of *one* helper child process before OpenMPI
-initializaton that can do the forking for the fork-challenged
+initialization that can do the forking for the fork-challenged
 parent process.
 
 Since none of this is MPI-specific, it got parked in pytools.

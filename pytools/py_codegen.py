@@ -136,7 +136,7 @@ class PicklableModule:
 # {{{ picklable function
 
 class PicklableFunction:
-    """Convience class wrapping a function in a :class:`PicklableModule`.
+    """Convenience class wrapping a function in a :class:`PicklableModule`.
     """
 
     def __init__(self, module, name):

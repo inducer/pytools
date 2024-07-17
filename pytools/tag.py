@@ -257,7 +257,7 @@ class Taggable:
     if not TYPE_CHECKING:
         def __init__(self, tags: FrozenSet[Tag] = frozenset()):
             warn("The Taggable constructor is deprecated. "
-                 "Subclasses must declare their onwn storage for .tags. "
+                 "Subclasses must declare their own storage for .tags. "
                  "The constructor will disappear in 2025.x.",
                  DeprecationWarning, stacklevel=2)
 
