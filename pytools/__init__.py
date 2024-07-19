@@ -1784,10 +1784,10 @@ def merge_tables(*tables: Table,
                 entry for i, entry in enumerate(row) if i not in skip_columns
                 ])
 
-    alignments = sum([
+    alignments = sum((
         remove_columns(i, tbl._get_alignments())
         for i, tbl in enumerate(tables)
-        ], ())
+        ), ())
     result = Table(alignments=alignments)
 
     for i in range(tables[0].nrows):
