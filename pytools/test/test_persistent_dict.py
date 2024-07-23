@@ -66,6 +66,14 @@ class MyStruct:
     value: int
 
 
+def _has_siphash24() -> bool:
+    try:
+        import siphash24  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
 def test_persistent_dict_storage_and_lookup() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
@@ -548,14 +556,18 @@ def test_class_hashing() -> None:
     assert keyb(TagClass) != keyb(TagClass2)
     assert keyb(TagClass()) != keyb(TagClass2())
 
-    assert keyb(TagClass()) == "7b3e4e66503438f6"
-    assert keyb(TagClass2) == "690b86bbf51aad83"
+    if _has_siphash24():
+        assert keyb(TagClass()) == "7b3e4e66503438f6"
+        assert keyb(TagClass2) == "690b86bbf51aad83"
 
     @tag_dataclass
     class TagClass3(Tag):
         s: str
 
-    assert (keyb(TagClass3("foo")) == "cf1a33652cc75b9c")
+    h = keyb(TagClass3("foo"))
+
+    if _has_siphash24():
+        assert h == "cf1a33652cc75b9c"
 
 
 def test_dataclass_hashing() -> None:
@@ -566,7 +578,8 @@ def test_dataclass_hashing() -> None:
         name: str
         value: int
 
-    assert keyb(MyDC("hi", 1)) == "d1a1079f1c10aa4f"
+    if _has_siphash24():
+        assert keyb(MyDC("hi", 1)) == "d1a1079f1c10aa4f"
 
     assert keyb(MyDC("hi", 1)) == keyb(MyDC("hi", 1))
     assert keyb(MyDC("hi", 1)) != keyb(MyDC("hi", 2))
@@ -590,7 +603,8 @@ def test_attrs_hashing() -> None:
         name: str
         value: int
 
-    assert (keyb(MyAttrs("hi", 1)) == "5b6c5da60eb2bd0f")  # type: ignore[call-arg]
+    if _has_siphash24():
+        assert keyb(MyAttrs("hi", 1)) == "5b6c5da60eb2bd0f"  # type: ignore[call-arg]
 
     assert keyb(MyAttrs("hi", 1)) == keyb(MyAttrs("hi", 1))  # type: ignore[call-arg]
     assert keyb(MyAttrs("hi", 1)) != keyb(MyAttrs("hi", 2))  # type: ignore[call-arg]
@@ -620,8 +634,11 @@ def test_datetime_hashing() -> None:
     # {{{ date
     # No timezone info; date is always naive
     assert (keyb(datetime.date(2020, 1, 1))
-            == keyb(datetime.date(2020, 1, 1))
-            == "1c866ff10ff0d997")
+            == keyb(datetime.date(2020, 1, 1)))
+
+    if _has_siphash24():
+        assert keyb(datetime.date(2020, 1, 1)) == "1c866ff10ff0d997"
+
     assert keyb(datetime.date(2020, 1, 1)) != keyb(datetime.date(2020, 1, 2))
 
     # }}}
@@ -634,8 +651,11 @@ def test_datetime_hashing() -> None:
     assert (keyb(datetime.time(12, 0))
             == keyb(datetime.time(12, 0))
             == keyb(datetime.time(12, 0, 0))
-            == keyb(datetime.time(12, 0, 0, 0))
-            == "e523be74ebc6b227")
+            == keyb(datetime.time(12, 0, 0, 0)))
+
+    if _has_siphash24():
+        assert keyb(datetime.time(12, 0)) == "e523be74ebc6b227"
+
     assert keyb(datetime.time(12, 0)) != keyb(datetime.time(12, 1))
 
     # Aware time
@@ -647,8 +667,10 @@ def test_datetime_hashing() -> None:
 
     assert t1 == t2
     assert (keyb(t1)
-            == keyb(t2)
-            == "2041e7cd5b17b8eb")
+            == keyb(t2))
+
+    if _has_siphash24():
+        assert keyb(t1) == "2041e7cd5b17b8eb"
 
     assert t1 != t3
     assert keyb(t1) != keyb(t3)
@@ -666,8 +688,10 @@ def test_datetime_hashing() -> None:
 
     assert dt1 == dt2
     assert (keyb(dt1)
-            == keyb(dt2)
-            == "8be96b9e739c7d8c")
+            == keyb(dt2))
+
+    if _has_siphash24():
+        assert keyb(dt1) == "8be96b9e739c7d8c"
 
     dt3 = datetime.datetime(2020, 1, 1, 7,
                             tzinfo=datetime.timezone(datetime.timedelta(hours=-4)))
@@ -682,9 +706,12 @@ def test_datetime_hashing() -> None:
 
     assert (keyb(datetime.datetime(2020, 1, 1))
             == keyb(datetime.datetime(2020, 1, 1))
-            == keyb(datetime.datetime(2020, 1, 1, 0, 0, 0, 0))
+            == keyb(datetime.datetime(2020, 1, 1, 0, 0, 0, 0)))
+
+    if _has_siphash24():
+        assert keyb(datetime.datetime(2020, 1, 1)) \
             == "215dbe82add7a55c"  # spellchecker: disable-line
-            )
+
     assert keyb(datetime.datetime(2020, 1, 1)) != keyb(datetime.datetime(2020, 1, 2))
     assert (keyb(datetime.datetime(2020, 1, 1))
             != keyb(datetime.datetime(2020, 1, 1, tzinfo=datetime.timezone.utc)))
@@ -705,8 +732,10 @@ def test_datetime_hashing() -> None:
 
     assert tz2 == tz3
     assert (keyb(tz2)
-            == keyb(tz3)
-            == "5e1d46ab778c7ccf")
+            == keyb(tz3))
+
+    if _has_siphash24():
+        assert keyb(tz2) == "5e1d46ab778c7ccf"
 
     # }}}
 
@@ -836,7 +865,11 @@ def test_hash_function() -> None:
 
     # {{{ global functions
 
-    assert keyb(global_fun) == keyb(global_fun) == "79efd03f9a38ed77"
+    assert keyb(global_fun) == keyb(global_fun)
+
+    if _has_siphash24():
+        assert keyb(global_fun) == "79efd03f9a38ed77"
+
     assert keyb(global_fun) != keyb(global_fun2)
 
     # }}}
@@ -876,7 +909,11 @@ def test_hash_function() -> None:
     def local_fun2():
         pass
 
-    assert keyb(local_fun) == keyb(local_fun) == "adc92e690b62dc2b"
+    assert keyb(local_fun) == keyb(local_fun)
+
+    if _has_siphash24():
+        assert keyb(local_fun) == "adc92e690b62dc2b"
+
     assert keyb(local_fun) != keyb(local_fun2)
 
     # }}}
@@ -891,7 +928,11 @@ def test_hash_function() -> None:
         def method(self):
             pass
 
-    assert keyb(C1.method) == keyb(C1.method) == "af19e056ad7749c4"
+    assert keyb(C1.method) == keyb(C1.method)
+
+    if _has_siphash24():
+        assert keyb(C1.method) == "af19e056ad7749c4"
+
     assert keyb(C1.method) != keyb(C2.method)
 
     # }}}
