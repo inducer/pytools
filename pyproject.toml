@@ -34,7 +34,6 @@ dependencies = [
     "platformdirs>=2.2",
     # for dataclass_transform with frozen_default
     "typing-extensions>=4; python_version<'3.13'",
-    "siphash24>=1.6",
 ]
 
 [project.optional-dependencies]
@@ -45,6 +44,9 @@ test = [
     "mypy",
     "pytest",
     "ruff",
+]
+siphash = [
+    "siphash24>=1.6",
 ]
 
 [project.urls]
