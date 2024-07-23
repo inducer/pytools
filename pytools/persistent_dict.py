@@ -56,8 +56,11 @@ from warnings import warn
 try:
     from siphash24 import siphash13 as _default_hash
 except ImportError:
-    warn("pytools.persistent_dict: unable to import 'siphash24.siphash13', "
-         "falling back to hashlib.sha256", stacklevel=1)
+    warn("Unable to import recommended hash 'siphash24.siphash13', "
+         "falling back to 'hashlib.sha256'. "
+         "Run 'python3 -m pip install siphash24' to install "
+         "the recommended hash.",
+         stacklevel=1)
     from hashlib import sha256 as _default_hash
 
 if TYPE_CHECKING:
