@@ -50,9 +50,15 @@ from typing import (
     TypeVar,
     cast,
 )
+from warnings import warn
 
-from siphash24 import siphash13
 
+try:
+    from siphash24 import siphash13 as _default_hash
+except ImportError:
+    warn("pytools.persistent_dict: unable to import 'siphash24.siphash13', "
+         "falling back to hashlib.sha256", stacklevel=1)
+    from hashlib import sha256 as _default_hash
 
 if TYPE_CHECKING:
     from _typeshed import ReadableBuffer
@@ -161,7 +167,7 @@ class KeyBuilder:
 
     # this exists so that we can (conceivably) switch algorithms at some point
     # down the road
-    new_hash: Callable[..., Hash] = siphash13
+    new_hash: Callable[..., Hash] = _default_hash
 
     def rec(self, key_hash: Hash, key: Any) -> Hash:
         """
@@ -429,7 +435,6 @@ class CollisionWarning(UserWarning):
 def __getattr__(name: str) -> Any:
     if name in ("NoSuchEntryInvalidKeyError",
                 "NoSuchEntryInvalidContentsError"):
-        from warnings import warn
         warn(f"pytools.persistent_dict.{name} has been removed.", stacklevel=2)
         return NoSuchEntryError
 
@@ -506,7 +511,6 @@ class _PersistentDictBase(Mapping[K, V]):
         # https://www.sqlite.org/pragma.html#pragma_synchronous
         if safe_sync is None or safe_sync:
             if safe_sync is None:
-                from warnings import warn
                 warn(f"pytools.persistent_dict '{identifier}': "
                      "enabling safe_sync as default. "
                      "This provides strong protection against data loss, "
@@ -531,7 +535,6 @@ class _PersistentDictBase(Mapping[K, V]):
     def _collision_check(self, key: K, stored_key: K) -> None:
         if stored_key != key:
             # Key collision, oh well.
-            from warnings import warn
             warn(f"{self.identifier}: key collision in cache at "
                     f"'{self.container_dir}' -- these are sufficiently unlikely "
                     "that they're often indicative of a broken hash key "
@@ -571,7 +574,6 @@ class _PersistentDictBase(Mapping[K, V]):
                             and not e.sqlite_errorcode == sqlite3.SQLITE_BUSY):
                         raise
                     if n % 20 == 0:
-                        from warnings import warn
                         warn(f"PersistentDict: database '{self.filename}' busy, {n} "
                              "retries", stacklevel=3)
                 else:
