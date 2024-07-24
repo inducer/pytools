@@ -39,7 +39,11 @@ from typing import (
 )
 from warnings import warn
 
-from typing_extensions import Self, dataclass_transform
+
+try:
+    from typing import Self, dataclass_transform
+except ImportError:
+    from typing_extensions import Self, dataclass_transform
 
 from pytools import memoize, memoize_method
 
