@@ -40,10 +40,16 @@ from typing import (
 from warnings import warn
 
 
-try:
-    from typing import Self, dataclass_transform
-except ImportError:
+if TYPE_CHECKING:
+    # NOTE: mypy seems to be confused by the `try.. except` below when called with
+    #   python -m mypy --python-version 3.8 ...
+    # see https://github.com/python/mypy/issues/14220
     from typing_extensions import Self, dataclass_transform
+else:
+    try:
+        from typing import Self, dataclass_transform
+    except ImportError:
+        from typing_extensions import Self, dataclass_transform
 
 from pytools import memoize, memoize_method
 
