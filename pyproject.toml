@@ -113,6 +113,8 @@ lines-after-imports = 2
 python_version = "3.8"
 ignore_missing_imports = true
 warn_unused_ignores = true
+# TODO: enable this at some point
+# check_untyped_defs = true
 
 [tool.typos.default]
 extend-ignore-re = [
