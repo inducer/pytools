@@ -100,7 +100,7 @@ class DottedName:
     .. automethod:: from_class
     """
 
-    def __init__(self, name_parts: Tuple[str, ...]):
+    def __init__(self, name_parts: Tuple[str, ...]) -> None:
         if len(name_parts) == 0:
             raise ValueError("empty name parts")
 
