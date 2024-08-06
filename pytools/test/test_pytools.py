@@ -497,7 +497,7 @@ def test_obj_array_vectorize(c=1):
 # }}}
 
 
-def test_tag():
+def test_tag() -> None:
     from pytools.tag import (
         NonUniqueTagError,
         Tag,
@@ -552,7 +552,7 @@ def test_tag():
     # a subclass of Tag
     with pytest.raises(TypeError):
         check_tag_uniqueness(frozenset((
-            "I am not a tag", best_in_show_ribbon,
+            "I am not a tag", best_in_show_ribbon,  # type: ignore[arg-type]
             blue_ribbon, red_ribbon)))
 
     # Test that instantiation succeeds if there are multiple instances
@@ -583,7 +583,7 @@ def test_tag():
 
     # Test that tagged() fails if tags are not a FrozenSet of Tags
     with pytest.raises(TypeError):
-        t1.tagged(tags=frozenset((1,)))
+        t1.tagged(tags=frozenset((1,)))  # type: ignore[arg-type]
 
     # Test without_tags() function
     t4 = t2.without_tags(red_ribbon)

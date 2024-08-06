@@ -77,6 +77,10 @@ else:
 
 logger = logging.getLogger(__name__)
 
+# NOTE: not always available so they get hardcoded here
+SQLITE_BUSY = getattr(sqlite3, "SQLITE_BUSY", 5)
+SQLITE_CONSTRAINT_PRIMARYKEY = getattr(sqlite3, "SQLITE_CONSTRAINT_PRIMARYKEY", 1555)
+
 __doc__ = """
 Persistent Hashing and Persistent Dictionaries
 ==============================================
@@ -574,7 +578,7 @@ class _PersistentDictBase(Mapping[K, V]):
                 except sqlite3.OperationalError as e:
                     # If the database is busy, retry
                     if (hasattr(e, "sqlite_errorcode")
-                            and not e.sqlite_errorcode == sqlite3.SQLITE_BUSY):
+                        and e.sqlite_errorcode != SQLITE_BUSY):
                         raise
                     if n % 20 == 0:
                         warn(f"PersistentDict: database '{self.filename}' busy, {n} "
@@ -721,7 +725,7 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
                 self._exec_sql("INSERT INTO dict VALUES (?, ?)", (keyhash, v))
             except sqlite3.IntegrityError as e:
                 if hasattr(e, "sqlite_errorcode"):
-                    if e.sqlite_errorcode == sqlite3.SQLITE_CONSTRAINT_PRIMARYKEY:
+                    if e.sqlite_errorcode == SQLITE_CONSTRAINT_PRIMARYKEY:
                         raise ReadOnlyEntryError("WriteOncePersistentDict, "
                                                  "tried overwriting key") from e
                     else:

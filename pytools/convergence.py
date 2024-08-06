@@ -75,7 +75,7 @@ class EOCRecorder:
             gliding_mean = size
 
         data_points = size - gliding_mean + 1
-        result = np.zeros((data_points, 2), float)
+        result: np.ndarray = np.zeros((data_points, 2), float)
         for i in range(data_points):
             result[i, 0], result[i, 1] = estimate_order_of_convergence(
                 abscissae[i:i+gliding_mean], errors[i:i+gliding_mean])
