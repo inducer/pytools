@@ -36,6 +36,7 @@ from typing import (
     Any,
     Callable,
     ClassVar,
+    Collection,
     Dict,
     Generic,
     Hashable,
@@ -2259,7 +2260,7 @@ class UniqueNameGenerator:
     .. automethod:: __call__
     """
     def __init__(self,
-            existing_names: Optional[Set[str]] = None,
+            existing_names: Optional[Collection[str]] = None,
             forced_prefix: str = ""):
         """
         Create a new :class:`UniqueNameGenerator`.
@@ -2271,7 +2272,7 @@ class UniqueNameGenerator:
         if existing_names is None:
             existing_names = set()
 
-        self.existing_names = existing_names.copy()
+        self.existing_names = set(existing_names)
         self.forced_prefix = forced_prefix
         self.prefix_to_counter: Dict[str, int] = {}
 
