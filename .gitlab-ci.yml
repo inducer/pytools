@@ -41,7 +41,7 @@ Pytest without Numpy:
 #   except:
 #   - tags
 
-Flake8:
+Ruff:
   script:
   - pipx install ruff
   - ruff check
