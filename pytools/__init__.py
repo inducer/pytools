@@ -1054,11 +1054,11 @@ def monkeypatch_class(_name, bases, namespace):
 # {{{ generic utilities
 
 def add_tuples(t1, t2):
-    return tuple([t1v + t2v for t1v, t2v in zip(t1, t2)])
+    return tuple(t1v + t2v for t1v, t2v in zip(t1, t2))
 
 
 def negate_tuple(t1):
-    return tuple([-t1v for t1v in t1])
+    return tuple(-t1v for t1v in t1)
 
 
 def shift(vec, dist):
@@ -1609,7 +1609,7 @@ class Table:
                     f"tried to add a row with {len(row)} columns to "
                     f"a table with {self.ncolumns} columns")
 
-        self.rows.append(tuple([str(i) for i in row]))
+        self.rows.append(tuple(str(i) for i in row))
 
     def _get_alignments(self) -> Tuple[str, ...]:
         # NOTE: If not all alignments were specified, extend alignments with the
@@ -1619,9 +1619,9 @@ class Table:
                 )
 
     def _get_column_widths(self, rows) -> Tuple[int, ...]:
-        return tuple([
+        return tuple(
             max(len(row[i]) for row in rows) for i in range(self.ncolumns)
-            ])
+            )
 
     def __str__(self) -> str:
         """
@@ -1678,7 +1678,7 @@ class Table:
             # Pipe symbols ('|') must be replaced
             return cell.replace("|", "\\|")
 
-        rows = [tuple([escape(cell) for cell in row]) for row in self.rows]
+        rows = [tuple(escape(cell) for cell in row) for row in self.rows]
         alignments = self._get_alignments()
         col_widths = self._get_column_widths(rows)
 
@@ -1788,9 +1788,9 @@ def merge_tables(*tables: Table,
         if i == 0 or skip_columns is None:
             return row
         else:
-            return tuple([
+            return tuple(
                 entry for i, entry in enumerate(row) if i not in skip_columns
-                ])
+                )
 
     alignments = sum((
         remove_columns(i, tbl._get_alignments())

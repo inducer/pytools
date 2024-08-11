@@ -176,7 +176,7 @@ def stringify_eocs(*eocs: EOCRecorder,
                 f"{len(eocs)} EOCRecorder instances")
 
     if names is None:
-        names = tuple([f"{error_label} {i}" for i in range(len(eocs))])
+        names = tuple(f"{error_label} {i}" for i in range(len(eocs)))
 
     from pytools import merge_tables
     tbl = merge_tables(*[eoc._to_table(
