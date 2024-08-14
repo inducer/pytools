@@ -766,7 +766,7 @@ def test_typedump():
 
 
 def test_unique():
-    from pytools import unique
+    from pytools import unique, unique_difference, unique_intersection, unique_union
 
     assert list(unique([1, 2, 1])) == [1, 2]
     assert tuple(unique((1, 2, 1))) == (1, 2)
@@ -774,14 +774,27 @@ def test_unique():
     assert list(range(1000)) == list(unique(range(1000)))
     assert list(unique(list(range(1000)) + list(range(1000)))) == list(range(1000))
 
-    assert next(unique([1, 2, 1, 3])) == 1
-    assert next(unique([]), None) is None
-
     # Also test strings since their ordering would be thrown off by
     # set-based 'unique' implementations.
-    assert list(unique(["A", "B", "A"])) == ["A", "B"]
-    assert tuple(unique(("A", "B", "A"))) == ("A", "B")
-    assert next(unique(["A", "B", "A", "C"])) == "A"
+    assert list(unique(["a", "b", "a"])) == ["a", "b"]
+    assert tuple(unique(("a", "b", "a"))) == ("a", "b")
+
+    assert list(unique_difference(["a", "b", "c"], ["b", "c", "d"])) == ["a"]
+    assert list(unique_difference(["a", "b", "c"], ["a", "b", "c", "d"])) == []
+    assert list(unique_difference(["a", "b", "c"], ["a"], ["b"], ["c"])) == []
+
+    assert list(unique_intersection(["a", "b", "a"], ["b", "c", "a"])) == ["a", "b"]
+    assert list(unique_intersection(["a", "b", "a"], ["d", "c", "e"])) == []
+
+    assert list(unique_union(["a", "b", "a"], ["b", "c", "b"])) == ["a", "b", "c"]
+    assert list(unique_union(
+        ["a", "b", "a"], ["b", "c", "b"], ["c", "d", "c"])) == ["a", "b", "c", "d"]
+    assert list(unique(["a", "b", "a"])) == \
+        list(unique_union(["a", "b", "a"])) == ["a", "b"]
+
+    assert list(unique_intersection()) == []
+    assert list(unique_difference()) == []
+    assert list(unique_union()) == []
 
 
 # This class must be defined globally to be picklable
