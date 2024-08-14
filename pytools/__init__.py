@@ -41,7 +41,6 @@ from typing import (
     Generic,
     Hashable,
     Iterable,
-    Iterator,
     List,
     Mapping,
     Optional,
@@ -211,10 +210,16 @@ String utilities
 .. autofunction:: strtobool
 .. autofunction:: to_identifier
 
-Sequence utilities
-------------------
+Set-like functions for iterables
+--------------------------------
+
+These functions provide set-like operations on iterables. In contrast to
+Python's built-in set type, they maintain the internal order of elements.
 
 .. autofunction:: unique
+.. autofunction:: unique_difference
+.. autofunction:: unique_intersection
+.. autofunction:: unique_union
 
 Type Variables Used
 -------------------
@@ -2991,11 +2996,55 @@ def to_identifier(s: str) -> str:
 
 # {{{ unique
 
-def unique(seq: Iterable[T]) -> Iterator[T]:
-    """Yield unique elements in *seq*, removing all duplicates. The internal
+def unique(seq: Iterable[T]) -> Collection[T]:
+    """Return unique elements in *seq*, removing all duplicates. The internal
     order of the elements is preserved. See also
     :func:`itertools.groupby` (which removes consecutive duplicates)."""
-    return iter(dict.fromkeys(seq))
+    return dict.fromkeys(seq)
+
+
+def unique_difference(*args: Iterable[T]) -> Collection[T]:
+    r"""Return unique elements that are in the first iterable in *\*args* but not
+    in any of the others. The internal order of the elements is preserved."""
+    if not args:
+        return []
+
+    res = dict.fromkeys(args[0])
+    for seq in args[1:]:
+        for item in seq:
+            if item in res:
+                del res[item]
+
+    return res
+
+
+def unique_intersection(*args: Iterable[T]) -> Collection[T]:
+    r"""Return unique elements that are common to all iterables in *\*args*.
+    The internal order of the elements is preserved."""
+    if not args:
+        return []
+
+    res = dict.fromkeys(args[0])
+    for seq in args[1:]:
+        seq = set(seq)
+        res = {item: None for item in res if item in seq}
+
+    return res
+
+
+def unique_union(*args: Iterable[T]) -> Collection[T]:
+    r"""Return unique elements that are in any iterable in *\*args*.
+    The internal order of the elements is preserved."""
+    if not args:
+        return []
+
+    res: Dict[T, None] = {}
+    for seq in args:
+        for item in seq:
+            if item not in res:
+                res[item] = None
+
+    return res
 
 # }}}
 
