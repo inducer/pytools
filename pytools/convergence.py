@@ -67,7 +67,7 @@ class EOCRecorder:
 
         # NOTE: in case any of the errors are exactly 0.0, which
         # can give NaNs in `estimate_order_of_convergence`
-        emax = np.amax(errors)
+        emax: float = np.amax(errors)
         errors += (1 if emax == 0 else emax) * np.finfo(errors.dtype).eps
 
         size = len(abscissae)
@@ -82,7 +82,8 @@ class EOCRecorder:
         return result
 
     def order_estimate(self) -> float:
-        return self.estimate_order_of_convergence()[0, 1]
+        from typing import cast
+        return cast(float, self.estimate_order_of_convergence()[0, 1])
 
     def max_error(self) -> float:
         return max(err for absc, err in self.history)
