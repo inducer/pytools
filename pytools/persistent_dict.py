@@ -53,6 +53,10 @@ from typing import (
 from warnings import warn
 
 
+class RecommendedHashNotFoundWarning(UserWarning):
+    pass
+
+
 try:
     from siphash24 import siphash13 as _default_hash
 except ImportError:
@@ -60,7 +64,7 @@ except ImportError:
          "falling back to 'hashlib.sha256'. "
          "Run 'python3 -m pip install siphash24' to install "
          "the recommended hash.",
-         stacklevel=1)
+         RecommendedHashNotFoundWarning, stacklevel=1)
     from hashlib import sha256 as _default_hash
 
 if TYPE_CHECKING:
