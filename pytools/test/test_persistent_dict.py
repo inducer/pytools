@@ -432,8 +432,12 @@ def test_scalar_hashing() -> None:
     assert keyb(np.int32(1)) == keyb(np.int32(1))
     assert keyb(np.int32(2)) != keyb(np.int32(1))
     assert keyb(np.int64(1)) == keyb(np.int64(1))
-    assert keyb(1) == keyb(np.int64(1))
+    assert keyb(1) != keyb(np.int64(1))
     assert keyb(1) != keyb(np.int32(1))
+
+    assert keyb(1) == keyb("1")
+    assert keyb(1.0) != keyb("1.0")  # '1.0' uses hex representation
+    assert keyb(1+1j) == keyb("(1+1j)")
 
     assert keyb(np.longlong(1)) == keyb(np.longlong(1))
 
@@ -566,7 +570,7 @@ def test_dataclass_hashing() -> None:
         name: str
         value: int
 
-    assert keyb(MyDC("hi", 1)) == "d1a1079f1c10aa4f"
+    assert keyb(MyDC("hi", 1)) == "72c25f5d0ac2bda7"
 
     assert keyb(MyDC("hi", 1)) == keyb(MyDC("hi", 1))
     assert keyb(MyDC("hi", 1)) != keyb(MyDC("hi", 2))
@@ -590,7 +594,7 @@ def test_attrs_hashing() -> None:
         name: str
         value: int
 
-    assert (keyb(MyAttrs("hi", 1)) == "5b6c5da60eb2bd0f")  # type: ignore[call-arg]
+    assert (keyb(MyAttrs("hi", 1)) == "6e8bfc4394f82985")  # type: ignore[call-arg]
 
     assert keyb(MyAttrs("hi", 1)) == keyb(MyAttrs("hi", 1))  # type: ignore[call-arg]
     assert keyb(MyAttrs("hi", 1)) != keyb(MyAttrs("hi", 2))  # type: ignore[call-arg]
