@@ -6,5 +6,6 @@ mypy --show-error-codes pytools
 
 mypy --strict --follow-imports=silent \
     pytools/tag.py \
+    pytools/graph.py \
     pytools/datatable.py \
     pytools/persistent_dict.py
