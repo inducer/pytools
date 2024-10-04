@@ -439,6 +439,9 @@ def test_scalar_hashing() -> None:
     assert keyb(1.0) != keyb("1.0")  # '1.0' uses hex representation
     assert keyb(1+1j) == keyb("(1+1j)")
 
+    assert keyb(np.float64(1.0)) != keyb(1.0)
+    assert keyb(np.complex128(1.0+2.0j)) != keyb(1.0+2.0j)
+
     assert keyb(np.longlong(1)) == keyb(np.longlong(1))
 
     assert keyb(np.float16(1.1)) == keyb(np.float16(1.1))
