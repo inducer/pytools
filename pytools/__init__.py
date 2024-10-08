@@ -32,7 +32,6 @@ import sys
 from functools import reduce, wraps
 from sys import intern
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     ClassVar,
@@ -52,22 +51,7 @@ from typing import (
     Union,
 )
 
-
-if TYPE_CHECKING:
-    # NOTE: mypy seems to be confused by the `try.. except` below when called with
-    #   python -m mypy --python-version 3.8 ...
-    # see https://github.com/python/mypy/issues/14220
-    from typing_extensions import Concatenate, ParamSpec, SupportsIndex
-else:
-    try:
-        from typing import Concatenate, SupportsIndex
-    except ImportError:
-        from typing_extensions import Concatenate, SupportsIndex
-
-    try:
-        from typing import ParamSpec
-    except ImportError:
-        from typing_extensions import ParamSpec  # type: ignore[assignment]
+from typing_extensions import Concatenate, ParamSpec, SupportsIndex
 
 
 # These are deprecated and will go away in 2022.
