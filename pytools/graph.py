@@ -69,7 +69,6 @@ Type Variables Used
 
 from dataclasses import dataclass
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     Collection,
@@ -89,17 +88,7 @@ from typing import (
     TypeVar,
 )
 
-
-if TYPE_CHECKING:
-    # NOTE: mypy seems to be confused by the `try.. except` below when called with
-    #   python -m mypy --python-version 3.8 ...
-    # see https://github.com/python/mypy/issues/14220
-    from typing_extensions import TypeAlias
-else:
-    try:
-        from typing import TypeAlias
-    except ImportError:
-        from typing_extensions import TypeAlias
+from typing_extensions import TypeAlias
 
 
 NodeT = TypeVar("NodeT", bound=Hashable)
