@@ -950,7 +950,7 @@ class memoize_in:  # noqa: N801
             try:
                 return self.cache_dict[args]
             except KeyError:
-                result = inner(*args)
+                result = inner(*args, **kwargs)
                 self.cache_dict[args] = result
                 return result
 
@@ -984,12 +984,12 @@ class keyed_memoize_in(Generic[P, R]):  # noqa: N801
         @wraps(inner)
         def new_inner(*args: P.args, **kwargs: P.kwargs) -> R:
             assert not kwargs
-            key = self.key(*args)
+            key = self.key(*args, **kwargs)
 
             try:
                 return self.cache_dict[key]
             except KeyError:
-                result = inner(*args)
+                result = inner(*args, **kwargs)
                 self.cache_dict[key] = result
                 return result
 
