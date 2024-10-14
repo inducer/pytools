@@ -258,7 +258,7 @@ class CycleError(Exception):
 
 
 class _SupportsLT(Protocol):
-    def __lt__(self, other: object) -> bool:
+    def __lt__(self, other: Any) -> bool:
         ...
 
 
@@ -278,9 +278,10 @@ class _HeapEntry(Generic[NodeT]):
         return self.key < other.key
 
 
-def compute_topological_order(graph: GraphT[NodeT],
-                              key: Optional[Callable[[NodeT], Any]] = None) \
-                              -> List[NodeT]:
+def compute_topological_order(
+        graph: GraphT[NodeT],
+        key: Optional[Callable[[NodeT], _SupportsLT]] = None,
+        ) -> List[NodeT]:
     """Compute a topological order of nodes in a directed graph.
 
     :arg key: A custom key function may be supplied to determine the order in
