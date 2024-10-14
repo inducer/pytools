@@ -28,7 +28,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-
 __doc__ = """
 Graph Algorithms
 ================
@@ -53,6 +52,10 @@ Graph Algorithms
 
 Type Variables Used
 -------------------
+
+.. class:: _SupportsLT
+
+    A :class:`~typing.Protocol` for `__lt__` support.
 
 .. class:: NodeT
 
