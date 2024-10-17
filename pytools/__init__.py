@@ -1553,26 +1553,35 @@ a_star = MovedFunctionDeprecationWrapper(a_star_moved)
 class Table:
     """An ASCII table generator.
 
-    .. attribute:: nrows
-    .. attribute:: ncolumns
+    .. property:: nrows
 
-    .. attribute:: alignments
+        The number of rows currently in the table.
 
-        A :class:`tuple` of alignments of each column: ``"l"``, ``"c"``, or ``"r"``,
-        for left, center, and right alignment, respectively). Columns which
-        have no alignment specifier will use the last specified alignment. For
-        example, with ``alignments=("l", "r")``, the third and all following
-        columns will use right alignment.
+    .. property:: ncolumns
 
+        The number of columns currently in the table.
+
+    .. automethod:: __init__
     .. automethod:: add_row
 
     .. automethod:: __str__
     .. automethod:: github_markdown
     .. automethod:: csv
     .. automethod:: latex
+    .. automethod:: raw
     """
 
     def __init__(self, alignments: Optional[Tuple[str, ...]] = None) -> None:
+        """Create a new :class:`Table`.
+
+        :arg alignments: A :class:`tuple` of alignments of each column:
+            ``"l"``, ``"c"``, or ``"r"``, for left, center, and right
+            alignment, respectively). Columns which have no alignment specifier
+            will use the last specified alignment. For example, with
+            ``alignments=("l", "r")``, the third and all following
+            columns will use right alignment.
+        """
+
         if alignments is None:
             alignments = ("l",)
         else:
@@ -1593,6 +1602,7 @@ class Table:
         return len(self.rows[0])
 
     def add_row(self, row: Tuple[Any, ...]) -> None:
+        """Add *row* to the table."""
         if self.rows and len(row) != self.ncolumns:
             raise ValueError(
                     f"tried to add a row with {len(row)} columns to "
