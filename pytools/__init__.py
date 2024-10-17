@@ -1756,6 +1756,38 @@ class Table:
 
         return "\n".join(lines)
 
+    def raw(self) -> str:
+        """Returns a string representation of the table without any formatting.
+
+        .. doctest::
+
+            >>> tbl = Table()
+            >>> tbl.add_row([0, "skipped"])
+            >>> tbl.add_row([1111, "apple"])
+            >>> tbl.add_row([2, "pear"])
+            >>> print(tbl.raw())
+            0    skipped
+            1111 apple
+            2    pear
+        """
+        if not self.rows:
+            return ""
+
+        alignments = self._get_alignments()
+        col_widths = self._get_column_widths(self.rows)
+
+        lines = [" ".join([
+            cell.center(col_width) if align == "c"
+            else cell.ljust(col_width) if align == "l"
+            else cell.rjust(col_width)
+            for cell, col_width, align in zip(row, col_widths, alignments)])
+            for row in self.rows]
+
+        # Remove the extra space added by the last cell
+        lines = [line.rstrip() for line in lines]
+
+        return "\n".join(lines)
+
 
 def merge_tables(*tables: Table,
         skip_columns: Optional[Tuple[int, ...]] = None) -> Table:
