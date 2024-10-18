@@ -1568,7 +1568,7 @@ class Table:
     .. automethod:: github_markdown
     .. automethod:: csv
     .. automethod:: latex
-    .. automethod:: raw
+    .. automethod:: text_without_markup
     """
 
     def __init__(self, alignments: Optional[Tuple[str, ...]] = None) -> None:
@@ -1766,17 +1766,17 @@ class Table:
 
         return "\n".join(lines)
 
-    def raw(self) -> str:
-        """Returns a string representation of the table without any formatting.
+    def text_without_markup(self) -> str:
+        """Returns a string representation of the table without markup.
 
         .. doctest::
 
             >>> tbl = Table()
-            >>> tbl.add_row([0, "skipped"])
+            >>> tbl.add_row([0, "orange"])
             >>> tbl.add_row([1111, "apple"])
             >>> tbl.add_row([2, "pear"])
-            >>> print(tbl.raw())
-            0    skipped
+            >>> print(tbl.text_without_markup())
+            0    orange
             1111 apple
             2    pear
         """
