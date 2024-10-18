@@ -1553,26 +1553,30 @@ a_star = MovedFunctionDeprecationWrapper(a_star_moved)
 class Table:
     """An ASCII table generator.
 
-    .. attribute:: nrows
-    .. attribute:: ncolumns
-
-    .. attribute:: alignments
-
-        A :class:`tuple` of alignments of each column: ``"l"``, ``"c"``, or ``"r"``,
-        for left, center, and right alignment, respectively). Columns which
-        have no alignment specifier will use the last specified alignment. For
-        example, with ``alignments=("l", "r")``, the third and all following
-        columns will use right alignment.
-
+    .. automethod:: __init__
     .. automethod:: add_row
+
+    .. autoproperty:: nrows
+    .. autoproperty:: ncolumns
 
     .. automethod:: __str__
     .. automethod:: github_markdown
     .. automethod:: csv
     .. automethod:: latex
+    .. automethod:: text_without_markup
     """
 
     def __init__(self, alignments: Optional[Tuple[str, ...]] = None) -> None:
+        """Create a new :class:`Table`.
+
+        :arg alignments: A :class:`tuple` of alignments of each column:
+            ``"l"``, ``"c"``, or ``"r"``, for left, center, and right
+            alignment, respectively). Columns which have no alignment specifier
+            will use the last specified alignment. For example, with
+            ``alignments=("l", "r")``, the third and all following
+            columns will use right alignment.
+        """
+
         if alignments is None:
             alignments = ("l",)
         else:
@@ -1586,13 +1590,17 @@ class Table:
 
     @property
     def nrows(self) -> int:
+        """The number of rows currently in the table."""
         return len(self.rows)
 
     @property
     def ncolumns(self) -> int:
+        """The number of columns currently in the table."""
         return len(self.rows[0])
 
     def add_row(self, row: Tuple[Any, ...]) -> None:
+        """Add *row* to the table. Note that all rows must have the same number
+        of columns."""
         if self.rows and len(row) != self.ncolumns:
             raise ValueError(
                     f"tried to add a row with {len(row)} columns to "
@@ -1753,6 +1761,38 @@ class Table:
             lines.append(fr"{' & '.join(row)} \\")
             if row_nr in hline_after:
                 lines.append(r"\hline")
+
+        return "\n".join(lines)
+
+    def text_without_markup(self) -> str:
+        """Returns a string representation of the table without markup.
+
+        .. doctest::
+
+            >>> tbl = Table()
+            >>> tbl.add_row([0, "orange"])
+            >>> tbl.add_row([1111, "apple"])
+            >>> tbl.add_row([2, "pear"])
+            >>> print(tbl.text_without_markup())
+            0    orange
+            1111 apple
+            2    pear
+        """
+        if not self.rows:
+            return ""
+
+        alignments = self._get_alignments()
+        col_widths = self._get_column_widths(self.rows)
+
+        lines = [" ".join([
+            cell.center(col_width) if align == "c"
+            else cell.ljust(col_width) if align == "l"
+            else cell.rjust(col_width)
+            for cell, col_width, align in zip(row, col_widths, alignments)])
+            for row in self.rows]
+
+        # Remove the extra space added by the last cell
+        lines = [line.rstrip() for line in lines]
 
         return "\n".join(lines)
 
