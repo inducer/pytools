@@ -1553,12 +1553,11 @@ a_star = MovedFunctionDeprecationWrapper(a_star_moved)
 class Table:
     """An ASCII table generator.
 
-    .. autoproperty:: nrows
-
-    .. autoproperty:: ncolumns
-
     .. automethod:: __init__
     .. automethod:: add_row
+
+    .. autoproperty:: nrows
+    .. autoproperty:: ncolumns
 
     .. automethod:: __str__
     .. automethod:: github_markdown
@@ -1591,16 +1590,17 @@ class Table:
 
     @property
     def nrows(self) -> int:
-        """The number of rows in the table."""
+        """The number of rows currently in the table."""
         return len(self.rows)
 
     @property
     def ncolumns(self) -> int:
-        """The number of columns in the table."""
+        """The number of columns currently in the table."""
         return len(self.rows[0])
 
     def add_row(self, row: Tuple[Any, ...]) -> None:
-        """Add *row* to the table."""
+        """Add *row* to the table. Note that all rows must have the same number
+        of columns."""
         if self.rows and len(row) != self.ncolumns:
             raise ValueError(
                     f"tried to add a row with {len(row)} columns to "
