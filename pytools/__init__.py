@@ -1553,13 +1553,9 @@ a_star = MovedFunctionDeprecationWrapper(a_star_moved)
 class Table:
     """An ASCII table generator.
 
-    .. property:: nrows
+    .. autoproperty:: nrows
 
-        The number of rows currently in the table.
-
-    .. property:: ncolumns
-
-        The number of columns currently in the table.
+    .. autoproperty:: ncolumns
 
     .. automethod:: __init__
     .. automethod:: add_row
@@ -1595,10 +1591,12 @@ class Table:
 
     @property
     def nrows(self) -> int:
+        """The number of rows in the table."""
         return len(self.rows)
 
     @property
     def ncolumns(self) -> int:
+        """The number of columns in the table."""
         return len(self.rows[0])
 
     def add_row(self, row: Tuple[Any, ...]) -> None:
