@@ -1,5 +1,4 @@
 import time
-from typing import List, Optional
 
 from pytools import DependentDictionary, Reference
 
@@ -7,7 +6,7 @@ from pytools import DependentDictionary, Reference
 class StopWatch:
     def __init__(self) -> None:
         self.Elapsed = 0.0
-        self.LastStart: Optional[float] = None
+        self.LastStart: float | None = None
 
     def start(self) -> "StopWatch":
         assert self.LastStart is None
@@ -57,7 +56,7 @@ class EtaEstimator:
         self.total_steps = total_steps
         assert total_steps > 0
 
-    def estimate(self, done: int) -> Optional[float]:
+    def estimate(self, done: int) -> float | None:
         fraction_done = done / self.total_steps
         time_spent = self.stopwatch.elapsed()
 
@@ -72,7 +71,7 @@ def print_job_summary() -> None:
         print(key, " " * (50 - len(key)), value)
 
 
-HIDDEN_JOBS: List[str] = []
-VISIBLE_JOBS: List[str] = []
+HIDDEN_JOBS: list[str] = []
+VISIBLE_JOBS: list[str] = []
 JOB_TIMES = DependentDictionary(lambda x: 0)
 PRINT_JOBS = Reference(True)

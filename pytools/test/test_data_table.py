@@ -70,7 +70,7 @@ def test_aggregate():
 
 def test_aggregate_2():
     from pytools.datatable import DataTable
-    tbl = DataTable(["step", "value"], list(zip(list(range(20)), list(range(20)))))
+    tbl = DataTable(["step", "value"], list(zip(range(20), range(20), strict=True)))
     agg = tbl.aggregated(["step"], "value", max)
     assert agg.column_data("step") == list(range(20))
     assert agg.column_data("value") == list(range(20))

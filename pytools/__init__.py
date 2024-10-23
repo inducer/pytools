@@ -25,33 +25,20 @@ THE SOFTWARE.
 
 import builtins
 import logging
-import math
 import operator
 import re
 import sys
+from collections.abc import Callable, Collection, Hashable, Iterable, Mapping, Sequence
 from functools import reduce, wraps
 from sys import intern
 from typing import (
     Any,
-    Callable,
     ClassVar,
-    Collection,
-    Dict,
+    Concatenate,
     Generic,
-    Hashable,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    Type,
+    ParamSpec,
     TypeVar,
-    Union,
 )
-
-from typing_extensions import Concatenate, ParamSpec, SupportsIndex
 
 
 # These are deprecated and will go away in 2022.
@@ -67,8 +54,6 @@ Math
 ----
 
 .. autofunction:: levi_civita
-.. autofunction:: perm
-.. autofunction:: comb
 
 Assertive accessors
 -------------------
@@ -235,7 +220,7 @@ P = ParamSpec("P")
 # {{{ code maintenance
 
 class MovedFunctionDeprecationWrapper:
-    def __init__(self, f: F, deadline: Optional[Union[int, str]] = None) -> None:
+    def __init__(self, f: F, deadline: int | str | None = None) -> None:
         if deadline is None:
             deadline = "the future"
 
@@ -252,8 +237,8 @@ class MovedFunctionDeprecationWrapper:
 
 
 def deprecate_keyword(oldkey: str,
-        newkey: Optional[str] = None, *,
-        deadline: Optional[str] = None):
+        newkey: str | None = None, *,
+        deadline: str | None = None):
     """Decorator used to deprecate function keyword arguments.
 
     :arg oldkey: deprecated argument name.
@@ -304,7 +289,7 @@ def delta(x, y):
         return 0
 
 
-def levi_civita(tup: Tuple[int, ...]) -> int:
+def levi_civita(tup: tuple[int, ...]) -> int:
     """Compute an entry of the Levi-Civita symbol for the indices *tuple*."""
     if len(tup) == 2:
         i, j = tup
@@ -314,75 +299,6 @@ def levi_civita(tup: Tuple[int, ...]) -> int:
         return (j-i) * (k-i) * (k-j) // 2
     else:
         raise NotImplementedError(f"Levi-Civita symbol in {len(tup)} dimensions")
-
-
-factorial = MovedFunctionDeprecationWrapper(math.factorial, deadline=2023)
-
-try:
-    # NOTE: only available in python >= 3.8
-    perm = MovedFunctionDeprecationWrapper(math.perm, deadline=2023)
-except AttributeError:
-    def _unchecked_perm(n, k):
-        result = 1
-        while k:
-            result *= n
-            n -= 1
-            k -= 1
-
-        return result
-
-    def perm(n: SupportsIndex,              # type: ignore[misc]
-             k: Optional[SupportsIndex] = None) -> int:
-        """
-        :returns: :math:`P(n, k)`, the number of permutations of length :math:`k`
-            drawn from :math:`n` choices.
-        """
-        from warnings import warn
-        warn("This function is deprecated and will go away in 2023. "
-                "Use `math.perm` instead, which is available from Python 3.8.",
-                DeprecationWarning, stacklevel=2)
-
-        if k is None:
-            return math.factorial(n)
-
-        import operator
-        n, k = operator.index(n), operator.index(k)
-        if k > n:
-            return 0
-
-        if k < 0:
-            raise ValueError("k must be a non-negative integer")
-
-        if n < 0:
-            raise ValueError("n must be a non-negative integer")
-
-        from numbers import Integral
-        if not isinstance(k, Integral):
-            raise TypeError(f"'{type(k).__name__}' object cannot be interpreted "
-                            "as an integer")
-
-        if not isinstance(n, Integral):
-            raise TypeError(f"'{type(n).__name__}' object cannot be interpreted "
-                            "as an integer")
-
-        return _unchecked_perm(n, k)
-
-try:
-    # NOTE: only available in python >= 3.8
-    comb = MovedFunctionDeprecationWrapper(math.comb, deadline=2023)
-except AttributeError:
-    def comb(n: SupportsIndex,              # type: ignore[misc]
-             k: SupportsIndex) -> int:
-        """
-        :returns: :math:`C(n, k)`, the number of combinations (subsets)
-            of length :math:`k` drawn from :math:`n` choices.
-        """
-        from warnings import warn
-        warn("This function is deprecated and will go away in 2023. "
-                "Use `math.comb` instead, which is available from Python 3.8.",
-                DeprecationWarning, stacklevel=2)
-
-        return _unchecked_perm(n, k) // math.factorial(k)
 
 
 def norm_1(iterable):
@@ -420,12 +336,12 @@ class RecordWithoutPickling:
     will be individually derived from this class.
     """
 
-    __slots__: ClassVar[List[str]] = []
-    fields: ClassVar[Set[str]]
+    __slots__: ClassVar[list[str]] = []
+    fields: ClassVar[set[str]]
 
     def __init__(self,
-                 valuedict: Optional[Mapping[str, Any]] = None,
-                 exclude: Optional[Sequence[str]] = None,
+                 valuedict: Mapping[str, Any] | None = None,
+                 exclude: Sequence[str] | None = None,
                  **kwargs: Any) -> None:
         assert self.__class__ is not Record
 
@@ -481,7 +397,7 @@ class RecordWithoutPickling:
 
 
 class Record(RecordWithoutPickling):
-    __slots__: ClassVar[List[str]] = []
+    __slots__: ClassVar[list[str]] = []
 
     def __getstate__(self):
         return {
@@ -697,7 +613,7 @@ def memoize(*args: F, **kwargs: Any) -> F:
 
     use_kw = bool(kwargs.pop("use_kwargs", False))
 
-    default_key_func: Optional[Callable[..., Any]]
+    default_key_func: Callable[..., Any] | None
 
     if use_kw:
         def default_key_func(*inner_args, **inner_kwargs):
@@ -768,7 +684,7 @@ class _HasKwargs:
 
 def memoize_on_first_arg(
         function: Callable[Concatenate[T, P], R], *,
-        cache_dict_name: Optional[str] = None) -> Callable[Concatenate[T, P], R]:
+        cache_dict_name: str | None = None) -> Callable[Concatenate[T, P], R]:
     """Like :func:`memoize_method`, but for functions that take the object
     in which do memoization information is stored as first argument.
 
@@ -846,7 +762,7 @@ class keyed_memoize_on_first_arg(Generic[T, P, R]):  # noqa: N801
 
     def __init__(self,
             key: Callable[P, Hashable], *,
-            cache_dict_name: Optional[str] = None) -> None:
+            cache_dict_name: str | None = None) -> None:
         self.key = key
         self.cache_dict_name = cache_dict_name
 
@@ -1043,7 +959,7 @@ def monkeypatch_class(_name, bases, namespace):
 # {{{ generic utilities
 
 def add_tuples(t1, t2):
-    return tuple(t1v + t2v for t1v, t2v in zip(t1, t2))
+    return tuple(t1v + t2v for t1v, t2v in zip(t1, t2, strict=True))
 
 
 def negate_tuple(t1):
@@ -1091,7 +1007,7 @@ def general_sum(sequence):
 
 def linear_combination(coefficients, vectors):
     result = coefficients[0] * vectors[0]
-    for c, v in zip(coefficients[1:], vectors[1:]):
+    for c, v in zip(coefficients[1:], vectors[1:], strict=True):
         result += c*v
     return result
 
@@ -1566,7 +1482,7 @@ class Table:
     .. automethod:: text_without_markup
     """
 
-    def __init__(self, alignments: Optional[Tuple[str, ...]] = None) -> None:
+    def __init__(self, alignments: tuple[str, ...] | None = None) -> None:
         """Create a new :class:`Table`.
 
         :arg alignments: A :class:`tuple` of alignments of each column:
@@ -1585,7 +1501,7 @@ class Table:
 
             alignments = tuple(alignments)
 
-        self.rows: List[Tuple[str, ...]] = []
+        self.rows: list[tuple[str, ...]] = []
         self.alignments = alignments
 
     @property
@@ -1598,7 +1514,7 @@ class Table:
         """The number of columns currently in the table."""
         return len(self.rows[0])
 
-    def add_row(self, row: Tuple[Any, ...]) -> None:
+    def add_row(self, row: tuple[Any, ...]) -> None:
         """Add *row* to the table. Note that all rows must have the same number
         of columns."""
         if self.rows and len(row) != self.ncolumns:
@@ -1608,14 +1524,15 @@ class Table:
 
         self.rows.append(tuple(str(i) for i in row))
 
-    def _get_alignments(self) -> Tuple[str, ...]:
+    def _get_alignments(self) -> tuple[str, ...]:
         # NOTE: If not all alignments were specified, extend alignments with the
         # last alignment specified
-        return (self.alignments
+        return (
+                self.alignments
                 + (self.alignments[-1],) * (self.ncolumns - len(self.alignments))
-                )
+                )[:self.ncolumns]
 
-    def _get_column_widths(self, rows) -> Tuple[int, ...]:
+    def _get_column_widths(self, rows) -> tuple[int, ...]:
         return tuple(
             max(len(row[i]) for row in rows) for i in range(self.ncolumns)
             )
@@ -1642,13 +1559,13 @@ class Table:
         col_widths = self._get_column_widths(self.rows)
 
         lines = [" | ".join([
-            cell.center(col_width) if align == "c"
-            else cell.ljust(col_width) if align == "l"
-            else cell.rjust(col_width)
-            for cell, col_width, align in zip(row, col_widths, alignments)])
+            cell.center(cwidth) if align == "c"
+            else cell.ljust(cwidth) if align == "l"
+            else cell.rjust(cwidth)
+            for cell, cwidth, align in zip(row, col_widths, alignments, strict=True)])
             for row in self.rows]
-        lines[1:1] = ["+".join("-" * (col_width + 1 + (i > 0))
-            for i, col_width in enumerate(col_widths))]
+        lines[1:1] = ["+".join("-" * (cwidth + 1 + (i > 0))
+            for i, cwidth in enumerate(col_widths))]
 
         return "\n".join(lines)
 
@@ -1680,22 +1597,23 @@ class Table:
         col_widths = self._get_column_widths(rows)
 
         lines = [" | ".join([
-            cell.center(col_width) if align == "c"
-            else cell.ljust(col_width) if align == "l"
-            else cell.rjust(col_width)
-            for cell, col_width, align in zip(row, col_widths, alignments)])
+            cell.center(cwidth) if align == "c"
+            else cell.ljust(cwidth) if align == "l"
+            else cell.rjust(cwidth)
+            for cell, cwidth, align in zip(row, col_widths, alignments, strict=True)])
             for row in rows]
         lines[1:1] = ["|".join(
-            (":" + "-" * (col_width - 1 + (i > 0)) + ":") if align == "c"
-            else (":" + "-" * (col_width + (i > 0))) if align == "l"
-            else ("-" * (col_width + (i > 0)) + ":")
-            for i, (col_width, align) in enumerate(zip(col_widths, alignments)))]
+            (":" + "-" * (cwidth - 1 + (i > 0)) + ":") if align == "c"
+            else (":" + "-" * (cwidth + (i > 0))) if align == "l"
+            else ("-" * (cwidth + (i > 0)) + ":")
+            for i, (cwidth, align) in enumerate(
+                zip(col_widths, alignments, strict=True)))]
 
         return "\n".join(lines)
 
     def csv(self,
             dialect: str = "excel",
-            csv_kwargs: Optional[Dict[str, Any]] = None) -> str:
+            csv_kwargs: dict[str, Any] | None = None) -> str:
         """Returns a string containing a CSV representation of the table.
 
         :arg dialect: String passed to :func:`csv.writer`.
@@ -1732,7 +1650,7 @@ class Table:
 
     def latex(self,
             skip_lines: int = 0,
-            hline_after: Optional[Tuple[int, ...]] = None) -> str:
+            hline_after: tuple[int, ...] | None = None) -> str:
         r"""Returns a string containing the rows of a LaTeX representation of
         the table.
 
@@ -1785,10 +1703,10 @@ class Table:
         col_widths = self._get_column_widths(self.rows)
 
         lines = [" ".join([
-            cell.center(col_width) if align == "c"
-            else cell.ljust(col_width) if align == "l"
-            else cell.rjust(col_width)
-            for cell, col_width, align in zip(row, col_widths, alignments)])
+            cell.center(cwidth) if align == "c"
+            else cell.ljust(cwidth) if align == "l"
+            else cell.rjust(cwidth)
+            for cell, cwidth, align in zip(row, col_widths, alignments, strict=True)])
             for row in self.rows]
 
         # Remove the extra space added by the last cell
@@ -1798,7 +1716,7 @@ class Table:
 
 
 def merge_tables(*tables: Table,
-        skip_columns: Optional[Tuple[int, ...]] = None) -> Table:
+        skip_columns: tuple[int, ...] | None = None) -> Table:
     """
     :arg skip_columns: a :class:`tuple` of column indices to skip in all the
         tables except the first one.
@@ -1889,7 +1807,7 @@ def string_histogram(
         bin_value,
         bin_value/total_count*100,
         format_bar(bin_value))
-        for bin_start, bin_value in zip(bin_starts, bins))
+        for bin_start, bin_value in zip(bin_starts, bins, strict=True))
 
 # }}}
 
@@ -2011,7 +1929,7 @@ class StderrToStdout:
 
 
 def typedump(val: Any, max_seq: int = 5,
-             special_handlers: Optional[Mapping[Type, Callable]] = None,
+             special_handlers: Mapping[type, Callable] | None = None,
              fully_qualified_name: bool = True) -> str:
     """
     Return a string representation of the type of *val*, recursing into
@@ -2262,7 +2180,7 @@ UNIQUE_NAME_GEN_COUNTER_RE = re.compile(r"^(?P<based_on>\w+)_(?P<counter>\d+)$")
 
 
 def generate_numbered_unique_names(
-        prefix: str, num: Optional[int] = None) -> Iterable[Tuple[int, str]]:
+        prefix: str, num: int | None = None) -> Iterable[tuple[int, str]]:
     if num is None:
         yield (0, prefix)
         num = 0
@@ -2289,7 +2207,7 @@ class UniqueNameGenerator:
     .. automethod:: __call__
     """
     def __init__(self,
-            existing_names: Optional[Collection[str]] = None,
+            existing_names: Collection[str] | None = None,
             forced_prefix: str = ""):
         """
         Create a new :class:`UniqueNameGenerator`.
@@ -2303,7 +2221,7 @@ class UniqueNameGenerator:
 
         self.existing_names = set(existing_names)
         self.forced_prefix = forced_prefix
-        self.prefix_to_counter: Dict[str, int] = {}
+        self.prefix_to_counter: dict[str, int] = {}
 
     def is_name_conflicting(self, name: str) -> bool:
         """Returns *True* if *name* conflicts with an existing :class:`str`."""
@@ -2773,44 +2691,14 @@ def resolve_name(name):
 
     .. versionadded:: 2021.1.2
     """
-    # Delete the tail of the function and deprecate this once we require Python 3.9.
-    if sys.version_info >= (3, 9):
-        # use the official version
-        import pkgutil
-        return pkgutil.resolve_name(name)
+    from warnings import warn
 
-    import importlib
+    warn("'pytools.resolve_name' is deprecated and will be removed in 2024. "
+         "Use 'pkgutil.resolve_name' from the standard library instead.",
+         DeprecationWarning, stacklevel=2)
 
-    m = _NAME_PATTERN.match(name)
-    if not m:
-        raise ValueError(f"invalid format: {name!r}")
-    groups = m.groups()
-    if groups[2]:
-        # there is a colon - a one-step import is all that's needed
-        mod = importlib.import_module(groups[0])
-        parts = groups[3].split(".") if groups[3] else []
-    else:
-        # no colon - have to iterate to find the package boundary
-        parts = name.split(".")
-        modname = parts.pop(0)
-        # first part *must* be a module/package.
-        mod = importlib.import_module(modname)
-        while parts:
-            p = parts[0]
-            s = f"{modname}.{p}"
-            try:
-                mod = importlib.import_module(s)
-                parts.pop(0)
-                modname = s
-            except ImportError:
-                break
-    # if we reach this point, mod is the module, already imported, and
-    # parts is the list of parts in the object hierarchy to be traversed, or
-    # an empty list if just the module is wanted.
-    result = mod
-    for p in parts:
-        result = getattr(result, p)
-    return result
+    import pkgutil
+    return pkgutil.resolve_name(name)
 
 # }}}
 
@@ -2819,7 +2707,7 @@ def resolve_name(name):
 
 def unordered_hash(hash_instance: Any,
                    iterable: Iterable[Any],
-                   hash_constructor: Optional[Callable[[], Any]] = None) -> Any:
+                   hash_constructor: Callable[[], Any] | None = None) -> Any:
     """Using a hash algorithm given by the parameter-less constructor
     *hash_constructor*, return a hash object whose internal state
     depends on the entries of *iterable*, but not their order. If *hash*
@@ -2875,7 +2763,7 @@ def sphere_sample_equidistant(npoints_approx: int, r: float = 1.0):
     """
 
     import numpy as np
-    points: List[np.ndarray] = []
+    points: list[np.ndarray] = []
 
     count = 0
     a = 4 * np.pi / npoints_approx
@@ -2915,7 +2803,7 @@ _SPHERE_FIBONACCI_OFFSET = (
 
 def sphere_sample_fibonacci(
         npoints: int, r: float = 1.0, *,
-        optimize: Optional[str] = None):
+        optimize: str | None = None):
     """Generate points on a sphere based on an offset Fibonacci lattice from [2]_.
 
     .. [2] http://extremelearning.com.au/how-to-evenly-distribute-points-on-a-sphere-more-effectively-than-the-canonical-fibonacci-lattice/
@@ -2955,7 +2843,7 @@ def sphere_sample_fibonacci(
 
 # {{{ strtobool
 
-def strtobool(val: Optional[str], default: Optional[bool] = None) -> bool:
+def strtobool(val: str | None, default: bool | None = None) -> bool:
     """Convert a string representation of truth to True or False.
     True values are 'y', 'yes', 't', 'true', 'on', and '1'; false values
     are 'n', 'no', 'f', 'false', 'off', and '0'.  Uppercase versions are
@@ -3062,7 +2950,7 @@ def unique_union(*args: Iterable[T]) -> Collection[T]:
     if not args:
         return []
 
-    res: Dict[T, None] = {}
+    res: dict[T, None] = {}
     for seq in args:
         for item in seq:
             if item not in res:
