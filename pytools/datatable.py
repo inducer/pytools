@@ -1,4 +1,5 @@
-from typing import IO, Any, Callable, Iterator, List, Optional, Sequence, Tuple
+from collections.abc import Callable, Iterator, Sequence
+from typing import IO, Any
 
 from pytools import Record
 
@@ -25,7 +26,7 @@ class DataTable:
     """
 
     def __init__(self, column_names: Sequence[str],
-                 column_data: Optional[List[Any]] = None) -> None:
+                 column_data: list[Any] | None = None) -> None:
         """Construct a new table, with the given C{column_names}.
 
         :arg column_names: An indexable of column name strings.
@@ -50,7 +51,7 @@ class DataTable:
     def __len__(self) -> int:
         return len(self.data)
 
-    def __iter__(self) -> Iterator[List[Any]]:
+    def __iter__(self) -> Iterator[list[Any]]:
         return self.data.__iter__()
 
     def __str__(self) -> str:
@@ -65,7 +66,7 @@ class DataTable:
 
         def format_row(row: Sequence[str]) -> str:
             return "|".join([str(cell).ljust(col_width)
-                      for cell, col_width in zip(row, col_widths)])
+                      for cell, col_width in zip(row, col_widths, strict=True)])
 
         lines = [format_row(self.column_names),
                 "+".join("-"*col_width for col_width in col_widths)] + \
@@ -80,12 +81,12 @@ class DataTable:
 
         self.insert_row(tuple(values))
 
-    def insert_row(self, values: Tuple[Any, ...]) -> None:
+    def insert_row(self, values: tuple[Any, ...]) -> None:
         assert isinstance(values, tuple)
         assert len(values) == len(self.column_names)
         self.data.append(values)
 
-    def insert_rows(self, rows: Sequence[Tuple[Any, ...]]) -> None:
+    def insert_rows(self, rows: Sequence[tuple[Any, ...]]) -> None:
         for row in rows:
             self.insert_row(row)
 
@@ -118,7 +119,7 @@ class DataTable:
         if len(filtered) > 1:
             raise RuntimeError("more than one matching entry for get()")
 
-        return Row(dict(list(zip(self.column_names, filtered.data[0]))))
+        return Row(dict(zip(self.column_names, filtered.data[0], strict=True)))
 
     def clear(self) -> None:
         del self.data[:]
@@ -140,7 +141,7 @@ class DataTable:
     def sort(self, columns: Sequence[str], reverse: bool = False) -> None:
         col_indices = [self.column_indices[col] for col in columns]
 
-        def mykey(row: Sequence[Any]) -> Tuple[Any, ...]:
+        def mykey(row: Sequence[Any]) -> tuple[Any, ...]:
             return tuple(
                     row[col_index]
                     for col_index in col_indices)
@@ -157,8 +158,8 @@ class DataTable:
         result_data = []
 
         # to pacify pyflakes:
-        last_values: Tuple[Any, ...] = ()
-        agg_values: List[Row] = []
+        last_values: tuple[Any, ...] = ()
+        agg_values: list[Row] = []
 
         for row in self.data:
             this_values = tuple(row[i] for i in gb_indices)
@@ -192,7 +193,7 @@ class DataTable:
         by which they are joined.
         """
 
-        def without(indexable: Tuple[str, ...], idx: int) -> Tuple[str, ...]:
+        def without(indexable: tuple[str, ...], idx: int) -> tuple[str, ...]:
             return indexable[:idx] + indexable[idx+1:]
 
         this_key_idx = self.column_indices[column]
@@ -278,7 +279,7 @@ class DataTable:
         return DataTable(columns,
                 [[row[i] for i in col_indices] for row in self.data])
 
-    def column_data(self, column: str) -> List[Tuple[Any, ...]]:
+    def column_data(self, column: str) -> list[tuple[Any, ...]]:
         col_index = self.column_indices[column]
         return [row[col_index] for row in self.data]
 

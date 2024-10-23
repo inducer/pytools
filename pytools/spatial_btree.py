@@ -166,7 +166,7 @@ class SpatialBinaryTreeBucket:
             (Path.CLOSEPOLY, (el[0], el[1])),
             ]
 
-        codes, verts = zip(*pathdata)
+        codes, verts = zip(*pathdata, strict=True)
         path = Path(verts, codes)
         patch = mpatches.PathPatch(path, **kwargs)
         pt.gca().add_patch(patch)

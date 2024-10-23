@@ -7,7 +7,6 @@
 
 
 import numbers
-from typing import List, Optional, Tuple
 
 import numpy as np
 
@@ -45,7 +44,7 @@ class EOCRecorder:
     """
 
     def __init__(self) -> None:
-        self.history: List[Tuple[float, float]] = []
+        self.history: list[tuple[float, float]] = []
 
     def add_data_point(self, abscissa: float, error: float) -> None:
         if not (isinstance(abscissa, numbers.Number)
@@ -60,7 +59,7 @@ class EOCRecorder:
         self.history.append((abscissa, error))
 
     def estimate_order_of_convergence(self,
-            gliding_mean: Optional[int] = None,
+            gliding_mean: int | None = None,
             ) -> np.ndarray:
         abscissae = np.array([a for a, e in self.history])
         errors = np.array([e for a, e in self.history])
@@ -159,7 +158,7 @@ class EOCRecorder:
 
 
 def stringify_eocs(*eocs: EOCRecorder,
-        names: Optional[Tuple[str, ...]] = None,
+        names: tuple[str, ...] | None = None,
         abscissa_label: str = "h",
         error_label: str = "Error",
         gliding_mean: int = 2,
@@ -186,7 +185,7 @@ def stringify_eocs(*eocs: EOCRecorder,
         error_format=error_format,
         eoc_format=eoc_format,
         gliding_mean=gliding_mean)
-        for name, eoc in zip(names, eocs)
+        for name, eoc in zip(names, eocs, strict=True)
         ], skip_columns=(0,))
 
     if table_type == "markdown":
@@ -219,7 +218,7 @@ class PConvergenceVerifier:
         tbl = Table()
         tbl.add_row(("p", "error"))
 
-        for p, err in zip(self.orders, self.errors):
+        for p, err in zip(self.orders, self.errors, strict=True):
             tbl.add_row((str(p), str(err)))
 
         return str(tbl)

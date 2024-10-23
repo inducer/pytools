@@ -70,28 +70,23 @@ Type Variables Used
     is included as a key in the graph.
 """
 
-from dataclasses import dataclass
-from typing import (
-    Any,
+from collections.abc import (
     Callable,
     Collection,
-    Dict,
-    FrozenSet,
-    Generic,
     Hashable,
     Iterable,
     Iterator,
-    List,
     Mapping,
     MutableSet,
-    Optional,
+)
+from dataclasses import dataclass
+from typing import (
+    Any,
+    Generic,
     Protocol,
-    Set,
-    Tuple,
+    TypeAlias,
     TypeVar,
 )
-
-from typing_extensions import TypeAlias
 
 
 NodeT = TypeVar("NodeT", bound=Hashable)
@@ -107,7 +102,7 @@ def reverse_graph(graph: GraphT[NodeT]) -> GraphT[NodeT]:
 
     :returns: A :class:`dict` representing *graph* with edges reversed.
     """
-    result: Dict[NodeT, Set[NodeT]] = {}
+    result: dict[NodeT, set[NodeT]] = {}
 
     for node_key, successor_nodes in graph.items():
         # Make sure every node is in the result even if it has no successors
@@ -125,9 +120,9 @@ def reverse_graph(graph: GraphT[NodeT]) -> GraphT[NodeT]:
 
 def a_star(
         initial_state: NodeT, goal_state: NodeT, neighbor_map: GraphT[NodeT],
-        estimate_remaining_cost: Optional[Callable[[NodeT], float]] = None,
+        estimate_remaining_cost: Callable[[NodeT], float] | None = None,
         get_step_cost: Callable[[Any, NodeT], float] = lambda x, y: 1
-        ) -> List[NodeT]:
+        ) -> list[NodeT]:
     """
     With the default cost and heuristic, this amounts to Dijkstra's algorithm.
     """
@@ -162,7 +157,7 @@ def a_star(
 
         if top.state == goal_state:
             result = []
-            it: Optional[AStarNode] = top
+            it: AStarNode | None = top
             while it is not None:
                 result.append(it.state)
                 it = it.parent
@@ -189,21 +184,20 @@ def a_star(
 
 # {{{ compute SCCs with Tarjan's algorithm
 
-def compute_sccs(graph: GraphT[NodeT]) -> List[List[NodeT]]:
+def compute_sccs(graph: GraphT[NodeT]) -> list[list[NodeT]]:
     to_search = set(graph.keys())
-    visit_order: Dict[NodeT, int] = {}
+    visit_order: dict[NodeT, int] = {}
     scc_root = {}
     sccs = []
 
     while to_search:
         top = next(iter(to_search))
-        call_stack: List[Tuple[NodeT, Iterator[NodeT], Optional[NodeT]]] = [(top,
-                                                                 iter(graph[top]),
-                                                                 None)]
+        call_stack: list[tuple[NodeT, Iterator[NodeT], NodeT | None]] = (
+            [(top, iter(graph[top]), None)])
         visit_stack = []
         visiting = set()
 
-        scc: List[NodeT] = []
+        scc: list[NodeT] = []
 
         while call_stack:
             top, children, last_popped_child = call_stack.pop()
@@ -283,8 +277,8 @@ class _HeapEntry(Generic[NodeT]):
 
 def compute_topological_order(
         graph: GraphT[NodeT],
-        key: Optional[Callable[[NodeT], _SupportsLT]] = None,
-        ) -> List[NodeT]:
+        key: Callable[[NodeT], _SupportsLT] | None = None,
+        ) -> list[NodeT]:
     """Compute a topological order of nodes in a directed graph.
 
     :arg key: A custom key function may be supplied to determine the order in
@@ -408,8 +402,8 @@ def contains_cycle(graph: GraphT[NodeT]) -> bool:
 
 # {{{ compute induced subgraph
 
-def compute_induced_subgraph(graph: Mapping[NodeT, Set[NodeT]],
-                             subgraph_nodes: Set[NodeT]) -> GraphT[NodeT]:
+def compute_induced_subgraph(graph: Mapping[NodeT, set[NodeT]],
+                             subgraph_nodes: set[NodeT]) -> GraphT[NodeT]:
     """Compute the induced subgraph formed by a subset of the vertices in a
     graph.
 
@@ -439,9 +433,9 @@ def compute_induced_subgraph(graph: Mapping[NodeT, Set[NodeT]],
 # {{{ as_graphviz_dot
 
 def as_graphviz_dot(graph: GraphT[NodeT],
-                    node_labels: Optional[Callable[[NodeT], str]] = None,
-                    edge_labels: Optional[Callable[[NodeT, NodeT], str]] = None) \
-                    -> str:
+                    node_labels: Callable[[NodeT], str] | None = None,
+                    edge_labels: Callable[[NodeT, NodeT], str] | None = None,
+                    ) -> str:
     """
     Create a visualization of the graph *graph* in the
     `dot <http://graphviz.org/>`__ language.
@@ -502,7 +496,7 @@ def validate_graph(graph: GraphT[NodeT]) -> None:
     Validates that all successor nodes of each node in *graph* are keys in
     *graph* itself. Raises a :class:`ValueError` if not.
     """
-    seen_nodes: Set[NodeT] = set()
+    seen_nodes: set[NodeT] = set()
 
     for children in graph.values():
         seen_nodes.update(children)
@@ -549,7 +543,7 @@ def is_connected(graph: GraphT[NodeT]) -> bool:
 
 
 def undirected_graph_from_edges(
-            edges: Iterable[Tuple[NodeT, NodeT]],
+            edges: Iterable[tuple[NodeT, NodeT]],
         ) -> GraphT[NodeT]:
     """
     Constructs an undirected graph using *edges*.
@@ -558,7 +552,7 @@ def undirected_graph_from_edges(
 
     :returns: A :class:`GraphT` that is the undirected graph.
     """
-    undirected_graph: Dict[NodeT, Set[NodeT]] = {}
+    undirected_graph: dict[NodeT, set[NodeT]] = {}
 
     for lhs, rhs in edges:
         if lhs == rhs:
@@ -573,12 +567,12 @@ def undirected_graph_from_edges(
 
 def get_reachable_nodes(
         undirected_graph: GraphT[NodeT],
-        source_node: NodeT) -> FrozenSet[NodeT]:
+        source_node: NodeT) -> frozenset[NodeT]:
     """
     Returns a :class:`frozenset` of all nodes in *undirected_graph* that are
     reachable from *source_node*.
     """
-    nodes_visited: Set[NodeT] = set()
+    nodes_visited: set[NodeT] = set()
     nodes_to_visit = {source_node}
 
     while nodes_to_visit:

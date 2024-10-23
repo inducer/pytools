@@ -3,7 +3,7 @@ import sys
 import tempfile
 from dataclasses import dataclass
 from enum import Enum, IntEnum
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import pytest
 
@@ -29,7 +29,7 @@ class PDictTestingKeyOrValue:
             hash_key = val
         self.hash_key = hash_key
 
-    def __getstate__(self) -> Dict[str, Any]:
+    def __getstate__(self) -> dict[str, Any]:
         return {"val": self.val, "hash_key": self.hash_key}
 
     def __eq__(self, other: Any) -> bool:
@@ -87,11 +87,11 @@ def test_persistent_dict_storage_and_lookup() -> None:
                 for i in range(20)]
         values = [randrange(2000) for i in range(20)]
 
-        d = dict(zip(keys, values))
+        d = dict(zip(keys, values, strict=True))
 
         # {{{ check lookup
 
-        for k, v in zip(keys, values):
+        for k, v in zip(keys, values, strict=True):
             pdict[k] = v
 
         for k, v in d.items():
@@ -102,7 +102,7 @@ def test_persistent_dict_storage_and_lookup() -> None:
 
         # {{{ check updating
 
-        for k, v in zip(keys, values):
+        for k, v in zip(keys, values, strict=True):
             pdict[k] = v + 1
 
         for k, v in d.items():
@@ -113,7 +113,7 @@ def test_persistent_dict_storage_and_lookup() -> None:
 
         # {{{ check store_if_not_present
 
-        for k, _ in zip(keys, values):
+        for k, _ in zip(keys, values, strict=True):
             pdict.store_if_not_present(k, d[k] + 2)
 
         for k, v in d.items():
@@ -809,10 +809,10 @@ def test_keys_values_items():
             pdict[i] = i
 
         # This also tests deterministic iteration order
-        assert len(list(pdict.keys())) == 10000 == len(set(pdict.keys()))
+        assert len(pdict) == 10000 == len(set(pdict))
         assert list(pdict.keys()) == list(range(10000))
         assert list(pdict.values()) == list(range(10000))
-        assert list(pdict.items()) == list(zip(list(pdict.keys()), range(10000)))
+        assert list(pdict.items()) == list(zip(pdict, range(10000), strict=True))
 
         assert ([k for k in pdict.keys()]  # noqa: C416
                 == list(pdict.keys())

@@ -25,18 +25,9 @@ Internal stuff that is only here because the documentation tool wants it
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    FrozenSet,
-    Iterable,
-    Set,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, TypeVar
 from warnings import warn
 
 from typing_extensions import Self, dataclass_transform
@@ -90,7 +81,7 @@ class DottedName:
     .. automethod:: from_class
     """
 
-    def __init__(self, name_parts: Tuple[str, ...]) -> None:
+    def __init__(self, name_parts: tuple[str, ...]) -> None:
         if len(name_parts) == 0:
             raise ValueError("empty name parts")
 
@@ -175,18 +166,18 @@ class UniqueTag(Tag):
 # }}}
 
 
-ToTagSetConvertible = Union[Iterable[Tag], Tag, None]
+ToTagSetConvertible = Iterable[Tag] | Tag | None
 TagT = TypeVar("TagT", bound="Tag")
 
 
 # {{{ UniqueTag rules checking
 
 @memoize
-def _immediate_unique_tag_descendants(cls: type[Tag]) -> FrozenSet[type[Tag]]:
+def _immediate_unique_tag_descendants(cls: type[Tag]) -> frozenset[type[Tag]]:
     if UniqueTag in cls.__bases__:
         return frozenset([cls])
     else:
-        result: FrozenSet[type[Tag]] = frozenset()
+        result: frozenset[type[Tag]] = frozenset()
         for base in cls.__bases__:
             result = result | _immediate_unique_tag_descendants(base)
         return result
@@ -201,14 +192,14 @@ class NonUniqueTagError(ValueError):
     pass
 
 
-def check_tag_uniqueness(tags: FrozenSet[Tag]) -> FrozenSet[Tag]:
+def check_tag_uniqueness(tags: frozenset[Tag]) -> frozenset[Tag]:
     """Ensure that *tags* obeys the rules set forth in :class:`UniqueTag`.
     If not, raise :exc:`NonUniqueTagError`. If any *tags* are not
     subclasses of :class:`Tag`, a :exc:`TypeError` will be raised.
 
     :returns: *tags*
     """
-    unique_tag_descendants: Set[type[Tag]] = set()
+    unique_tag_descendants: set[type[Tag]] = set()
     for tag in tags:
         if not isinstance(tag, Tag):
             raise TypeError(f"'{tag}' is not an instance of pytools.tag.Tag")
@@ -227,7 +218,7 @@ def check_tag_uniqueness(tags: FrozenSet[Tag]) -> FrozenSet[Tag]:
 # }}}
 
 
-def normalize_tags(tags: ToTagSetConvertible) -> FrozenSet[Tag]:
+def normalize_tags(tags: ToTagSetConvertible) -> frozenset[Tag]:
     if isinstance(tags, Tag):
         tags = frozenset([tags])
     elif tags is None:
@@ -255,7 +246,7 @@ class Taggable:
     """
 
     if not TYPE_CHECKING:
-        def __init__(self, tags: FrozenSet[Tag] = frozenset()):
+        def __init__(self, tags: frozenset[Tag] = frozenset()):
             warn("The Taggable constructor is deprecated. "
                  "Subclasses must declare their own storage for .tags. "
                  "The constructor will disappear in 2025.x.",
@@ -269,10 +260,10 @@ class Taggable:
     # type-checking only so that self.tags = ... in subclasses still works
     if TYPE_CHECKING:
         @property
-        def tags(self) -> FrozenSet[Tag]:
+        def tags(self) -> frozenset[Tag]:
             ...
 
-    def _with_new_tags(self, tags: FrozenSet[Tag]) -> Self:
+    def _with_new_tags(self, tags: frozenset[Tag]) -> Self:
         """
         Returns a copy of *self* with the specified tags. This method
         should be overridden by subclasses.
@@ -313,7 +304,7 @@ class Taggable:
         return self._with_new_tags(tags=check_tag_uniqueness(new_tags))
 
     @memoize_method
-    def tags_of_type(self, tag_t: Type[TagT]) -> FrozenSet[TagT]:
+    def tags_of_type(self, tag_t: type[TagT]) -> frozenset[TagT]:
         """
         Returns *self*'s tags of type *tag_t*.
         """
@@ -322,7 +313,7 @@ class Taggable:
                          if isinstance(tag, tag_t)})
 
     @memoize_method
-    def tags_not_of_type(self, tag_t: Type[TagT]) -> FrozenSet[Tag]:
+    def tags_not_of_type(self, tag_t: type[TagT]) -> frozenset[Tag]:
         """
         Returns *self*'s tags that are not of type *tag_t*.
         """
@@ -346,8 +337,8 @@ class Taggable:
 
 _depr_name_to_replacement_and_obj = {
         "TagsType": (
-            "FrozenSet[Tag]",
-            FrozenSet[Tag], 2023),
+            "frozenset[Tag]",
+            frozenset[Tag], 2023),
         "TagOrIterableType": (
             "ToTagSetConvertible",
             ToTagSetConvertible, 2023),
