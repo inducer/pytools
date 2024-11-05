@@ -32,7 +32,6 @@ import sys
 from functools import reduce, wraps
 from sys import intern
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     ClassVar,
@@ -52,22 +51,7 @@ from typing import (
     Union,
 )
 
-
-if TYPE_CHECKING:
-    # NOTE: mypy seems to be confused by the `try.. except` below when called with
-    #   python -m mypy --python-version 3.8 ...
-    # see https://github.com/python/mypy/issues/14220
-    from typing_extensions import Concatenate, ParamSpec, SupportsIndex
-else:
-    try:
-        from typing import Concatenate, SupportsIndex
-    except ImportError:
-        from typing_extensions import Concatenate, SupportsIndex
-
-    try:
-        from typing import ParamSpec
-    except ImportError:
-        from typing_extensions import ParamSpec  # type: ignore[assignment]
+from typing_extensions import Concatenate, ParamSpec, SupportsIndex
 
 
 # These are deprecated and will go away in 2022.
@@ -966,7 +950,7 @@ class memoize_in:  # noqa: N801
             try:
                 return self.cache_dict[args]
             except KeyError:
-                result = inner(*args)
+                result = inner(*args, **kwargs)
                 self.cache_dict[args] = result
                 return result
 
@@ -1000,12 +984,12 @@ class keyed_memoize_in(Generic[P, R]):  # noqa: N801
         @wraps(inner)
         def new_inner(*args: P.args, **kwargs: P.kwargs) -> R:
             assert not kwargs
-            key = self.key(*args)
+            key = self.key(*args, **kwargs)
 
             try:
                 return self.cache_dict[key]
             except KeyError:
-                result = inner(*args)
+                result = inner(*args, **kwargs)
                 self.cache_dict[key] = result
                 return result
 
@@ -1569,26 +1553,30 @@ a_star = MovedFunctionDeprecationWrapper(a_star_moved)
 class Table:
     """An ASCII table generator.
 
-    .. attribute:: nrows
-    .. attribute:: ncolumns
-
-    .. attribute:: alignments
-
-        A :class:`tuple` of alignments of each column: ``"l"``, ``"c"``, or ``"r"``,
-        for left, center, and right alignment, respectively). Columns which
-        have no alignment specifier will use the last specified alignment. For
-        example, with ``alignments=("l", "r")``, the third and all following
-        columns will use right alignment.
-
+    .. automethod:: __init__
     .. automethod:: add_row
+
+    .. autoproperty:: nrows
+    .. autoproperty:: ncolumns
 
     .. automethod:: __str__
     .. automethod:: github_markdown
     .. automethod:: csv
     .. automethod:: latex
+    .. automethod:: text_without_markup
     """
 
     def __init__(self, alignments: Optional[Tuple[str, ...]] = None) -> None:
+        """Create a new :class:`Table`.
+
+        :arg alignments: A :class:`tuple` of alignments of each column:
+            ``"l"``, ``"c"``, or ``"r"``, for left, center, and right
+            alignment, respectively). Columns which have no alignment specifier
+            will use the last specified alignment. For example, with
+            ``alignments=("l", "r")``, the third and all following
+            columns will use right alignment.
+        """
+
         if alignments is None:
             alignments = ("l",)
         else:
@@ -1602,13 +1590,17 @@ class Table:
 
     @property
     def nrows(self) -> int:
+        """The number of rows currently in the table."""
         return len(self.rows)
 
     @property
     def ncolumns(self) -> int:
+        """The number of columns currently in the table."""
         return len(self.rows[0])
 
     def add_row(self, row: Tuple[Any, ...]) -> None:
+        """Add *row* to the table. Note that all rows must have the same number
+        of columns."""
         if self.rows and len(row) != self.ncolumns:
             raise ValueError(
                     f"tried to add a row with {len(row)} columns to "
@@ -1769,6 +1761,38 @@ class Table:
             lines.append(fr"{' & '.join(row)} \\")
             if row_nr in hline_after:
                 lines.append(r"\hline")
+
+        return "\n".join(lines)
+
+    def text_without_markup(self) -> str:
+        """Returns a string representation of the table without markup.
+
+        .. doctest::
+
+            >>> tbl = Table()
+            >>> tbl.add_row([0, "orange"])
+            >>> tbl.add_row([1111, "apple"])
+            >>> tbl.add_row([2, "pear"])
+            >>> print(tbl.text_without_markup())
+            0    orange
+            1111 apple
+            2    pear
+        """
+        if not self.rows:
+            return ""
+
+        alignments = self._get_alignments()
+        col_widths = self._get_column_widths(self.rows)
+
+        lines = [" ".join([
+            cell.center(col_width) if align == "c"
+            else cell.ljust(col_width) if align == "l"
+            else cell.rjust(col_width)
+            for cell, col_width, align in zip(row, col_widths, alignments)])
+            for row in self.rows]
+
+        # Remove the extra space added by the last cell
+        lines = [line.rstrip() for line in lines]
 
         return "\n".join(lines)
 

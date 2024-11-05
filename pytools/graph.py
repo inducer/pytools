@@ -28,7 +28,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-
 __doc__ = """
 Graph Algorithms
 ================
@@ -54,6 +53,10 @@ Graph Algorithms
 Type Variables Used
 -------------------
 
+.. class:: _SupportsLT
+
+    A :class:`~typing.Protocol` for `__lt__` support.
+
 .. class:: NodeT
 
     Type of a graph node, can be any hashable type.
@@ -69,7 +72,6 @@ Type Variables Used
 
 from dataclasses import dataclass
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     Collection,
@@ -89,17 +91,7 @@ from typing import (
     TypeVar,
 )
 
-
-if TYPE_CHECKING:
-    # NOTE: mypy seems to be confused by the `try.. except` below when called with
-    #   python -m mypy --python-version 3.8 ...
-    # see https://github.com/python/mypy/issues/14220
-    from typing_extensions import TypeAlias
-else:
-    try:
-        from typing import TypeAlias
-    except ImportError:
-        from typing_extensions import TypeAlias
+from typing_extensions import TypeAlias
 
 
 NodeT = TypeVar("NodeT", bound=Hashable)
@@ -269,7 +261,7 @@ class CycleError(Exception):
 
 
 class _SupportsLT(Protocol):
-    def __lt__(self, other: object) -> bool:
+    def __lt__(self, other: Any) -> bool:
         ...
 
 
@@ -289,9 +281,10 @@ class _HeapEntry(Generic[NodeT]):
         return self.key < other.key
 
 
-def compute_topological_order(graph: GraphT[NodeT],
-                              key: Optional[Callable[[NodeT], Any]] = None) \
-                              -> List[NodeT]:
+def compute_topological_order(
+        graph: GraphT[NodeT],
+        key: Optional[Callable[[NodeT], _SupportsLT]] = None,
+        ) -> List[NodeT]:
     """Compute a topological order of nodes in a directed graph.
 
     :arg key: A custom key function may be supplied to determine the order in
