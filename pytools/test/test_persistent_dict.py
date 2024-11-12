@@ -414,6 +414,31 @@ def test_dtype_hashing() -> None:
     assert keyb(np.dtype(np.float32)) == keyb(np.dtype(np.float32))
 
 
+def test_bool_hashing() -> None:
+    keyb = KeyBuilder()
+
+    assert keyb(True) == keyb(True)
+    assert keyb(False) == keyb(False)
+    assert keyb(True) != keyb(False)
+
+    np = pytest.importorskip("numpy")
+
+    bool_types = [np.bool_]
+    if hasattr(np, "bool"):
+        bool_types.append(np.bool)
+
+    for bool_type in bool_types:
+        assert keyb(bool_type) != keyb(bool)
+
+        assert keyb(bool_type(True)) == keyb(bool_type(True))
+        assert keyb(bool_type(False)) == keyb(bool_type(False))
+        assert keyb(bool_type(True)) != keyb(bool_type(False))
+
+        assert keyb(bool_type) != keyb(np.dtype(bool_type))
+        assert keyb(bool_type(True)) != keyb(np.dtype(bool_type(True)))
+        assert keyb(bool_type(False)) != keyb(np.dtype(bool_type(False)))
+
+
 def test_scalar_hashing() -> None:
     keyb = KeyBuilder()
 
