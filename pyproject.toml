@@ -1,12 +1,10 @@
 [build-system]
-build-backend = "setuptools.build_meta"
-requires = [
-    "setuptools>=63",
-]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "pytools"
-version = "2024.1.14"
+version = "2024.1.15"
 description = "A collection of tools for Python"
 readme = "README.rst"
 license = { text = "MIT" }
@@ -53,18 +51,12 @@ siphash = [
 Documentation = "https://documen.tician.de/pytools/"
 Homepage = "https://github.com/inducer/pytools/"
 
-[tool.setuptools.packages.find]
-include = [
-    "pytools*",
-]
-
-[tool.setuptools.package-dir]
-# https://github.com/Infleqtion/client-superstaq/pull/715
-"" = "."
-
-[tool.setuptools.package-data]
-pytools = [
-    "py.typed",
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/.git*",
+  "/doc/_build",
+  "/.editorconfig",
+  "/run-*.sh",
 ]
 
 [tool.ruff]
