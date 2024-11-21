@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pytools"
-version = "2024.1.15"
+version = "2024.1.16"
 description = "A collection of tools for Python"
 readme = "README.rst"
 license = { text = "MIT" }
