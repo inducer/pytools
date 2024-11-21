@@ -127,6 +127,7 @@ Deprecation Warnings
 --------------------
 
 .. autofunction:: deprecate_keyword
+.. autofunction:: module_getattr_for_deprecations
 
 Functions for dealing with (large) auxiliary files
 --------------------------------------------------
@@ -219,6 +220,8 @@ P = ParamSpec("P")
 
 # {{{ code maintenance
 
+# Undocumented on purpose for now, unclear that this is a great idea, given
+# that typing.deprecated exists.
 class MovedFunctionDeprecationWrapper:
     def __init__(self, f: F, deadline: int | str | None = None) -> None:
         if deadline is None:
@@ -276,6 +279,37 @@ def deprecate_keyword(oldkey: str,
         return inner_wrapper
 
     return wrapper
+
+
+def module_getattr_for_deprecations(
+            module_name: str,
+            depr_name_to_replacement_and_obj: Mapping[
+                str, tuple[str, object, str | int]
+            ],
+            name: str
+        ) -> object:
+    """A helper to construct module-level :meth:`object.__getattr__` functions
+    so that deprecated names can still be found but raise a warning.
+
+    The typical usage pattern is as follows::
+
+        __getattr__ = partial(module_getattr_for_deprecations, __name__, {
+            "OldName": ("NewName", NewName, 2026),
+            })
+    """
+
+    replacement_and_obj = depr_name_to_replacement_and_obj.get(name, None)
+    if replacement_and_obj is not None:
+        replacement, obj, deadline = replacement_and_obj
+        from warnings import warn
+
+        warn(f"'{module_name}.{name}' is deprecated. "
+                f"Use '{replacement}' instead. "
+                f"'{module_name}.{name}' will continue to work until {deadline}.",
+                DeprecationWarning, stacklevel=2)
+        return obj
+    else:
+        raise AttributeError(name)
 
 # }}}
 
