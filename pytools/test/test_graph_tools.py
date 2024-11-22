@@ -57,7 +57,7 @@ def test_compute_topological_order():
     disconnected = {1: [], 2: [], 3: []}
     assert len(compute_topological_order(disconnected)) == 3
 
-    line = list(zip(range(10), ([i] for i in range(1, 11))))
+    line = list(zip(range(10), ([i] for i in range(1, 11)), strict=True))
     import random
     random.seed(0)
     random.shuffle(line)

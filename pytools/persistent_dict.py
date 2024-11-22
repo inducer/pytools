@@ -35,21 +35,10 @@ import os
 import pickle
 import sqlite3
 import sys
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import fields as dc_fields, is_dataclass
 from enum import Enum
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    FrozenSet,
-    Iterator,
-    Mapping,
-    Optional,
-    Protocol,
-    Tuple,
-    TypeVar,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar, cast
 from warnings import warn
 
 
@@ -226,7 +215,7 @@ class KeyBuilder:
                             method = self.update_for_specific_dtype
 
                     # Hashing numpy scalars
-                    elif isinstance(key, np.number):
+                    elif isinstance(key, np.number | np.bool_):
                         # Non-numpy scalars are handled above in the try block.
                         method = self.update_for_numpy_scalar
 
@@ -303,11 +292,11 @@ class KeyBuilder:
     def update_for_bytes(key_hash: Hash, key: bytes) -> None:
         key_hash.update(key)
 
-    def update_for_tuple(self, key_hash: Hash, key: Tuple[Any, ...]) -> None:
+    def update_for_tuple(self, key_hash: Hash, key: tuple[Any, ...]) -> None:
         for obj_i in key:
             self.rec(key_hash, obj_i)
 
-    def update_for_frozenset(self, key_hash: Hash, key: FrozenSet[Any]) -> None:
+    def update_for_frozenset(self, key_hash: Hash, key: frozenset[Any]) -> None:
         from pytools import unordered_hash
 
         unordered_hash(
@@ -454,10 +443,10 @@ V = TypeVar("V")
 class _PersistentDictBase(Mapping[K, V]):
     def __init__(self,
                  identifier: str,
-                 key_builder: Optional[KeyBuilder] = None,
-                 container_dir: Optional[str] = None,
+                 key_builder: KeyBuilder | None = None,
+                 container_dir: str | None = None,
                  enable_wal: bool = False,
-                 safe_sync: Optional[bool] = None) -> None:
+                 safe_sync: bool | None = None) -> None:
         self.identifier = identifier
         self.conn = None
 
@@ -565,7 +554,7 @@ class _PersistentDictBase(Mapping[K, V]):
 
         return cursor
 
-    def _exec_sql_fn(self, fn: Callable[[], T]) -> Optional[T]:
+    def _exec_sql_fn(self, fn: Callable[[], T]) -> T | None:
         n = 0
 
         with self.mutex:
@@ -628,7 +617,7 @@ class _PersistentDictBase(Mapping[K, V]):
         for row in self._exec_sql("SELECT key_value FROM dict ORDER BY rowid"):
             yield pickle.loads(row[0])[1]
 
-    def items(self) -> Iterator[Tuple[K, V]]:  # type: ignore[override]
+    def items(self) -> Iterator[tuple[K, V]]:  # type: ignore[override]
         """Return an iterator over the items in the dictionary."""
         for row in self._exec_sql("SELECT key_value FROM dict ORDER BY rowid"):
             yield pickle.loads(row[0])
@@ -674,11 +663,11 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
     .. automethod:: fetch
     """
     def __init__(self, identifier: str,
-                 key_builder: Optional[KeyBuilder] = None,
-                 container_dir: Optional[str] = None,
+                 key_builder: KeyBuilder | None = None,
+                 container_dir: str | None = None,
                  *,
                  enable_wal: bool = False,
-                 safe_sync: Optional[bool] = None,
+                 safe_sync: bool | None = None,
                  in_mem_cache_size: int = 256) -> None:
         """
         :arg identifier: a filename-compatible string identifying this
@@ -732,10 +721,10 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
                     raise ReadOnlyEntryError("WriteOncePersistentDict, "
                                              "tried overwriting key") from e
 
-    def _fetch_uncached(self, keyhash: str) -> Tuple[K, V]:
+    def _fetch_uncached(self, keyhash: str) -> tuple[K, V]:
         # This method is separate from fetch() to allow for LRU caching
 
-        def fetch_inner() -> Optional[Tuple[Any]]:
+        def fetch_inner() -> tuple[Any] | None:
             assert self.conn is not None
 
             # This is separate from fetch() so that the mutex covers the
@@ -791,11 +780,11 @@ class PersistentDict(_PersistentDictBase[K, V]):
     """
     def __init__(self,
                  identifier: str,
-                 key_builder: Optional[KeyBuilder] = None,
-                 container_dir: Optional[str] = None,
+                 key_builder: KeyBuilder | None = None,
+                 container_dir: str | None = None,
                  *,
                  enable_wal: bool = False,
-                 safe_sync: Optional[bool] = None) -> None:
+                 safe_sync: bool | None = None) -> None:
         """
         :arg identifier: a filename-compatible string identifying this
             dictionary
@@ -825,7 +814,7 @@ class PersistentDict(_PersistentDictBase[K, V]):
     def fetch(self, key: K) -> V:
         keyhash = self.key_builder(key)
 
-        def fetch_inner() -> Optional[Tuple[Any]]:
+        def fetch_inner() -> tuple[Any] | None:
             assert self.conn is not None
 
             # This is separate from fetch() so that the mutex covers the

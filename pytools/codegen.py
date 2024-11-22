@@ -29,7 +29,7 @@ Tools for Source Code Generation
 .. autofunction:: remove_common_indentation
 """
 
-from typing import Any, List
+from typing import Any
 
 
 # {{{ code generation
@@ -48,8 +48,8 @@ class CodeGenerator:
     .. automethod:: dedent
     """
     def __init__(self) -> None:
-        self.preamble: List[str] = []
-        self.code: List[str] = []
+        self.preamble: list[str] = []
+        self.code: list[str] = []
         self.level = 0
         self.indent_amount = 4
 

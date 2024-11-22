@@ -24,7 +24,6 @@ THE SOFTWARE.
 import logging
 import sys
 from dataclasses import dataclass
-from typing import FrozenSet
 
 import pytest
 
@@ -509,7 +508,7 @@ def test_tag() -> None:
     # Need a subclass that defines the copy function in order to test.
     @tag_dataclass
     class TaggableWithCopy(Taggable):
-        tags: FrozenSet[Tag]
+        tags: frozenset[Tag]
 
         def _with_new_tags(self, tags):
             return TaggableWithCopy(tags)
