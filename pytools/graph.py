@@ -133,8 +133,7 @@ def a_star(
         def estimate_remaining_cost(x: NodeT) -> float:
             if x != goal_state:
                 return 1
-            else:
-                return 0
+            return 0
 
     class AStarNode:
         __slots__ = ["parent", "path_cost", "state"]
@@ -473,7 +472,7 @@ def as_graphviz_dot(graph: GraphT[NodeT],
     # Add nodes
     content = "\n".join(
         [f'{node_to_id[node]} [label="{dot_escape(node_labels(node))}"];'
-         for node in node_to_id.keys()])
+         for node in node_to_id])
 
     content += "\n"
 

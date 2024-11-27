@@ -125,8 +125,7 @@ def guess_job_class():
             stdout=PIPE, stderr=STDOUT).communicate()[0].split("\n")
     if qstat_helplines[0].startswith("GE"):
         return GridEngineJob
-    else:
-        return PBSJob
+    return PBSJob
 
 
 class ConstructorPlaceholder:

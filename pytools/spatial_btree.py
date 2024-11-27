@@ -5,7 +5,7 @@ def do_boxes_intersect(bl, tr):
     (bl1, tr1) = bl
     (bl2, tr2) = tr
     (dimension,) = bl1.shape
-    for i in range(0, dimension):
+    for i in range(dimension):
         if max(bl1[i], bl2[i]) > min(tr1[i], tr2[i]):
             return False
     return True
@@ -23,12 +23,11 @@ def make_buckets(bottom_left, top_right, allbuckets, max_elements_per_box):
                     max_elements_per_box=max_elements_per_box)
             allbuckets.append(bucket)
             return bucket
-        else:
-            pos[dimension] = 0
-            first = do(dimension + 1, pos)
-            pos[dimension] = 1
-            second = do(dimension + 1, pos)
-            return [first, second]
+        pos[dimension] = 0
+        first = do(dimension + 1, pos)
+        pos[dimension] = 1
+        second = do(dimension + 1, pos)
+        return [first, second]
 
     return do(0, np.zeros((dimensions,), np.float64))
 

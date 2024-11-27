@@ -129,7 +129,7 @@ def refdebug(obj, top_level=True, exclude=()):
             elif response == "r":
                 return
             elif response == "q":
-                raise RefDebugQuit()
+                raise RefDebugQuit
             else:
                 print("WHAT YOU SAY!!! (invalid choice)")
 
@@ -154,7 +154,7 @@ def setup_readline():
         try:
             readline.read_history_file(hist_filename)
         except Exception:  # pylint:disable=broad-except
-            # http://docs.python.org/3/howto/pyporting.html#capturing-the-currently-raised-exception  # noqa: E501
+            # http://docs.python.org/3/howto/pyporting.html#capturing-the-currently-raised-exception
             import sys
             e = sys.exc_info()[1]
 

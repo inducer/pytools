@@ -25,12 +25,11 @@ def test_compute_sccs():
         def visit(node):
             if node in visited:
                 return []
-            else:
-                visited.add(node)
-                result = []
-                for child in graph[node]:
-                    result = result + visit(child)
-                return [*result, node]
+            visited.add(node)
+            result = []
+            for child in graph[node]:
+                result = result + visit(child)
+            return [*result, node]
 
         for scc in sccs:
             scc = set(scc)

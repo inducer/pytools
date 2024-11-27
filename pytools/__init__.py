@@ -308,8 +308,7 @@ def module_getattr_for_deprecations(
                 f"'{module_name}.{name}' will continue to work until {deadline}.",
                 DeprecationWarning, stacklevel=2)
         return obj
-    else:
-        raise AttributeError(name)
+    raise AttributeError(name)
 
 # }}}
 
@@ -319,8 +318,7 @@ def module_getattr_for_deprecations(
 def delta(x, y):
     if x == y:
         return 1
-    else:
-        return 0
+    return 0
 
 
 def levi_civita(tup: tuple[int, ...]) -> int:
@@ -331,8 +329,7 @@ def levi_civita(tup: tuple[int, ...]) -> int:
     if len(tup) == 3:
         i, j, k = tup
         return (j-i) * (k-i) * (k-j) // 2
-    else:
-        raise NotImplementedError(f"Levi-Civita symbol in {len(tup)} dimensions")
+    raise NotImplementedError(f"Levi-Civita symbol in {len(tup)} dimensions")
 
 
 def norm_1(iterable):
@@ -748,9 +745,8 @@ def memoize_on_first_arg(
         if attribute_error:
             object.__setattr__(obj, cache_dict_name, {key: result})
             return result
-        else:
-            getattr(obj, cache_dict_name)[key] = result
-            return result
+        getattr(obj, cache_dict_name)[key] = result
+        return result
 
     def clear_cache(obj):
         object.__delattr__(obj, cache_dict_name)
@@ -1211,8 +1207,7 @@ def argmin2(iterable, return_value=False):
 
     if return_value:
         return current_argmin, current_min
-    else:
-        return current_argmin
+    return current_argmin
 
 
 def argmax2(iterable, return_value=False):
@@ -1229,8 +1224,7 @@ def argmax2(iterable, return_value=False):
 
     if return_value:
         return current_argmax, current_max
-    else:
-        return current_argmax
+    return current_argmax
 
 
 def argmin(iterable):
@@ -1318,13 +1312,10 @@ class VarianceAggregator:
         if self.entire_pop:
             if self.n == 0:
                 return None
-            else:
-                return self.m2/self.n
-        else:
-            if self.n <= 1:
-                return None
-            else:
-                return self.m2/(self.n - 1)
+            return self.m2/self.n
+        if self.n <= 1:
+            return None
+        return self.m2/(self.n - 1)
 
 
 def variance(iterable, entire_pop):
@@ -1361,11 +1352,11 @@ def indices_in_shape(shape):
     if not shape:
         yield ()
     elif len(shape) == 1:
-        for i in range(0, shape[0]):
+        for i in range(shape[0]):
             yield (i,)
     else:
         remainder = shape[1:]
-        for i in range(0, shape[0]):
+        for i in range(shape[0]):
             for rest in indices_in_shape(remainder):
                 yield (i, *rest)
 
@@ -1768,10 +1759,9 @@ def merge_tables(*tables: Table,
     def remove_columns(i, row):
         if i == 0 or skip_columns is None:
             return row
-        else:
-            return tuple(
-                entry for i, entry in enumerate(row) if i not in skip_columns
-                )
+        return tuple(
+            entry for i, entry in enumerate(row) if i not in skip_columns
+            )
 
     alignments = sum((
         remove_columns(i, tbl._get_alignments())
@@ -1828,8 +1818,7 @@ def string_histogram(
             eighths = int(ceil((scaled-full)*8))
             if eighths:
                 return full*chr(0x2588) + chr(0x2588+(8-eighths))
-            else:
-                return full*chr(0x2588)
+            return full*chr(0x2588)
     else:
         def format_bar(cnt):
             return int(ceil(cnt*width/max_count))*"#"
@@ -1994,13 +1983,11 @@ def typedump(val: Any, max_seq: int = 5,
         if type(obj).__module__ == "builtins":
             if fully_qualified_name:
                 return type(obj).__qualname__
-            else:
-                return type(obj).__name__
+            return type(obj).__name__
 
         if fully_qualified_name:
             return type(obj).__module__ + "." + type(obj).__qualname__
-        else:
-            return type(obj).__name__
+        return type(obj).__name__
 
     # Special handling for 'str' since it is also iterable
     if isinstance(val, str):
@@ -2022,10 +2009,9 @@ def typedump(val: Any, max_seq: int = 5,
                 t = ",".join(typedump(x, max_seq, special_handlers)
                             for x in val[:max_seq])
                 return f"{objname(val)}({t},...)"
-            else:
-                t = ",".join(typedump(x, max_seq, special_handlers)
-                            for x in val)
-                return f"{objname(val)}({t})"
+            t = ",".join(typedump(x, max_seq, special_handlers)
+                        for x in val)
+            return f"{objname(val)}({t})"
 
         except TypeError:
             return objname(val)
@@ -2165,12 +2151,10 @@ def common_dtype(dtypes, default=None):
     dtypes = list(dtypes)
     if dtypes:
         return argmax2((dtype, dtype.num) for dtype in dtypes)
-    else:
-        if default is not None:
-            return default
-        else:
-            raise ValueError(
-                    "cannot find common dtype of empty dtype list")
+    if default is not None:
+        return default
+    raise ValueError(
+            "cannot find common dtype of empty dtype list")
 
 
 def to_uncomplex_dtype(dtype):
@@ -2188,13 +2172,10 @@ def match_precision(dtype, dtype_to_match):
     if dtype_is_complex:
         if tgt_is_double:
             return numpy.dtype(numpy.complex128)
-        else:
-            return numpy.dtype(numpy.complex64)
-    else:
-        if tgt_is_double:
-            return numpy.dtype(numpy.float64)
-        else:
-            return numpy.dtype(numpy.float32)
+        return numpy.dtype(numpy.complex64)
+    if tgt_is_double:
+        return numpy.dtype(numpy.float64)
+    return numpy.dtype(numpy.float32)
 
 # }}}
 
@@ -2269,7 +2250,6 @@ class UniqueNameGenerator:
             This will not get called for the names in the *existing_names*
             argument to :meth:`__init__`.
         """
-        pass
 
     def add_name(self, name: str, *, conflicting_ok: bool = False) -> None:
         """
@@ -2573,12 +2553,11 @@ class ProcessLogger:
         if sys.stdin is None:
             # Can happen, e.g., if pudb is controlling the console.
             use_late_start_logging = False
+        elif hasattr(sys.stdin, "closed") and not sys.stdin.closed:
+            # can query stdin.isatty() only if stdin's open
+            use_late_start_logging = sys.stdin.isatty()
         else:
-            if hasattr(sys.stdin, "closed") and not sys.stdin.closed:
-                # can query stdin.isatty() only if stdin's open
-                use_late_start_logging = sys.stdin.isatty()
-            else:
-                use_late_start_logging = False
+            use_late_start_logging = False
 
         import os
         if os.environ.get("PYTOOLS_LOG_NO_THREADS", ""):
@@ -2902,13 +2881,12 @@ def strtobool(val: str | None, default: bool | None = None) -> bool:
     val = val.lower()
     if val in ("y", "yes", "t", "true", "on", "1"):
         return True
-    elif val in ("n", "no", "f", "false", "off", "0"):
+    if val in ("n", "no", "f", "false", "off", "0"):
         return False
-    else:
-        raise ValueError(f"invalid truth value '{val}'. "
-                          "Valid values are ('y', 'yes', 't', 'true', 'on', '1') "
-                          "for 'True' and ('n', 'no', 'f', 'false', 'off', '0') "
-                          "for 'False'. Uppercase versions are also accepted.")
+    raise ValueError(f"invalid truth value '{val}'. "
+                      "Valid values are ('y', 'yes', 't', 'true', 'on', '1') "
+                      "for 'True' and ('n', 'no', 'f', 'false', 'off', '0') "
+                      "for 'False'. Uppercase versions are also accepted.")
 
 # }}}
 

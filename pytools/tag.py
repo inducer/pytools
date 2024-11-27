@@ -107,8 +107,7 @@ class DottedName:
     def __eq__(self, other: object) -> bool:
         if isinstance(other, DottedName):
             return self.name_parts == other.name_parts
-        else:
-            return False
+        return False
 
 
 # }}}
@@ -176,11 +175,10 @@ TagT = TypeVar("TagT", bound="Tag")
 def _immediate_unique_tag_descendants(cls: type[Tag]) -> frozenset[type[Tag]]:
     if UniqueTag in cls.__bases__:
         return frozenset([cls])
-    else:
-        result: frozenset[type[Tag]] = frozenset()
-        for base in cls.__bases__:
-            result = result | _immediate_unique_tag_descendants(base)
-        return result
+    result: frozenset[type[Tag]] = frozenset()
+    for base in cls.__bases__:
+        result = result | _immediate_unique_tag_descendants(base)
+    return result
 
 
 class NonUniqueTagError(ValueError):
@@ -189,7 +187,6 @@ class NonUniqueTagError(ValueError):
     than one :class:`UniqueTag` instances of the same subclass in
     its set of tags.
     """
-    pass
 
 
 def check_tag_uniqueness(tags: frozenset[Tag]) -> frozenset[Tag]:
@@ -210,8 +207,7 @@ def check_tag_uniqueness(tags: frozenset[Tag]) -> frozenset[Tag]:
             raise NonUniqueTagError("Multiple tags are direct subclasses of "
                     "the following UniqueTag(s): "
                     f"{', '.join(d.__name__ for d in intersection)}")
-        else:
-            unique_tag_descendants.update(tag_unique_tag_descendants)
+        unique_tag_descendants.update(tag_unique_tag_descendants)
 
     return tags
 
@@ -324,8 +320,7 @@ class Taggable:
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Taggable):
             return self.tags == other.tags
-        else:
-            return super().__eq__(other)
+        return super().__eq__(other)
 
     def __hash__(self) -> int:
         return hash(self.tags)
@@ -349,7 +344,7 @@ _depr_name_to_replacement_and_obj = {
 
 
 def __getattr__(name: str) -> Any:
-    replacement_and_obj = _depr_name_to_replacement_and_obj.get(name, None)
+    replacement_and_obj = _depr_name_to_replacement_and_obj.get(name)
     if replacement_and_obj is not None:
         replacement, obj, year = replacement_and_obj
         from warnings import warn
@@ -358,8 +353,7 @@ def __getattr__(name: str) -> Any:
                 f"'pytools.tag.{name}' will continue to work until {year}.",
                 DeprecationWarning, stacklevel=2)
         return obj
-    else:
-        raise AttributeError(name)
+    raise AttributeError(name)
 
 # }}}
 
