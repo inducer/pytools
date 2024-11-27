@@ -100,6 +100,10 @@ known-local-folder = [
 ]
 lines-after-imports = 2
 
+[tool.ruff.lint.pep8-naming]
+extend-ignore-names = ["update_for_*"]
+
+
 [tool.mypy]
 python_version = "3.10"
 ignore_missing_imports = true

@@ -33,6 +33,8 @@ class PDictTestingKeyOrValue:
         return {"val": self.val, "hash_key": self.hash_key}
 
     def __eq__(self, other: object) -> bool:
+        if type(other) is not PDictTestingKeyOrValue:
+            return False
         return self.val == other.val
 
     def update_persistent_hash(self, key_hash: Any, key_builder: KeyBuilder) -> None:
