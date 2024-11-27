@@ -2,7 +2,7 @@
 
 set -ex
 
-mypy --show-error-codes pytools
+mypy pytools
 
 mypy --strict --follow-imports=silent \
     pytools/tag.py \
