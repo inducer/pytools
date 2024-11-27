@@ -240,9 +240,8 @@ class DataTable:
                     except StopIteration:
                         this_over = True
                         break
-            else:
-                if outer:
-                    this_batch = [(None,) * len(self.column_names)]
+            elif outer:
+                this_batch = [(None,) * len(self.column_names)]
 
             if run_other and not other_over:
                 key = other_key
@@ -253,9 +252,8 @@ class DataTable:
                     except StopIteration:
                         other_over = True
                         break
-            else:
-                if outer:
-                    other_batch = [(None,) * len(other_table.column_names)]
+            elif outer:
+                other_batch = [(None,) * len(other_table.column_names)]
 
             for this_batch_row in this_batch:
                 for other_batch_row in other_batch:
@@ -267,9 +265,8 @@ class DataTable:
             if outer:
                 if this_over and other_over:
                     break
-            else:
-                if this_over or other_over:
-                    break
+            elif this_over or other_over:
+                break
 
         return DataTable(result_columns, result_data)
 

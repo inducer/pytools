@@ -32,7 +32,7 @@ class PDictTestingKeyOrValue:
     def __getstate__(self) -> dict[str, Any]:
         return {"val": self.val, "hash_key": self.hash_key}
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         return self.val == other.val
 
     def update_persistent_hash(self, key_hash: Any, key_builder: KeyBuilder) -> None:

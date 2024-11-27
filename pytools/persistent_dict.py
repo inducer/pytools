@@ -421,24 +421,20 @@ class KeyBuilder:
 
 class NoSuchEntryError(KeyError):
     """Raised when an entry is not found in a :class:`PersistentDict`."""
-    pass
 
 
 class NoSuchEntryCollisionError(NoSuchEntryError):
     """Raised when an entry is not found in a :class:`PersistentDict`, but it
     contains an entry with the same hash key (hash collision)."""
-    pass
 
 
 class ReadOnlyEntryError(KeyError):
     """Raised when an attempt is made to overwrite an entry in a
     :class:`WriteOncePersistentDict`."""
-    pass
 
 
 class CollisionWarning(UserWarning):
     """Warning raised when a collision is detected in a :class:`PersistentDict`."""
-    pass
 
 
 def __getattr__(name: str) -> Any:
@@ -594,11 +590,11 @@ class _PersistentDictBase(Mapping[K, V]):
 
     def store(self, key: K, value: V, _skip_if_present: bool = False) -> None:
         """Store (*key*, *value*) in the dictionary."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def fetch(self, key: K) -> V:
         """Return the value associated with *key* in the dictionary."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def _make_container_dir(self) -> None:
         """Create the container directory to store the dictionary."""
@@ -730,11 +726,9 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
                     if e.sqlite_errorcode == SQLITE_CONSTRAINT_PRIMARYKEY:
                         raise ReadOnlyEntryError("WriteOncePersistentDict, "
                                                  "tried overwriting key") from e
-                    else:
-                        raise
-                else:
-                    raise ReadOnlyEntryError("WriteOncePersistentDict, "
-                                             "tried overwriting key") from e
+                    raise
+                raise ReadOnlyEntryError("WriteOncePersistentDict, "
+                                         "tried overwriting key") from e
 
     def _fetch_uncached(self, keyhash: str) -> tuple[K, V]:
         # This method is separate from fetch() to allow for LRU caching

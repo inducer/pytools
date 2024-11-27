@@ -129,14 +129,13 @@ def _fork_server(sock):
                 df.waitall()
                 _send_packet(sock, ("ok", None))
                 break
+            try:
+                result = funcs[func_name](*args, **kwargs)
+            # FIXME: Is catching all exceptions the right course of action?
+            except Exception as e:  # pylint:disable=broad-except
+                _send_packet(sock, ("exception", e))
             else:
-                try:
-                    result = funcs[func_name](*args, **kwargs)
-                # FIXME: Is catching all exceptions the right course of action?
-                except Exception as e:  # pylint:disable=broad-except
-                    _send_packet(sock, ("exception", e))
-                else:
-                    _send_packet(sock, ("ok", result))
+                _send_packet(sock, ("ok", result))
     finally:
         sock.close()
 

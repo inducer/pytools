@@ -402,7 +402,7 @@ class FakeArray:
     def __getitem__(self, idx):
         FakeArray.nopes += 1
         if idx > 10:
-            raise IndexError()
+            raise IndexError
 
 
 def test_make_obj_array_iteration():
