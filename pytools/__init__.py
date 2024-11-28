@@ -40,6 +40,8 @@ from typing import (
     TypeVar,
 )
 
+from typing_extensions import dataclass_transform
+
 
 # These are deprecated and will go away in 2022.
 all = builtins.all
@@ -190,6 +192,11 @@ Python's built-in set type, they maintain the internal order of elements.
 .. autofunction:: unique_difference
 .. autofunction:: unique_intersection
 .. autofunction:: unique_union
+
+Functionality for dataclasses
+-----------------------------
+
+.. autofunction:: opt_frozen_dataclass
 
 Type Variables Used
 -------------------
@@ -2971,6 +2978,47 @@ def unique_union(*args: Iterable[T]) -> Collection[T]:
     return res
 
 # }}}
+
+
+@dataclass_transform(frozen_default=True)
+def opt_frozen_dataclass(
+            *,
+            init: bool = True,
+            repr: bool = True,
+            eq: bool = True,
+            order: bool = False,
+            unsafe_hash: bool = False,
+            match_args: bool = True,
+            kw_only: bool = False,
+            slots: bool = False,
+            # Added in 3.11.
+            # weakref_slot: bool = False
+         ) -> Callable[[type[T]], type[T]]:
+    """Like :func:`dataclasses.dataclass`, but marks the dataclass frozen
+    only if :data:`__debug__` is active. Frozen dataclasses have a ~20%
+    cost penalty (from having to call :meth:`object.__setattr__`) that
+    this decorator avoid when the interpreter runs with "optimization"
+    enabled.
+
+    .. versionadded:: 2024.1.18
+    """
+    def map_cls(cls: type[T]) -> type[T]:
+        from dataclasses import dataclass
+        return dataclass(
+             init=init,
+             repr=repr,
+             eq=eq,
+             order=order,
+             unsafe_hash=unsafe_hash,
+             frozen=__debug__,
+             match_args=match_args,
+             kw_only=kw_only,
+             slots=slots,
+             # Added in 3.11.
+             # weakref_slot=weakref_slot,
+        )(cls)
+
+    return map_cls
 
 
 def _test():
