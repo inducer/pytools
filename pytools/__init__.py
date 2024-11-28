@@ -910,7 +910,7 @@ class memoize_in:  # noqa: N801
         return new_inner
 
 
-class keyed_memoize_in(Generic[P, R]):  # noqa: N801
+class keyed_memoize_in(Generic[P]):  # noqa: N801
     """Like :class:`memoize_in`, but additionally uses a function *key* to
     compute the key under which the function result is memoized.
 
