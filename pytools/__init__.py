@@ -2987,7 +2987,7 @@ def opt_frozen_dataclass(
             repr: bool = True,
             eq: bool = True,
             order: bool = False,
-            unsafe_hash: bool = False,
+            unsafe_hash: bool | None = None,
             match_args: bool = True,
             kw_only: bool = False,
             slots: bool = False,
@@ -3000,16 +3000,41 @@ def opt_frozen_dataclass(
     this decorator avoid when the interpreter runs with "optimization"
     enabled.
 
+    The resulting dataclass supports hashing unless *eq* is set to *False*,
+    if *unsafe_hash* is left at the default or set to *True*.
+
+
+    .. note::
+
+        Python prevents non-frozen dataclasses from inheriting from frozen ones,
+        and vice versa. To ensure frozen-ness is applied predictably in all
+        scenarios (mainly :data:`__debug__` on and off), it is strongly recommended
+        that all dataclasses inheriting from ones with this decorator *also*
+        use this decorator. There are no run-time checks to make sure of this.
+
     .. versionadded:: 2024.1.18
     """
     def map_cls(cls: type[T]) -> type[T]:
+        # This ensures that the resulting dataclass is hashable with and without
+        # __debug__, unless the user overrides unsafe_hash or provides their own
+        # __hash__ method.
+        if unsafe_hash is None:
+            if (eq
+                    and not __debug__
+                    and "__hash__" not in cls.__dict__):
+                loc_unsafe_hash = True
+            else:
+                loc_unsafe_hash = False
+        else:
+            loc_unsafe_hash = unsafe_hash
+
         from dataclasses import dataclass
         return dataclass(
              init=init,
              repr=repr,
              eq=eq,
              order=order,
-             unsafe_hash=unsafe_hash,
+             unsafe_hash=loc_unsafe_hash,
              frozen=__debug__,
              match_args=match_args,
              kw_only=kw_only,
