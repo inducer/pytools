@@ -1,5 +1,6 @@
 __copyright__ = """
 Copyright (C) 2009-2013 Andreas Kloeckner
+Copyright (C) 2013- University of Illinois Board of Trustees
 Copyright (C) 2020 Matt Wala
 """
 
@@ -2987,35 +2988,64 @@ def opt_frozen_dataclass(
             repr: bool = True,
             eq: bool = True,
             order: bool = False,
-            unsafe_hash: bool = False,
+            unsafe_hash: bool | None = None,
             match_args: bool = True,
             kw_only: bool = False,
             slots: bool = False,
             # Added in 3.11.
-            # weakref_slot: bool = False
+            weakref_slot: bool = False,
          ) -> Callable[[type[T]], type[T]]:
     """Like :func:`dataclasses.dataclass`, but marks the dataclass frozen
     only if :data:`__debug__` is active. Frozen dataclasses have a ~20%
-    cost penalty (from having to call :meth:`object.__setattr__`) that
-    this decorator avoid when the interpreter runs with "optimization"
+    cost penalty (on creation, from having to call :meth:`object.__setattr__`) that
+    this decorator avoids when the interpreter runs with "optimization"
     enabled.
+
+    The resulting dataclass supports hashing, even when it is not actually frozen,
+    if *unsafe_hash* is left at the default or set to *True*.
+
+    .. note::
+
+        Python prevents non-frozen dataclasses from inheriting from frozen ones,
+        and vice versa. To ensure frozen-ness is applied predictably in all
+        scenarios (mainly :data:`__debug__` on and off), it is strongly recommended
+        that all dataclasses inheriting from ones with this decorator *also*
+        use this decorator. There are no run-time checks to make sure of this.
 
     .. versionadded:: 2024.1.18
     """
     def map_cls(cls: type[T]) -> type[T]:
+        # This ensures that the resulting dataclass is hashable with and without
+        # __debug__, unless the user overrides unsafe_hash or provides their own
+        # __hash__ method.
+        if unsafe_hash is None:
+            if (eq
+                    and not __debug__
+                    and "__hash__" not in cls.__dict__):
+                loc_unsafe_hash = True
+            else:
+                loc_unsafe_hash = False
+        else:
+            loc_unsafe_hash = unsafe_hash
+
+        dc_extra_kwargs: dict[str, bool] = {}
+        if weakref_slot:
+            if sys.version_info < (3, 11):
+                raise TypeError("weakref_slot is not available before Python 3.11")
+            dc_extra_kwargs["weakref_slot"] = weakref_slot
+
         from dataclasses import dataclass
         return dataclass(
              init=init,
              repr=repr,
              eq=eq,
              order=order,
-             unsafe_hash=unsafe_hash,
+             unsafe_hash=loc_unsafe_hash,
              frozen=__debug__,
              match_args=match_args,
              kw_only=kw_only,
              slots=slots,
-             # Added in 3.11.
-             # weakref_slot=weakref_slot,
+             **dc_extra_kwargs,
         )(cls)
 
     return map_cls
