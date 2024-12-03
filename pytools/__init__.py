@@ -2991,8 +2991,7 @@ def opt_frozen_dataclass(
             match_args: bool = True,
             kw_only: bool = False,
             slots: bool = False,
-            # Added in 3.11.
-            # weakref_slot: bool = False
+            **kwargs: Any,  # Extra, version dependent arguments (weakref_slot in 3.11)
          ) -> Callable[[type[T]], type[T]]:
     """Like :func:`dataclasses.dataclass`, but marks the dataclass frozen
     only if :data:`__debug__` is active. Frozen dataclasses have a ~20%
@@ -3014,13 +3013,22 @@ def opt_frozen_dataclass(
 
     .. versionadded:: 2024.1.18
     """
+
+    if "frozen" in kwargs:
+        raise ValueError("frozen must not be specified in opt_frozen_dataclass")
+
     def map_cls(cls: type[T]) -> type[T]:
         # This ensures that the resulting dataclass is hashable with and without
         # __debug__, unless the user overrides unsafe_hash or provides their own
         # __hash__ method.
+
+        # Make it possible to override 'frozen' in the class definition for testing.
+        # It would be nice to have something like https://discuss.python.org/t/allow-debug-to-be-set-at-runtime/64840
+        loc_frozen = __debug__ if "_frozen_override" not in cls.__dict__ else False
+
         if unsafe_hash is None:
             if (eq
-                    and not __debug__
+                    and not loc_frozen
                     and "__hash__" not in cls.__dict__):
                 loc_unsafe_hash = True
             else:
@@ -3035,12 +3043,11 @@ def opt_frozen_dataclass(
              eq=eq,
              order=order,
              unsafe_hash=loc_unsafe_hash,
-             frozen=__debug__,
+             frozen=loc_frozen,
              match_args=match_args,
              kw_only=kw_only,
              slots=slots,
-             # Added in 3.11.
-             # weakref_slot=weakref_slot,
+             **kwargs,
         )(cls)
 
     return map_cls
