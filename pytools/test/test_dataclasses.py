@@ -45,9 +45,9 @@ def test_opt_frozen_dataclass() -> None:
 
     # Needs to be frozen by default
     with pytest.raises(AttributeError):
-        a.x = 2
+        a.x = 2  # type: ignore[misc]
 
-    assert a.__dataclass_params__.frozen is True
+    assert a.__dataclass_params__.frozen is True  # type: ignore[attr-defined]  # pylint: disable=no-member
 
     # }}}
 
@@ -85,12 +85,12 @@ def test_opt_frozen_dataclass() -> None:
     assert d.x == 1
 
     # Actually mutable
-    d.x = 2
+    d.x = 2  # type: ignore[misc]
 
     # Must be hashable, despite not frozen (via unsafe_hash)
     assert hash(d) == hash(D(2))
-    assert d.__dataclass_params__.frozen is False
-    assert d.__dataclass_params__.unsafe_hash is True
+    assert d.__dataclass_params__.frozen is False  # type: ignore[attr-defined]  # pylint: disable=no-member
+    assert d.__dataclass_params__.unsafe_hash is True  # type: ignore[attr-defined]  # pylint: disable=no-member
 
     # }}}
 
