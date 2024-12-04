@@ -44,10 +44,13 @@ def test_opt_frozen_dataclass() -> None:
     assert a == A(1)
 
     # Needs to be frozen by default
-    with pytest.raises(AttributeError):
+    if __debug__:
+        with pytest.raises(AttributeError):
+            a.x = 2  # type: ignore[misc]
+    else:
         a.x = 2  # type: ignore[misc]
 
-    assert a.__dataclass_params__.frozen is True  # type: ignore[attr-defined]  # pylint: disable=no-member
+    assert a.__dataclass_params__.frozen is __debug__  # type: ignore[attr-defined]  # pylint: disable=no-member
 
     # }}}
 
