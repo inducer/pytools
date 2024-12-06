@@ -10,6 +10,7 @@ Welcome to pytools's documentation!
     persistent_dict
     convergence
     graph
+    debug
     tag
     codegen
     mpi
