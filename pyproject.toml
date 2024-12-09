@@ -31,7 +31,7 @@ classifiers = [
 dependencies = [
     "platformdirs>=2.2",
     # for dataclass_transform with frozen_default
-    "typing-extensions>=4",
+    "typing-extensions>=4.5",
 ]
 
 [project.optional-dependencies]
