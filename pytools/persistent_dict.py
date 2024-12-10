@@ -833,7 +833,7 @@ class PersistentDict(_PersistentDictBase[K, V]):
 
         stored_key, value = pickle.loads(row[0])
         self._collision_check(key, stored_key)
-        return cast(V, value)
+        return cast("V", value)
 
     def remove(self, key: K) -> None:
         """Remove the entry associated with *key* from the dictionary."""
