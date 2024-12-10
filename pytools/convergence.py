@@ -82,7 +82,7 @@ class EOCRecorder:
 
     def order_estimate(self) -> float:
         from typing import cast
-        return cast(float, self.estimate_order_of_convergence()[0, 1])
+        return cast("float", self.estimate_order_of_convergence()[0, 1])
 
     def max_error(self) -> float:
         return max(err for absc, err in self.history)

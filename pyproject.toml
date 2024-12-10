@@ -76,6 +76,7 @@ extend-select = [
     "UP",  # pyupgrade
     "RUF", # ruff
     "W",   # pycodestyle
+    "TC",
 ]
 extend-ignore = [
     "C90",  # McCabe complexity
