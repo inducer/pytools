@@ -1822,14 +1822,14 @@ def string_histogram(
     if use_unicode:
         def format_bar(cnt):
             scaled = cnt*width/max_count
-            full = int(floor(scaled))
-            eighths = int(ceil((scaled-full)*8))
+            full = floor(scaled)
+            eighths = ceil((scaled-full)*8)
             if eighths:
                 return full*chr(0x2588) + chr(0x2588+(8-eighths))
             return full*chr(0x2588)
     else:
         def format_bar(cnt):
-            return int(ceil(cnt*width/max_count))*"#"
+            return ceil(cnt*width/max_count)*"#"
 
     max_count = max(bins)
     total_count = sum(bins)
