@@ -143,8 +143,8 @@ def refdebug(obj, top_level=True, exclude=()):
 
 def get_shell_hist_filename():
     import os
-    _home = os.environ.get("HOME", "/")
-    return os.path.join(_home, ".pytools-debug-shell-history")
+    home = os.environ.get("HOME", "/")
+    return os.path.join(home, ".pytools-debug-shell-history")
 
 
 def setup_readline():
