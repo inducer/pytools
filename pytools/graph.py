@@ -83,6 +83,7 @@ from dataclasses import dataclass
 from typing import (
     Any,
     Generic,
+    Optional,
     Protocol,
     TypeAlias,
     TypeVar,
@@ -566,24 +567,39 @@ def undirected_graph_from_edges(
 
 def get_reachable_nodes(
         undirected_graph: GraphT[NodeT],
-        source_node: NodeT) -> frozenset[NodeT]:
+        source_node: NodeT,
+        exclude_nodes: Optional[set[NodeT]] = None) -> frozenset[NodeT]:
     """
     Returns a :class:`frozenset` of all nodes in *undirected_graph* that are
-    reachable from *source_node*.
+    reachable from *source_node*. Reachability of nodes from *source_node* can
+    be restricted by supplying a set of nodes to be excluded from consideration.
+    Effectively, this amounts to traversing partitions of *undirected_graph*
+    with partition points defined by *exclude_nodes*.
     """
     nodes_visited: set[NodeT] = set()
+    reachable_nodes: set[NodeT] = set()
     nodes_to_visit = {source_node}
+
+    if exclude_nodes is None:
+        exclude_nodes = set()
 
     while nodes_to_visit:
         current_node = nodes_to_visit.pop()
         nodes_visited.add(current_node)
 
-        neighbors = undirected_graph[current_node]
-        nodes_to_visit.update({node
-                               for node in neighbors
-                               if node not in nodes_visited})
+        if current_node in exclude_nodes:
+            continue
 
-    return frozenset(nodes_visited)
+        reachable_nodes.add(current_node)
+
+        new_nodes_to_visit = set()
+        for node in undirected_graph[current_node]:
+            if node not in nodes_visited and node not in exclude_nodes:
+                new_nodes_to_visit.add(node)
+
+        nodes_to_visit.update(new_nodes_to_visit)
+
+    return frozenset(reachable_nodes)
 
 
 # vim: foldmethod=marker
