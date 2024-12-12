@@ -1,4 +1,39 @@
+__license__ = """
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+"""
+
+
+__doc__ = """
+Debugging helpers
+=================
+
+.. autofunction:: make_unique_filesystem_object
+.. autofunction:: open_unique_debug_file
+.. autofunction:: refdebug
+.. autofunction:: get_object_graph
+.. autofunction:: get_object_cycles
+.. autofunction:: estimate_memory_usage
+
+"""
+
 import sys
+from typing import Collection, Dict, List, Set, Tuple, Union
 
 from pytools import memoize
 
@@ -135,6 +170,123 @@ def refdebug(obj, top_level=True, exclude=()):
 
     finally:
         print("<--------------")
+
+# }}}
+
+
+# {{{ Find circular references
+
+from pytools.graph import GraphT
+
+
+def get_object_graph(objects: Collection[object],
+                     outside_objects: bool = False) -> GraphT:
+
+    """Create a graph out of *objects*, with graph edges representing
+    references between objects.
+
+    :arg objects: The objects to build the graph.
+    :arg outside_objects: Include objects not in *objects* in the graph when
+        ``True``.
+
+    :returns: A :class:`~pytools.graph.GraphT` with the references between objects.
+    """
+
+    import gc
+    res: Dict[object, Set[object]] = {}
+
+    def hash_unhashable(obj: object) -> Union[object, Tuple[int, str]]:
+        try:
+            hash(obj)
+        except TypeError:
+            return (id(obj), str(obj))
+        else:
+            return obj
+
+    # Collect objects first to differentiate to outside objects later
+    for obj in objects:
+        res[hash_unhashable(obj)] = set()
+
+    for obj in objects:
+        refs = gc.get_referents(obj)
+        obj = hash_unhashable(obj)
+        for r in refs:
+            r = hash_unhashable(r)
+            if r in res or outside_objects:
+                res.setdefault(obj, set()).add(r)
+
+    return res
+
+
+def show_object_graph(objects: Collection[object],
+                      outside_objects: bool = False) -> None:
+    """Show a graph out of *objects*, with graph edges representing
+    references between objects.
+
+    :arg objects: The objects to build the graph.
+    :arg outside_objects: Include objects not in *objects* in the graph when
+        ``True``.
+    """
+    from pytools.graph import as_graphviz_dot
+    from pytools.graphviz import show_dot
+
+    show_dot(as_graphviz_dot(get_object_graph(objects, outside_objects)))
+
+
+# Based on https://code.activestate.com/recipes/523004-find-cyclical-references/
+
+def get_object_cycles(objects: Collection[object]) -> List[List[object]]:
+    """
+    Find circular references in *objects*. This can be useful for example to debug
+    why certain objects need to be freed via garbage collection instead of
+    reference counting.
+
+    :arg objects: A collection of objects to find cycles in. A potential way
+        to find a list of objects potentially containing cycles from the garbage
+        collector is the following code::
+
+            gc.set_debug(gc.DEBUG_SAVEALL)
+            gc.collect()
+            gc.set_debug(0)
+            obj_list = gc.garbage
+
+            from pytools.debug import get_object_cycles
+            print(get_object_cycles(obj_list))
+
+    :returns: A :class:`list` in which each element contains a :class:`list`
+        of objects forming a cycle.
+    """
+    def recurse(obj: object, start: object, all_objs: Set[object],
+                current_path: List[object]) -> None:
+        all_objs.add(id(obj))
+
+        import gc
+        from types import FrameType
+
+        referents = gc.get_referents(obj)
+
+        for referent in referents:
+            # If we've found our way back to the start, this is
+            # a cycle, so return it
+            if referent is start:
+                res.append(current_path)
+                return
+
+            # Don't go back through the original list of objects, or
+            # through temporary references to the object, since those
+            # are just an artifact of the cycle detector itself.
+            elif referent is objects or isinstance(referent, FrameType):
+                continue
+
+            # We haven't seen this object before, so recurse
+            elif id(referent) not in all_objs:
+                recurse(referent, start, all_objs, current_path + [obj])
+
+    res: List[List[object]] = []
+    for obj in objects:
+        recurse(obj, obj, set(), [])
+
+    return res
 
 # }}}
 
