@@ -83,7 +83,6 @@ from dataclasses import dataclass
 from typing import (
     Any,
     Generic,
-    Optional,
     Protocol,
     TypeAlias,
     TypeVar,
@@ -568,7 +567,7 @@ def undirected_graph_from_edges(
 def get_reachable_nodes(
         undirected_graph: GraphT[NodeT],
         source_node: NodeT,
-        exclude_nodes: Optional[Collection[NodeT]] = None) -> frozenset[NodeT]:
+        exclude_nodes: Collection[NodeT] | None = None) -> frozenset[NodeT]:
     """
     Returns a :class:`frozenset` of all nodes in *undirected_graph* that are
     reachable from *source_node*.

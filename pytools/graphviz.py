@@ -34,7 +34,6 @@ Dot helper functions
 import html
 import logging
 import os
-from typing import Optional
 
 
 logger = logging.getLogger(__name__)
@@ -56,7 +55,7 @@ def dot_escape(s: str) -> str:
     return html.escape(s.replace("\\", "\\\\"))
 
 
-def show_dot(dot_code: str, output_to: Optional[str] = None) -> Optional[str]:
+def show_dot(dot_code: str, output_to: str | None = None) -> str | None:
     """
     Visualize the graph represented by *dot_code*.
 

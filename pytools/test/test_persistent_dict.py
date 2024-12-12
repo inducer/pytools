@@ -3,7 +3,7 @@ import sys
 import tempfile
 from dataclasses import dataclass
 from enum import Enum, IntEnum
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 
@@ -926,8 +926,8 @@ def test_hash_function() -> None:
 
 # {{{ basic concurrency tests
 
-def _conc_fn(tmpdir: Optional[str] = None,
-             pdict: Optional[PersistentDict[int, int]] = None) -> None:
+def _conc_fn(tmpdir: str | None = None,
+             pdict: PersistentDict[int, int] | None = None) -> None:
     import time
 
     assert (pdict is None) ^ (tmpdir is None)
@@ -1002,7 +1002,7 @@ class RaisingThread(Thread):
         except Exception as e:
             self._exc = e
 
-    def join(self, timeout: Optional[float] = None) -> None:
+    def join(self, timeout: float | None = None) -> None:
         super().join(timeout=timeout)
         if self._exc:
             raise self._exc
