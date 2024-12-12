@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import time
 
 from pytools import DependentDictionary, Reference
@@ -8,13 +10,13 @@ class StopWatch:
         self.Elapsed = 0.0
         self.LastStart: float | None = None
 
-    def start(self) -> "StopWatch":
+    def start(self) -> StopWatch:
         assert self.LastStart is None
 
         self.LastStart = time.time()
         return self
 
-    def stop(self) -> "StopWatch":
+    def stop(self) -> StopWatch:
         assert self.LastStart is not None
 
         self.Elapsed += time.time() - self.LastStart

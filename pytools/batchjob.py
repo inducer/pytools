@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def _cp(src, dest):
     from pytools import assert_not_a_file
     assert_not_a_file(dest)

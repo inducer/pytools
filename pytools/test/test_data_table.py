@@ -1,4 +1,5 @@
 # data from Wikipedia "join" article
+from __future__ import annotations
 
 
 def get_dept_table():

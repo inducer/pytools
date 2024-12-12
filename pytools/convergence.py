@@ -5,6 +5,7 @@
 .. autoclass:: PConvergenceVerifier
 """
 
+from __future__ import annotations
 
 import numbers
 

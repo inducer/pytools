@@ -98,6 +98,7 @@ known-local-folder = [
     "pytools",
 ]
 lines-after-imports = 2
+required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.lint.pep8-naming]
 extend-ignore-names = ["update_for_*"]

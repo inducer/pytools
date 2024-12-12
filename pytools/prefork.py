@@ -19,12 +19,16 @@ Since none of this is MPI-specific, it got parked in :mod:`pytools`.
 .. autofunction:: wait
 .. autofunction:: waitall
 """
+from __future__ import annotations
 
 import socket
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
 from subprocess import Popen
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class ExecError(OSError):
