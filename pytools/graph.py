@@ -568,14 +568,21 @@ def undirected_graph_from_edges(
 def get_reachable_nodes(
         undirected_graph: GraphT[NodeT],
         source_node: NodeT,
-        exclude_nodes: Optional[set[NodeT]] = None) -> frozenset[NodeT]:
+        exclude_nodes: Optional[Collection[NodeT]] = None) -> frozenset[NodeT]:
     """
     Returns a :class:`frozenset` of all nodes in *undirected_graph* that are
-    reachable from *source_node*. Reachability of nodes from *source_node* can
-    be restricted by supplying a set of nodes to be excluded from consideration.
-    Effectively, this amounts to traversing partitions of *undirected_graph*
-    with partition points defined by *exclude_nodes*.
+    reachable from *source_node*.
+
+    If any node from *exclude_nodes* lies on a path between *source_node* and
+    some other node :math:`u` in *undirected_graph* and there are no other
+    viable paths, then :math:`u` is considered not reachable from *source_node*.
+
+    In the case where *source_node* is in *exclude_nodes*, then no node is
+    reachable from *source_node*, so an empty :class:`frozenset` is returned.
     """
+    if exclude_nodes is not None and source_node in exclude_nodes:
+        return frozenset()
+
     nodes_visited: set[NodeT] = set()
     reachable_nodes: set[NodeT] = set()
     nodes_to_visit = {source_node}
@@ -587,17 +594,13 @@ def get_reachable_nodes(
         current_node = nodes_to_visit.pop()
         nodes_visited.add(current_node)
 
-        if current_node in exclude_nodes:
-            continue
-
         reachable_nodes.add(current_node)
 
-        new_nodes_to_visit = set()
-        for node in undirected_graph[current_node]:
-            if node not in nodes_visited and node not in exclude_nodes:
-                new_nodes_to_visit.add(node)
-
-        nodes_to_visit.update(new_nodes_to_visit)
+        neighbors = undirected_graph[current_node]
+        nodes_to_visit.update({
+            node for node in neighbors
+            if node not in nodes_visited and node not in exclude_nodes
+        })
 
     return frozenset(reachable_nodes)
 
