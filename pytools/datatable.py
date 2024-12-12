@@ -1,8 +1,12 @@
-from collections.abc import Callable, Iterator, Sequence
-from typing import IO, Any
+from __future__ import annotations
+
+from typing import IO, TYPE_CHECKING, Any
 
 from pytools import Record
 
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator, Sequence
 
 __doc__ = """
 An in-memory relational database table
@@ -90,7 +94,7 @@ class DataTable:
         for row in rows:
             self.insert_row(row)
 
-    def filtered(self, **kwargs: Any) -> "DataTable":
+    def filtered(self, **kwargs: Any) -> DataTable:
         if not kwargs:
             return self
 
@@ -124,14 +128,14 @@ class DataTable:
     def clear(self) -> None:
         del self.data[:]
 
-    def copy(self) -> "DataTable":
+    def copy(self) -> DataTable:
         """Make a copy of the instance, but leave individual rows untouched.
 
         If the rows are modified later, they will also be modified in the copy.
         """
         return DataTable(self.column_names, self.data[:])
 
-    def deep_copy(self) -> "DataTable":
+    def deep_copy(self) -> DataTable:
         """Make a copy of the instance down to the row level.
 
         The copy's rows may be modified independently from the original.
@@ -149,7 +153,7 @@ class DataTable:
         self.data.sort(reverse=reverse, key=mykey)
 
     def aggregated(self, groupby: Sequence[str], agg_column: str,
-                   aggregate_func: Callable[[Sequence[Any]], Any]) -> "DataTable":
+                   aggregate_func: Callable[[Sequence[Any]], Any]) -> DataTable:
         gb_indices = [self.column_indices[col] for col in groupby]
         agg_index = self.column_indices[agg_column]
 
@@ -180,8 +184,8 @@ class DataTable:
                 [self.column_names[i] for i in gb_indices] + [agg_column],
                 result_data)
 
-    def join(self, column: str, other_column: str, other_table: "DataTable",
-             outer: bool = False) -> "DataTable":
+    def join(self, column: str, other_column: str, other_table: DataTable,
+             outer: bool = False) -> DataTable:
         """Return a table joining this and the C{other_table} on C{column}.
 
         The new table has the following columns:
@@ -270,7 +274,7 @@ class DataTable:
 
         return DataTable(result_columns, result_data)
 
-    def restricted(self, columns: Sequence[str]) -> "DataTable":
+    def restricted(self, columns: Sequence[str]) -> DataTable:
         col_indices = [self.column_indices[col] for col in columns]
 
         return DataTable(columns,

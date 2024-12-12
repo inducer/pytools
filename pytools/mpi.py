@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 __copyright__ = """
 Copyright (C) 2009-2019 Andreas Kloeckner
 Copyright (C) 2022 University of Illinois Board of Trustees
@@ -32,8 +35,12 @@ MPI helper functionality
 .. autofunction:: pytest_raises_on_rank
 """
 
-from collections.abc import Generator
 from contextlib import AbstractContextManager, contextmanager
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 
 def check_for_mpi_relaunch(argv):

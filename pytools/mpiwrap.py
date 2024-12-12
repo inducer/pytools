@@ -1,4 +1,5 @@
 """See pytools.prefork for this module's reason for being."""
+from __future__ import annotations
 
 import mpi4py.rc  # pylint:disable=import-error
 
