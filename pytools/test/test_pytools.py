@@ -871,6 +871,22 @@ def test_record():
     # }}}
 
 
+def test_permutations():
+    from math import factorial
+
+    from pytools import generate_permutations, generate_unique_permutations
+
+    perm = list(generate_permutations([1, 2, 3, 4]))
+    assert len(perm)  == factorial(4)
+    perm = list(generate_unique_permutations((1, 3, 3, 4)))
+    assert len(perm)  == 12
+
+    perms = list(generate_permutations("1234"))
+    assert len(perms)  == factorial(4)
+    perms = list(generate_unique_permutations("1334"))
+    assert len(perms)  == 12
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
