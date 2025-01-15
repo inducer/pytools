@@ -2122,7 +2122,8 @@ class ProgressBar:
     .. automethod:: __enter__
     .. automethod:: __exit__
     """
-    def __init__(self, descr, total, initial=0, length=40):
+    def __init__(self, descr: str, total: int, initial: int = 0,
+                 length: int = 40) -> None:
         import time
         self.description = descr
         self.total = total
@@ -2135,9 +2136,9 @@ class ProgressBar:
         self.speed_meas_start_time = self.start_time
         self.speed_meas_start_done = initial
 
-        self.time_per_step = None
+        self.time_per_step: float | None = None
 
-    def draw(self):
+    def draw(self) -> None:
         import time
 
         now = time.time()
@@ -2170,21 +2171,21 @@ class ProgressBar:
             self.last_squares = squares
             self.last_update_time = now
 
-    def progress(self, steps=1):
+    def progress(self, steps: int = 1) -> None:
         self.set_progress(self.done + steps)
 
-    def set_progress(self, done):
+    def set_progress(self, done: int) -> None:
         self.done = done
         self.draw()
 
-    def finished(self):
+    def finished(self) -> None:
         self.set_progress(self.total)
         sys.stderr.write("\n")
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         self.draw()
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         self.finished()
 
 # }}}
