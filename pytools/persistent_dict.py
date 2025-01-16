@@ -331,14 +331,15 @@ class KeyBuilder:
 
     def update_for_numpy_scalar(self, key_hash: Hash, key: Any) -> None:
         import numpy as np
-        if IS_BIGENDIAN:
-            key = key.byteswap()
         if hasattr(np, "complex256") and key.dtype == np.dtype("complex256"):
             key_hash.update(repr(complex(key)).encode("utf8"))
         elif hasattr(np, "float128") and key.dtype == np.dtype("float128"):
             key_hash.update(repr(float(key)).encode("utf8"))
         else:
-            key_hash.update(np.array(key).tobytes())
+            if IS_BIGENDIAN:
+                key_hash.update(np.array(key).byteswap().tobytes())
+            else:
+                key_hash.update(np.array(key).tobytes())
 
     def update_for_dataclass(self, key_hash: Hash, key: Any) -> None:
         self.rec(key_hash, f"{type(key).__qualname__}.{type(key).__name__}")
