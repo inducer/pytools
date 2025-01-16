@@ -55,6 +55,11 @@ from typing import (
 
 from typing_extensions import Self, dataclass_transform
 
+from pytools.version import VERSION_TEXT
+
+
+__version__ = VERSION_TEXT
+
 
 # These are deprecated and will go away in 2022.
 all = builtins.all
