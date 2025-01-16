@@ -219,6 +219,8 @@ class KeyBuilder:
                         # Non-numpy scalars are handled above in the try block.
                         method = self.update_for_numpy_scalar
 
+                    # numpy arrays are mutable so they are not handled in KeyBuilder
+
                 if method is None:
                     if issubclass(tp, Enum):
                         method = self.update_for_enum
@@ -324,6 +326,8 @@ class KeyBuilder:
 
     def update_for_numpy_scalar(self, key_hash: Hash, key: Any) -> None:
         import numpy as np
+        if sys.byteorder == "big":
+            key = key.byteswap()
         if hasattr(np, "complex256") and key.dtype == np.dtype("complex256"):
             key_hash.update(repr(complex(key)).encode("utf8"))
         elif hasattr(np, "float128") and key.dtype == np.dtype("float128"):
