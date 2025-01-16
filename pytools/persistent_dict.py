@@ -163,12 +163,6 @@ class KeyBuilder:
         may stop working as early as 2022.
 
         .. versionadded:: 2021.2
-
-    .. note::
-
-        Some key-building uses system byte order, so the built keys may not match
-        across different systems. It would be desirable to fix this, but this is
-        not yet done.
     """
 
     # this exists so that we can (conceivably) switch algorithms at some point
@@ -277,10 +271,7 @@ class KeyBuilder:
         sz = 8
         while True:
             try:
-                # Must match system byte order so that numpy and this
-                # generate the same string of bytes.
-                # https://github.com/inducer/pytools/issues/259
-                key_hash.update(key.to_bytes(sz, byteorder=sys.byteorder, signed=True))
+                key_hash.update(key.to_bytes(sz, byteorder="little", signed=True))
                 return
             except OverflowError:
                 sz *= 2
