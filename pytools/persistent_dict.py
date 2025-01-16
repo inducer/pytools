@@ -68,6 +68,9 @@ else:
     _HAS_ATTRS = True
 
 
+IS_BIGENDIAN = sys.byteorder == "big"
+
+
 logger = logging.getLogger(__name__)
 
 # NOTE: not always available so they get hardcoded here
@@ -271,6 +274,8 @@ class KeyBuilder:
 
     def update_for_int(self, key_hash: Hash, key: int) -> None:
         sz = 8
+        # Note: this must match the hash for numpy integers, since
+        # np.int64(1) == 1
         while True:
             try:
                 key_hash.update(key.to_bytes(sz, byteorder="little", signed=True))
@@ -326,7 +331,7 @@ class KeyBuilder:
 
     def update_for_numpy_scalar(self, key_hash: Hash, key: Any) -> None:
         import numpy as np
-        if sys.byteorder == "big":
+        if IS_BIGENDIAN:
             key = key.byteswap()
         if hasattr(np, "complex256") and key.dtype == np.dtype("complex256"):
             key_hash.update(repr(complex(key)).encode("utf8"))
