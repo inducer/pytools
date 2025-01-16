@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 __copyright__ = "Copyright (C) 2009-2020 Andreas Kloeckner"
 
 __license__ = """
@@ -94,8 +97,7 @@ def make_obj_array(res_list):
 def obj_array_to_hashable(f):
     if isinstance(f, np.ndarray) and f.dtype.char == "O":
         return tuple(f)
-    else:
-        return f
+    return f
 
 
 def flat_obj_array(*args):
@@ -139,8 +141,7 @@ def obj_array_vectorize(f, ary):
         for i in np.ndindex(ary.shape):
             result[i] = f(ary[i])
         return result
-    else:
-        return f(ary)
+    return f(ary)
 
 
 def obj_array_vectorized(f):
@@ -168,8 +169,7 @@ def rec_obj_array_vectorize(f, ary):
         for i in np.ndindex(ary.shape):
             result[i] = rec_obj_array_vectorize(f, ary[i])
         return result
-    else:
-        return f(ary)
+    return f(ary)
 
 
 def rec_obj_array_vectorized(f):
@@ -281,8 +281,7 @@ def log_shape(array):
     try:
         if array.dtype.char == "O":
             return array.shape
-        else:
-            return array.shape[:-1]
+        return array.shape[:-1]
     except AttributeError:
         return ()
 
@@ -300,8 +299,7 @@ def is_equal(a, b):
 
     if is_obj_array(a):
         return is_obj_array(b) and (a.shape == b.shape) and (a == b).all()
-    else:
-        return not is_obj_array(b) and a == b
+    return not is_obj_array(b) and a == b
 
 
 is_field_equal = is_equal
@@ -310,8 +308,7 @@ is_field_equal = is_equal
 def gen_len(expr):
     if is_obj_array(expr):
         return len(expr)
-    else:
-        return 1
+    return 1
 
 
 def gen_slice(expr, slice_):
@@ -321,8 +318,7 @@ def gen_slice(expr, slice_):
     result = expr[slice_]
     if len(result) == 1:
         return result[0]
-    else:
-        return result
+    return result
 
 
 def obj_array_equal(a, b):
@@ -334,8 +330,7 @@ def obj_array_equal(a, b):
 
     if a_is_oa:
         return np.array_equal(a, b)
-    else:
-        return a == b
+    return a == b
 
 
 def to_obj_array(ary):
@@ -358,8 +353,7 @@ def setify_field(f):
 
     if is_obj_array(f):
         return set(f)
-    else:
-        return {f}
+    return {f}
 
 
 def cast_field(field, dtype):
@@ -386,8 +380,7 @@ def with_object_array_or_scalar(f, field, obj_array_only=False):
         for i in np.ndindex(ls):
             result[i] = f(field[i])
         return result
-    else:
-        return f(field)
+    return f(field)
 
 
 def as_oarray_func(f):
@@ -422,8 +415,7 @@ def with_object_array_or_scalar_n_args(f, *args):
 
             result[i] = f(*new_args)
         return result
-    else:
-        return f(*args)
+    return f(*args)
 
 
 def as_oarray_func_n_args(f):

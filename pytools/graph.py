@@ -118,6 +118,13 @@ def reverse_graph(graph: GraphT[NodeT]) -> GraphT[NodeT]:
 
 # {{{ a_star
 
+@dataclass(frozen=True)
+class _AStarNode(Generic[NodeT]):
+    state: NodeT
+    parent: _AStarNode[NodeT] | None
+    path_cost: float | int
+
+
 def a_star(
         initial_state: NodeT, goal_state: NodeT, neighbor_map: GraphT[NodeT],
         estimate_remaining_cost: Callable[[NodeT], float] | None = None,
@@ -133,22 +140,13 @@ def a_star(
         def estimate_remaining_cost(x: NodeT) -> float:
             if x != goal_state:
                 return 1
-            else:
-                return 0
-
-    class AStarNode:
-        __slots__ = ["parent", "path_cost", "state"]
-
-        def __init__(self, state: NodeT, parent: Any, path_cost: float) -> None:
-            self.state = state
-            self.parent = parent
-            self.path_cost = path_cost
+            return 0
 
     inf = float("inf")
     init_remcost = estimate_remaining_cost(initial_state)
     assert init_remcost != inf
 
-    queue = [(init_remcost, AStarNode(initial_state, parent=None, path_cost=0))]
+    queue = [(init_remcost, _AStarNode(initial_state, parent=None, path_cost=0))]
     visited_states = set()
 
     while queue:
@@ -157,7 +155,7 @@ def a_star(
 
         if top.state == goal_state:
             result = []
-            it: AStarNode | None = top
+            it: _AStarNode[NodeT] | None = top
             while it is not None:
                 result.append(it.state)
                 it = it.parent
@@ -175,7 +173,7 @@ def a_star(
             estimated_path_cost = top.path_cost+step_cost+remaining_cost
             heappush(queue,
                 (estimated_path_cost,
-                    AStarNode(state, top, path_cost=top.path_cost + step_cost)))
+                    _AStarNode(state, top, path_cost=top.path_cost + step_cost)))
 
     raise RuntimeError("no solution")
 
@@ -473,7 +471,7 @@ def as_graphviz_dot(graph: GraphT[NodeT],
     # Add nodes
     content = "\n".join(
         [f'{node_to_id[node]} [label="{dot_escape(node_labels(node))}"];'
-         for node in node_to_id.keys()])
+         for node in node_to_id])
 
     content += "\n"
 
@@ -567,24 +565,42 @@ def undirected_graph_from_edges(
 
 def get_reachable_nodes(
         undirected_graph: GraphT[NodeT],
-        source_node: NodeT) -> frozenset[NodeT]:
+        source_node: NodeT,
+        exclude_nodes: Collection[NodeT] | None = None) -> frozenset[NodeT]:
     """
     Returns a :class:`frozenset` of all nodes in *undirected_graph* that are
     reachable from *source_node*.
+
+    If any node from *exclude_nodes* lies on a path between *source_node* and
+    some other node :math:`u` in *undirected_graph* and there are no other
+    viable paths, then :math:`u` is considered not reachable from *source_node*.
+
+    In the case where *source_node* is in *exclude_nodes*, then no node is
+    reachable from *source_node*, so an empty :class:`frozenset` is returned.
     """
+    if exclude_nodes is not None and source_node in exclude_nodes:
+        return frozenset()
+
     nodes_visited: set[NodeT] = set()
+    reachable_nodes: set[NodeT] = set()
     nodes_to_visit = {source_node}
+
+    if exclude_nodes is None:
+        exclude_nodes = set()
 
     while nodes_to_visit:
         current_node = nodes_to_visit.pop()
         nodes_visited.add(current_node)
 
-        neighbors = undirected_graph[current_node]
-        nodes_to_visit.update({node
-                               for node in neighbors
-                               if node not in nodes_visited})
+        reachable_nodes.add(current_node)
 
-    return frozenset(nodes_visited)
+        neighbors = undirected_graph[current_node]
+        nodes_to_visit.update({
+            node for node in neighbors
+            if node not in nodes_visited and node not in exclude_nodes
+        })
+
+    return frozenset(reachable_nodes)
 
 
 # vim: foldmethod=marker

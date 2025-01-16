@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import time
 
 from pytools import DependentDictionary, Reference
@@ -8,13 +10,13 @@ class StopWatch:
         self.Elapsed = 0.0
         self.LastStart: float | None = None
 
-    def start(self) -> "StopWatch":
+    def start(self) -> StopWatch:
         assert self.LastStart is None
 
         self.LastStart = time.time()
         return self
 
-    def stop(self) -> "StopWatch":
+    def stop(self) -> StopWatch:
         assert self.LastStart is not None
 
         self.Elapsed += time.time() - self.LastStart
@@ -24,8 +26,7 @@ class StopWatch:
     def elapsed(self) -> float:
         if self.LastStart:
             return time.time() - self.LastStart + self.Elapsed
-        else:
-            return self.Elapsed
+        return self.Elapsed
 
 
 class Job:
@@ -46,8 +47,7 @@ class Job:
     def is_visible(self) -> bool:
         if PRINT_JOBS.get():
             return self.Name not in HIDDEN_JOBS
-        else:
-            return self.Name in VISIBLE_JOBS
+        return self.Name in VISIBLE_JOBS
 
 
 class EtaEstimator:
@@ -62,8 +62,7 @@ class EtaEstimator:
 
         if fraction_done > 1.0e-5:
             return time_spent / fraction_done - time_spent
-        else:
-            return None
+        return None
 
 
 def print_job_summary() -> None:

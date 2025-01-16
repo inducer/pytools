@@ -1,5 +1,9 @@
+from __future__ import annotations
+
+
 __copyright__ = """
 Copyright (C) 2009-2013 Andreas Kloeckner
+Copyright (C) 2013- University of Illinois Board of Trustees
 Copyright (C) 2020 Matt Wala
 """
 
@@ -28,7 +32,15 @@ import logging
 import operator
 import re
 import sys
-from collections.abc import Callable, Collection, Hashable, Iterable, Mapping, Sequence
+from collections.abc import (
+    Callable,
+    Collection,
+    Hashable,
+    Iterable,
+    Iterator,
+    Mapping,
+    Sequence,
+)
 from functools import reduce, wraps
 from sys import intern
 from typing import (
@@ -37,8 +49,11 @@ from typing import (
     Concatenate,
     Generic,
     ParamSpec,
+    Protocol,
     TypeVar,
 )
+
+from typing_extensions import Self, dataclass_transform
 
 
 # These are deprecated and will go away in 2022.
@@ -96,6 +111,7 @@ Permutations, Tuples, Integer sequences
 .. autofunction:: generate_all_integer_tuples_below
 .. autofunction:: generate_permutations
 .. autofunction:: generate_unique_permutations
+.. autoclass:: _ConcatenableSequence
 
 Formatting
 ----------
@@ -190,6 +206,11 @@ Python's built-in set type, they maintain the internal order of elements.
 .. autofunction:: unique_difference
 .. autofunction:: unique_intersection
 .. autofunction:: unique_union
+
+Functionality for dataclasses
+-----------------------------
+
+.. autofunction:: opt_frozen_dataclass
 
 Type Variables Used
 -------------------
@@ -308,8 +329,7 @@ def module_getattr_for_deprecations(
                 f"'{module_name}.{name}' will continue to work until {deadline}.",
                 DeprecationWarning, stacklevel=2)
         return obj
-    else:
-        raise AttributeError(name)
+    raise AttributeError(name)
 
 # }}}
 
@@ -319,8 +339,7 @@ def module_getattr_for_deprecations(
 def delta(x, y):
     if x == y:
         return 1
-    else:
-        return 0
+    return 0
 
 
 def levi_civita(tup: tuple[int, ...]) -> int:
@@ -331,8 +350,7 @@ def levi_civita(tup: tuple[int, ...]) -> int:
     if len(tup) == 3:
         i, j, k = tup
         return (j-i) * (k-i) * (k-j) // 2
-    else:
-        raise NotImplementedError(f"Levi-Civita symbol in {len(tup)} dimensions")
+    raise NotImplementedError(f"Levi-Civita symbol in {len(tup)} dimensions")
 
 
 def norm_1(iterable):
@@ -748,9 +766,8 @@ def memoize_on_first_arg(
         if attribute_error:
             object.__setattr__(obj, cache_dict_name, {key: result})
             return result
-        else:
-            getattr(obj, cache_dict_name)[key] = result
-            return result
+        getattr(obj, cache_dict_name)[key] = result
+        return result
 
     def clear_cache(obj):
         object.__delattr__(obj, cache_dict_name)
@@ -907,7 +924,7 @@ class memoize_in:  # noqa: N801
         return new_inner
 
 
-class keyed_memoize_in(Generic[P, R]):  # noqa: N801
+class keyed_memoize_in(Generic[P]):  # noqa: N801
     """Like :class:`memoize_in`, but additionally uses a function *key* to
     compute the key under which the function result is memoized.
 
@@ -1211,8 +1228,7 @@ def argmin2(iterable, return_value=False):
 
     if return_value:
         return current_argmin, current_min
-    else:
-        return current_argmin
+    return current_argmin
 
 
 def argmax2(iterable, return_value=False):
@@ -1229,8 +1245,7 @@ def argmax2(iterable, return_value=False):
 
     if return_value:
         return current_argmax, current_max
-    else:
-        return current_argmax
+    return current_argmax
 
 
 def argmin(iterable):
@@ -1318,13 +1333,10 @@ class VarianceAggregator:
         if self.entire_pop:
             if self.n == 0:
                 return None
-            else:
-                return self.m2/self.n
-        else:
-            if self.n <= 1:
-                return None
-            else:
-                return self.m2/(self.n - 1)
+            return self.m2/self.n
+        if self.n <= 1:
+            return None
+        return self.m2/(self.n - 1)
 
 
 def variance(iterable, entire_pop):
@@ -1345,7 +1357,9 @@ def std_deviation(iterable, finite_pop):
 
 # {{{ permutations, tuples, integer sequences
 
-def wandering_element(length, wanderer=1, landscape=0):
+def wandering_element(length: int,
+                      wanderer: int = 1,
+                      landscape: int = 0) -> Iterator[tuple[int, ...]]:
     for i in range(length):
         yield i*(landscape,) + (wanderer,) + (length-1-i)*(landscape,)
 
@@ -1361,18 +1375,21 @@ def indices_in_shape(shape):
     if not shape:
         yield ()
     elif len(shape) == 1:
-        for i in range(0, shape[0]):
+        for i in range(shape[0]):
             yield (i,)
     else:
         remainder = shape[1:]
-        for i in range(0, shape[0]):
+        for i in range(shape[0]):
             for rest in indices_in_shape(remainder):
                 yield (i, *rest)
 
 
-def generate_nonnegative_integer_tuples_below(n, length=None, least=0):
+def generate_nonnegative_integer_tuples_below(
+        n: Sequence[int] | int, length: int | None = None, least: int = 0
+        ) -> Iterator[tuple[int, ...]]:
     """n may be a sequence, in which case length must be None."""
     if length is None:
+        assert not isinstance(n, int)
         if not n:
             yield ()
             return
@@ -1381,6 +1398,7 @@ def generate_nonnegative_integer_tuples_below(n, length=None, least=0):
         n = n[1:]
         next_length = None
     else:
+        assert isinstance(n, int)
         my_n = n
 
         assert length >= 0
@@ -1397,12 +1415,12 @@ def generate_nonnegative_integer_tuples_below(n, length=None, least=0):
 
 
 def generate_decreasing_nonnegative_tuples_summing_to(
-        n, length, min_value=0, max_value=None):
+        n: int, length: int, min_value: int = 0, max_value: int | None = None
+        ) -> Iterator[tuple[int, ...]]:
     if length == 0:
         yield ()
     elif length == 1:
-        if n <= max_value:
-            # print "MX", n, max_value
+        if max_value is None or n <= max_value:
             yield (n,)
         else:
             return
@@ -1410,14 +1428,14 @@ def generate_decreasing_nonnegative_tuples_summing_to(
         if max_value is None or n < max_value:
             max_value = n
 
-        for i in range(min_value, max_value+1):
-            # print "SIG", sig, i
+        for i in range(min_value, max_value + 1):
             for remainder in generate_decreasing_nonnegative_tuples_summing_to(
-                    n-i, length-1, min_value, i):
+                    n - i, length - 1, min_value=min_value, max_value=i):
                 yield (i, *remainder)
 
 
-def generate_nonnegative_integer_tuples_summing_to_at_most(n, length):
+def generate_nonnegative_integer_tuples_summing_to_at_most(
+        n: int, length: int) -> Iterator[tuple[int, ...]]:
     """Enumerate all non-negative integer tuples summing to at most n,
     exhausting the search space by varying the first entry fastest,
     and the last entry the slowest.
@@ -1436,24 +1454,56 @@ def generate_nonnegative_integer_tuples_summing_to_at_most(n, length):
 generate_positive_integer_tuples_below = generate_nonnegative_integer_tuples_below
 
 
-def _pos_and_neg_adaptor(tuple_iter):
+def _pos_and_neg_adaptor(
+        tuple_iter: Iterator[tuple[int, ...]]
+    ) -> Iterator[tuple[int, ...]]:
     for tup in tuple_iter:
         nonzero_indices = [i for i in range(len(tup)) if tup[i] != 0]
         for do_neg_tup in generate_nonnegative_integer_tuples_below(
                 2, len(nonzero_indices)):
+
             this_result = list(tup)
             for index, do_neg in enumerate(do_neg_tup):
                 if do_neg:
                     this_result[nonzero_indices[index]] *= -1
+
             yield tuple(this_result)
 
 
-def generate_all_integer_tuples_below(n, length, least_abs=0):
+def generate_all_integer_tuples_below(
+        n: int, length: int, least_abs: int = 0
+    ) -> Iterator[tuple[int, ...]]:
     return _pos_and_neg_adaptor(generate_nonnegative_integer_tuples_below(
         n, length, least_abs))
 
 
-def generate_permutations(original):
+T_co = TypeVar("T_co", covariant=True)
+
+
+class _ConcatenableSequence(Generic[T_co], Protocol):
+    """
+    A protocol that supports the following:
+
+    .. automethod:: __getitem__
+    .. automethod:: __add__
+    .. automethod:: __len__
+    """
+    def __getitem__(self, slice) -> Self:
+        ...
+
+    def __add__(self, other: Self) -> Self:
+        ...
+
+    def __len__(self) -> int:
+        ...
+
+    def __iter__(self) -> Iterator[T_co]:
+        ...
+
+
+def generate_permutations(
+            original: _ConcatenableSequence[T]
+        ) -> Iterator[_ConcatenableSequence[T]]:
     """Generate all permutations of the list *original*.
 
     Nicked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/252178
@@ -1463,12 +1513,17 @@ def generate_permutations(original):
     else:
         for perm_ in generate_permutations(original[1:]):
             for i in range(len(perm_)+1):
-                # nb str[0:1] works in both string and list contexts
+                # NOTE: ary[0:1] works in both string and list contexts
                 yield perm_[:i] + original[0:1] + perm_[i:]
 
 
-def generate_unique_permutations(original):
+def generate_unique_permutations(
+            original: _ConcatenableSequence[T]
+        ) -> Iterator[_ConcatenableSequence[T]]:
     """Generate all unique permutations of the list *original*.
+
+    Note that, unlike for :func:`generate_permutations`, *original* must be a
+    hashable object.
     """
 
     had_those = set()
@@ -1768,10 +1823,9 @@ def merge_tables(*tables: Table,
     def remove_columns(i, row):
         if i == 0 or skip_columns is None:
             return row
-        else:
-            return tuple(
-                entry for i, entry in enumerate(row) if i not in skip_columns
-                )
+        return tuple(
+            entry for i, entry in enumerate(row) if i not in skip_columns
+            )
 
     alignments = sum((
         remove_columns(i, tbl._get_alignments())
@@ -1824,15 +1878,14 @@ def string_histogram(
     if use_unicode:
         def format_bar(cnt):
             scaled = cnt*width/max_count
-            full = int(floor(scaled))
-            eighths = int(ceil((scaled-full)*8))
+            full = floor(scaled)
+            eighths = ceil((scaled-full)*8)
             if eighths:
                 return full*chr(0x2588) + chr(0x2588+(8-eighths))
-            else:
-                return full*chr(0x2588)
+            return full*chr(0x2588)
     else:
         def format_bar(cnt):
-            return int(ceil(cnt*width/max_count))*"#"
+            return ceil(cnt*width/max_count)*"#"
 
     max_count = max(bins)
     total_count = sum(bins)
@@ -1994,13 +2047,11 @@ def typedump(val: Any, max_seq: int = 5,
         if type(obj).__module__ == "builtins":
             if fully_qualified_name:
                 return type(obj).__qualname__
-            else:
-                return type(obj).__name__
+            return type(obj).__name__
 
         if fully_qualified_name:
             return type(obj).__module__ + "." + type(obj).__qualname__
-        else:
-            return type(obj).__name__
+        return type(obj).__name__
 
     # Special handling for 'str' since it is also iterable
     if isinstance(val, str):
@@ -2022,10 +2073,9 @@ def typedump(val: Any, max_seq: int = 5,
                 t = ",".join(typedump(x, max_seq, special_handlers)
                             for x in val[:max_seq])
                 return f"{objname(val)}({t},...)"
-            else:
-                t = ",".join(typedump(x, max_seq, special_handlers)
-                            for x in val)
-                return f"{objname(val)}({t})"
+            t = ",".join(typedump(x, max_seq, special_handlers)
+                        for x in val)
+            return f"{objname(val)}({t})"
 
         except TypeError:
             return objname(val)
@@ -2072,7 +2122,8 @@ class ProgressBar:
     .. automethod:: __enter__
     .. automethod:: __exit__
     """
-    def __init__(self, descr, total, initial=0, length=40):
+    def __init__(self, descr: str, total: int, initial: int = 0,
+                 length: int = 40) -> None:
         import time
         self.description = descr
         self.total = total
@@ -2085,9 +2136,9 @@ class ProgressBar:
         self.speed_meas_start_time = self.start_time
         self.speed_meas_start_done = initial
 
-        self.time_per_step = None
+        self.time_per_step: float | None = None
 
-    def draw(self):
+    def draw(self) -> None:
         import time
 
         now = time.time()
@@ -2120,21 +2171,21 @@ class ProgressBar:
             self.last_squares = squares
             self.last_update_time = now
 
-    def progress(self, steps=1):
+    def progress(self, steps: int = 1) -> None:
         self.set_progress(self.done + steps)
 
-    def set_progress(self, done):
+    def set_progress(self, done: int) -> None:
         self.done = done
         self.draw()
 
-    def finished(self):
+    def finished(self) -> None:
         self.set_progress(self.total)
         sys.stderr.write("\n")
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         self.draw()
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         self.finished()
 
 # }}}
@@ -2165,12 +2216,10 @@ def common_dtype(dtypes, default=None):
     dtypes = list(dtypes)
     if dtypes:
         return argmax2((dtype, dtype.num) for dtype in dtypes)
-    else:
-        if default is not None:
-            return default
-        else:
-            raise ValueError(
-                    "cannot find common dtype of empty dtype list")
+    if default is not None:
+        return default
+    raise ValueError(
+            "cannot find common dtype of empty dtype list")
 
 
 def to_uncomplex_dtype(dtype):
@@ -2188,13 +2237,10 @@ def match_precision(dtype, dtype_to_match):
     if dtype_is_complex:
         if tgt_is_double:
             return numpy.dtype(numpy.complex128)
-        else:
-            return numpy.dtype(numpy.complex64)
-    else:
-        if tgt_is_double:
-            return numpy.dtype(numpy.float64)
-        else:
-            return numpy.dtype(numpy.float32)
+        return numpy.dtype(numpy.complex64)
+    if tgt_is_double:
+        return numpy.dtype(numpy.float64)
+    return numpy.dtype(numpy.float32)
 
 # }}}
 
@@ -2269,7 +2315,6 @@ class UniqueNameGenerator:
             This will not get called for the names in the *existing_names*
             argument to :meth:`__init__`.
         """
-        pass
 
     def add_name(self, name: str, *, conflicting_ok: bool = False) -> None:
         """
@@ -2573,12 +2618,11 @@ class ProcessLogger:
         if sys.stdin is None:
             # Can happen, e.g., if pudb is controlling the console.
             use_late_start_logging = False
+        elif hasattr(sys.stdin, "closed") and not sys.stdin.closed:
+            # can query stdin.isatty() only if stdin's open
+            use_late_start_logging = sys.stdin.isatty()
         else:
-            if hasattr(sys.stdin, "closed") and not sys.stdin.closed:
-                # can query stdin.isatty() only if stdin's open
-                use_late_start_logging = sys.stdin.isatty()
-            else:
-                use_late_start_logging = False
+            use_late_start_logging = False
 
         import os
         if os.environ.get("PYTOOLS_LOG_NO_THREADS", ""):
@@ -2902,13 +2946,12 @@ def strtobool(val: str | None, default: bool | None = None) -> bool:
     val = val.lower()
     if val in ("y", "yes", "t", "true", "on", "1"):
         return True
-    elif val in ("n", "no", "f", "false", "off", "0"):
+    if val in ("n", "no", "f", "false", "off", "0"):
         return False
-    else:
-        raise ValueError(f"invalid truth value '{val}'. "
-                          "Valid values are ('y', 'yes', 't', 'true', 'on', '1') "
-                          "for 'True' and ('n', 'no', 'f', 'false', 'off', '0') "
-                          "for 'False'. Uppercase versions are also accepted.")
+    raise ValueError(f"invalid truth value '{val}'. "
+                      "Valid values are ('y', 'yes', 't', 'true', 'on', '1') "
+                      "for 'True' and ('n', 'no', 'f', 'false', 'off', '0') "
+                      "for 'False'. Uppercase versions are also accepted.")
 
 # }}}
 
@@ -2993,6 +3036,76 @@ def unique_union(*args: Iterable[T]) -> Collection[T]:
     return res
 
 # }}}
+
+
+@dataclass_transform(frozen_default=True)
+def opt_frozen_dataclass(
+            *,
+            init: bool = True,
+            repr: bool = True,
+            eq: bool = True,
+            order: bool = False,
+            unsafe_hash: bool | None = None,
+            match_args: bool = True,
+            kw_only: bool = False,
+            slots: bool = False,
+            # Added in 3.11.
+            weakref_slot: bool = False,
+         ) -> Callable[[type[T]], type[T]]:
+    """Like :func:`dataclasses.dataclass`, but marks the dataclass frozen
+    only if :data:`__debug__` is active. Frozen dataclasses have a ~20%
+    cost penalty (on creation, from having to call :meth:`object.__setattr__`) that
+    this decorator avoids when the interpreter runs with "optimization"
+    enabled.
+
+    The resulting dataclass supports hashing, even when it is not actually frozen,
+    if *unsafe_hash* is left at the default or set to *True*.
+
+    .. note::
+
+        Python prevents non-frozen dataclasses from inheriting from frozen ones,
+        and vice versa. To ensure frozen-ness is applied predictably in all
+        scenarios (mainly :data:`__debug__` on and off), it is strongly recommended
+        that all dataclasses inheriting from ones with this decorator *also*
+        use this decorator. There are no run-time checks to make sure of this.
+
+    .. versionadded:: 2024.1.18
+    """
+    def map_cls(cls: type[T]) -> type[T]:
+        # This ensures that the resulting dataclass is hashable with and without
+        # __debug__, unless the user overrides unsafe_hash or provides their own
+        # __hash__ method.
+        if unsafe_hash is None:
+            if (eq
+                    and not __debug__
+                    and "__hash__" not in cls.__dict__):
+                loc_unsafe_hash = True
+            else:
+                loc_unsafe_hash = False
+        else:
+            loc_unsafe_hash = unsafe_hash
+
+        dc_extra_kwargs: dict[str, bool] = {}
+        if weakref_slot:
+            if sys.version_info < (3, 11):
+                raise TypeError("weakref_slot is not available before Python 3.11")
+            dc_extra_kwargs["weakref_slot"] = weakref_slot
+
+        from dataclasses import dataclass
+        return dataclass(
+             init=init,
+             repr=repr,
+             eq=eq,
+             order=order,
+             unsafe_hash=loc_unsafe_hash,
+             frozen=__debug__,
+             match_args=match_args,
+             kw_only=kw_only,
+             slots=slots,
+             **dc_extra_kwargs,
+        )(cls)
+
+    return map_cls
 
 
 def _test():

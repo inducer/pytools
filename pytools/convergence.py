@@ -5,6 +5,7 @@
 .. autoclass:: PConvergenceVerifier
 """
 
+from __future__ import annotations
 
 import numbers
 
@@ -81,8 +82,7 @@ class EOCRecorder:
         return result
 
     def order_estimate(self) -> float:
-        from typing import cast
-        return cast(float, self.estimate_order_of_convergence()[0, 1])
+        return self.estimate_order_of_convergence()[0, 1]
 
     def max_error(self) -> float:
         return max(err for absc, err in self.history)
@@ -133,14 +133,13 @@ class EOCRecorder:
 
         if table_type == "markdown":
             return tbl.github_markdown()
-        elif table_type == "latex":
+        if table_type == "latex":
             return tbl.latex()
-        elif table_type == "ascii":
+        if table_type == "ascii":
             return str(tbl)
-        elif table_type == "csv":
+        if table_type == "csv":
             return tbl.csv()
-        else:
-            raise ValueError(f"unknown table type: {table_type}")
+        raise ValueError(f"unknown table type: {table_type}")
 
     def __str__(self):
         return self.pretty_print()
@@ -190,14 +189,13 @@ def stringify_eocs(*eocs: EOCRecorder,
 
     if table_type == "markdown":
         return tbl.github_markdown()
-    elif table_type == "latex":
+    if table_type == "latex":
         return tbl.latex()
-    elif table_type == "ascii":
+    if table_type == "ascii":
         return str(tbl)
-    elif table_type == "csv":
+    if table_type == "csv":
         return tbl.csv()
-    else:
-        raise ValueError(f"unknown table type: {table_type}")
+    raise ValueError(f"unknown table type: {table_type}")
 
 # }}}
 

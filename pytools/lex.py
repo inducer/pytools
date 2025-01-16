@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 
 
@@ -31,10 +33,9 @@ class ParseError(RuntimeError):
     def __str__(self):
         if self.Token is None:
             return f"{self.message} at end of input"
-        else:
-            return "{} at index {}: ...{}...".format(
-                    self.message, self.Token[2],
-                    self.string[self.Token[2]:self.Token[2]+20])
+        return "{} at index {}: ...{}...".format(
+                self.message, self.Token[2],
+                self.string[self.Token[2]:self.Token[2]+20])
 
 
 class RE:
@@ -71,10 +72,10 @@ def _matches_rule(rule, s, start, rule_dict, debug=False):
                 return my_match_length, None
         return 0, None
 
-    elif isinstance(rule, str):
+    if isinstance(rule, str):
         return _matches_rule(rule_dict[rule], s, start, rule_dict, debug)
 
-    elif isinstance(rule, RE):
+    if isinstance(rule, RE):
         match_obj = rule.RE.match(s, start)
         if match_obj:
             return match_obj.end()-start, match_obj

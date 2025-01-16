@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import shutil
 import sys
 import tempfile
 from dataclasses import dataclass
 from enum import Enum, IntEnum
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 
@@ -32,7 +34,9 @@ class PDictTestingKeyOrValue:
     def __getstate__(self) -> dict[str, Any]:
         return {"val": self.val, "hash_key": self.hash_key}
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
+        if type(other) is not PDictTestingKeyOrValue:
+            return False
         return self.val == other.val
 
     def update_persistent_hash(self, key_hash: Any, key_builder: KeyBuilder) -> None:
@@ -931,8 +935,8 @@ def test_hash_function() -> None:
 
 # {{{ basic concurrency tests
 
-def _conc_fn(tmpdir: Optional[str] = None,
-             pdict: Optional[PersistentDict[int, int]] = None) -> None:
+def _conc_fn(tmpdir: str | None = None,
+             pdict: PersistentDict[int, int] | None = None) -> None:
     import time
 
     assert (pdict is None) ^ (tmpdir is None)
@@ -1007,7 +1011,7 @@ class RaisingThread(Thread):
         except Exception as e:
             self._exc = e
 
-    def join(self, timeout: Optional[float] = None) -> None:
+    def join(self, timeout: float | None = None) -> None:
         super().join(timeout=timeout)
         if self._exc:
             raise self._exc

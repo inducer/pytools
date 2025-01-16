@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pytools"
-version = "2024.1.16"
+version = "2025.1.1"
 description = "A collection of tools for Python"
 readme = "README.rst"
 license = { text = "MIT" }
@@ -31,7 +31,7 @@ classifiers = [
 dependencies = [
     "platformdirs>=2.2",
     # for dataclass_transform with frozen_default
-    "typing-extensions>=4",
+    "typing-extensions>=4.5",
 ]
 
 [project.optional-dependencies]
@@ -76,14 +76,13 @@ extend-select = [
     "UP",  # pyupgrade
     "RUF", # ruff
     "W",   # pycodestyle
+    "TC",
 ]
 extend-ignore = [
     "C90",  # McCabe complexity
     "E221", # multiple spaces before operator
     "E226", # missing whitespace around arithmetic operator
     "E402", # module-level import not at top of file
-    "UP006", # updated annotations due to __future__ import
-    "UP007", # updated annotations due to __future__ import
     "UP031", # use f-strings instead of %
     "UP032", # use f-strings instead of .format
 ]
@@ -99,6 +98,11 @@ known-local-folder = [
     "pytools",
 ]
 lines-after-imports = 2
+required-imports = ["from __future__ import annotations"]
+
+[tool.ruff.lint.pep8-naming]
+extend-ignore-names = ["update_for_*"]
+
 
 [tool.mypy]
 python_version = "3.10"

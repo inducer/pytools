@@ -257,39 +257,35 @@ class KeyBuilder:
 
     # {{{ updaters
 
-    @staticmethod
-    def update_for_type(key_hash: Hash, key: type) -> None:
+    # NOTE: None of these should be static or classmethods. While Python itself is
+    # perfectly OK with overriding those with 'normal' methods, type checkers
+    # understandably don't like it.
+
+    def update_for_type(self, key_hash: Hash, key: type) -> None:
         key_hash.update(
             f"{key.__module__}.{key.__qualname__}.{key.__name__}".encode())
 
-    update_for_ABCMeta = update_for_type  # noqa: N815
+    update_for_ABCMeta = update_for_type
 
-    @staticmethod
-    def update_for_int(key_hash: Hash, key: int) -> None:
+    def update_for_int(self, key_hash: Hash, key: int) -> None:
         key_hash.update(str(key).encode("utf-8"))
 
-    @classmethod
-    def update_for_enum(cls, key_hash: Hash, key: Enum) -> None:
-        cls.update_for_str(key_hash, str(key))
+    def update_for_enum(self, key_hash: Hash, key: Enum) -> None:
+        self.update_for_str(key_hash, str(key))
 
-    @staticmethod
-    def update_for_bool(key_hash: Hash, key: bool) -> None:
+    def update_for_bool(self, key_hash: Hash, key: bool) -> None:
         key_hash.update(str(key).encode("utf8"))
 
-    @staticmethod
-    def update_for_float(key_hash: Hash, key: float) -> None:
+    def update_for_float(self, key_hash: Hash, key: float) -> None:
         key_hash.update(key.hex().encode("utf8"))
 
-    @staticmethod
-    def update_for_complex(key_hash: Hash, key: float) -> None:
+    def update_for_complex(self, key_hash: Hash, key: float) -> None:
         key_hash.update(repr(key).encode("utf-8"))
 
-    @staticmethod
-    def update_for_str(key_hash: Hash, key: str) -> None:
+    def update_for_str(self, key_hash: Hash, key: str) -> None:
         key_hash.update(key.encode("utf8"))
 
-    @staticmethod
-    def update_for_bytes(key_hash: Hash, key: bytes) -> None:
+    def update_for_bytes(self, key_hash: Hash, key: bytes) -> None:
         key_hash.update(key)
 
     def update_for_tuple(self, key_hash: Hash, key: tuple[Any, ...]) -> None:
@@ -304,27 +300,23 @@ class KeyBuilder:
             (self.rec(self.new_hash(), key_i).digest() for key_i in key),
             hash_constructor=self.new_hash)
 
-    update_for_FrozenOrderedSet = update_for_frozenset  # noqa: N815
+    update_for_FrozenOrderedSet = update_for_frozenset
 
-    @staticmethod
-    def update_for_NoneType(key_hash: Hash, key: None) -> None:  # noqa: N802
+    def update_for_NoneType(self, key_hash: Hash, key: None) -> None:
         del key
         key_hash.update(b"<None>")
 
-    @staticmethod
-    def update_for_dtype(key_hash: Hash, key: Any) -> None:
+    def update_for_dtype(self, key_hash: Hash, key: Any) -> None:
         key_hash.update(key.str.encode("utf8"))
 
     # Handling numpy >= 1.20, for which
     # type(np.dtype("float32")) -> "dtype[float32]"
     # Introducing this method allows subclasses to specially handle all those
     # dtypes.
-    @staticmethod
-    def update_for_specific_dtype(key_hash: Hash, key: Any) -> None:
+    def update_for_specific_dtype(self, key_hash: Hash, key: Any) -> None:
         key_hash.update(key.str.encode("utf8"))
 
-    @staticmethod
-    def update_for_numpy_scalar(key_hash: Hash, key: Any) -> None:
+    def update_for_numpy_scalar(self, key_hash: Hash, key: Any) -> None:
         import numpy as np
         if hasattr(np, "complex256") and key.dtype == np.dtype("complex256"):
             key_hash.update(repr(complex(key)).encode("utf8"))
@@ -357,8 +349,8 @@ class KeyBuilder:
 
     update_for_immutabledict = update_for_frozendict
     update_for_constantdict = update_for_frozendict
-    update_for_PMap = update_for_frozendict  # noqa: N815
-    update_for_Map = update_for_frozendict  # noqa: N815
+    update_for_PMap = update_for_frozendict
+    update_for_Map = update_for_frozendict
 
     # {{{ date, time, datetime, timezone
 
@@ -406,24 +398,20 @@ class KeyBuilder:
 
 class NoSuchEntryError(KeyError):
     """Raised when an entry is not found in a :class:`PersistentDict`."""
-    pass
 
 
 class NoSuchEntryCollisionError(NoSuchEntryError):
     """Raised when an entry is not found in a :class:`PersistentDict`, but it
     contains an entry with the same hash key (hash collision)."""
-    pass
 
 
 class ReadOnlyEntryError(KeyError):
     """Raised when an attempt is made to overwrite an entry in a
     :class:`WriteOncePersistentDict`."""
-    pass
 
 
 class CollisionWarning(UserWarning):
     """Warning raised when a collision is detected in a :class:`PersistentDict`."""
-    pass
 
 
 def __getattr__(name: str) -> Any:
@@ -579,11 +567,11 @@ class _PersistentDictBase(Mapping[K, V]):
 
     def store(self, key: K, value: V, _skip_if_present: bool = False) -> None:
         """Store (*key*, *value*) in the dictionary."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def fetch(self, key: K) -> V:
         """Return the value associated with *key* in the dictionary."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def _make_container_dir(self) -> None:
         """Create the container directory to store the dictionary."""
@@ -715,11 +703,9 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
                     if e.sqlite_errorcode == SQLITE_CONSTRAINT_PRIMARYKEY:
                         raise ReadOnlyEntryError("WriteOncePersistentDict, "
                                                  "tried overwriting key") from e
-                    else:
-                        raise
-                else:
-                    raise ReadOnlyEntryError("WriteOncePersistentDict, "
-                                             "tried overwriting key") from e
+                    raise
+                raise ReadOnlyEntryError("WriteOncePersistentDict, "
+                                         "tried overwriting key") from e
 
     def _fetch_uncached(self, keyhash: str) -> tuple[K, V]:
         # This method is separate from fetch() to allow for LRU caching
@@ -832,7 +818,7 @@ class PersistentDict(_PersistentDictBase[K, V]):
 
         stored_key, value = pickle.loads(row[0])
         self._collision_check(key, stored_key)
-        return cast(V, value)
+        return cast("V", value)
 
     def remove(self, key: K) -> None:
         """Remove the entry associated with *key* from the dictionary."""

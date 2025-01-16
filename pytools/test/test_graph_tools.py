@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 
 import pytest
@@ -25,12 +27,11 @@ def test_compute_sccs():
         def visit(node):
             if node in visited:
                 return []
-            else:
-                visited.add(node)
-                result = []
-                for child in graph[node]:
-                    result = result + visit(child)
-                return [*result, node]
+            visited.add(node)
+            result = []
+            for child in graph[node]:
+                result = result + visit(child)
+            return [*result, node]
 
         for scc in sccs:
             scc = set(scc)
@@ -436,29 +437,35 @@ def test_propagation_graph_tools():
         get_reachable_nodes,
         undirected_graph_from_edges,
     )
-
     vars = {"a", "b", "c", "d", "e", "f", "g"}
 
-    constraints = [
+    constraints = {
         ("a", "b"),
-        ("a", "d"),
-        ("c", "d"),
-        ("e", "f"),
+        ("b", "c"),
+        ("b", "d"),
+        ("c", "e"),
+        ("d", "f"),
+        ("e", "g"),
+        ("g", "f"),
         ("f", "g")
-    ]
+    }
 
     all_reachable_nodes = {
-        "a": frozenset({"a", "b", "c", "d"}),
-        "b": frozenset({"a", "b", "c", "d"}),
-        "c": frozenset({"a", "b", "c", "d"}),
+        "a": frozenset({"a", "b"}),
+        "b": frozenset({"a", "b"}),
+        "c": frozenset(),
+        "d": frozenset(),
         "e": frozenset({"e", "f", "g"}),
         "f": frozenset({"e", "f", "g"}),
         "g": frozenset({"e", "f", "g"})
     }
 
+    exclude_nodes = {"d", "c"}
     propagation_graph = undirected_graph_from_edges(constraints)
+
     assert (
-        all_reachable_nodes[var] == get_reachable_nodes(propagation_graph, var)
+        all_reachable_nodes[var] == get_reachable_nodes(propagation_graph, var,
+                                                        exclude_nodes)
         for var in vars
     )
 

@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def test_variance():
     data = [4, 7, 13, 16]
 

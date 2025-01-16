@@ -9,6 +9,10 @@ on:
     schedule:
         - cron:  '17 3 * * 0'
 
+concurrency:
+    group: ${{ github.head_ref || github.ref_name }}
+    cancel-in-progress: true
+
 jobs:
     ruff:
         name: Ruff
@@ -92,6 +96,10 @@ jobs:
                 EXTRA_INSTALL="numpy frozendict immutabledict orderedsets constantdict immutables pyrsistent attrs siphash24"
                 curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
                 . ./build-and-test-py-project.sh
+
+                # Also run with optimizations turned on, since opt_frozen_dataclass
+                # depends on the __debug__ setting.
+                python -O -m pytest pytools/test/test_dataclasses.py
 
     pytest_nonumpy:
         name: Pytest without Numpy

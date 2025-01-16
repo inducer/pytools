@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def _cp(src, dest):
     from pytools import assert_not_a_file
     assert_not_a_file(dest)
@@ -125,8 +128,7 @@ def guess_job_class():
             stdout=PIPE, stderr=STDOUT).communicate()[0].split("\n")
     if qstat_helplines[0].startswith("GE"):
         return GridEngineJob
-    else:
-        return PBSJob
+    return PBSJob
 
 
 class ConstructorPlaceholder:

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 
 from pytools import memoize
@@ -129,7 +131,7 @@ def refdebug(obj, top_level=True, exclude=()):
             elif response == "r":
                 return
             elif response == "q":
-                raise RefDebugQuit()
+                raise RefDebugQuit
             else:
                 print("WHAT YOU SAY!!! (invalid choice)")
 
@@ -141,10 +143,10 @@ def refdebug(obj, top_level=True, exclude=()):
 
 # {{{ interactive shell
 
-def get_shell_hist_filename():
+def get_shell_hist_filename() -> str:
     import os
-    _home = os.environ.get("HOME", "/")
-    return os.path.join(_home, ".pytools-debug-shell-history")
+
+    return os.path.expanduser(os.path.join("~", ".pytools-debug-shell-history"))
 
 
 def setup_readline():
@@ -154,7 +156,7 @@ def setup_readline():
         try:
             readline.read_history_file(hist_filename)
         except Exception:  # pylint:disable=broad-except
-            # http://docs.python.org/3/howto/pyporting.html#capturing-the-currently-raised-exception  # noqa: E501
+            # http://docs.python.org/3/howto/pyporting.html#capturing-the-currently-raised-exception
             import sys
             e = sys.exc_info()[1]
 

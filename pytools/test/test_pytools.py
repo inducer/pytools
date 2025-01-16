@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 __copyright__ = "Copyright (C) 2009-2021 Andreas Kloeckner"
 
 __license__ = """
@@ -402,7 +405,7 @@ class FakeArray:
     def __getitem__(self, idx):
         FakeArray.nopes += 1
         if idx > 10:
-            raise IndexError()
+            raise IndexError
 
 
 def test_make_obj_array_iteration():
@@ -866,6 +869,22 @@ def test_record():
     assert hasattr(ImmutableRecordWithUnsetSlots(), "__weakref__")
 
     # }}}
+
+
+def test_permutations():
+    from math import factorial
+
+    from pytools import generate_permutations, generate_unique_permutations
+
+    perm = list(generate_permutations([1, 2, 3, 4]))
+    assert len(perm)  == factorial(4)
+    perm = list(generate_unique_permutations((1, 3, 3, 4)))
+    assert len(perm)  == 12
+
+    perms = list(generate_permutations("1234"))
+    assert len(perms)  == factorial(4)
+    perms = list(generate_unique_permutations("1334"))
+    assert len(perms)  == 12
 
 
 if __name__ == "__main__":
