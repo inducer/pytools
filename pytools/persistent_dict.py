@@ -68,6 +68,7 @@ else:
     _HAS_ATTRS = True
 
 
+# Used to speed up the comparison in update_for_numpy_scalar and for mock testing
 _IS_BIGENDIAN = sys.byteorder == "big"
 
 
@@ -331,6 +332,9 @@ class KeyBuilder:
 
     def update_for_numpy_scalar(self, key_hash: Hash, key: Any) -> None:
         import numpy as np
+
+        # tobytes() of np.complex256 and np.float128 are non-deterministic,
+        # so we need to use their repr() instead.
         if hasattr(np, "complex256") and key.dtype == np.dtype("complex256"):
             key_hash.update(repr(complex(key)).encode("utf8"))
         elif hasattr(np, "float128") and key.dtype == np.dtype("float128"):
