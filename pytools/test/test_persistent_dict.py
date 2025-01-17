@@ -483,8 +483,9 @@ def test_scalar_hashing() -> None:
 
     import unittest.mock
 
-    from pytools.persistent_dict import IS_BIGENDIAN
-    with unittest.mock.patch("pytools.persistent_dict.IS_BIGENDIAN", not IS_BIGENDIAN):
+    from pytools.persistent_dict import _IS_BIGENDIAN
+    with unittest.mock.patch("pytools.persistent_dict._IS_BIGENDIAN",
+                             not _IS_BIGENDIAN):
         # Very crude test that the other endianness works as well.
         be_val = np.int64(1).byteswap()
         assert h_int64 == keyb(be_val)

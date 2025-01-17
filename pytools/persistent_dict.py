@@ -68,7 +68,7 @@ else:
     _HAS_ATTRS = True
 
 
-IS_BIGENDIAN = sys.byteorder == "big"
+_IS_BIGENDIAN = sys.byteorder == "big"
 
 
 logger = logging.getLogger(__name__)
@@ -336,7 +336,7 @@ class KeyBuilder:
         elif hasattr(np, "float128") and key.dtype == np.dtype("float128"):
             key_hash.update(repr(float(key)).encode("utf8"))
         else:
-            if IS_BIGENDIAN:
+            if _IS_BIGENDIAN:
                 key_hash.update(np.array(key).byteswap().tobytes())
             else:
                 key_hash.update(np.array(key).tobytes())
