@@ -482,14 +482,11 @@ def test_scalar_hashing() -> None:
     h_int64 = keyb(np.int64(1))
 
     import unittest.mock
-    with unittest.mock.patch("pytools.persistent_dict.IS_BIGENDIAN", True):
-        # Very crude big-endian test. Apparently, there is no way to
-        # create a numpy scalar (not an np.array!) of a specific byte order.
-        if sys.byteorder == "big":
-            # no need to swap
-            be_val = np.int64(1)
-        else:
-            be_val = np.int64(1).byteswap()
+
+    from pytools.persistent_dict import IS_BIGENDIAN
+    with unittest.mock.patch("pytools.persistent_dict.IS_BIGENDIAN", not IS_BIGENDIAN):
+        # Very crude test that the other endianness works as well.
+        be_val = np.int64(1).byteswap()
         assert h_int64 == keyb(be_val)
 
 
