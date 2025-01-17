@@ -68,6 +68,10 @@ else:
     _HAS_ATTRS = True
 
 
+# Used to speed up the comparison in update_for_numpy_scalar and for mock testing
+_IS_BIGENDIAN = sys.byteorder == "big"
+
+
 logger = logging.getLogger(__name__)
 
 # NOTE: not always available so they get hardcoded here
@@ -163,12 +167,6 @@ class KeyBuilder:
         may stop working as early as 2022.
 
         .. versionadded:: 2021.2
-
-    .. note::
-
-        Some key-building uses system byte order, so the built keys may not match
-        across different systems. It would be desirable to fix this, but this is
-        not yet done.
     """
 
     # this exists so that we can (conceivably) switch algorithms at some point
@@ -225,6 +223,8 @@ class KeyBuilder:
                         # Non-numpy scalars are handled above in the try block.
                         method = self.update_for_numpy_scalar
 
+                    # numpy arrays are mutable so they are not handled in KeyBuilder
+
                 if method is None:
                     if issubclass(tp, Enum):
                         method = self.update_for_enum
@@ -275,12 +275,11 @@ class KeyBuilder:
 
     def update_for_int(self, key_hash: Hash, key: int) -> None:
         sz = 8
+        # Note: this must match the hash for numpy integers, since
+        # np.int64(1) == 1
         while True:
             try:
-                # Must match system byte order so that numpy and this
-                # generate the same string of bytes.
-                # https://github.com/inducer/pytools/issues/259
-                key_hash.update(key.to_bytes(sz, byteorder=sys.byteorder, signed=True))
+                key_hash.update(key.to_bytes(sz, byteorder="little", signed=True))
                 return
             except OverflowError:
                 sz *= 2
@@ -333,12 +332,18 @@ class KeyBuilder:
 
     def update_for_numpy_scalar(self, key_hash: Hash, key: Any) -> None:
         import numpy as np
+
+        # tobytes() of np.complex256 and np.float128 are non-deterministic,
+        # so we need to use their repr() instead.
         if hasattr(np, "complex256") and key.dtype == np.dtype("complex256"):
             key_hash.update(repr(complex(key)).encode("utf8"))
         elif hasattr(np, "float128") and key.dtype == np.dtype("float128"):
             key_hash.update(repr(float(key)).encode("utf8"))
         else:
-            key_hash.update(np.array(key).tobytes())
+            if _IS_BIGENDIAN:
+                key_hash.update(np.array(key).byteswap().tobytes())
+            else:
+                key_hash.update(np.array(key).tobytes())
 
     def update_for_dataclass(self, key_hash: Hash, key: Any) -> None:
         self.rec(key_hash, f"{type(key).__qualname__}.{type(key).__name__}")

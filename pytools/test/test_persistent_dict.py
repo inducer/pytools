@@ -479,6 +479,17 @@ def test_scalar_hashing() -> None:
         assert keyb(np.complex256(1.1+2.2j)) == keyb(np.complex256(1.1+2.2j))
     assert keyb(np.clongdouble(1.1+2.2j)) == keyb(np.clongdouble(1.1+2.2j))
 
+    h_int64 = keyb(np.int64(1))
+
+    import unittest.mock
+
+    from pytools.persistent_dict import _IS_BIGENDIAN
+    with unittest.mock.patch("pytools.persistent_dict._IS_BIGENDIAN",
+                             not _IS_BIGENDIAN):
+        # Very crude test that the other endianness works as well.
+        be_val = np.int64(1).byteswap()
+        assert h_int64 == keyb(be_val)
+
 
 @pytest.mark.parametrize("dict_impl", ("immutabledict", "frozendict",
                                        "constantdict",
