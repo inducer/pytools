@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 __copyright__ = "Copyright (C) 2009-2021 Andreas Kloeckner"
 
 __license__ = """
@@ -23,15 +26,17 @@ THE SOFTWARE.
 
 import logging
 import sys
+from dataclasses import dataclass
 
 import pytest
 
+from pytools import Record
+from pytools.tag import tag_dataclass
+
 
 logger = logging.getLogger(__name__)
-from typing import FrozenSet
 
 
-@pytest.mark.skipif("sys.version_info < (2, 5)")
 def test_memoize_method_clear():
     from pytools import memoize_method
 
@@ -49,7 +54,7 @@ def test_memoize_method_clear():
     sc.f()
     assert sc.run_count == 1
 
-    sc.f.clear_cache(sc)  # pylint: disable=no-member
+    sc.f.clear_cache(sc)
 
 
 def test_keyed_memoize_method_with_uncached():
@@ -72,7 +77,7 @@ def test_keyed_memoize_method_with_uncached():
     sc.f(18, 19, z=20)
     assert sc.run_count == 2
 
-    sc.f.clear_cache(sc)  # pylint: disable=no-member
+    sc.f.clear_cache(sc)
 
 
 def test_memoize_in():
@@ -171,8 +176,7 @@ def test_memoize_keyfunc():
     assert count[0] == 2
 
 
-def test_memoize_frozen():
-    from dataclasses import dataclass
+def test_memoize_frozen() -> None:
 
     from pytools import memoize_method
 
@@ -186,9 +190,10 @@ def test_memoize_frozen():
         def double_value(self):
             return 2 * self.value
 
-    c = FrozenDataclass(10)
-    assert c.double_value() == 20
-    c.double_value.clear_cache(c)       # pylint: disable=no-member
+    c0 = FrozenDataclass(10)
+    assert c0.double_value() == 20
+
+    c0.double_value.clear_cache(c0)  # type: ignore[attr-defined]
 
     # }}}
 
@@ -207,9 +212,10 @@ def test_memoize_frozen():
         def double_value(self):
             return 2 * self.value
 
-    c = FrozenClass(10)
-    assert c.double_value() == 20
-    c.double_value.clear_cache(c)       # pylint: disable=no-member
+    c1 = FrozenClass(10)
+    assert c1.double_value() == 20
+
+    c1.double_value.clear_cache(c1)  # type: ignore[attr-defined]
 
     # }}}
 
@@ -218,8 +224,10 @@ def test_memoize_frozen():
 def test_spatial_btree(dims, do_plot=False):
     pytest.importorskip("numpy")
     import numpy as np
+
+    rng = np.random.default_rng()
     nparticles = 2000
-    x = -1 + 2*np.random.rand(dims, nparticles)
+    x = -1 + 2*rng.uniform(size=(dims, nparticles))
     x = np.sign(x)*np.abs(x)**1.9
     x = (1.4 + x) % 2 - 1
 
@@ -355,8 +363,6 @@ def test_eoc():
 
     # {{{ test invalid inputs
 
-    import numpy as np
-
     eoc = EOCRecorder()
 
     # scalar inputs are fine
@@ -399,7 +405,7 @@ class FakeArray:
     def __getitem__(self, idx):
         FakeArray.nopes += 1
         if idx > 10:
-            raise IndexError()
+            raise IndexError
 
 
 def test_make_obj_array_iteration():
@@ -493,12 +499,19 @@ def test_obj_array_vectorize(c=1):
 # }}}
 
 
-def test_tag():
+def test_tag() -> None:
     from pytools.tag import (
-        NonUniqueTagError, Tag, Taggable, UniqueTag, check_tag_uniqueness)
+        NonUniqueTagError,
+        Tag,
+        Taggable,
+        UniqueTag,
+        check_tag_uniqueness,
+    )
 
     # Need a subclass that defines the copy function in order to test.
+    @tag_dataclass
     class TaggableWithCopy(Taggable):
+        tags: frozenset[Tag]
 
         def _with_new_tags(self, tags):
             return TaggableWithCopy(tags)
@@ -541,7 +554,7 @@ def test_tag():
     # a subclass of Tag
     with pytest.raises(TypeError):
         check_tag_uniqueness(frozenset((
-            "I am not a tag", best_in_show_ribbon,
+            "I am not a tag", best_in_show_ribbon,  # type: ignore[arg-type]
             blue_ribbon, red_ribbon)))
 
     # Test that instantiation succeeds if there are multiple instances
@@ -572,7 +585,7 @@ def test_tag():
 
     # Test that tagged() fails if tags are not a FrozenSet of Tags
     with pytest.raises(TypeError):
-        t1.tagged(tags=frozenset((1,)))
+        t1.tagged(tags=frozenset((1,)))  # type: ignore[arg-type]
 
     # Test without_tags() function
     t4 = t2.without_tags(red_ribbon)
@@ -682,40 +695,6 @@ def test_unique_name_gen_conflicting_ok():
     ung.add_names({"a", "b", "c"}, conflicting_ok=True)
 
 
-def test_ignoredforequalitytag():
-    from pytools.tag import IgnoredForEqualityTag, Tag, Taggable
-
-    # Need a subclass that defines _with_new_tags in order to test.
-    class TaggableWithNewTags(Taggable):
-
-        def _with_new_tags(self, tags: FrozenSet[Tag]):
-            return TaggableWithNewTags(tags)
-
-    class Eq1(IgnoredForEqualityTag):
-        pass
-
-    class Eq2(IgnoredForEqualityTag):
-        pass
-
-    class Eq3(Tag):
-        pass
-
-    eq1 = TaggableWithNewTags(frozenset([Eq1()]))
-    eq2 = TaggableWithNewTags(frozenset([Eq2()]))
-    eq12 = TaggableWithNewTags(frozenset([Eq1(), Eq2()]))
-    eq3 = TaggableWithNewTags(frozenset([Eq1(), Eq3()]))
-
-    assert eq1 == eq2 == eq12
-    assert eq1 != eq3
-
-    assert eq1.without_tags(Eq1())
-    with pytest.raises(ValueError):
-        eq3.without_tags(Eq2())
-
-    assert hash(eq1) == hash(eq2) == hash(eq12)
-    assert hash(eq1) != hash(eq3)
-
-
 def test_strtobool():
     from pytools import strtobool
     assert strtobool("true") is True
@@ -737,6 +716,23 @@ def test_strtobool():
         strtobool(".")
 
     assert strtobool(None, False) is False
+
+
+def test_to_identifier() -> None:
+    from pytools import to_identifier
+
+    assert to_identifier("_a_123_") == "_a_123_"
+    assert to_identifier("a_123") == "a_123"
+    assert to_identifier("a 123") == "a123"
+    assert to_identifier("123") == "_123"
+    assert to_identifier("_123") == "_123"
+    assert to_identifier("123A") == "_123A"
+    assert to_identifier("") == "_"
+
+    assert not "a 123".isidentifier()
+    assert to_identifier("a 123").isidentifier()
+    assert to_identifier("123").isidentifier()
+    assert to_identifier("").isidentifier()
 
 
 def test_typedump():
@@ -772,7 +768,7 @@ def test_typedump():
 
 
 def test_unique():
-    from pytools import unique
+    from pytools import unique, unique_difference, unique_intersection, unique_union
 
     assert list(unique([1, 2, 1])) == [1, 2]
     assert tuple(unique((1, 2, 1))) == (1, 2)
@@ -780,8 +776,115 @@ def test_unique():
     assert list(range(1000)) == list(unique(range(1000)))
     assert list(unique(list(range(1000)) + list(range(1000)))) == list(range(1000))
 
-    assert next(unique([1, 2, 1, 3])) == 1
-    assert next(unique([]), None) is None
+    # Also test strings since their ordering would be thrown off by
+    # set-based 'unique' implementations.
+    assert list(unique(["a", "b", "a"])) == ["a", "b"]
+    assert tuple(unique(("a", "b", "a"))) == ("a", "b")
+
+    assert list(unique_difference(["a", "b", "c"], ["b", "c", "d"])) == ["a"]
+    assert list(unique_difference(["a", "b", "c"], ["a", "b", "c", "d"])) == []
+    assert list(unique_difference(["a", "b", "c"], ["a"], ["b"], ["c"])) == []
+
+    assert list(unique_intersection(["a", "b", "a"], ["b", "c", "a"])) == ["a", "b"]
+    assert list(unique_intersection(["a", "b", "a"], ["d", "c", "e"])) == []
+
+    assert list(unique_union(["a", "b", "a"], ["b", "c", "b"])) == ["a", "b", "c"]
+    assert list(unique_union(
+        ["a", "b", "a"], ["b", "c", "b"], ["c", "d", "c"])) == ["a", "b", "c", "d"]
+    assert list(unique(["a", "b", "a"])) == \
+        list(unique_union(["a", "b", "a"])) == ["a", "b"]
+
+    assert list(unique_intersection()) == []
+    assert list(unique_difference()) == []
+    assert list(unique_union()) == []
+
+
+# This class must be defined globally to be picklable
+class SimpleRecord(Record):
+    pass
+
+
+def test_record():
+    r = SimpleRecord(c=3, b=2, a=1)
+
+    assert r.a == 1
+    assert r.b == 2
+    assert r.c == 3
+
+    # Fields are sorted alphabetically in records
+    assert str(r) == "SimpleRecord(a=1, b=2, c=3)"
+
+    # Unregistered fields are (silently) ignored for printing
+    r.f = 6
+    assert str(r) == "SimpleRecord(a=1, b=2, c=3)"
+
+    # Registered fields are printed
+    r.register_fields({"d", "e"})
+    assert str(r) == "SimpleRecord(a=1, b=2, c=3)"
+
+    r.d = 4
+    r.e = 5
+    assert str(r) == "SimpleRecord(a=1, b=2, c=3, d=4, e=5)"
+
+    with pytest.raises(AttributeError):
+        r.ff  # noqa: B018
+
+    # Test pickling
+    import pickle
+    r_pickled = pickle.loads(pickle.dumps(r))
+    assert r == r_pickled
+
+    # }}}
+
+    # {{{ __slots__, __dict__, __weakref__ handling
+
+    class RecordWithEmptySlots(Record):
+        __slots__ = []
+
+    assert hasattr(RecordWithEmptySlots(), "__slots__")
+    assert not hasattr(RecordWithEmptySlots(), "__dict__")
+    assert not hasattr(RecordWithEmptySlots(), "__weakref__")
+
+    class RecordWithUnsetSlots(Record):
+        pass
+
+    assert hasattr(RecordWithUnsetSlots(), "__slots__")
+    assert hasattr(RecordWithUnsetSlots(), "__dict__")
+    assert hasattr(RecordWithUnsetSlots(), "__weakref__")
+
+    from pytools import ImmutableRecord
+
+    class ImmutableRecordWithEmptySlots(ImmutableRecord):
+        __slots__ = []
+
+    assert hasattr(ImmutableRecordWithEmptySlots(), "__slots__")
+    assert hasattr(ImmutableRecordWithEmptySlots(), "__dict__")
+    assert hasattr(ImmutableRecordWithEmptySlots(), "__weakref__")
+
+    class ImmutableRecordWithUnsetSlots(ImmutableRecord):
+        pass
+
+    assert hasattr(ImmutableRecordWithUnsetSlots(), "__slots__")
+    assert hasattr(ImmutableRecordWithUnsetSlots(), "__dict__")
+    assert hasattr(ImmutableRecordWithUnsetSlots(), "__weakref__")
+
+    # }}}
+
+
+def test_permutations():
+    from math import factorial
+
+    from pytools import generate_permutations, generate_unique_permutations
+
+    perm = list(generate_permutations([1, 2, 3, 4]))
+    assert len(perm)  == factorial(4)
+    perm = list(generate_unique_permutations((1, 3, 3, 4)))
+    assert len(perm)  == 12
+
+    perms = list(generate_permutations("1234"))
+    assert len(perms)  == factorial(4)
+    perms = list(generate_unique_permutations("1334"))
+    assert len(perms)  == 12
 
 
 if __name__ == "__main__":

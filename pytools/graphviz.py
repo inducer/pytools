@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 __copyright__ = """
 Copyright (C) 2013 Andreas Kloeckner
 Copyright (C) 2014 Matt Wala
@@ -34,7 +37,6 @@ Dot helper functions
 import html
 import logging
 import os
-from typing import Optional
 
 
 logger = logging.getLogger(__name__)
@@ -56,7 +58,7 @@ def dot_escape(s: str) -> str:
     return html.escape(s.replace("\\", "\\\\"))
 
 
-def show_dot(dot_code: str, output_to: Optional[str] = None) -> Optional[str]:
+def show_dot(dot_code: str, output_to: str | None = None) -> str | None:
     """
     Visualize the graph represented by *dot_code*.
 
@@ -119,11 +121,10 @@ def show_dot(dot_code: str, output_to: Optional[str] = None) -> Optional[str]:
 
         if output_to == "svg":
             return full_svg_file_name
-        else:
-            assert output_to == "browser"
+        assert output_to == "browser"
 
-            from webbrowser import open as browser_open
-            browser_open("file://" + full_svg_file_name)
+        from webbrowser import open as browser_open
+        browser_open("file://" + full_svg_file_name)
     else:
         raise ValueError("`output_to` can be one of 'xwindow', 'browser', or 'svg',"
                          f" got '{output_to}'")

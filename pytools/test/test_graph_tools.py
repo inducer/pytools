@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 
 import pytest
@@ -25,12 +27,11 @@ def test_compute_sccs():
         def visit(node):
             if node in visited:
                 return []
-            else:
-                visited.add(node)
-                result = []
-                for child in graph[node]:
-                    result = result + visit(child)
-                return result + [node]
+            visited.add(node)
+            result = []
+            for child in graph[node]:
+                result = result + visit(child)
+            return [*result, node]
 
         for scc in sccs:
             scc = set(scc)
@@ -57,7 +58,7 @@ def test_compute_topological_order():
     disconnected = {1: [], 2: [], 3: []}
     assert len(compute_topological_order(disconnected)) == 3
 
-    line = list(zip(range(10), ([i] for i in range(1, 11))))
+    line = list(zip(range(10), ([i] for i in range(1, 11)), strict=True))
     import random
     random.seed(0)
     random.shuffle(line)
@@ -429,6 +430,44 @@ def test_is_connected():
     assert not is_connected(graph4)
 
     assert is_connected({})
+
+
+def test_propagation_graph_tools():
+    from pytools.graph import (
+        get_reachable_nodes,
+        undirected_graph_from_edges,
+    )
+    vars = {"a", "b", "c", "d", "e", "f", "g"}
+
+    constraints = {
+        ("a", "b"),
+        ("b", "c"),
+        ("b", "d"),
+        ("c", "e"),
+        ("d", "f"),
+        ("e", "g"),
+        ("g", "f"),
+        ("f", "g")
+    }
+
+    all_reachable_nodes = {
+        "a": frozenset({"a", "b"}),
+        "b": frozenset({"a", "b"}),
+        "c": frozenset(),
+        "d": frozenset(),
+        "e": frozenset({"e", "f", "g"}),
+        "f": frozenset({"e", "f", "g"}),
+        "g": frozenset({"e", "f", "g"})
+    }
+
+    exclude_nodes = {"d", "c"}
+    propagation_graph = undirected_graph_from_edges(constraints)
+
+    assert (
+        all_reachable_nodes[var] == get_reachable_nodes(propagation_graph, var,
+                                                        exclude_nodes)
+        for var in vars
+    )
 
 
 if __name__ == "__main__":

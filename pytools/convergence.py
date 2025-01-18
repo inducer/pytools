@@ -1,5 +1,13 @@
+"""
+.. autofunction:: estimate_order_of_convergence
+.. autoclass:: EOCRecorder
+.. autofunction:: stringify_eocs
+.. autoclass:: PConvergenceVerifier
+"""
+
+from __future__ import annotations
+
 import numbers
-from typing import List, Optional, Tuple
 
 import numpy as np
 
@@ -7,9 +15,11 @@ import numpy as np
 # {{{ eoc estimation --------------------------------------------------------------
 
 def estimate_order_of_convergence(abscissae, errors):
-    """Assuming that abscissae and errors are connected by a law of the form
+    r"""Assuming that abscissae and errors are connected by a law of the form
 
-    error = constant * abscissa ^ (order),
+    .. math::
+
+        \text{Error} =  \text{constant} \cdot \text{abscissa }^{\text{order}},
 
     this function finds, in a least-squares sense, the best approximation of
     constant and order for the given data set. It returns a tuple (constant, order).
@@ -35,7 +45,7 @@ class EOCRecorder:
     """
 
     def __init__(self) -> None:
-        self.history: List[Tuple[float, float]] = []
+        self.history: list[tuple[float, float]] = []
 
     def add_data_point(self, abscissa: float, error: float) -> None:
         if not (isinstance(abscissa, numbers.Number)
@@ -50,14 +60,14 @@ class EOCRecorder:
         self.history.append((abscissa, error))
 
     def estimate_order_of_convergence(self,
-            gliding_mean: Optional[int] = None,
+            gliding_mean: int | None = None,
             ) -> np.ndarray:
         abscissae = np.array([a for a, e in self.history])
         errors = np.array([e for a, e in self.history])
 
         # NOTE: in case any of the errors are exactly 0.0, which
         # can give NaNs in `estimate_order_of_convergence`
-        emax = np.amax(errors)
+        emax: float = np.amax(errors)
         errors += (1 if emax == 0 else emax) * np.finfo(errors.dtype).eps
 
         size = len(abscissae)
@@ -65,7 +75,7 @@ class EOCRecorder:
             gliding_mean = size
 
         data_points = size - gliding_mean + 1
-        result = np.zeros((data_points, 2), float)
+        result: np.ndarray = np.zeros((data_points, 2), float)
         for i in range(data_points):
             result[i, 0], result[i, 1] = estimate_order_of_convergence(
                 abscissae[i:i+gliding_mean], errors[i:i+gliding_mean])
@@ -123,14 +133,13 @@ class EOCRecorder:
 
         if table_type == "markdown":
             return tbl.github_markdown()
-        elif table_type == "latex":
+        if table_type == "latex":
             return tbl.latex()
-        elif table_type == "ascii":
+        if table_type == "ascii":
             return str(tbl)
-        elif table_type == "csv":
+        if table_type == "csv":
             return tbl.csv()
-        else:
-            raise ValueError(f"unknown table type: {table_type}")
+        raise ValueError(f"unknown table type: {table_type}")
 
     def __str__(self):
         return self.pretty_print()
@@ -148,7 +157,7 @@ class EOCRecorder:
 
 
 def stringify_eocs(*eocs: EOCRecorder,
-        names: Optional[Tuple[str, ...]] = None,
+        names: tuple[str, ...] | None = None,
         abscissa_label: str = "h",
         error_label: str = "Error",
         gliding_mean: int = 2,
@@ -166,7 +175,7 @@ def stringify_eocs(*eocs: EOCRecorder,
                 f"{len(eocs)} EOCRecorder instances")
 
     if names is None:
-        names = tuple([f"{error_label} {i}" for i in range(len(eocs))])
+        names = tuple(f"{error_label} {i}" for i in range(len(eocs)))
 
     from pytools import merge_tables
     tbl = merge_tables(*[eoc._to_table(
@@ -175,19 +184,18 @@ def stringify_eocs(*eocs: EOCRecorder,
         error_format=error_format,
         eoc_format=eoc_format,
         gliding_mean=gliding_mean)
-        for name, eoc in zip(names, eocs)
+        for name, eoc in zip(names, eocs, strict=True)
         ], skip_columns=(0,))
 
     if table_type == "markdown":
         return tbl.github_markdown()
-    elif table_type == "latex":
+    if table_type == "latex":
         return tbl.latex()
-    elif table_type == "ascii":
+    if table_type == "ascii":
         return str(tbl)
-    elif table_type == "csv":
+    if table_type == "csv":
         return tbl.csv()
-    else:
-        raise ValueError(f"unknown table type: {table_type}")
+    raise ValueError(f"unknown table type: {table_type}")
 
 # }}}
 
@@ -208,7 +216,7 @@ class PConvergenceVerifier:
         tbl = Table()
         tbl.add_row(("p", "error"))
 
-        for p, err in zip(self.orders, self.errors):
+        for p, err in zip(self.orders, self.errors, strict=True):
             tbl.add_row((str(p), str(err)))
 
         return str(tbl)

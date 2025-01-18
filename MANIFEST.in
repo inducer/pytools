@@ -1,6 +1,0 @@
-include LICENSE
-include CITATION.cff
-
-include doc/*rst
-include doc/Makefile
-include doc/conf.py
