@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy as np
 
 
@@ -5,10 +7,7 @@ def do_boxes_intersect(bl, tr):
     (bl1, tr1) = bl
     (bl2, tr2) = tr
     (dimension,) = bl1.shape
-    for i in range(0, dimension):
-        if max(bl1[i], bl2[i]) > min(tr1[i], tr2[i]):
-            return False
-    return True
+    return all(max(bl1[i], bl2[i]) <= min(tr1[i], tr2[i]) for i in range(dimension))
 
 
 def make_buckets(bottom_left, top_right, allbuckets, max_elements_per_box):
@@ -23,12 +22,11 @@ def make_buckets(bottom_left, top_right, allbuckets, max_elements_per_box):
                     max_elements_per_box=max_elements_per_box)
             allbuckets.append(bucket)
             return bucket
-        else:
-            pos[dimension] = 0
-            first = do(dimension + 1, pos)
-            pos[dimension] = 1
-            second = do(dimension + 1, pos)
-            return [first, second]
+        pos[dimension] = 0
+        first = do(dimension + 1, pos)
+        pos[dimension] = 1
+        second = do(dimension + 1, pos)
+        return [first, second]
 
     return do(0, np.zeros((dimensions,), np.float64))
 
@@ -103,7 +101,7 @@ class SpatialBinaryTreeBucket:
             # No subdivisions yet.
             if len(self.elements) > self.max_elements_per_box:
                 # Too many elements. Need to subdivide.
-                self.all_buckets = []  # noqa: E501 pylint:disable=attribute-defined-outside-init
+                self.all_buckets = []
                 self.buckets = make_buckets(
                         self.bottom_left, self.top_right,
                         self.all_buckets,
@@ -130,10 +128,7 @@ class SpatialBinaryTreeBucket:
             (dimensions,) = point.shape
             bucket = self.buckets
             for dim in range(dimensions):
-                if point[dim] < self.center[dim]:
-                    bucket = bucket[0]
-                else:
-                    bucket = bucket[1]
+                bucket = bucket[0] if point[dim] < self.center[dim] else bucket[1]
 
             yield from bucket.generate_matches(point)
 
@@ -166,7 +161,7 @@ class SpatialBinaryTreeBucket:
             (Path.CLOSEPOLY, (el[0], el[1])),
             ]
 
-        codes, verts = zip(*pathdata)
+        codes, verts = zip(*pathdata, strict=True)
         path = Path(verts, codes)
         patch = mpatches.PathPatch(path, **kwargs)
         pt.gca().add_patch(patch)

@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import contextlib
 import sys
 
 from pytools import memoize
@@ -51,11 +54,11 @@ def open_unique_debug_file(stem, extension=""):
 
 # {{{ refcount debugging ------------------------------------------------------
 
-class RefDebugQuit(Exception):
+class RefDebugQuit(Exception):  # noqa: N818
     pass
 
 
-def refdebug(obj, top_level=True, exclude=()):  # noqa: E501  pylint:disable=too-many-locals,too-many-branches,too-many-statements
+def refdebug(obj, top_level=True, exclude=()):
     from types import FrameType
 
     def is_excluded(o):
@@ -64,17 +67,12 @@ def refdebug(obj, top_level=True, exclude=()):  # noqa: E501  pylint:disable=too
                 return True
 
         from sys import _getframe
-        if isinstance(o, FrameType) and \
-                o.f_code.co_filename == _getframe().f_code.co_filename:
-            return True
-
-        return False
+        return bool(isinstance(o, FrameType)
+                    and o.f_code.co_filename == _getframe().f_code.co_filename)
 
     if top_level:
-        try:
+        with contextlib.suppress(RefDebugQuit):
             refdebug(obj, top_level=False, exclude=exclude)
-        except RefDebugQuit:
-            pass
         return
 
     import gc
@@ -92,10 +90,7 @@ def refdebug(obj, top_level=True, exclude=()):  # noqa: E501  pylint:disable=too
                 print_head = False
             r = reflist[idx]
 
-            if isinstance(r, FrameType):
-                s = str(r.f_code)
-            else:
-                s = str(r)
+            s = str(r.f_code) if isinstance(r, FrameType) else str(r)
 
             print(f"{idx}/{len(reflist)}: ", id(r), type(r), s)
 
@@ -129,7 +124,7 @@ def refdebug(obj, top_level=True, exclude=()):  # noqa: E501  pylint:disable=too
             elif response == "r":
                 return
             elif response == "q":
-                raise RefDebugQuit()
+                raise RefDebugQuit
             else:
                 print("WHAT YOU SAY!!! (invalid choice)")
 
@@ -141,10 +136,10 @@ def refdebug(obj, top_level=True, exclude=()):  # noqa: E501  pylint:disable=too
 
 # {{{ interactive shell
 
-def get_shell_hist_filename():
+def get_shell_hist_filename() -> str:
     import os
-    _home = os.environ.get("HOME", "/")
-    return os.path.join(_home, ".pytools-debug-shell-history")
+
+    return os.path.expanduser(os.path.join("~", ".pytools-debug-shell-history"))
 
 
 def setup_readline():
@@ -154,12 +149,12 @@ def setup_readline():
         try:
             readline.read_history_file(hist_filename)
         except Exception:  # pylint:disable=broad-except
-            # http://docs.python.org/3/howto/pyporting.html#capturing-the-currently-raised-exception  # noqa: E501  pylint:disable=line-too-long
+            # http://docs.python.org/3/howto/pyporting.html#capturing-the-currently-raised-exception
             import sys
             e = sys.exc_info()[1]
 
             from warnings import warn
-            warn(f"Error opening readline history file: {e}")
+            warn(f"Error opening readline history file: {e}", stacklevel=2)
 
     readline.parse_and_bind("tab: complete")
 

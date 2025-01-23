@@ -1,4 +1,5 @@
 """See pytools.prefork for this module's reason for being."""
+from __future__ import annotations
 
 import mpi4py.rc  # pylint:disable=import-error
 
@@ -13,7 +14,8 @@ import pytools.prefork  # pylint:disable=wrong-import-position
 pytools.prefork.enable_prefork()
 
 
-if Is_initialized():  # noqa pylint:disable=undefined-variable
+# pylint: disable-next=undefined-variable
+if Is_initialized():    # type: ignore[name-defined,unused-ignore] # noqa
     raise RuntimeError("MPI already initialized before MPI wrapper import")
 
 

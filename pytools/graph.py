@@ -5,6 +5,7 @@ __copyright__ = """
 Copyright (C) 2009-2013 Andreas Kloeckner
 Copyright (C) 2020 Matt Wala
 Copyright (C) 2020 James Stevens
+Copyright (C) 2024 Addison Alvey-Blanco
 """
 
 __license__ = """
@@ -27,7 +28,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-
 __doc__ = """
 Graph Algorithms
 ================
@@ -47,9 +47,15 @@ Graph Algorithms
 .. autofunction:: as_graphviz_dot
 .. autofunction:: validate_graph
 .. autofunction:: is_connected
+.. autofunction:: undirected_graph_from_edges
+.. autofunction:: get_reachable_nodes
 
 Type Variables Used
 -------------------
+
+.. class:: _SupportsLT
+
+    A :class:`~typing.Protocol` for `__lt__` support.
 
 .. class:: NodeT
 
@@ -64,19 +70,26 @@ Type Variables Used
     is included as a key in the graph.
 """
 
+from collections.abc import (
+    Callable,
+    Collection,
+    Hashable,
+    Iterable,
+    Iterator,
+    Mapping,
+    MutableSet,
+)
+from dataclasses import dataclass
 from typing import (
-    Any, Callable, Collection, Dict, Hashable, Iterator, List, Mapping, MutableSet,
-    Optional, Set, Tuple, TypeVar)
-
-
-try:
-    from typing import TypeAlias
-except ImportError:
-    from typing_extensions import TypeAlias
+    Any,
+    Generic,
+    Protocol,
+    TypeAlias,
+    TypeVar,
+)
 
 
 NodeT = TypeVar("NodeT", bound=Hashable)
-
 
 GraphT: TypeAlias[NodeT] = Mapping[NodeT, Collection[NodeT]]
 
@@ -89,7 +102,7 @@ def reverse_graph(graph: GraphT[NodeT]) -> GraphT[NodeT]:
 
     :returns: A :class:`dict` representing *graph* with edges reversed.
     """
-    result: Dict[NodeT, Set[NodeT]] = {}
+    result: dict[NodeT, set[NodeT]] = {}
 
     for node_key, successor_nodes in graph.items():
         # Make sure every node is in the result even if it has no successors
@@ -105,11 +118,18 @@ def reverse_graph(graph: GraphT[NodeT]) -> GraphT[NodeT]:
 
 # {{{ a_star
 
-def a_star(  # pylint: disable=too-many-locals
+@dataclass(frozen=True)
+class _AStarNode(Generic[NodeT]):
+    state: NodeT
+    parent: _AStarNode[NodeT] | None
+    path_cost: float | int
+
+
+def a_star(
         initial_state: NodeT, goal_state: NodeT, neighbor_map: GraphT[NodeT],
-        estimate_remaining_cost: Optional[Callable[[NodeT], float]] = None,
+        estimate_remaining_cost: Callable[[NodeT], float] | None = None,
         get_step_cost: Callable[[Any, NodeT], float] = lambda x, y: 1
-        ) -> List[NodeT]:
+        ) -> list[NodeT]:
     """
     With the default cost and heuristic, this amounts to Dijkstra's algorithm.
     """
@@ -117,26 +137,16 @@ def a_star(  # pylint: disable=too-many-locals
     from heapq import heappop, heappush
 
     if estimate_remaining_cost is None:
-        # pylint: disable=function-redefined
         def estimate_remaining_cost(x: NodeT) -> float:
             if x != goal_state:
                 return 1
-            else:
-                return 0
-
-    class AStarNode:
-        __slots__ = ["state", "parent", "path_cost"]
-
-        def __init__(self, state: NodeT, parent: Any, path_cost: float) -> None:
-            self.state = state
-            self.parent = parent
-            self.path_cost = path_cost
+            return 0
 
     inf = float("inf")
     init_remcost = estimate_remaining_cost(initial_state)
     assert init_remcost != inf
 
-    queue = [(init_remcost, AStarNode(initial_state, parent=None, path_cost=0))]
+    queue = [(init_remcost, _AStarNode(initial_state, parent=None, path_cost=0))]
     visited_states = set()
 
     while queue:
@@ -145,7 +155,7 @@ def a_star(  # pylint: disable=too-many-locals
 
         if top.state == goal_state:
             result = []
-            it: Optional[AStarNode] = top
+            it: _AStarNode[NodeT] | None = top
             while it is not None:
                 result.append(it.state)
                 it = it.parent
@@ -163,7 +173,7 @@ def a_star(  # pylint: disable=too-many-locals
             estimated_path_cost = top.path_cost+step_cost+remaining_cost
             heappush(queue,
                 (estimated_path_cost,
-                    AStarNode(state, top, path_cost=top.path_cost + step_cost)))
+                    _AStarNode(state, top, path_cost=top.path_cost + step_cost)))
 
     raise RuntimeError("no solution")
 
@@ -172,21 +182,20 @@ def a_star(  # pylint: disable=too-many-locals
 
 # {{{ compute SCCs with Tarjan's algorithm
 
-def compute_sccs(graph: GraphT[NodeT]) -> List[List[NodeT]]:
+def compute_sccs(graph: GraphT[NodeT]) -> list[list[NodeT]]:
     to_search = set(graph.keys())
-    visit_order: Dict[NodeT, int] = {}
+    visit_order: dict[NodeT, int] = {}
     scc_root = {}
     sccs = []
 
     while to_search:
         top = next(iter(to_search))
-        call_stack: List[Tuple[NodeT, Iterator[NodeT], Optional[NodeT]]] = [(top,
-                                                                 iter(graph[top]),
-                                                                 None)]
+        call_stack: list[tuple[NodeT, Iterator[NodeT], NodeT | None]] = (
+            [(top, iter(graph[top]), None)])
         visit_stack = []
         visiting = set()
 
-        scc: List[NodeT] = []
+        scc: list[NodeT] = []
 
         while call_stack:
             top, children, last_popped_child = call_stack.pop()
@@ -243,7 +252,13 @@ class CycleError(Exception):
         self.node = node
 
 
-class HeapEntry:
+class _SupportsLT(Protocol):
+    def __lt__(self, other: Any) -> bool:
+        ...
+
+
+@dataclass(frozen=True)
+class _HeapEntry(Generic[NodeT]):
     """
     Helper class to compare associated keys while comparing the elements in
     heap operations.
@@ -251,17 +266,17 @@ class HeapEntry:
     Only needs to define :func:`pytools.graph.__lt__` according to
     <https://github.com/python/cpython/blob/8d21aa21f2cbc6d50aab3f420bb23be1d081dac4/Lib/heapq.py#L135-L138>.
     """
-    def __init__(self, node: NodeT, key: Any) -> None:
-        self.node = node
-        self.key = key
+    node: NodeT
+    key: _SupportsLT
 
-    def __lt__(self, other: "HeapEntry") -> bool:
+    def __lt__(self, other: _HeapEntry[NodeT]) -> bool:
         return self.key < other.key
 
 
-def compute_topological_order(graph: GraphT[NodeT],
-                              key: Optional[Callable[[NodeT], Any]] = None) \
-                              -> List[NodeT]:
+def compute_topological_order(
+        graph: GraphT[NodeT],
+        key: Callable[[NodeT], _SupportsLT] | None = None,
+        ) -> list[NodeT]:
     """Compute a topological order of nodes in a directed graph.
 
     :arg key: A custom key function may be supplied to determine the order in
@@ -287,7 +302,7 @@ def compute_topological_order(graph: GraphT[NodeT],
 
     # {{{ compute nodes_to_num_predecessors
 
-    nodes_to_num_predecessors = {node: 0 for node in graph}
+    nodes_to_num_predecessors = dict.fromkeys(graph, 0)
 
     for node in graph:
         for child in graph[node]:
@@ -301,7 +316,7 @@ def compute_topological_order(graph: GraphT[NodeT],
     # heap: list of instances of HeapEntry(n) where 'n' is a node in
     # 'graph' with no predecessor. Nodes with no predecessors are the
     # schedulable candidates.
-    heap = [HeapEntry(n, keyfunc(n))
+    heap = [_HeapEntry(n, keyfunc(n))
             for n, num_preds in nodes_to_num_predecessors.items()
             if num_preds == 0]
     heapify(heap)
@@ -316,7 +331,7 @@ def compute_topological_order(graph: GraphT[NodeT],
         for child in graph.get(node_to_be_scheduled, ()):
             nodes_to_num_predecessors[child] -= 1
             if nodes_to_num_predecessors[child] == 0:
-                heappush(heap, HeapEntry(child, keyfunc(child)))
+                heappush(heap, _HeapEntry(child, keyfunc(child)))
 
     if len(order) != total_num_nodes:
         # any node which has a predecessor left is a part of a cycle
@@ -353,9 +368,9 @@ def compute_transitive_closure(
     closure = deepcopy(graph)
 
     # (assumes all graph nodes are included in keys)
-    for k in graph.keys():
-        for n1 in graph.keys():
-            for n2 in graph.keys():
+    for k in graph:
+        for n1 in graph:
+            for n2 in graph:
                 if k in closure[n1] and n2 in closure[k]:
                     closure[n1].add(n2)
 
@@ -385,8 +400,8 @@ def contains_cycle(graph: GraphT[NodeT]) -> bool:
 
 # {{{ compute induced subgraph
 
-def compute_induced_subgraph(graph: Mapping[NodeT, Set[NodeT]],
-                             subgraph_nodes: Set[NodeT]) -> GraphT[NodeT]:
+def compute_induced_subgraph(graph: Mapping[NodeT, set[NodeT]],
+                             subgraph_nodes: set[NodeT]) -> GraphT[NodeT]:
     """Compute the induced subgraph formed by a subset of the vertices in a
     graph.
 
@@ -416,9 +431,9 @@ def compute_induced_subgraph(graph: Mapping[NodeT, Set[NodeT]],
 # {{{ as_graphviz_dot
 
 def as_graphviz_dot(graph: GraphT[NodeT],
-                    node_labels: Optional[Callable[[NodeT], str]] = None,
-                    edge_labels: Optional[Callable[[NodeT, NodeT], str]] = None) \
-                    -> str:
+                    node_labels: Callable[[NodeT], str] | None = None,
+                    edge_labels: Callable[[NodeT, NodeT], str] | None = None,
+                    ) -> str:
     """
     Create a visualization of the graph *graph* in the
     `dot <http://graphviz.org/>`__ language.
@@ -437,10 +452,12 @@ def as_graphviz_dot(graph: GraphT[NodeT],
     from pytools.graphviz import dot_escape
 
     if node_labels is None:
-        node_labels = lambda x: str(x)
+        def node_labels(x: NodeT) -> str:
+            return str(x)
 
     if edge_labels is None:
-        edge_labels = lambda x, y: ""
+        def edge_labels(x: NodeT, y: NodeT) -> str:
+            return ""
 
     node_to_id = {}
 
@@ -454,7 +471,7 @@ def as_graphviz_dot(graph: GraphT[NodeT],
     # Add nodes
     content = "\n".join(
         [f'{node_to_id[node]} [label="{dot_escape(node_labels(node))}"];'
-         for node in node_to_id.keys()])
+         for node in node_to_id])
 
     content += "\n"
 
@@ -465,7 +482,7 @@ def as_graphviz_dot(graph: GraphT[NodeT],
          for (node, targets) in graph.items()
          for t in targets])
 
-    return f"digraph mygraph {{\n{ content }\n}}\n"
+    return f"digraph mygraph {{\n{content}\n}}\n"
 
 # }}}
 
@@ -477,7 +494,7 @@ def validate_graph(graph: GraphT[NodeT]) -> None:
     Validates that all successor nodes of each node in *graph* are keys in
     *graph* itself. Raises a :class:`ValueError` if not.
     """
-    seen_nodes: Set[NodeT] = set()
+    seen_nodes: set[NodeT] = set()
 
     for children in graph.values():
         seen_nodes.update(children)
@@ -489,7 +506,7 @@ def validate_graph(graph: GraphT[NodeT]) -> None:
 # }}}
 
 
-# {{{
+# {{{ is_connected
 
 def is_connected(graph: GraphT[NodeT]) -> bool:
     """
@@ -519,6 +536,71 @@ def is_connected(graph: GraphT[NodeT]) -> bool:
     dfs(next(iter(graph.keys())))
 
     return visited == graph.keys()
+
+# }}}
+
+
+def undirected_graph_from_edges(
+            edges: Iterable[tuple[NodeT, NodeT]],
+        ) -> GraphT[NodeT]:
+    """
+    Constructs an undirected graph using *edges*.
+
+    :arg edges: An :class:`Iterable` of pairs of related :class:`NodeT` s.
+
+    :returns: A :class:`GraphT` that is the undirected graph.
+    """
+    undirected_graph: dict[NodeT, set[NodeT]] = {}
+
+    for lhs, rhs in edges:
+        if lhs == rhs:
+            raise TypeError("Found loop in edges,"
+                            f" LHS, RHS = {lhs}")
+
+        undirected_graph.setdefault(lhs, set()).add(rhs)
+        undirected_graph.setdefault(rhs, set()).add(lhs)
+
+    return undirected_graph
+
+
+def get_reachable_nodes(
+        undirected_graph: GraphT[NodeT],
+        source_node: NodeT,
+        exclude_nodes: Collection[NodeT] | None = None) -> frozenset[NodeT]:
+    """
+    Returns a :class:`frozenset` of all nodes in *undirected_graph* that are
+    reachable from *source_node*.
+
+    If any node from *exclude_nodes* lies on a path between *source_node* and
+    some other node :math:`u` in *undirected_graph* and there are no other
+    viable paths, then :math:`u` is considered not reachable from *source_node*.
+
+    In the case where *source_node* is in *exclude_nodes*, then no node is
+    reachable from *source_node*, so an empty :class:`frozenset` is returned.
+    """
+    if exclude_nodes is not None and source_node in exclude_nodes:
+        return frozenset()
+
+    nodes_visited: set[NodeT] = set()
+    reachable_nodes: set[NodeT] = set()
+    nodes_to_visit = {source_node}
+
+    if exclude_nodes is None:
+        exclude_nodes = set()
+
+    while nodes_to_visit:
+        current_node = nodes_to_visit.pop()
+        nodes_visited.add(current_node)
+
+        reachable_nodes.add(current_node)
+
+        neighbors = undirected_graph[current_node]
+        nodes_to_visit.update({
+            node for node in neighbors
+            if node not in nodes_visited and node not in exclude_nodes
+        })
+
+    return frozenset(reachable_nodes)
 
 
 # vim: foldmethod=marker

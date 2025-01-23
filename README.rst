@@ -4,9 +4,9 @@ Pytools: Lots of Little Utilities
 .. image:: https://gitlab.tiker.net/inducer/pytools/badges/main/pipeline.svg
     :alt: Gitlab Build Status
     :target: https://gitlab.tiker.net/inducer/pytools/commits/main
-.. image:: https://github.com/inducer/pytools/workflows/CI/badge.svg?branch=main&event=push
+.. image:: https://github.com/inducer/pytools/workflows/CI/badge.svg?branch=main
     :alt: Github Build Status
-    :target: https://github.com/inducer/pytools/actions?query=branch%3Amain+workflow%3ACI+event%3Apush
+    :target: https://github.com/inducer/pytools/actions?query=branch%3Amain+workflow%3ACI
 .. image:: https://badge.fury.io/py/pytools.png
     :alt: Python Package Index Release Page
     :target: https://pypi.org/project/pytools/
@@ -24,6 +24,7 @@ nonetheless, here's what's on offer:
   GvR's monkeypatch_xxx() hack, the elusive `flatten`, and much more.
 * Batch job submission, `pytools.batchjob`.
 * A lexer, `pytools.lex`.
+* A persistent key-value store, `pytools.persistent_dict`.
 
 Links:
 

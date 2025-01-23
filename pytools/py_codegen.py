@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 __copyright__ = "Copyright (C) 2009-2013 Andreas Kloeckner"
 
 __license__ = """
@@ -25,7 +28,10 @@ from importlib.util import MAGIC_NUMBER as BYTECODE_VERSION
 from types import FunctionType, ModuleType
 
 from pytools.codegen import (  # noqa
-    CodeGenerator as CodeGeneratorBase, Indentation, remove_common_indentation)
+    CodeGenerator as CodeGeneratorBase,
+    Indentation,
+    remove_common_indentation,
+)
 
 
 class PythonCodeGenerator(CodeGeneratorBase):
@@ -133,7 +139,7 @@ class PicklableModule:
 # {{{ picklable function
 
 class PicklableFunction:
-    """Convience class wrapping a function in a :class:`PicklableModule`.
+    """Convenience class wrapping a function in a :class:`PicklableModule`.
     """
 
     def __init__(self, module, name):

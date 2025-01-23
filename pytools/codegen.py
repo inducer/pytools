@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 __copyright__ = "Copyright (C) 2009-2013 Andreas Kloeckner"
 
 __license__ = """
@@ -29,7 +32,7 @@ Tools for Source Code Generation
 .. autofunction:: remove_common_indentation
 """
 
-from typing import Any, List
+from typing import Any
 
 
 # {{{ code generation
@@ -48,12 +51,12 @@ class CodeGenerator:
     .. automethod:: dedent
     """
     def __init__(self) -> None:
-        self.preamble: List[str] = []
-        self.code: List[str] = []
+        self.preamble: list[str] = []
+        self.code: list[str] = []
         self.level = 0
         self.indent_amount = 4
 
-    def extend(self, sub_generator: "CodeGenerator") -> None:
+    def extend(self, sub_generator: CodeGenerator) -> None:
         for line in sub_generator.code:
             self.code.append(" "*(self.indent_amount*self.level) + line)
 

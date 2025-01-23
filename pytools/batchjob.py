@@ -1,16 +1,12 @@
+from __future__ import annotations
+
+
 def _cp(src, dest):
     from pytools import assert_not_a_file
     assert_not_a_file(dest)
 
-    inf = open(src, "rb")
-    try:
-        outf = open(dest, "wb")
-        try:
-            outf.write(inf.read())
-        finally:
-            outf.close()
-    finally:
-        inf.close()
+    with open(src, "rb") as inf, open(dest, "wb") as outf:
+        outf.write(inf.read())
 
 
 def get_timestamp():
@@ -40,10 +36,9 @@ class BatchJob:
 
         os.makedirs(self.path)
 
-        runscript = open(f"{self.path}/run.sh", "w")
-        import sys
-        runscript.write(f"{sys.executable} {main_file} setup.cpy")
-        runscript.close()
+        with open(f"{self.path}/run.sh", "w") as runscript:
+            import sys
+            runscript.write(f"{sys.executable} {main_file} setup.cpy")
 
         from os.path import basename
 
@@ -55,12 +50,11 @@ class BatchJob:
 
     def write_setup(self, lines):
         import os.path
-        setup = open(os.path.join(self.path, "setup.cpy"), "w")
-        setup.write("\n".join(lines))
-        setup.close()
+        with open(os.path.join(self.path, "setup.cpy"), "w") as setup:
+            setup.write("\n".join(lines))
 
 
-class INHERIT:  # noqa
+class INHERIT:
     pass
 
 
@@ -86,7 +80,7 @@ class GridEngineJob(BatchJob):
 
         args.extend(extra_args)
 
-        subproc = Popen(["qsub"] + args + ["run.sh"], cwd=self.path)
+        subproc = Popen(["qsub", *args, "run.sh"], cwd=self.path)
         if subproc.wait() != 0:
             raise RuntimeError(f"Process submission of {self.moniker} failed")
 
@@ -114,7 +108,7 @@ class PBSJob(BatchJob):
 
         args.extend(extra_args)
 
-        subproc = Popen(["qsub"] + args + ["run.sh"], cwd=self.path)
+        subproc = Popen(["qsub", *args, "run.sh"], cwd=self.path)
         if subproc.wait() != 0:
             raise RuntimeError(f"Process submission of {self.moniker} failed")
 
@@ -125,8 +119,7 @@ def guess_job_class():
             stdout=PIPE, stderr=STDOUT).communicate()[0].split("\n")
     if qstat_helplines[0].startswith("GE"):
         return GridEngineJob
-    else:
-        return PBSJob
+    return PBSJob
 
 
 class ConstructorPlaceholder:
@@ -145,7 +138,7 @@ class ConstructorPlaceholder:
         return "{}({})".format(self.classname,
                 ",".join(
                     [str(arg) for arg in self.args]
-                    + [f"{kw}={repr(val)}"
+                    + [f"{kw}={val!r}"
                         for kw, val in self.kwargs.items()]
                     )
                 )

@@ -4,7 +4,7 @@ Pytest:
     # AK, 2020-12-13
     rm pytools/mpiwrap.py
 
-    export EXTRA_INSTALL="numpy"
+    export EXTRA_INSTALL="numpy siphash24"
     curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
     . ./build-and-test-py-project.sh
   tags:
@@ -17,6 +17,7 @@ Pytest:
 
 Pytest without Numpy:
   script: |
+    EXTRA_INSTALL="siphash24"
     rm pytools/{convergence,spatial_btree,obj_array,mpiwrap}.py
     curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
     . ./build-and-test-py-project.sh
@@ -40,12 +41,12 @@ Pytest without Numpy:
 #   except:
 #   - tags
 
-Flake8:
+Ruff:
   script:
-  - curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-flake8.sh
-  - . ./prepare-and-run-flake8.sh "$CI_PROJECT_NAME"
+  - pipx install ruff
+  - ruff check
   tags:
-  - python3
+  - docker-runner
   except:
   - tags
 
@@ -60,7 +61,7 @@ Mypy:
 
 Pylint:
   script:
-  - EXTRA_INSTALL="numpy pymbolic orderedsets"
+  - EXTRA_INSTALL="numpy pymbolic orderedsets siphash24"
   - py_version=3
   - curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-pylint.sh
   - . ./prepare-and-run-pylint.sh "$CI_PROJECT_NAME"
@@ -71,7 +72,7 @@ Pylint:
 
 Documentation:
   script:
-  - EXTRA_INSTALL="numpy"
+  - EXTRA_INSTALL="numpy siphash24"
   - curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-docs.sh
   - ". ./build-docs.sh"
   tags:

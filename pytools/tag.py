@@ -7,7 +7,6 @@ Tag Interface
 .. autoclass:: Taggable
 .. autoclass:: Tag
 .. autoclass:: UniqueTag
-.. autoclass:: IgnoredForEqualityTag
 
 Supporting Functionality
 ------------------------
@@ -22,16 +21,16 @@ Internal stuff that is only here because the documentation tool wants it
 .. class:: TagT
 
     A type variable with lower bound :class:`Tag`.
-
-.. class:: _Self_Taggable
-
-    A type variable with lower bound :class:`Taggable`.
 """
 
-import sys
+from __future__ import annotations
+
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import (  # noqa: F401
-    Any, FrozenSet, Iterable, Set, Tuple, Type, TypeVar, Union)
+from typing import TYPE_CHECKING, Any, TypeVar
+from warnings import warn
+
+from typing_extensions import Self, dataclass_transform
 
 from pytools import memoize, memoize_method
 
@@ -82,7 +81,7 @@ class DottedName:
     .. automethod:: from_class
     """
 
-    def __init__(self, name_parts: Tuple[str, ...]):
+    def __init__(self, name_parts: tuple[str, ...]) -> None:
         if len(name_parts) == 0:
             raise ValueError("empty name parts")
 
@@ -93,7 +92,7 @@ class DottedName:
         self.name_parts = name_parts
 
     @classmethod
-    def from_class(cls, argcls: Any) -> "DottedName":
+    def from_class(cls, argcls: Any) -> DottedName:
         name_parts = tuple(
                 [str(part) for part in argcls.__module__.split(".")]
                 + [str(argcls.__name__)])
@@ -108,8 +107,7 @@ class DottedName:
     def __eq__(self, other: object) -> bool:
         if isinstance(other, DottedName):
             return self.name_parts == other.name_parts
-        else:
-            return False
+        return False
 
 
 # }}}
@@ -117,7 +115,12 @@ class DottedName:
 
 # {{{ tag
 
-tag_dataclass = dataclass(init=True, eq=True, frozen=True, repr=True)
+T = TypeVar("T")
+
+
+@dataclass_transform(eq_default=True, frozen_default=True)
+def tag_dataclass(cls: type[T]) -> type[T]:
+    return dataclass(init=True, frozen=True, eq=True, repr=True)(cls)
 
 
 @tag_dataclass
@@ -148,6 +151,7 @@ class Tag:
 
 # {{{ unique tag
 
+@tag_dataclass
 class UniqueTag(Tag):
     """
     A superclass for tags that are unique on each :class:`Taggable`.
@@ -157,28 +161,24 @@ class UniqueTag(Tag):
     set of `tags`. Multiple `UniqueTag` instances of
     different (immediate) subclasses are allowed.
     """
-    pass
 
 # }}}
 
 
-ToTagSetConvertible = Union[Iterable[Tag], Tag, None]
+ToTagSetConvertible = Iterable[Tag] | Tag | None
 TagT = TypeVar("TagT", bound="Tag")
-# FIXME: Replace by Self type
-_Self_Taggable = TypeVar("_Self_Taggable", bound="Taggable")
 
 
 # {{{ UniqueTag rules checking
 
 @memoize
-def _immediate_unique_tag_descendants(cls):
+def _immediate_unique_tag_descendants(cls: type[Tag]) -> frozenset[type[Tag]]:
     if UniqueTag in cls.__bases__:
         return frozenset([cls])
-    else:
-        result = frozenset()
-        for base in cls.__bases__:
-            result = result | _immediate_unique_tag_descendants(base)
-        return result
+    result: frozenset[type[Tag]] = frozenset()
+    for base in cls.__bases__:
+        result = result | _immediate_unique_tag_descendants(base)
+    return result
 
 
 class NonUniqueTagError(ValueError):
@@ -187,17 +187,16 @@ class NonUniqueTagError(ValueError):
     than one :class:`UniqueTag` instances of the same subclass in
     its set of tags.
     """
-    pass
 
 
-def check_tag_uniqueness(tags: FrozenSet[Tag]):
+def check_tag_uniqueness(tags: frozenset[Tag]) -> frozenset[Tag]:
     """Ensure that *tags* obeys the rules set forth in :class:`UniqueTag`.
     If not, raise :exc:`NonUniqueTagError`. If any *tags* are not
     subclasses of :class:`Tag`, a :exc:`TypeError` will be raised.
 
     :returns: *tags*
     """
-    unique_tag_descendants: Set[Tag] = set()
+    unique_tag_descendants: set[type[Tag]] = set()
     for tag in tags:
         if not isinstance(tag, Tag):
             raise TypeError(f"'{tag}' is not an instance of pytools.tag.Tag")
@@ -208,15 +207,14 @@ def check_tag_uniqueness(tags: FrozenSet[Tag]):
             raise NonUniqueTagError("Multiple tags are direct subclasses of "
                     "the following UniqueTag(s): "
                     f"{', '.join(d.__name__ for d in intersection)}")
-        else:
-            unique_tag_descendants.update(tag_unique_tag_descendants)
+        unique_tag_descendants.update(tag_unique_tag_descendants)
 
     return tags
 
 # }}}
 
 
-def normalize_tags(tags: ToTagSetConvertible) -> FrozenSet[Tag]:
+def normalize_tags(tags: ToTagSetConvertible) -> frozenset[Tag]:
     if isinstance(tags, Tag):
         tags = frozenset([tags])
     elif tags is None:
@@ -232,11 +230,7 @@ class Taggable:
     """
     Parent class for objects with a `tags` attribute.
 
-    .. attribute:: tags
-
-        A :class:`frozenset` of :class:`Tag` instances
-
-    .. automethod:: __init__
+    .. autoattribute:: tags
 
     .. automethod:: _with_new_tags
     .. automethod:: tagged
@@ -247,40 +241,32 @@ class Taggable:
     .. versionadded:: 2021.1
     """
 
+    if not TYPE_CHECKING:
+        def __init__(self, tags: frozenset[Tag] = frozenset()):
+            warn("The Taggable constructor is deprecated. "
+                 "Subclasses must declare their own storage for .tags. "
+                 "The constructor will disappear in 2025.x.",
+                 DeprecationWarning, stacklevel=2)
+
+            self.tags = tags
+
     # ReST references in docstrings must be fully qualified, as docstrings may
     # be inherited and appear in different contexts.
 
-    def __init__(self, tags: FrozenSet[Tag] = frozenset()):
-        """
-        Constructor for all objects that possess a `tags` attribute.
+    # type-checking only so that self.tags = ... in subclasses still works
+    if TYPE_CHECKING:
+        @property
+        def tags(self) -> frozenset[Tag]:
+            ...
 
-        :arg tags: a :class:`frozenset` of :class:`~pytools.tag.Tag` objects.
-            Tags can be modified via the :meth:`~pytools.tag.Taggable.tagged` and
-            :meth:`~pytools.tag.Taggable.without_tags` routines. Input checking
-            of *tags* should be performed before creating a
-            :class:`~pytools.tag.Taggable` instance, using
-            :func:`~pytools.tag.check_tag_uniqueness`.
-        """
-        self.tags = tags
-
-    def _with_new_tags(self: _Self_Taggable, tags: FrozenSet[Tag]) -> _Self_Taggable:
+    def _with_new_tags(self, tags: frozenset[Tag]) -> Self:
         """
         Returns a copy of *self* with the specified tags. This method
         should be overridden by subclasses.
         """
-        from warnings import warn
-        warn(f"_with_new_tags() for {self.__class__} fell back "
-                "to using copy(). This is deprecated and will stop working in "
-                "July of 2022. Instead, override _with_new_tags to specify "
-                "how tags should be applied to an instance.",
-                DeprecationWarning, stacklevel=2)
+        raise NotImplementedError
 
-        # mypy is right: we're not promising this attribute is defined.
-        # Once this deprecation expires, this will go back to being an
-        # abstract method.
-        return self.copy(tags=tags)  # type: ignore[attr-defined]  # pylint: disable=no-member  # noqa: E501
-
-    def tagged(self: _Self_Taggable, tags: ToTagSetConvertible) -> _Self_Taggable:
+    def tagged(self, tags: ToTagSetConvertible) -> Self:
         """
         Return a copy of *self* with the specified
         tag or tags added to the set of tags. If the resulting set of
@@ -293,9 +279,9 @@ class Taggable:
         return self._with_new_tags(
                 tags=check_tag_uniqueness(normalize_tags(tags) | self.tags))
 
-    def without_tags(self: _Self_Taggable,
+    def without_tags(self,
                      tags: ToTagSetConvertible, verify_existence: bool = True
-                     ) -> _Self_Taggable:
+                     ) -> Self:
         """
         Return a copy of *self* without the specified tags.
 
@@ -314,7 +300,7 @@ class Taggable:
         return self._with_new_tags(tags=check_tag_uniqueness(new_tags))
 
     @memoize_method
-    def tags_of_type(self, tag_t: Type[TagT]) -> FrozenSet[TagT]:
+    def tags_of_type(self, tag_t: type[TagT]) -> frozenset[TagT]:
         """
         Returns *self*'s tags of type *tag_t*.
         """
@@ -323,7 +309,7 @@ class Taggable:
                          if isinstance(tag, tag_t)})
 
     @memoize_method
-    def tags_not_of_type(self, tag_t: Type[TagT]) -> FrozenSet[Tag]:
+    def tags_not_of_type(self, tag_t: type[TagT]) -> frozenset[Tag]:
         """
         Returns *self*'s tags that are not of type *tag_t*.
         """
@@ -333,32 +319,11 @@ class Taggable:
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Taggable):
-            return (self.tags_not_of_type(IgnoredForEqualityTag)
-                    == other.tags_not_of_type(IgnoredForEqualityTag))
-        else:
-            return super().__eq__(other)
+            return self.tags == other.tags
+        return super().__eq__(other)
 
     def __hash__(self) -> int:
-        return hash(self.tags_not_of_type(IgnoredForEqualityTag))
-
-
-# }}}
-
-
-# {{{ IgnoredForEqualityTag
-
-class IgnoredForEqualityTag(Tag):
-    """
-    A superclass for tags that are ignored when testing equality of instances of
-    :class:`Taggable`.
-
-    When testing equality of two instances of :class:`Taggable`, the equality
-    of the ``tags`` of both instances is tested after removing all
-    instances of :class:`IgnoredForEqualityTag`. Instances of
-    :class:`IgnoredForEqualityTag` are removed for hashing instances of
-    :class:`Taggable`.
-    """
-    pass
+        return hash(self.tags)
 
 # }}}
 
@@ -367,8 +332,8 @@ class IgnoredForEqualityTag(Tag):
 
 _depr_name_to_replacement_and_obj = {
         "TagsType": (
-            "FrozenSet[Tag]",
-            FrozenSet[Tag], 2023),
+            "frozenset[Tag]",
+            frozenset[Tag], 2023),
         "TagOrIterableType": (
             "ToTagSetConvertible",
             ToTagSetConvertible, 2023),
@@ -378,23 +343,17 @@ _depr_name_to_replacement_and_obj = {
         }
 
 
-if sys.version_info >= (3, 7):
-    def __getattr__(name):
-        replacement_and_obj = _depr_name_to_replacement_and_obj.get(name, None)
-        if replacement_and_obj is not None:
-            replacement, obj, year = replacement_and_obj
-            from warnings import warn
-            warn(f"'arraycontext.{name}' is deprecated. "
-                    f"Use '{replacement}' instead. "
-                    f"'arraycontext.{name}' will continue to work until {year}.",
-                    DeprecationWarning, stacklevel=2)
-            return obj
-        else:
-            raise AttributeError(name)
-else:
-    TagsType = FrozenSet[Tag]
-    TagOrIterableType = ToTagSetConvertible
-    T_co = TypeVar("TaggableT", bound="Taggable")
+def __getattr__(name: str) -> Any:
+    replacement_and_obj = _depr_name_to_replacement_and_obj.get(name)
+    if replacement_and_obj is not None:
+        replacement, obj, year = replacement_and_obj
+        from warnings import warn
+        warn(f"'pytools.tag.{name}' is deprecated. "
+                f"Use '{replacement}' instead. "
+                f"'pytools.tag.{name}' will continue to work until {year}.",
+                DeprecationWarning, stacklevel=2)
+        return obj
+    raise AttributeError(name)
 
 # }}}
 

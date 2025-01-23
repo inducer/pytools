@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 
 
@@ -31,18 +33,17 @@ class ParseError(RuntimeError):
     def __str__(self):
         if self.Token is None:
             return f"{self.message} at end of input"
-        else:
-            return "{} at index {}: ...{}...".format(
-                    self.message, self.Token[2],
-                    self.string[self.Token[2]:self.Token[2]+20])
+        return "{} at index {}: ...{}...".format(
+                self.message, self.Token[2],
+                self.string[self.Token[2]:self.Token[2]+20])
 
 
 class RE:
-    def __init__(self, s, flags=0):
+    def __init__(self, s: str, flags: int = 0) -> None:
         self.Content = s
         self.RE = re.compile(s, flags)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"RE({self.Content})"
 
 
@@ -71,10 +72,10 @@ def _matches_rule(rule, s, start, rule_dict, debug=False):
                 return my_match_length, None
         return 0, None
 
-    elif isinstance(rule, str):
+    if isinstance(rule, str):
         return _matches_rule(rule_dict[rule], s, start, rule_dict, debug)
 
-    elif isinstance(rule, RE):
+    if isinstance(rule, RE):
         match_obj = rule.RE.match(s, start)
         if match_obj:
             return match_obj.end()-start, match_obj
@@ -151,7 +152,7 @@ class LexIterator:
     def expected(self, what_expected):
         if self.is_at_end():
             self.raise_parse_error(
-                    "{what_expected} expected, end of input found instead")
+                    f"{what_expected} expected, end of input found instead")
         else:
             self.raise_parse_error(
                     f"{what_expected} expected, {self.next_tag()} found instead")

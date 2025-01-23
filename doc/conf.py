@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from urllib.request import urlopen
 
 
@@ -15,8 +17,10 @@ author = "Andreas Kloeckner"
 #
 # The short X.Y version.
 ver_dic = {}
-exec(compile(open("../pytools/version.py").read(), "../pytools/version.py", "exec"),
+with open("../pytools/version.py") as vfile:
+    exec(compile(vfile.read(), "../pytools/version.py", "exec"),
         ver_dic)
+
 version = ".".join(str(x) for x in ver_dic["VERSION"])
 release = ver_dic["VERSION_TEXT"]
 
@@ -26,17 +30,19 @@ release = ver_dic["VERSION_TEXT"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 intersphinx_mapping = {
-    "loopy": ("https://documen.tician.de/loopy/", None),
+    "loopy": ("https://documen.tician.de/loopy", None),
     "numpy": ("https://numpy.org/doc/stable", None),
-    "pymbolic": ("https://documen.tician.de/pymbolic/", None),
-    "pytest": ("https://docs.pytest.org/en/stable/", None),
-    "setuptools": ("https://setuptools.pypa.io/en/latest/", None),
+    "pymbolic": ("https://documen.tician.de/pymbolic", None),
+    "pytest": ("https://docs.pytest.org/en/stable", None),
+    "setuptools": ("https://setuptools.pypa.io/en/latest", None),
     "python": ("https://docs.python.org/3", None),
+    "platformdirs": ("https://platformdirs.readthedocs.io/en/latest", None),
 }
 
 nitpicky = True
 nitpick_ignore_regex = [
     ["py:class", r"typing_extensions\.(.+)"],
+    ["py:class", r"ReadableBuffer"],
 ]
 
 autodoc_type_aliases = {

@@ -1,9 +1,9 @@
-# pylint:  disable=too-many-lines
-# (Yes, it has a point!)
+from __future__ import annotations
 
 
 __copyright__ = """
 Copyright (C) 2009-2013 Andreas Kloeckner
+Copyright (C) 2013- University of Illinois Board of Trustees
 Copyright (C) 2020 Matt Wala
 """
 
@@ -28,27 +28,38 @@ THE SOFTWARE.
 """
 
 import builtins
+import contextlib
 import logging
-import math
 import operator
 import re
 import sys
+from collections.abc import (
+    Callable,
+    Collection,
+    Hashable,
+    Iterable,
+    Iterator,
+    Mapping,
+    Sequence,
+)
 from functools import reduce, wraps
 from sys import intern
 from typing import (
-    Any, Callable, ClassVar, Dict, Generic, Hashable, Iterable, Iterator, List,
-    Mapping, Optional, Sequence, Set, Tuple, Type, TypeVar, Union, cast)
+    Any,
+    ClassVar,
+    Concatenate,
+    Generic,
+    ParamSpec,
+    Protocol,
+    TypeVar,
+)
+
+from typing_extensions import Self, dataclass_transform
+
+from pytools.version import VERSION_TEXT
 
 
-try:
-    from typing import Concatenate, SupportsIndex
-except ImportError:
-    from typing_extensions import Concatenate, SupportsIndex
-
-try:
-    from typing import ParamSpec
-except ImportError:
-    from typing_extensions import ParamSpec  # type: ignore[assignment]
+__version__ = VERSION_TEXT
 
 
 # These are deprecated and will go away in 2022.
@@ -64,8 +75,6 @@ Math
 ----
 
 .. autofunction:: levi_civita
-.. autofunction:: perm
-.. autofunction:: comb
 
 Assertive accessors
 -------------------
@@ -108,6 +117,7 @@ Permutations, Tuples, Integer sequences
 .. autofunction:: generate_all_integer_tuples_below
 .. autofunction:: generate_permutations
 .. autofunction:: generate_unique_permutations
+.. autoclass:: _ConcatenableSequence
 
 Formatting
 ----------
@@ -139,6 +149,7 @@ Deprecation Warnings
 --------------------
 
 .. autofunction:: deprecate_keyword
+.. autofunction:: module_getattr_for_deprecations
 
 Functions for dealing with (large) auxiliary files
 --------------------------------------------------
@@ -189,11 +200,23 @@ String utilities
 ----------------
 
 .. autofunction:: strtobool
+.. autofunction:: to_identifier
 
-Sequence utilities
-------------------
+Set-like functions for iterables
+--------------------------------
+
+These functions provide set-like operations on iterables. In contrast to
+Python's built-in set type, they maintain the internal order of elements.
 
 .. autofunction:: unique
+.. autofunction:: unique_difference
+.. autofunction:: unique_intersection
+.. autofunction:: unique_union
+
+Functionality for dataclasses
+-----------------------------
+
+.. autofunction:: opt_frozen_dataclass
 
 Type Variables Used
 -------------------
@@ -224,8 +247,10 @@ P = ParamSpec("P")
 
 # {{{ code maintenance
 
+# Undocumented on purpose for now, unclear that this is a great idea, given
+# that typing.deprecated exists.
 class MovedFunctionDeprecationWrapper:
-    def __init__(self, f: F, deadline: Optional[Union[int, str]] = None) -> None:
+    def __init__(self, f: F, deadline: int | str | None = None) -> None:
         if deadline is None:
             deadline = "the future"
 
@@ -242,8 +267,8 @@ class MovedFunctionDeprecationWrapper:
 
 
 def deprecate_keyword(oldkey: str,
-        newkey: Optional[str] = None, *,
-        deadline: Optional[str] = None):
+        newkey: str | None = None, *,
+        deadline: str | None = None):
     """Decorator used to deprecate function keyword arguments.
 
     :arg oldkey: deprecated argument name.
@@ -282,6 +307,36 @@ def deprecate_keyword(oldkey: str,
 
     return wrapper
 
+
+def module_getattr_for_deprecations(
+            module_name: str,
+            depr_name_to_replacement_and_obj: Mapping[
+                str, tuple[str, object, str | int]
+            ],
+            name: str
+        ) -> object:
+    """A helper to construct module-level :meth:`object.__getattr__` functions
+    so that deprecated names can still be found but raise a warning.
+
+    The typical usage pattern is as follows::
+
+        __getattr__ = partial(module_getattr_for_deprecations, __name__, {
+            "OldName": ("NewName", NewName, 2026),
+            })
+    """
+
+    replacement_and_obj = depr_name_to_replacement_and_obj.get(name, None)
+    if replacement_and_obj is not None:
+        replacement, obj, deadline = replacement_and_obj
+        from warnings import warn
+
+        warn(f"'{module_name}.{name}' is deprecated. "
+                f"Use '{replacement}' instead. "
+                f"'{module_name}.{name}' will continue to work until {deadline}.",
+                DeprecationWarning, stacklevel=2)
+        return obj
+    raise AttributeError(name)
+
 # }}}
 
 
@@ -290,11 +345,10 @@ def deprecate_keyword(oldkey: str,
 def delta(x, y):
     if x == y:
         return 1
-    else:
-        return 0
+    return 0
 
 
-def levi_civita(tup: Tuple[int, ...]) -> int:
+def levi_civita(tup: tuple[int, ...]) -> int:
     """Compute an entry of the Levi-Civita symbol for the indices *tuple*."""
     if len(tup) == 2:
         i, j = tup
@@ -302,77 +356,7 @@ def levi_civita(tup: Tuple[int, ...]) -> int:
     if len(tup) == 3:
         i, j, k = tup
         return (j-i) * (k-i) * (k-j) // 2
-    else:
-        raise NotImplementedError(f"Levi-Civita symbol in {len(tup)} dimensions")
-
-
-factorial = MovedFunctionDeprecationWrapper(math.factorial, deadline=2023)
-
-try:
-    # NOTE: only available in python >= 3.8
-    perm = MovedFunctionDeprecationWrapper(math.perm, deadline=2023)
-except AttributeError:
-    def _unchecked_perm(n, k):
-        result = 1
-        while k:
-            result *= n
-            n -= 1
-            k -= 1
-
-        return result
-
-    def perm(n: SupportsIndex,              # type: ignore[misc]
-             k: Optional[SupportsIndex] = None) -> int:
-        """
-        :returns: :math:`P(n, k)`, the number of permutations of length :math:`k`
-            drawn from :math:`n` choices.
-        """
-        from warnings import warn
-        warn("This function is deprecated and will go away in 2023. "
-                "Use `math.perm` instead, which is available from Python 3.8.",
-                DeprecationWarning, stacklevel=2)
-
-        if k is None:
-            return math.factorial(n)
-
-        import operator
-        n, k = operator.index(n), operator.index(k)
-        if k > n:
-            return 0
-
-        if k < 0:
-            raise ValueError("k must be a non-negative integer")
-
-        if n < 0:
-            raise ValueError("n must be a non-negative integer")
-
-        from numbers import Integral
-        if not isinstance(k, Integral):
-            raise TypeError(f"'{type(k).__name__}' object cannot be interpreted "
-                            "as an integer")
-
-        if not isinstance(n, Integral):
-            raise TypeError(f"'{type(n).__name__}' object cannot be interpreted "
-                            "as an integer")
-
-        return _unchecked_perm(n, k)
-
-try:
-    # NOTE: only available in python >= 3.8
-    comb = MovedFunctionDeprecationWrapper(math.comb, deadline=2023)
-except AttributeError:
-    def comb(n: SupportsIndex,              # type: ignore[misc]
-             k: SupportsIndex) -> int:
-        """
-        :returns: :math:`C(n, k)`, the number of combinations (subsets)
-            of length :math:`k` drawn from :math:`n` choices.
-        """
-        from warnings import warn
-        warn("This function is deprecated and will go away in 2023. "
-                "Use `math.comb` instead, which is available from Python 3.8.",
-                DeprecationWarning, stacklevel=2)
-
-        return _unchecked_perm(n, k) // math.factorial(k)
+    raise NotImplementedError(f"Levi-Civita symbol in {len(tup)} dimensions")
 
 
 def norm_1(iterable):
@@ -410,13 +394,15 @@ class RecordWithoutPickling:
     will be individually derived from this class.
     """
 
-    __slots__: ClassVar[List[str]] = []
-
+    __slots__: ClassVar[list[str]] = []
+    
     # A dict, not a set, to maintain a deterministic iteration order
     fields: ClassVar[Dict[str, None]]
 
-    def __init__(self, valuedict: Optional[Mapping[str, Any]] = None,
-                 exclude: Optional[Iterable[str]] = None, **kwargs: Any) -> None:
+    def __init__(self,
+                 valuedict: Mapping[str, Any] | None = None,
+                 exclude: Sequence[str] | None = None,
+                 **kwargs: Any) -> None:
         from warnings import warn
         warn(f"{self.__class__.__bases__[0]} is deprecated and will be "
              "removed in 2025. Use dataclasses instead.")
@@ -445,10 +431,8 @@ class RecordWithoutPickling:
     def get_copy_kwargs(self, **kwargs: Any) -> Dict[str, Any]:
         for f in self.__class__.fields:
             if f not in kwargs:
-                try:
+                with contextlib.suppress(AttributeError):
                     kwargs[f] = getattr(self, f)
-                except AttributeError:
-                    pass
         return kwargs
 
     def copy(self, **kwargs: Any) -> "RecordWithoutPickling":
@@ -458,7 +442,7 @@ class RecordWithoutPickling:
         return "{}({})".format(
                 self.__class__.__name__,
                 ", ".join(f"{fld}={getattr(self, fld)!r}"
-                    for fld in self.__class__.fields
+                    for fld in sorted(self.__class__.fields)
                     if hasattr(self, fld)))
 
     def register_fields(self, new_fields: Iterable[str]) -> None:
@@ -478,7 +462,7 @@ class RecordWithoutPickling:
 
 
 class Record(RecordWithoutPickling):
-    __slots__: ClassVar[List[str]] = []
+    __slots__: ClassVar[list[str]] = []
 
     def __getstate__(self) -> Dict[str, Any]:
         return {
@@ -515,9 +499,10 @@ class ImmutableRecordWithoutPickling(RecordWithoutPickling):
     def __hash__(self) -> int:
         # This attribute may vanish during pickling.
         if getattr(self, "_cached_hash", None) is None:
-            self._cached_hash = hash(
-                (type(self),) + tuple(getattr(self, field)
-                    for field in self.__class__.fields))
+            self._cached_hash = hash((
+                    type(self),
+                    *(getattr(self, field) for field in self.__class__.fields)
+                    ))
 
         return cast(int, self._cached_hash)
 
@@ -534,7 +519,8 @@ class Reference:
 
     def get(self):
         from warnings import warn
-        warn("Reference.get() is deprecated -- use ref.value instead")
+        warn("Reference.get() is deprecated -- use ref.value instead. "
+             "This will stop working in 2025.", stacklevel=2)
         return self.value
 
     def set(self, value):
@@ -572,7 +558,7 @@ class DependentDictionary:
 
     def __contains__(self, key):
         try:
-            self[key]  # pylint: disable=pointless-statement
+            self[key]
             return True
         except KeyError:
             return False
@@ -586,7 +572,7 @@ class DependentDictionary:
     def __setitem__(self, key, value):
         self._Dictionary[key] = value
 
-    def genuineKeys(self):  # noqa
+    def genuineKeys(self):  # noqa: N802
         return list(self._Dictionary.keys())
 
     def iteritems(self):
@@ -613,7 +599,7 @@ def one(iterable: Iterable[T]) -> T:
     try:
         v = next(it)
     except StopIteration:
-        raise ValueError("empty iterable passed to 'one()'")
+        raise ValueError("empty iterable passed to 'one()'") from None
 
     def no_more():
         try:
@@ -635,12 +621,9 @@ def is_single_valued(
     try:
         first_item = next(it)
     except StopIteration:
-        raise ValueError("empty iterable passed to 'single_valued()'")
+        raise ValueError("empty iterable passed to 'single_valued()'") from None
 
-    for other_item in it:
-        if not equality_pred(other_item, first_item):
-            return False
-    return True
+    return all(equality_pred(other_item, first_item) for other_item in it)
 
 
 all_equal = is_single_valued
@@ -662,14 +645,9 @@ def single_valued(
     try:
         first_item = next(it)
     except StopIteration:
-        raise ValueError("empty iterable passed to 'single_valued()'")
+        raise ValueError("empty iterable passed to 'single_valued()'") from None
 
-    def others_same():
-        for other_item in it:
-            if not equality_pred(other_item, first_item):
-                return False
-        return True
-    assert others_same()
+    assert all(equality_pred(other_item, first_item) for other_item in it)
 
     return first_item
 
@@ -692,10 +670,10 @@ def memoize(*args: F, **kwargs: Any) -> F:
 
     use_kw = bool(kwargs.pop("use_kwargs", False))
 
-    default_key_func: Optional[Callable[..., Any]]
+    default_key_func: Callable[..., Any] | None
 
     if use_kw:
-        def default_key_func(*inner_args, **inner_kwargs):  # noqa pylint:disable=function-redefined
+        def default_key_func(*inner_args, **inner_kwargs):
             return inner_args, frozenset(inner_kwargs.items())
     else:
         default_key_func = None
@@ -712,15 +690,15 @@ def memoize(*args: F, **kwargs: Any) -> F:
             def wrapper(*args, **kwargs):
                 key = key_func(*args, **kwargs)
                 try:
-                    return func._memoize_dic[key]  # noqa: E501 # pylint: disable=protected-access
+                    return func._memoize_dic[key]
                 except AttributeError:
                     # _memoize_dic doesn't exist yet.
                     result = func(*args, **kwargs)
-                    func._memoize_dic = {key: result}  # noqa: E501 # pylint: disable=protected-access
+                    func._memoize_dic = {key: result}
                     return result
                 except KeyError:
                     result = func(*args, **kwargs)
-                    func._memoize_dic[key] = result  # noqa: E501 # pylint: disable=protected-access
+                    func._memoize_dic[key] = result
                     return result
 
             from functools import update_wrapper
@@ -731,15 +709,15 @@ def memoize(*args: F, **kwargs: Any) -> F:
         def _decorator(func):
             def wrapper(*args):
                 try:
-                    return func._memoize_dic[args]  # noqa: E501 # pylint: disable=protected-access
+                    return func._memoize_dic[args]
                 except AttributeError:
                     # _memoize_dic doesn't exist yet.
                     result = func(*args)
-                    func._memoize_dic = {args: result}  # noqa: E501 # pylint:disable=protected-access
+                    func._memoize_dic = {args: result}
                     return result
                 except KeyError:
                     result = func(*args)
-                    func._memoize_dic[args] = result  # noqa: E501 # pylint: disable=protected-access
+                    func._memoize_dic[args] = result
                     return result
 
             from functools import update_wrapper
@@ -763,7 +741,7 @@ class _HasKwargs:
 
 def memoize_on_first_arg(
         function: Callable[Concatenate[T, P], R], *,
-        cache_dict_name: Optional[str] = None) -> Callable[Concatenate[T, P], R]:
+        cache_dict_name: str | None = None) -> Callable[Concatenate[T, P], R]:
     """Like :func:`memoize_method`, but for functions that take the object
     in which do memoization information is stored as first argument.
 
@@ -776,10 +754,7 @@ def memoize_on_first_arg(
                 )
 
     def wrapper(obj: T, *args: P.args, **kwargs: P.kwargs) -> R:
-        if kwargs:
-            key = (_HasKwargs, frozenset(kwargs.items())) + args
-        else:
-            key = args
+        key = (_HasKwargs, frozenset(kwargs.items()), *args) if kwargs else args
 
         assert cache_dict_name is not None
         try:
@@ -793,9 +768,8 @@ def memoize_on_first_arg(
         if attribute_error:
             object.__setattr__(obj, cache_dict_name, {key: result})
             return result
-        else:
-            getattr(obj, cache_dict_name)[key] = result
-            return result
+        getattr(obj, cache_dict_name)[key] = result
+        return result
 
     def clear_cache(obj):
         object.__delattr__(obj, cache_dict_name)
@@ -818,7 +792,7 @@ def memoize_method(
     .. versionchanged:: 2021.2
 
         Can memoize methods on classes that do not allow setting attributes
-        (e.g. by overwritting ``__setattr__``), e.g. frozen :mod:`dataclasses`.
+        (e.g. by overwriting ``__setattr__``), e.g. frozen :mod:`dataclasses`.
     """
 
     return memoize_on_first_arg(method,
@@ -841,7 +815,7 @@ class keyed_memoize_on_first_arg(Generic[T, P, R]):  # noqa: N801
 
     def __init__(self,
             key: Callable[P, Hashable], *,
-            cache_dict_name: Optional[str] = None) -> None:
+            cache_dict_name: str | None = None) -> None:
         self.key = key
         self.cache_dict_name = cache_dict_name
 
@@ -897,13 +871,13 @@ class keyed_memoize_method(keyed_memoize_on_first_arg):  # noqa: N801
     .. versionchanged:: 2021.2
 
         Can memoize methods on classes that do not allow setting attributes
-        (e.g. by overwritting ``__setattr__``), e.g. frozen :mod:`dataclasses`.
+        (e.g. by overwriting ``__setattr__``), e.g. frozen :mod:`dataclasses`.
     """
     def _default_cache_dict_name(self, function):
         return intern(f"_memoize_dic_{function.__name__}")
 
 
-class memoize_in(Generic[P, R]):  # noqa
+class memoize_in:  # noqa: N801
     """Adds a cache to the function it decorates. The cache is attached
     to *container* and must be uniquely specified by *identifier* (i.e.
     all functions using the same *container* and *identifier* will be using
@@ -923,7 +897,7 @@ class memoize_in(Generic[P, R]):  # noqa
     .. versionchanged:: 2021.2.1
 
         Can now use instances of classes as *container* that do not allow
-        setting attributes (e.g. by overwritting ``__setattr__``),
+        setting attributes (e.g. by overwriting ``__setattr__``),
         e.g. frozen :mod:`dataclasses`.
     """
 
@@ -945,17 +919,14 @@ class memoize_in(Generic[P, R]):  # noqa
             try:
                 return self.cache_dict[args]
             except KeyError:
-                result = inner(*args)
+                result = inner(*args, **kwargs)
                 self.cache_dict[args] = result
                 return result
 
-        # NOTE: mypy gets confused because it types `wraps` as
-        #   Callable[[VarArg(Any)], Any]
-        # which, for some reason, is not compatible with `F`
-        return new_inner                # type: ignore[return-value]
+        return new_inner
 
 
-class keyed_memoize_in(Generic[P, R]):  # noqa
+class keyed_memoize_in(Generic[P]):  # noqa: N801
     """Like :class:`memoize_in`, but additionally uses a function *key* to
     compute the key under which the function result is memoized.
 
@@ -982,12 +953,12 @@ class keyed_memoize_in(Generic[P, R]):  # noqa
         @wraps(inner)
         def new_inner(*args: P.args, **kwargs: P.kwargs) -> R:
             assert not kwargs
-            key = self.key(*args)
+            key = self.key(*args, **kwargs)
 
             try:
                 return self.cache_dict[key]
             except KeyError:
-                result = inner(*args)
+                result = inner(*args, **kwargs)
                 self.cache_dict[key] = result
                 return result
 
@@ -1041,11 +1012,11 @@ def monkeypatch_class(_name, bases, namespace):
 # {{{ generic utilities
 
 def add_tuples(t1, t2):
-    return tuple([t1v + t2v for t1v, t2v in zip(t1, t2)])
+    return tuple(t1v + t2v for t1v, t2v in zip(t1, t2, strict=True))
 
 
 def negate_tuple(t1):
-    return tuple([-t1v for t1v in t1])
+    return tuple(-t1v for t1v in t1)
 
 
 def shift(vec, dist):
@@ -1058,7 +1029,7 @@ def shift(vec, dist):
 
     result = vec[:]
 
-    N = len(vec)  # noqa
+    N = len(vec)  # noqa: N806
     dist = dist % N
 
     # modulo only returns positive distances!
@@ -1089,7 +1060,7 @@ def general_sum(sequence):
 
 def linear_combination(coefficients, vectors):
     result = coefficients[0] * vectors[0]
-    for c, v in zip(coefficients[1:], vectors[1:]):
+    for c, v in zip(coefficients[1:], vectors[1:], strict=True):
         result += c*v
     return result
 
@@ -1250,7 +1221,7 @@ def argmin2(iterable, return_value=False):
     try:
         current_argmin, current_min = next(it)
     except StopIteration:
-        raise ValueError("argmin of empty iterable")
+        raise ValueError("argmin of empty iterable") from None
 
     for arg, item in it:
         if item < current_min:
@@ -1259,8 +1230,7 @@ def argmin2(iterable, return_value=False):
 
     if return_value:
         return current_argmin, current_min
-    else:
-        return current_argmin
+    return current_argmin
 
 
 def argmax2(iterable, return_value=False):
@@ -1268,7 +1238,7 @@ def argmax2(iterable, return_value=False):
     try:
         current_argmax, current_max = next(it)
     except StopIteration:
-        raise ValueError("argmax of empty iterable")
+        raise ValueError("argmax of empty iterable") from None
 
     for arg, item in it:
         if item > current_max:
@@ -1277,8 +1247,7 @@ def argmax2(iterable, return_value=False):
 
     if return_value:
         return current_argmax, current_max
-    else:
-        return current_argmax
+    return current_argmax
 
 
 def argmin(iterable):
@@ -1301,7 +1270,7 @@ def cartesian_product(*args):
     first = args[:-1]
     for prod in cartesian_product(*first):
         for i in args[-1]:
-            yield prod + (i,)
+            yield (*prod, i)
 
 
 def distinct_pairs(list1, list2):
@@ -1335,7 +1304,7 @@ def average(iterable):
         s = next(it)
         count = 1
     except StopIteration:
-        raise ValueError("empty average")
+        raise ValueError("empty average") from None
 
     for value in it:
         s = s + value
@@ -1366,13 +1335,10 @@ class VarianceAggregator:
         if self.entire_pop:
             if self.n == 0:
                 return None
-            else:
-                return self.m2/self.n
-        else:
-            if self.n <= 1:
-                return None
-            else:
-                return self.m2/(self.n - 1)
+            return self.m2/self.n
+        if self.n <= 1:
+            return None
+        return self.m2/(self.n - 1)
 
 
 def variance(iterable, entire_pop):
@@ -1393,7 +1359,9 @@ def std_deviation(iterable, finite_pop):
 
 # {{{ permutations, tuples, integer sequences
 
-def wandering_element(length, wanderer=1, landscape=0):
+def wandering_element(length: int,
+                      wanderer: int = 1,
+                      landscape: int = 0) -> Iterator[tuple[int, ...]]:
     for i in range(length):
         yield i*(landscape,) + (wanderer,) + (length-1-i)*(landscape,)
 
@@ -1409,18 +1377,21 @@ def indices_in_shape(shape):
     if not shape:
         yield ()
     elif len(shape) == 1:
-        for i in range(0, shape[0]):
+        for i in range(shape[0]):
             yield (i,)
     else:
         remainder = shape[1:]
-        for i in range(0, shape[0]):
+        for i in range(shape[0]):
             for rest in indices_in_shape(remainder):
-                yield (i,)+rest
+                yield (i, *rest)
 
 
-def generate_nonnegative_integer_tuples_below(n, length=None, least=0):
+def generate_nonnegative_integer_tuples_below(
+        n: Sequence[int] | int, length: int | None = None, least: int = 0
+        ) -> Iterator[tuple[int, ...]]:
     """n may be a sequence, in which case length must be None."""
     if length is None:
+        assert not isinstance(n, int)
         if not n:
             yield ()
             return
@@ -1429,6 +1400,7 @@ def generate_nonnegative_integer_tuples_below(n, length=None, least=0):
         n = n[1:]
         next_length = None
     else:
+        assert isinstance(n, int)
         my_n = n
 
         assert length >= 0
@@ -1445,12 +1417,12 @@ def generate_nonnegative_integer_tuples_below(n, length=None, least=0):
 
 
 def generate_decreasing_nonnegative_tuples_summing_to(
-        n, length, min_value=0, max_value=None):
+        n: int, length: int, min_value: int = 0, max_value: int | None = None
+        ) -> Iterator[tuple[int, ...]]:
     if length == 0:
         yield ()
     elif length == 1:
-        if n <= max_value:
-            #print "MX", n, max_value
+        if max_value is None or n <= max_value:
             yield (n,)
         else:
             return
@@ -1458,14 +1430,14 @@ def generate_decreasing_nonnegative_tuples_summing_to(
         if max_value is None or n < max_value:
             max_value = n
 
-        for i in range(min_value, max_value+1):
-            #print "SIG", sig, i
+        for i in range(min_value, max_value + 1):
             for remainder in generate_decreasing_nonnegative_tuples_summing_to(
-                    n-i, length-1, min_value, i):
-                yield (i,) + remainder
+                    n - i, length - 1, min_value=min_value, max_value=i):
+                yield (i, *remainder)
 
 
-def generate_nonnegative_integer_tuples_summing_to_at_most(n, length):
+def generate_nonnegative_integer_tuples_summing_to_at_most(
+        n: int, length: int) -> Iterator[tuple[int, ...]]:
     """Enumerate all non-negative integer tuples summing to at most n,
     exhausting the search space by varying the first entry fastest,
     and the last entry the slowest.
@@ -1477,31 +1449,63 @@ def generate_nonnegative_integer_tuples_summing_to_at_most(n, length):
         for i in range(n+1):
             for remainder in generate_nonnegative_integer_tuples_summing_to_at_most(
                     n-i, length-1):
-                yield remainder + (i,)
+                yield (*remainder, i)
 
 
 # backwards compatibility
 generate_positive_integer_tuples_below = generate_nonnegative_integer_tuples_below
 
 
-def _pos_and_neg_adaptor(tuple_iter):
+def _pos_and_neg_adaptor(
+        tuple_iter: Iterator[tuple[int, ...]]
+    ) -> Iterator[tuple[int, ...]]:
     for tup in tuple_iter:
         nonzero_indices = [i for i in range(len(tup)) if tup[i] != 0]
         for do_neg_tup in generate_nonnegative_integer_tuples_below(
                 2, len(nonzero_indices)):
+
             this_result = list(tup)
             for index, do_neg in enumerate(do_neg_tup):
                 if do_neg:
                     this_result[nonzero_indices[index]] *= -1
+
             yield tuple(this_result)
 
 
-def generate_all_integer_tuples_below(n, length, least_abs=0):
+def generate_all_integer_tuples_below(
+        n: int, length: int, least_abs: int = 0
+    ) -> Iterator[tuple[int, ...]]:
     return _pos_and_neg_adaptor(generate_nonnegative_integer_tuples_below(
         n, length, least_abs))
 
 
-def generate_permutations(original):
+T_co = TypeVar("T_co", covariant=True)
+
+
+class _ConcatenableSequence(Generic[T_co], Protocol):
+    """
+    A protocol that supports the following:
+
+    .. automethod:: __getitem__
+    .. automethod:: __add__
+    .. automethod:: __len__
+    """
+    def __getitem__(self, slice) -> Self:
+        ...
+
+    def __add__(self, other: Self) -> Self:
+        ...
+
+    def __len__(self) -> int:
+        ...
+
+    def __iter__(self) -> Iterator[T_co]:
+        ...
+
+
+def generate_permutations(
+            original: _ConcatenableSequence[T]
+        ) -> Iterator[_ConcatenableSequence[T]]:
     """Generate all permutations of the list *original*.
 
     Nicked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/252178
@@ -1511,12 +1515,17 @@ def generate_permutations(original):
     else:
         for perm_ in generate_permutations(original[1:]):
             for i in range(len(perm_)+1):
-                #nb str[0:1] works in both string and list contexts
+                # NOTE: ary[0:1] works in both string and list contexts
                 yield perm_[:i] + original[0:1] + perm_[i:]
 
 
-def generate_unique_permutations(original):
+def generate_unique_permutations(
+            original: _ConcatenableSequence[T]
+        ) -> Iterator[_ConcatenableSequence[T]]:
     """Generate all unique permutations of the list *original*.
+
+    Note that, unlike for :func:`generate_permutations`, *original* must be a
+    hashable object.
     """
 
     had_those = set()
@@ -1530,68 +1539,6 @@ def generate_unique_permutations(original):
 def enumerate_basic_directions(dimensions):
     coordinate_list = [[0], [1], [-1]]
     return reduce(cartesian_product_sum, [coordinate_list] * dimensions)[1:]
-
-# }}}
-
-
-# {{{ index mangling
-
-def get_read_from_map_from_permutation(original, permuted):
-    """With a permutation given by *original* and *permuted*,
-    generate a list *rfm* of indices such that
-    ``permuted[i] == original[rfm[i]]``.
-
-    Requires that the permutation can be inferred from
-    *original* and *permuted*.
-
-    .. doctest ::
-
-        >>> for p1 in generate_permutations(list(range(5))):
-        ...     for p2 in generate_permutations(list(range(5))):
-        ...         rfm = get_read_from_map_from_permutation(p1, p2)
-        ...         p2a = [p1[rfm[i]] for i in range(len(p1))]
-        ...         assert p2 == p2a
-    """
-    from warnings import warn
-    warn("get_read_from_map_from_permutation is deprecated and will be "
-            "removed in 2019", DeprecationWarning, stacklevel=2)
-
-    assert len(original) == len(permuted)
-    where_in_original = {
-            original[i]: i for i in range(len(original))}
-    assert len(where_in_original) == len(original)
-    return tuple(where_in_original[pi] for pi in permuted)
-
-
-def get_write_to_map_from_permutation(original, permuted):
-    """With a permutation given by *original* and *permuted*,
-    generate a list *wtm* of indices such that
-    ``permuted[wtm[i]] == original[i]``.
-
-    Requires that the permutation can be inferred from
-    *original* and *permuted*.
-
-    .. doctest ::
-
-        >>> for p1 in generate_permutations(list(range(5))):
-        ...     for p2 in generate_permutations(list(range(5))):
-        ...         wtm = get_write_to_map_from_permutation(p1, p2)
-        ...         p2a = [0] * len(p2)
-        ...         for i, oi in enumerate(p1):
-        ...             p2a[wtm[i]] = oi
-        ...         assert p2 == p2a
-    """
-    from warnings import warn
-    warn("get_write_to_map_from_permutation is deprecated and will be "
-            "removed in 2019", DeprecationWarning, stacklevel=2)
-
-    assert len(original) == len(permuted)
-
-    where_in_permuted = {
-            permuted[i]: i for i in range(len(permuted))}
-
-    assert len(where_in_permuted) == len(permuted)
-    return tuple(where_in_permuted[oi] for oi in original)
 
 # }}}
 
@@ -1613,26 +1560,30 @@ a_star = MovedFunctionDeprecationWrapper(a_star_moved)
 class Table:
     """An ASCII table generator.
 
-    .. attribute:: nrows
-    .. attribute:: ncolumns
-
-    .. attribute:: alignments
-
-        A :class:`tuple` of alignments of each column: ``"l"``, ``"c"``, or ``"r"``,
-        for left, center, and right alignment, respectively). Columns which
-        have no alignment specifier will use the last specified alignment. For
-        example, with ``alignments=("l", "r")``, the third and all following
-        columns will use right alignment.
-
+    .. automethod:: __init__
     .. automethod:: add_row
+
+    .. autoproperty:: nrows
+    .. autoproperty:: ncolumns
 
     .. automethod:: __str__
     .. automethod:: github_markdown
     .. automethod:: csv
     .. automethod:: latex
+    .. automethod:: text_without_markup
     """
 
-    def __init__(self, alignments: Optional[Tuple[str, ...]] = None) -> None:
+    def __init__(self, alignments: tuple[str, ...] | None = None) -> None:
+        """Create a new :class:`Table`.
+
+        :arg alignments: A :class:`tuple` of alignments of each column:
+            ``"l"``, ``"c"``, or ``"r"``, for left, center, and right
+            alignment, respectively). Columns which have no alignment specifier
+            will use the last specified alignment. For example, with
+            ``alignments=("l", "r")``, the third and all following
+            columns will use right alignment.
+        """
+
         if alignments is None:
             alignments = ("l",)
         else:
@@ -1641,36 +1592,41 @@ class Table:
 
             alignments = tuple(alignments)
 
-        self.rows: List[Tuple[str, ...]] = []
+        self.rows: list[tuple[str, ...]] = []
         self.alignments = alignments
 
     @property
     def nrows(self) -> int:
+        """The number of rows currently in the table."""
         return len(self.rows)
 
     @property
     def ncolumns(self) -> int:
+        """The number of columns currently in the table."""
         return len(self.rows[0])
 
-    def add_row(self, row: Tuple[Any, ...]) -> None:
+    def add_row(self, row: tuple[Any, ...]) -> None:
+        """Add *row* to the table. Note that all rows must have the same number
+        of columns."""
         if self.rows and len(row) != self.ncolumns:
             raise ValueError(
                     f"tried to add a row with {len(row)} columns to "
                     f"a table with {self.ncolumns} columns")
 
-        self.rows.append(tuple([str(i) for i in row]))
+        self.rows.append(tuple(str(i) for i in row))
 
-    def _get_alignments(self) -> Tuple[str, ...]:
+    def _get_alignments(self) -> tuple[str, ...]:
         # NOTE: If not all alignments were specified, extend alignments with the
         # last alignment specified
-        return (self.alignments
+        return (
+                self.alignments
                 + (self.alignments[-1],) * (self.ncolumns - len(self.alignments))
-                )
+                )[:self.ncolumns]
 
-    def _get_column_widths(self, rows) -> Tuple[int, ...]:
-        return tuple([
+    def _get_column_widths(self, rows) -> tuple[int, ...]:
+        return tuple(
             max(len(row[i]) for row in rows) for i in range(self.ncolumns)
-            ])
+            )
 
     def __str__(self) -> str:
         """
@@ -1694,13 +1650,13 @@ class Table:
         col_widths = self._get_column_widths(self.rows)
 
         lines = [" | ".join([
-            cell.center(col_width) if align == "c"
-            else cell.ljust(col_width) if align == "l"
-            else cell.rjust(col_width)
-            for cell, col_width, align in zip(row, col_widths, alignments)])
+            cell.center(cwidth) if align == "c"
+            else cell.ljust(cwidth) if align == "l"
+            else cell.rjust(cwidth)
+            for cell, cwidth, align in zip(row, col_widths, alignments, strict=True)])
             for row in self.rows]
-        lines[1:1] = ["+".join("-" * (col_width + 1 + (i > 0))
-            for i, col_width in enumerate(col_widths))]
+        lines[1:1] = ["+".join("-" * (cwidth + 1 + (i > 0))
+            for i, cwidth in enumerate(col_widths))]
 
         return "\n".join(lines)
 
@@ -1719,7 +1675,7 @@ class Table:
             :--|-------:
             10 | 20\|\|
 
-        """  # noqa: W605
+        """
         if not self.rows:
             return ""
 
@@ -1727,27 +1683,28 @@ class Table:
             # Pipe symbols ('|') must be replaced
             return cell.replace("|", "\\|")
 
-        rows = [tuple([escape(cell) for cell in row]) for row in self.rows]
+        rows = [tuple(escape(cell) for cell in row) for row in self.rows]
         alignments = self._get_alignments()
         col_widths = self._get_column_widths(rows)
 
         lines = [" | ".join([
-            cell.center(col_width) if align == "c"
-            else cell.ljust(col_width) if align == "l"
-            else cell.rjust(col_width)
-            for cell, col_width, align in zip(row, col_widths, alignments)])
+            cell.center(cwidth) if align == "c"
+            else cell.ljust(cwidth) if align == "l"
+            else cell.rjust(cwidth)
+            for cell, cwidth, align in zip(row, col_widths, alignments, strict=True)])
             for row in rows]
         lines[1:1] = ["|".join(
-            (":" + "-" * (col_width - 1 + (i > 0)) + ":") if align == "c"
-            else (":" + "-" * (col_width + (i > 0))) if align == "l"
-            else ("-" * (col_width + (i > 0)) + ":")
-            for i, (col_width, align) in enumerate(zip(col_widths, alignments)))]
+            (":" + "-" * (cwidth - 1 + (i > 0)) + ":") if align == "c"
+            else (":" + "-" * (cwidth + (i > 0))) if align == "l"
+            else ("-" * (cwidth + (i > 0)) + ":")
+            for i, (cwidth, align) in enumerate(
+                zip(col_widths, alignments, strict=True)))]
 
         return "\n".join(lines)
 
     def csv(self,
             dialect: str = "excel",
-            csv_kwargs: Optional[Dict[str, Any]] = None) -> str:
+            csv_kwargs: dict[str, Any] | None = None) -> str:
         """Returns a string containing a CSV representation of the table.
 
         :arg dialect: String passed to :func:`csv.writer`.
@@ -1784,7 +1741,7 @@ class Table:
 
     def latex(self,
             skip_lines: int = 0,
-            hline_after: Optional[Tuple[int, ...]] = None) -> str:
+            hline_after: tuple[int, ...] | None = None) -> str:
         r"""Returns a string containing the rows of a LaTeX representation of
         the table.
 
@@ -1816,9 +1773,41 @@ class Table:
 
         return "\n".join(lines)
 
+    def text_without_markup(self) -> str:
+        """Returns a string representation of the table without markup.
+
+        .. doctest::
+
+            >>> tbl = Table()
+            >>> tbl.add_row([0, "orange"])
+            >>> tbl.add_row([1111, "apple"])
+            >>> tbl.add_row([2, "pear"])
+            >>> print(tbl.text_without_markup())
+            0    orange
+            1111 apple
+            2    pear
+        """
+        if not self.rows:
+            return ""
+
+        alignments = self._get_alignments()
+        col_widths = self._get_column_widths(self.rows)
+
+        lines = [" ".join([
+            cell.center(cwidth) if align == "c"
+            else cell.ljust(cwidth) if align == "l"
+            else cell.rjust(cwidth)
+            for cell, cwidth, align in zip(row, col_widths, alignments, strict=True)])
+            for row in self.rows]
+
+        # Remove the extra space added by the last cell
+        lines = [line.rstrip() for line in lines]
+
+        return "\n".join(lines)
+
 
 def merge_tables(*tables: Table,
-        skip_columns: Optional[Tuple[int, ...]] = None) -> Table:
+        skip_columns: tuple[int, ...] | None = None) -> Table:
     """
     :arg skip_columns: a :class:`tuple` of column indices to skip in all the
         tables except the first one.
@@ -1836,15 +1825,14 @@ def merge_tables(*tables: Table,
     def remove_columns(i, row):
         if i == 0 or skip_columns is None:
             return row
-        else:
-            return tuple([
-                entry for i, entry in enumerate(row) if i not in skip_columns
-                ])
+        return tuple(
+            entry for i, entry in enumerate(row) if i not in skip_columns
+            )
 
-    alignments = sum([
+    alignments = sum((
         remove_columns(i, tbl._get_alignments())
         for i, tbl in enumerate(tables)
-        ], ())
+        ), ())
     result = Table(alignments=alignments)
 
     for i in range(tables[0].nrows):
@@ -1861,7 +1849,7 @@ def merge_tables(*tables: Table,
 
 # {{{ histogram formatting
 
-def string_histogram(  # pylint: disable=too-many-arguments,too-many-locals
+def string_histogram(
         iterable, min_value=None, max_value=None,
         bin_count=20, width=70, bin_starts=None, use_unicode=True):
     if bin_starts is None:
@@ -1877,9 +1865,9 @@ def string_histogram(  # pylint: disable=too-many-arguments,too-many-locals
 
     from bisect import bisect
     for value in iterable:
-        if max_value is not None and value > max_value or value < bin_starts[0]:
+        if (max_value is not None and value > max_value) or value < bin_starts[0]:
             from warnings import warn
-            warn("string_histogram: out-of-bounds value ignored")
+            warn("string_histogram: out-of-bounds value ignored", stacklevel=2)
         else:
             bin_nr = bisect(bin_starts, value)-1
             try:
@@ -1892,15 +1880,14 @@ def string_histogram(  # pylint: disable=too-many-arguments,too-many-locals
     if use_unicode:
         def format_bar(cnt):
             scaled = cnt*width/max_count
-            full = int(floor(scaled))
-            eighths = int(ceil((scaled-full)*8))
+            full = floor(scaled)
+            eighths = ceil((scaled-full)*8)
             if eighths:
                 return full*chr(0x2588) + chr(0x2588+(8-eighths))
-            else:
-                return full*chr(0x2588)
+            return full*chr(0x2588)
     else:
         def format_bar(cnt):
-            return int(ceil(cnt*width/max_count))*"#"
+            return ceil(cnt*width/max_count)*"#"
 
     max_count = max(bins)
     total_count = sum(bins)
@@ -1909,7 +1896,7 @@ def string_histogram(  # pylint: disable=too-many-arguments,too-many-locals
         bin_value,
         bin_value/total_count*100,
         format_bar(bin_value))
-        for bin_start, bin_value in zip(bin_starts, bins))
+        for bin_start, bin_value in zip(bin_starts, bins, strict=True))
 
 # }}}
 
@@ -1935,94 +1922,10 @@ def word_wrap(text, width, wrap_using="\n"):
 # }}}
 
 
-# {{{ command line interfaces
-
-def _exec_arg(arg, execenv):
-    import os
-    if os.access(arg, os.F_OK):
-        exec(compile(open(arg), arg, "exec"), execenv)
-    else:
-        exec(compile(arg, "<command line>", "exec"), execenv)
-
-
-class CPyUserInterface:
-    class Parameters(Record):
-        pass
-
-    def __init__(self, variables, constants=None, doc=None):
-        if constants is None:
-            constants = {}
-        if doc is None:
-            doc = {}
-        self.variables = variables
-        self.constants = constants
-        self.doc = doc
-
-    def show_usage(self, progname):
-        print(f"usage: {progname} <FILE-OR-STATEMENTS>")
-        print()
-        print("FILE-OR-STATEMENTS may either be Python statements of the form")
-        print("'variable1 = value1; variable2 = value2' or the name of a file")
-        print("containing such statements. Any valid Python code may be used")
-        print("on the command line or in a command file. If new variables are")
-        print("used, they must start with 'user_' or just '_'.")
-        print()
-        print("The following variables are recognized:")
-        for v in sorted(self.variables):
-            print(f"  {v} = {self.variables[v]}")
-            if v in self.doc:
-                print(f"    {self.doc[v]}")
-
-        print()
-        print("The following constants are supplied:")
-        for c in sorted(self.constants):
-            print(f"  {c} = {self.constants[c]}")
-            if c in self.doc:
-                print(f"    {self.doc[c]}")
-
-    def gather(self, argv=None):
-        if argv is None:
-            argv = sys.argv
-
-        if len(argv) == 1 or (
-                ("-h" in argv)
-                or ("help" in argv)
-                or ("-help" in argv)
-                or ("--help" in argv)):
-            self.show_usage(argv[0])
-            sys.exit(2)
-
-        execenv = self.variables.copy()
-        execenv.update(self.constants)
-
-        for arg in argv[1:]:
-            _exec_arg(arg, execenv)
-
-        # check if the user set invalid keys
-        for added_key in (
-                set(execenv.keys())
-                - set(self.variables.keys())
-                - set(self.constants.keys())):
-            if not (added_key.startswith("user_") or added_key.startswith("_")):
-                raise ValueError(
-                        f"invalid setup key: '{added_key}' "
-                        "(user variables must start with 'user_' or '_')")
-
-        result = self.Parameters({key: execenv[key] for key in self.variables})
-        self.validate(result)
-        return result
-
-    def validate(self, setup):
-        pass
-
-# }}}
-
-
 # {{{ debugging
 
 class StderrToStdout:
     def __enter__(self):
-        # pylint: disable=attribute-defined-outside-init
         self.stderr_backup = sys.stderr
         sys.stderr = sys.stdout
 
@@ -2032,7 +1935,7 @@ class StderrToStdout:
 
 
 def typedump(val: Any, max_seq: int = 5,
-             special_handlers: Optional[Mapping[Type, Callable]] = None,
+             special_handlers: Mapping[type, Callable] | None = None,
              fully_qualified_name: bool = True) -> str:
     """
     Return a string representation of the type of *val*, recursing into
@@ -2063,13 +1966,11 @@ def typedump(val: Any, max_seq: int = 5,
         if type(obj).__module__ == "builtins":
             if fully_qualified_name:
                 return type(obj).__qualname__
-            else:
-                return type(obj).__name__
+            return type(obj).__name__
 
         if fully_qualified_name:
             return type(obj).__module__ + "." + type(obj).__qualname__
-        else:
-            return type(obj).__name__
+        return type(obj).__name__
 
     # Special handling for 'str' since it is also iterable
     if isinstance(val, str):
@@ -2091,10 +1992,9 @@ def typedump(val: Any, max_seq: int = 5,
                 t = ",".join(typedump(x, max_seq, special_handlers)
                             for x in val[:max_seq])
                 return f"{objname(val)}({t},...)"
-            else:
-                t = ",".join(typedump(x, max_seq, special_handlers)
-                            for x in val)
-                return f"{objname(val)}({t})"
+            t = ",".join(typedump(x, max_seq, special_handlers)
+                        for x in val)
+            return f"{objname(val)}({t})"
 
         except TypeError:
             return objname(val)
@@ -2107,9 +2007,8 @@ def invoke_editor(s, filename="edit.txt", descr="the file"):
     from os.path import join
     full_name = join(tempdir, filename)
 
-    outf = open(full_name, "w")
-    outf.write(str(s))
-    outf.close()
+    with open(full_name, "w") as outf:
+        outf.write(str(s))
 
     import os
     if "EDITOR" in os.environ:
@@ -2121,9 +2020,8 @@ def invoke_editor(s, filename="edit.txt", descr="the file"):
                 "dropped directly into an editor next time.)")
         input(f"Edit {descr} at {full_name} now, then hit [Enter]:")
 
-    inf = open(full_name)
-    result = inf.read()
-    inf.close()
+    with open(full_name) as inf:
+        result = inf.read()
 
     return result
 
@@ -2132,7 +2030,7 @@ def invoke_editor(s, filename="edit.txt", descr="the file"):
 
 # {{{ progress bars
 
-class ProgressBar:  # pylint: disable=too-many-instance-attributes
+class ProgressBar:
     """
     .. automethod:: draw
     .. automethod:: progress
@@ -2141,7 +2039,8 @@ class ProgressBar:  # pylint: disable=too-many-instance-attributes
     .. automethod:: __enter__
     .. automethod:: __exit__
     """
-    def __init__(self, descr, total, initial=0, length=40):
+    def __init__(self, descr: str, total: int, initial: int = 0,
+                 length: int = 40) -> None:
         import time
         self.description = descr
         self.total = total
@@ -2154,9 +2053,9 @@ class ProgressBar:  # pylint: disable=too-many-instance-attributes
         self.speed_meas_start_time = self.start_time
         self.speed_meas_start_done = initial
 
-        self.time_per_step = None
+        self.time_per_step: float | None = None
 
-    def draw(self):
+    def draw(self) -> None:
         import time
 
         now = time.time()
@@ -2189,21 +2088,21 @@ class ProgressBar:  # pylint: disable=too-many-instance-attributes
             self.last_squares = squares
             self.last_update_time = now
 
-    def progress(self, steps=1):
+    def progress(self, steps: int = 1) -> None:
         self.set_progress(self.done + steps)
 
-    def set_progress(self, done):
+    def set_progress(self, done: int) -> None:
         self.done = done
         self.draw()
 
-    def finished(self):
+    def finished(self) -> None:
         self.set_progress(self.total)
         sys.stderr.write("\n")
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         self.draw()
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         self.finished()
 
 # }}}
@@ -2234,12 +2133,10 @@ def common_dtype(dtypes, default=None):
     dtypes = list(dtypes)
     if dtypes:
         return argmax2((dtype, dtype.num) for dtype in dtypes)
-    else:
-        if default is not None:
-            return default
-        else:
-            raise ValueError(
-                    "cannot find common dtype of empty dtype list")
+    if default is not None:
+        return default
+    raise ValueError(
+            "cannot find common dtype of empty dtype list")
 
 
 def to_uncomplex_dtype(dtype):
@@ -2257,13 +2154,10 @@ def match_precision(dtype, dtype_to_match):
     if dtype_is_complex:
         if tgt_is_double:
             return numpy.dtype(numpy.complex128)
-        else:
-            return numpy.dtype(numpy.complex64)
-    else:
-        if tgt_is_double:
-            return numpy.dtype(numpy.float64)
-        else:
-            return numpy.dtype(numpy.float32)
+        return numpy.dtype(numpy.complex64)
+    if tgt_is_double:
+        return numpy.dtype(numpy.float64)
+    return numpy.dtype(numpy.float32)
 
 # }}}
 
@@ -2283,7 +2177,7 @@ UNIQUE_NAME_GEN_COUNTER_RE = re.compile(r"^(?P<based_on>\w+)_(?P<counter>\d+)$")
 
 
 def generate_numbered_unique_names(
-        prefix: str, num: Optional[int] = None) -> Iterable[Tuple[int, str]]:
+        prefix: str, num: int | None = None) -> Iterable[tuple[int, str]]:
     if num is None:
         yield (0, prefix)
         num = 0
@@ -2310,7 +2204,7 @@ class UniqueNameGenerator:
     .. automethod:: __call__
     """
     def __init__(self,
-            existing_names: Optional[Set[str]] = None,
+            existing_names: Collection[str] | None = None,
             forced_prefix: str = ""):
         """
         Create a new :class:`UniqueNameGenerator`.
@@ -2322,9 +2216,9 @@ class UniqueNameGenerator:
         if existing_names is None:
             existing_names = set()
 
-        self.existing_names = existing_names.copy()
+        self.existing_names = set(existing_names)
         self.forced_prefix = forced_prefix
-        self.prefix_to_counter: Dict[str, int] = {}
+        self.prefix_to_counter: dict[str, int] = {}
 
     def is_name_conflicting(self, name: str) -> bool:
         """Returns *True* if *name* conflicts with an existing :class:`str`."""
@@ -2338,7 +2232,6 @@ class UniqueNameGenerator:
             This will not get called for the names in the *existing_names*
             argument to :meth:`__init__`.
         """
-        pass
 
     def add_name(self, name: str, *, conflicting_ok: bool = False) -> None:
         """
@@ -2384,7 +2277,7 @@ class UniqueNameGenerator:
 
         # }}}
 
-        for counter, var_name in generate_numbered_unique_names(based_on, counter):  # noqa: B020,B007,E501
+        for counter, var_name in generate_numbered_unique_names(based_on, counter):  # noqa: B020,B007
             if not self.is_name_conflicting(var_name):
                 break
 
@@ -2406,8 +2299,6 @@ class MinRecursionLimit:
         self.min_rec_limit = min_rec_limit
 
     def __enter__(self):
-        # pylint: disable=attribute-defined-outside-init
-
         self.prev_recursion_limit = sys.getrecursionlimit()
         new_limit = max(self.prev_recursion_limit, self.min_rec_limit)
         sys.setrecursionlimit(new_limit)
@@ -2458,7 +2349,7 @@ def download_from_web_if_not_present(url, local_name=None):
 
 # {{{ find git revisions
 
-def find_git_revision(tree_root):  # pylint: disable=too-many-locals
+def find_git_revision(tree_root):
     # Keep this routine self-contained so that it can be copy-pasted into
     # setup.py.
 
@@ -2496,7 +2387,7 @@ def find_git_revision(tree_root):  # pylint: disable=too-many-locals
     assert retcode is not None
     if retcode != 0:
         from warnings import warn
-        warn("unable to find git revision")
+        warn("unable to find git revision", stacklevel=1)
         return None
 
     return git_rev
@@ -2504,7 +2395,7 @@ def find_git_revision(tree_root):  # pylint: disable=too-many-locals
 
 def find_module_git_revision(module_file, n_levels_up):
     from os.path import dirname, join
-    tree_root = join(*([dirname(module_file)] + [".." * n_levels_up]))
+    tree_root = join(*([dirname(module_file), ".." * n_levels_up]))
 
     return find_git_revision(tree_root)
 
@@ -2598,7 +2489,7 @@ def _log_start_if_long(logger, sleep_duration, done_indicator,
                 sleep_duration)
 
 
-class ProcessLogger:  # pylint: disable=too-many-instance-attributes
+class ProcessLogger:
     """Logs the completion time of a (presumably) lengthy process to :mod:`logging`.
     Only uses a high log level if the process took perceptible time.
 
@@ -2610,7 +2501,7 @@ class ProcessLogger:  # pylint: disable=too-many-instance-attributes
 
     default_noisy_level = logging.INFO
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
             self, logger, description,
             silent_level=None, noisy_level=None, long_threshold_seconds=None):
         self.logger = logger
@@ -2644,32 +2535,29 @@ class ProcessLogger:  # pylint: disable=too-many-instance-attributes
         if sys.stdin is None:
             # Can happen, e.g., if pudb is controlling the console.
             use_late_start_logging = False
+        elif hasattr(sys.stdin, "closed") and not sys.stdin.closed:
+            # can query stdin.isatty() only if stdin's open
+            use_late_start_logging = sys.stdin.isatty()
         else:
-            if hasattr(sys.stdin, "closed") and not sys.stdin.closed:
-                # can query stdin.isatty() only if stdin's open
-                use_late_start_logging = sys.stdin.isatty()
-            else:
-                use_late_start_logging = False
+            use_late_start_logging = False
 
         import os
         if os.environ.get("PYTOOLS_LOG_NO_THREADS", ""):
             use_late_start_logging = False
 
         if use_late_start_logging:
-            try:
+            # https://github.com/firedrakeproject/firedrake/issues/1422
+            #
+            # Starting a thread may fail in various environments, e.g. MPI.
+            # Since the late-start logging is an optional 'quality-of-life'
+            # feature for interactive use, tolerate failures of it without
+            # warning.
+            with contextlib.suppress(RuntimeError):
                 self.late_start_log_thread.start()
-            except RuntimeError:
-                # https://github.com/firedrakeproject/firedrake/issues/1422
-                #
-                # Starting a thread may fail in various environments, e.g. MPI.
-                # Since the late-start logging is an optional 'quality-of-life'
-                # feature for interactive use, tolerate failures of it without
-                # warning.
-                pass
 
         self.timer = ProcessTimer()
 
-    def done(  # pylint: disable=keyword-arg-before-vararg
+    def done(
             self, extra_msg=None, *extra_fmt_args):
         self.timer.done()
         self._done_indicator[0] = True
@@ -2775,7 +2663,8 @@ def natsorted(iterable, key=None, reverse=False):
     .. versionadded:: 2020.1
     """
     if key is None:
-        key = lambda x: x
+        def key(x):
+            return x
     return sorted(iterable, key=lambda y: natorder(key(y)), reverse=reverse)
 
 # }}}
@@ -2795,56 +2684,28 @@ def resolve_name(name):
 
     .. versionadded:: 2021.1.2
     """
-    # Delete the tail of the function and deprecate this once we require Python 3.9.
-    if sys.version_info >= (3, 9):
-        # use the official version
-        import pkgutil
-        return pkgutil.resolve_name(name)  # pylint: disable=no-member
+    from warnings import warn
 
-    import importlib
+    warn("'pytools.resolve_name' is deprecated and will be removed in 2024. "
+         "Use 'pkgutil.resolve_name' from the standard library instead.",
+         DeprecationWarning, stacklevel=2)
 
-    m = _NAME_PATTERN.match(name)
-    if not m:
-        raise ValueError(f"invalid format: {name!r}")
-    groups = m.groups()
-    if groups[2]:
-        # there is a colon - a one-step import is all that's needed
-        mod = importlib.import_module(groups[0])
-        parts = groups[3].split(".") if groups[3] else []
-    else:
-        # no colon - have to iterate to find the package boundary
-        parts = name.split(".")
-        modname = parts.pop(0)
-        # first part *must* be a module/package.
-        mod = importlib.import_module(modname)
-        while parts:
-            p = parts[0]
-            s = f"{modname}.{p}"
-            try:
-                mod = importlib.import_module(s)
-                parts.pop(0)
-                modname = s
-            except ImportError:
-                break
-    # if we reach this point, mod is the module, already imported, and
-    # parts is the list of parts in the object hierarchy to be traversed, or
-    # an empty list if just the module is wanted.
-    result = mod
-    for p in parts:
-        result = getattr(result, p)
-    return result
+    import pkgutil
+    return pkgutil.resolve_name(name)
 
 # }}}
 
 
 # {{{ unordered_hash
 
-def unordered_hash(hash_instance, iterable, hash_constructor=None):
+def unordered_hash(hash_instance: Any,
+                   iterable: Iterable[Any],
+                   hash_constructor: Callable[[], Any] | None = None) -> Any:
     """Using a hash algorithm given by the parameter-less constructor
     *hash_constructor*, return a hash object whose internal state
     depends on the entries of *iterable*, but not their order. If *hash*
     is the instance returned by evaluating ``hash_constructor()``, then
-    the each entry *i* of the iterable must permit ``hash.upate(i)`` to
+    the each entry *i* of the iterable must permit ``hash.update(i)`` to
     succeed. An example of *hash_constructor* is ``hashlib.sha256``
     from :mod:`hashlib`.  ``hash.digest_size`` must also be defined.
     If *hash_constructor* is not provided, ``hash_instance.name`` is
@@ -2864,6 +2725,8 @@ def unordered_hash(hash_instance, iterable, hash_constructor=None):
         import hashlib
         from functools import partial
         hash_constructor = partial(hashlib.new, hash_instance.name)
+
+    assert hash_constructor is not None
 
     h_int = 0
     for i in iterable:
@@ -2893,7 +2756,7 @@ def sphere_sample_equidistant(npoints_approx: int, r: float = 1.0):
     """
 
     import numpy as np
-    points: List[np.ndarray] = []
+    points: list[np.ndarray] = []
 
     count = 0
     a = 4 * np.pi / npoints_approx
@@ -2933,7 +2796,7 @@ _SPHERE_FIBONACCI_OFFSET = (
 
 def sphere_sample_fibonacci(
         npoints: int, r: float = 1.0, *,
-        optimize: Optional[str] = None):
+        optimize: str | None = None):
     """Generate points on a sphere based on an offset Fibonacci lattice from [2]_.
 
     .. [2] http://extremelearning.com.au/how-to-evenly-distribute-points-on-a-sphere-more-effectively-than-the-canonical-fibonacci-lattice/
@@ -2944,7 +2807,7 @@ def sphere_sample_fibonacci(
         lattice.
 
     :returns: an :class:`~numpy.ndarray` of shape ``(3, npoints)``.
-    """     # noqa: E501
+    """
 
     import numpy as np
     if optimize is None:
@@ -2973,7 +2836,7 @@ def sphere_sample_fibonacci(
 
 # {{{ strtobool
 
-def strtobool(val: Optional[str], default: Optional[bool] = None) -> bool:
+def strtobool(val: str | None, default: bool | None = None) -> bool:
     """Convert a string representation of truth to True or False.
     True values are 'y', 'yes', 't', 'true', 'on', and '1'; false values
     are 'n', 'no', 'f', 'false', 'off', and '0'.  Uppercase versions are
@@ -2998,25 +2861,166 @@ def strtobool(val: Optional[str], default: Optional[bool] = None) -> bool:
     val = val.lower()
     if val in ("y", "yes", "t", "true", "on", "1"):
         return True
-    elif val in ("n", "no", "f", "false", "off", "0"):
+    if val in ("n", "no", "f", "false", "off", "0"):
         return False
-    else:
-        raise ValueError(f"invalid truth value '{val}'. "
-                          "Valid values are ('y', 'yes', 't', 'true', 'on', '1') "
-                          "for 'True' and ('n', 'no', 'f', 'false', 'off', '0') "
-                          "for 'False'. Uppercase versions are also accepted.")
+    raise ValueError(f"invalid truth value '{val}'. "
+                      "Valid values are ('y', 'yes', 't', 'true', 'on', '1') "
+                      "for 'True' and ('n', 'no', 'f', 'false', 'off', '0') "
+                      "for 'False'. Uppercase versions are also accepted.")
+
+# }}}
+
+
+# {{{ to_identifier
+
+def to_identifier(s: str) -> str:
+    """Convert a string to a valid Python identifier, by removing
+    non-alphanumeric, non-underscore characters, and prepending an underscore
+    if the string starts with a numeric character.
+
+    :param s: The string to convert to an identifier.
+
+    :returns: The converted string.
+    """
+    if s.isidentifier():
+        return s
+
+    s = "".join(c for c in s if c.isalnum() or c == "_")
+
+    if len(s) == 0:
+        return "_"
+
+    if s[0].isdigit():
+        s = "_" + s
+
+    return s
 
 # }}}
 
 
 # {{{ unique
 
-def unique(seq: Sequence[T]) -> Iterator[T]:
-    """Yield unique elements in *seq*, removing all duplicates. See also
+def unique(seq: Iterable[T]) -> Collection[T]:
+    """Return unique elements in *seq*, removing all duplicates. The internal
+    order of the elements is preserved. See also
     :func:`itertools.groupby` (which removes consecutive duplicates)."""
-    return iter(dict.fromkeys(seq))
+    return dict.fromkeys(seq)
+
+
+def unique_difference(*args: Iterable[T]) -> Collection[T]:
+    r"""Return unique elements that are in the first iterable in *\*args* but not
+    in any of the others. The internal order of the elements is preserved."""
+    if not args:
+        return []
+
+    res = dict.fromkeys(args[0])
+    for seq in args[1:]:
+        for item in seq:
+            if item in res:
+                del res[item]
+
+    return res
+
+
+def unique_intersection(*args: Iterable[T]) -> Collection[T]:
+    r"""Return unique elements that are common to all iterables in *\*args*.
+    The internal order of the elements is preserved."""
+    if not args:
+        return []
+
+    res = dict.fromkeys(args[0])
+    for seq in args[1:]:
+        seq = set(seq)
+        res = {item: None for item in res if item in seq}
+
+    return res
+
+
+def unique_union(*args: Iterable[T]) -> Collection[T]:
+    r"""Return unique elements that are in any iterable in *\*args*.
+    The internal order of the elements is preserved."""
+    if not args:
+        return []
+
+    res: dict[T, None] = {}
+    for seq in args:
+        for item in seq:
+            if item not in res:
+                res[item] = None
+
+    return res
 
 # }}}
+
+
+@dataclass_transform(frozen_default=True)
+def opt_frozen_dataclass(
+            *,
+            init: bool = True,
+            repr: bool = True,
+            eq: bool = True,
+            order: bool = False,
+            unsafe_hash: bool | None = None,
+            match_args: bool = True,
+            kw_only: bool = False,
+            slots: bool = False,
+            # Added in 3.11.
+            weakref_slot: bool = False,
+         ) -> Callable[[type[T]], type[T]]:
+    """Like :func:`dataclasses.dataclass`, but marks the dataclass frozen
+    only if :data:`__debug__` is active. Frozen dataclasses have a ~20%
+    cost penalty (on creation, from having to call :meth:`object.__setattr__`) that
+    this decorator avoids when the interpreter runs with "optimization"
+    enabled.
+
+    The resulting dataclass supports hashing, even when it is not actually frozen,
+    if *unsafe_hash* is left at the default or set to *True*.
+
+    .. note::
+
+        Python prevents non-frozen dataclasses from inheriting from frozen ones,
+        and vice versa. To ensure frozen-ness is applied predictably in all
+        scenarios (mainly :data:`__debug__` on and off), it is strongly recommended
+        that all dataclasses inheriting from ones with this decorator *also*
+        use this decorator. There are no run-time checks to make sure of this.
+
+    .. versionadded:: 2024.1.18
+    """
+    def map_cls(cls: type[T]) -> type[T]:
+        # This ensures that the resulting dataclass is hashable with and without
+        # __debug__, unless the user overrides unsafe_hash or provides their own
+        # __hash__ method.
+        if unsafe_hash is None:
+            if (eq
+                    and not __debug__
+                    and "__hash__" not in cls.__dict__):
+                loc_unsafe_hash = True
+            else:
+                loc_unsafe_hash = False
+        else:
+            loc_unsafe_hash = unsafe_hash
+
+        dc_extra_kwargs: dict[str, bool] = {}
+        if weakref_slot:
+            if sys.version_info < (3, 11):
+                raise TypeError("weakref_slot is not available before Python 3.11")
+            dc_extra_kwargs["weakref_slot"] = weakref_slot
+
+        from dataclasses import dataclass
+        return dataclass(
+             init=init,
+             repr=repr,
+             eq=eq,
+             order=order,
+             unsafe_hash=loc_unsafe_hash,
+             frozen=__debug__,
+             match_args=match_args,
+             kw_only=kw_only,
+             slots=slots,
+             **dc_extra_kwargs,
+        )(cls)
+
+    return map_cls
 
 
 def _test():

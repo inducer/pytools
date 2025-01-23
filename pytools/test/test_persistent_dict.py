@@ -1,14 +1,24 @@
+from __future__ import annotations
+
+import contextlib
 import shutil
-import sys  # noqa
+import sys
 import tempfile
 from dataclasses import dataclass
 from enum import Enum, IntEnum
+from typing import Any
 
 import pytest
 
 from pytools.persistent_dict import (
-    CollisionWarning, KeyBuilder, NoSuchEntryCollisionError, NoSuchEntryError,
-    PersistentDict, ReadOnlyEntryError, WriteOncePersistentDict)
+    CollisionWarning,
+    KeyBuilder,
+    NoSuchEntryCollisionError,
+    NoSuchEntryError,
+    PersistentDict,
+    ReadOnlyEntryError,
+    WriteOncePersistentDict,
+)
 from pytools.tag import Tag, tag_dataclass
 
 
@@ -16,29 +26,26 @@ from pytools.tag import Tag, tag_dataclass
 
 class PDictTestingKeyOrValue:
 
-    def __init__(self, val, hash_key=None):
+    def __init__(self, val: Any, hash_key=None) -> None:
         self.val = val
         if hash_key is None:
             hash_key = val
         self.hash_key = hash_key
 
-    def __getstate__(self):
+    def __getstate__(self) -> dict[str, Any]:
         return {"val": self.val, "hash_key": self.hash_key}
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if type(other) is not PDictTestingKeyOrValue:
+            return False
         return self.val == other.val
 
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def update_persistent_hash(self, key_hash, key_builder):
+    def update_persistent_hash(self, key_hash: Any, key_builder: KeyBuilder) -> None:
         key_builder.rec(key_hash, self.hash_key)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "PDictTestingKeyOrValue(val={!r},hash_key={!r})".format(
                 self.val, self.hash_key)
-
-    __str__ = __repr__
 
 # }}}
 
@@ -64,10 +71,12 @@ class MyStruct:
     value: int
 
 
-def test_persistent_dict_storage_and_lookup():
+def test_persistent_dict_storage_and_lookup() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+        pdict: PersistentDict[Any, int] = PersistentDict("pytools-test",
+                                                         container_dir=tmpdir,
+                                                         safe_sync=False)
 
         from random import randrange
 
@@ -77,16 +86,17 @@ def test_persistent_dict_storage_and_lookup():
                     for i in range(n))
 
         keys = [
-                (randrange(2000)-1000, rand_str(), None, SomeTag(rand_str()),
+                (randrange(2000)-1000, rand_str(), None,
+                 SomeTag(rand_str()),
                     frozenset({"abc", 123}))
                 for i in range(20)]
         values = [randrange(2000) for i in range(20)]
 
-        d = dict(zip(keys, values))
+        d = dict(zip(keys, values, strict=True))
 
         # {{{ check lookup
 
-        for k, v in zip(keys, values):
+        for k, v in zip(keys, values, strict=True):
             pdict[k] = v
 
         for k, v in d.items():
@@ -97,7 +107,7 @@ def test_persistent_dict_storage_and_lookup():
 
         # {{{ check updating
 
-        for k, v in zip(keys, values):
+        for k, v in zip(keys, values, strict=True):
             pdict[k] = v + 1
 
         for k, v in d.items():
@@ -108,7 +118,7 @@ def test_persistent_dict_storage_and_lookup():
 
         # {{{ check store_if_not_present
 
-        for k, _ in zip(keys, values):
+        for k, _ in zip(keys, values, strict=True):
             pdict.store_if_not_present(k, d[k] + 2)
 
         for k, v in d.items():
@@ -161,13 +171,18 @@ def test_persistent_dict_storage_and_lookup():
         shutil.rmtree(tmpdir)
 
 
-def test_persistent_dict_deletion():
+def test_persistent_dict_deletion() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+        pdict: PersistentDict[int, int] = PersistentDict("pytools-test",
+                                                         container_dir=tmpdir,
+                                                         safe_sync=False)
 
         pdict[0] = 0
         del pdict[0]
+
+        with pytest.raises(NoSuchEntryError):
+            pdict.remove(0)
 
         with pytest.raises(NoSuchEntryError):
             pdict.fetch(0)
@@ -179,11 +194,15 @@ def test_persistent_dict_deletion():
         shutil.rmtree(tmpdir)
 
 
-def test_persistent_dict_synchronization():
+def test_persistent_dict_synchronization() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict1 = PersistentDict("pytools-test", container_dir=tmpdir)
-        pdict2 = PersistentDict("pytools-test", container_dir=tmpdir)
+        pdict1: PersistentDict[int, int] = PersistentDict("pytools-test",
+                                                          container_dir=tmpdir,
+                                                          safe_sync=False)
+        pdict2: PersistentDict[int, int] = PersistentDict("pytools-test",
+                                                          container_dir=tmpdir,
+                                                          safe_sync=False)
 
         # check lookup
         pdict1[0] = 1
@@ -202,10 +221,11 @@ def test_persistent_dict_synchronization():
         shutil.rmtree(tmpdir)
 
 
-def test_persistent_dict_cache_collisions():
+def test_persistent_dict_cache_collisions() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+        pdict: PersistentDict[PDictTestingKeyOrValue, int] = \
+            PersistentDict("pytools-test", container_dir=tmpdir, safe_sync=False)
 
         key1 = PDictTestingKeyOrValue(1, hash_key=0)
         key2 = PDictTestingKeyOrValue(2, hash_key=0)
@@ -213,14 +233,12 @@ def test_persistent_dict_cache_collisions():
         pdict[key1] = 1
 
         # check lookup
-        with pytest.warns(CollisionWarning):
-            with pytest.raises(NoSuchEntryCollisionError):
-                pdict.fetch(key2)
+        with pytest.warns(CollisionWarning), pytest.raises(NoSuchEntryCollisionError):
+            pdict.fetch(key2)
 
         # check deletion
-        with pytest.warns(CollisionWarning):
-            with pytest.raises(NoSuchEntryCollisionError):
-                del pdict[key2]
+        with pytest.warns(CollisionWarning), pytest.raises(NoSuchEntryCollisionError):
+            del pdict[key2]
 
         # check presence after deletion
         assert pdict[key1] == 1
@@ -233,10 +251,12 @@ def test_persistent_dict_cache_collisions():
         shutil.rmtree(tmpdir)
 
 
-def test_persistent_dict_clear():
+def test_persistent_dict_clear() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = PersistentDict("pytools-test", container_dir=tmpdir)
+        pdict: PersistentDict[int, int] = PersistentDict("pytools-test",
+                                                         container_dir=tmpdir,
+                                                         safe_sync=False)
 
         pdict[0] = 1
         pdict.fetch(0)
@@ -250,12 +270,12 @@ def test_persistent_dict_clear():
 
 
 @pytest.mark.parametrize("in_mem_cache_size", (0, 256))
-def test_write_once_persistent_dict_storage_and_lookup(in_mem_cache_size):
+def test_write_once_persistent_dict_storage_and_lookup(in_mem_cache_size) -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = WriteOncePersistentDict(
+        pdict: WriteOncePersistentDict[int, int] = WriteOncePersistentDict(
                 "pytools-test", container_dir=tmpdir,
-                in_mem_cache_size=in_mem_cache_size)
+                in_mem_cache_size=in_mem_cache_size, safe_sync=False)
 
         # check lookup
         pdict[0] = 1
@@ -281,11 +301,12 @@ def test_write_once_persistent_dict_storage_and_lookup(in_mem_cache_size):
         shutil.rmtree(tmpdir)
 
 
-def test_write_once_persistent_dict_lru_policy():
+def test_write_once_persistent_dict_lru_policy() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = WriteOncePersistentDict(
-                "pytools-test", container_dir=tmpdir, in_mem_cache_size=3)
+        pdict: WriteOncePersistentDict[Any, Any] = WriteOncePersistentDict(
+                "pytools-test", container_dir=tmpdir, in_mem_cache_size=3,
+                safe_sync=False)
 
         pdict[1] = PDictTestingKeyOrValue(1)
         pdict[2] = PDictTestingKeyOrValue(2)
@@ -309,15 +330,27 @@ def test_write_once_persistent_dict_lru_policy():
         pdict.fetch(4)
         assert pdict.fetch(1) is not val1
 
+        # test clear_in_mem_cache
+        val1 = pdict.fetch(1)
+        pdict.clear_in_mem_cache()
+        assert pdict.fetch(1) is not val1
+
+        val1 = pdict.fetch(1)
+        assert pdict.fetch(1) is val1
+
     finally:
         shutil.rmtree(tmpdir)
 
 
-def test_write_once_persistent_dict_synchronization():
+def test_write_once_persistent_dict_synchronization() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict1 = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
-        pdict2 = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+        pdict1: WriteOncePersistentDict[int, int] = \
+            WriteOncePersistentDict("pytools-test", container_dir=tmpdir,
+                                    safe_sync=False)
+        pdict2: WriteOncePersistentDict[int, int] = \
+            WriteOncePersistentDict("pytools-test", container_dir=tmpdir,
+                                    safe_sync=False)
 
         # check lookup
         pdict1[1] = 0
@@ -331,19 +364,20 @@ def test_write_once_persistent_dict_synchronization():
         shutil.rmtree(tmpdir)
 
 
-def test_write_once_persistent_dict_cache_collisions():
+def test_write_once_persistent_dict_cache_collisions() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+        pdict: WriteOncePersistentDict[Any, int] = \
+            WriteOncePersistentDict("pytools-test", container_dir=tmpdir,
+                                    safe_sync=False)
 
         key1 = PDictTestingKeyOrValue(1, hash_key=0)
         key2 = PDictTestingKeyOrValue(2, hash_key=0)
         pdict[key1] = 1
 
         # check lookup
-        with pytest.warns(CollisionWarning):
-            with pytest.raises(NoSuchEntryCollisionError):
-                pdict.fetch(key2)
+        with pytest.warns(CollisionWarning), pytest.raises(NoSuchEntryCollisionError):
+            pdict.fetch(key2)
 
         # check update
         with pytest.raises(ReadOnlyEntryError):
@@ -357,10 +391,12 @@ def test_write_once_persistent_dict_cache_collisions():
         shutil.rmtree(tmpdir)
 
 
-def test_write_once_persistent_dict_clear():
+def test_write_once_persistent_dict_clear() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
-        pdict = WriteOncePersistentDict("pytools-test", container_dir=tmpdir)
+        pdict: WriteOncePersistentDict[int, int] = \
+            WriteOncePersistentDict("pytools-test", container_dir=tmpdir,
+                                    safe_sync=False)
 
         pdict[0] = 1
         pdict.fetch(0)
@@ -372,7 +408,7 @@ def test_write_once_persistent_dict_clear():
         shutil.rmtree(tmpdir)
 
 
-def test_dtype_hashing():
+def test_dtype_hashing() -> None:
     np = pytest.importorskip("numpy")
 
     keyb = KeyBuilder()
@@ -380,7 +416,32 @@ def test_dtype_hashing():
     assert keyb(np.dtype(np.float32)) == keyb(np.dtype(np.float32))
 
 
-def test_scalar_hashing():
+def test_bool_hashing() -> None:
+    keyb = KeyBuilder()
+
+    assert keyb(True) == keyb(True)
+    assert keyb(False) == keyb(False)
+    assert keyb(True) != keyb(False)
+
+    np = pytest.importorskip("numpy")
+
+    bool_types = [np.bool_]
+    if hasattr(np, "bool"):
+        bool_types.append(np.bool)
+
+    for bool_type in bool_types:
+        assert keyb(bool_type) != keyb(bool)
+
+        assert keyb(bool_type(True)) == keyb(bool_type(True))
+        assert keyb(bool_type(False)) == keyb(bool_type(False))
+        assert keyb(bool_type(True)) != keyb(bool_type(False))
+
+        assert keyb(bool_type) != keyb(np.dtype(bool_type))
+        assert keyb(bool_type(True)) != keyb(np.dtype(bool_type(True)))
+        assert keyb(bool_type(False)) != keyb(np.dtype(bool_type(False)))
+
+
+def test_scalar_hashing() -> None:
     keyb = KeyBuilder()
 
     assert keyb(1) == keyb(1)
@@ -416,12 +477,23 @@ def test_scalar_hashing():
         assert keyb(np.complex256(1.1+2.2j)) == keyb(np.complex256(1.1+2.2j))
     assert keyb(np.clongdouble(1.1+2.2j)) == keyb(np.clongdouble(1.1+2.2j))
 
+    h_int64 = keyb(np.int64(1))
+
+    import unittest.mock
+
+    from pytools.persistent_dict import _IS_BIGENDIAN
+    with unittest.mock.patch("pytools.persistent_dict._IS_BIGENDIAN",
+                             not _IS_BIGENDIAN):
+        # Very crude test that the other endianness works as well.
+        be_val = np.int64(1).byteswap()
+        assert h_int64 == keyb(be_val)
+
 
 @pytest.mark.parametrize("dict_impl", ("immutabledict", "frozendict",
                                        "constantdict",
                                        ("immutables", "Map"),
                                        ("pyrsistent", "pmap")))
-def test_dict_hashing(dict_impl):
+def test_dict_hashing(dict_impl) -> None:
     if isinstance(dict_impl, str):
         dict_package = dict_impl
         dict_class = dict_impl
@@ -442,7 +514,7 @@ def test_dict_hashing(dict_impl):
     assert keyb(dc(d)) == keyb(dc({"b": 2, "a": 1}))
 
 
-def test_frozenset_hashing():
+def test_frozenset_hashing() -> None:
     keyb = KeyBuilder()
 
     assert keyb(frozenset([1, 2, 3])) == keyb(frozenset([1, 2, 3]))
@@ -450,7 +522,7 @@ def test_frozenset_hashing():
     assert keyb(frozenset([1, 2, 3])) == keyb(frozenset([3, 2, 1]))
 
 
-def test_frozenorderedset_hashing():
+def test_frozenorderedset_hashing() -> None:
     pytest.importorskip("orderedsets")
     from orderedsets import FrozenOrderedSet
     keyb = KeyBuilder()
@@ -462,12 +534,12 @@ def test_frozenorderedset_hashing():
     assert keyb(FrozenOrderedSet([1, 2, 3])) == keyb(FrozenOrderedSet([3, 2, 1]))
 
 
-def test_ABC_hashing():  # noqa: N802
+def test_ABC_hashing() -> None:  # noqa: N802
     from abc import ABC, ABCMeta
 
     keyb = KeyBuilder()
 
-    class MyABC(ABC):
+    class MyABC(ABC):  # noqa: B024
         pass
 
     assert keyb(MyABC) != keyb(ABC)
@@ -492,7 +564,7 @@ def test_ABC_hashing():  # noqa: N802
     assert keyb(MyABC3) != keyb(MyABC) != keyb(MyABC3())
 
 
-def test_class_hashing():
+def test_class_hashing() -> None:
     keyb = KeyBuilder()
 
     class WithUpdateMethod:
@@ -514,20 +586,17 @@ def test_class_hashing():
     assert keyb(TagClass) != keyb(TagClass2)
     assert keyb(TagClass()) != keyb(TagClass2())
 
-    assert keyb(TagClass()) == \
-        "f5697a96dde0083e31a290b54ee7a5640b2bb8eb6d18e9c7ee89228b015a6131"
-    assert keyb(TagClass2) == \
-        "0833645765e32e7fb4a586614d0e345878eba50199ed2d8e963b28f797fd6e29"
+    assert keyb(TagClass()) == "7b3e4e66503438f6"
+    assert keyb(TagClass2) == "690b86bbf51aad83"
 
     @tag_dataclass
     class TagClass3(Tag):
         s: str
 
-    assert keyb(TagClass3("foo")) == \
-        "c6521f4157ed530d04e956b7046db85e038c120b047cd1b848340d81f9fd8b4a"
+    assert (keyb(TagClass3("foo")) == "cf1a33652cc75b9c")
 
 
-def test_dataclass_hashing():
+def test_dataclass_hashing() -> None:
     keyb = KeyBuilder()
 
     @dataclass
@@ -535,8 +604,7 @@ def test_dataclass_hashing():
         name: str
         value: int
 
-    assert keyb(MyDC("hi", 1)) == \
-        "2ba6363c3b98f1cc2209bd57388368b3efe3074e3764eee30fbcf15946efb802"
+    assert keyb(MyDC("hi", 1)) == "d1a1079f1c10aa4f"
 
     assert keyb(MyDC("hi", 1)) == keyb(MyDC("hi", 1))
     assert keyb(MyDC("hi", 1)) != keyb(MyDC("hi", 2))
@@ -550,7 +618,7 @@ def test_dataclass_hashing():
     assert keyb(MyDC2("hi", 1)) != keyb(MyDC("hi", 1))
 
 
-def test_attrs_hashing():
+def test_attrs_hashing() -> None:
     attrs = pytest.importorskip("attrs")
 
     keyb = KeyBuilder()
@@ -560,18 +628,17 @@ def test_attrs_hashing():
         name: str
         value: int
 
-    assert keyb(MyAttrs("hi", 1)) == \
-        "17f272d114d22c1dc0117354777f2d506b303d90e10840d39fb0eef007252f68"
+    assert (keyb(MyAttrs("hi", 1)) == "5b6c5da60eb2bd0f")  # type: ignore[call-arg]
 
-    assert keyb(MyAttrs("hi", 1)) == keyb(MyAttrs("hi", 1))
-    assert keyb(MyAttrs("hi", 1)) != keyb(MyAttrs("hi", 2))
+    assert keyb(MyAttrs("hi", 1)) == keyb(MyAttrs("hi", 1))  # type: ignore[call-arg]
+    assert keyb(MyAttrs("hi", 1)) != keyb(MyAttrs("hi", 2))  # type: ignore[call-arg]
 
     @dataclass
     class MyDC:
         name: str
         value: int
 
-    assert keyb(MyDC("hi", 1)) != keyb(MyAttrs("hi", 1))
+    assert keyb(MyDC("hi", 1)) != keyb(MyAttrs("hi", 1))  # type: ignore[call-arg]
 
     @attrs.define
     class MyAttrs2:
@@ -579,10 +646,110 @@ def test_attrs_hashing():
         value: int
 
     # Class types must be encoded in hash
-    assert keyb(MyAttrs2("hi", 1)) != keyb(MyAttrs("hi", 1))
+    assert (keyb(MyAttrs2("hi", 1))  # type: ignore[call-arg]
+            != keyb(MyAttrs("hi", 1)))  # type: ignore[call-arg]
 
 
-def test_xdg_cache_home():
+def test_datetime_hashing() -> None:
+    keyb = KeyBuilder()
+
+    import datetime
+
+    # {{{ date
+    # No timezone info; date is always naive
+    assert (keyb(datetime.date(2020, 1, 1))
+            == keyb(datetime.date(2020, 1, 1))
+            == "1c866ff10ff0d997")
+    assert keyb(datetime.date(2020, 1, 1)) != keyb(datetime.date(2020, 1, 2))
+
+    # }}}
+
+    # {{{ time
+
+    # Must distinguish between naive and aware time objects
+
+    # Naive time
+    assert (keyb(datetime.time(12, 0))
+            == keyb(datetime.time(12, 0))
+            == keyb(datetime.time(12, 0, 0))
+            == keyb(datetime.time(12, 0, 0, 0))
+            == "e523be74ebc6b227")
+    assert keyb(datetime.time(12, 0)) != keyb(datetime.time(12, 1))
+
+    # Aware time
+    t1 = datetime.time(12, 0, tzinfo=datetime.timezone.utc)
+    t2 = datetime.time(7, 0,
+                            tzinfo=datetime.timezone(datetime.timedelta(hours=-5)))
+    t3 = datetime.time(7, 0,
+                            tzinfo=datetime.timezone(datetime.timedelta(hours=-4)))
+
+    assert t1 == t2
+    assert (keyb(t1)
+            == keyb(t2)
+            == "2041e7cd5b17b8eb")
+
+    assert t1 != t3
+    assert keyb(t1) != keyb(t3)
+
+    # }}}
+
+    # {{{ datetime
+
+    # must distinguish between naive and aware datetime objects
+
+    # Aware datetime
+    dt1 = datetime.datetime(2020, 1, 1, 12, tzinfo=datetime.timezone.utc)
+    dt2 = datetime.datetime(2020, 1, 1, 7,
+                            tzinfo=datetime.timezone(datetime.timedelta(hours=-5)))
+
+    assert dt1 == dt2
+    assert (keyb(dt1)
+            == keyb(dt2)
+            == "8be96b9e739c7d8c")
+
+    dt3 = datetime.datetime(2020, 1, 1, 7,
+                            tzinfo=datetime.timezone(datetime.timedelta(hours=-4)))
+
+    assert dt1 != dt3
+    assert keyb(dt1) != keyb(dt3)
+
+    # Naive datetime
+    dt4 = datetime.datetime(2020, 1, 1, 6)  # matches dt1 'naively'
+    assert dt1 != dt4  # naive and aware datetime objects are never equal
+    assert keyb(dt1) != keyb(dt4)
+
+    assert (keyb(datetime.datetime(2020, 1, 1))
+            == keyb(datetime.datetime(2020, 1, 1))
+            == keyb(datetime.datetime(2020, 1, 1, 0, 0, 0, 0))
+            == "215dbe82add7a55c"  # spellchecker: disable-line
+            )
+    assert keyb(datetime.datetime(2020, 1, 1)) != keyb(datetime.datetime(2020, 1, 2))
+    assert (keyb(datetime.datetime(2020, 1, 1))
+            != keyb(datetime.datetime(2020, 1, 1, tzinfo=datetime.timezone.utc)))
+
+    # }}}
+
+    # {{{ timezone
+
+    tz1 = datetime.timezone(datetime.timedelta(hours=-4))
+    tz2 = datetime.timezone(datetime.timedelta(hours=0))
+    tz3 = datetime.timezone.utc
+
+    assert tz1 != tz2
+    assert keyb(tz1) != keyb(tz2)
+
+    assert tz1 != tz3
+    assert keyb(tz1) != keyb(tz3)
+
+    assert tz2 == tz3
+    assert (keyb(tz2)
+            == keyb(tz3)
+            == "5e1d46ab778c7ccf")
+
+    # }}}
+
+
+def test_xdg_cache_home() -> None:
     import os
     xdg_dir = "tmpdir_pytools_xdg_test"
 
@@ -592,7 +759,7 @@ def test_xdg_cache_home():
     try:
         os.environ["XDG_CACHE_HOME"] = xdg_dir
 
-        PersistentDict("pytools-test")
+        PersistentDict("pytools-test", safe_sync=False)
 
         assert os.path.exists(xdg_dir)
     finally:
@@ -602,6 +769,283 @@ def test_xdg_cache_home():
             del os.environ["XDG_CACHE_HOME"]
 
         shutil.rmtree(xdg_dir)
+
+
+def test_speed():
+    import time
+
+    tmpdir = tempfile.mkdtemp()
+    pdict = WriteOncePersistentDict("pytools-test", container_dir=tmpdir,
+                                    safe_sync=False)
+
+    start = time.time()
+    for i in range(10000):
+        pdict[i] = i
+    end = time.time()
+    print("persistent dict write time: ", end-start)
+
+    start = time.time()
+    for _ in range(5):
+        for i in range(10000):
+            pdict[i]
+    end = time.time()
+    print("persistent dict read time: ", end-start)
+
+    shutil.rmtree(tmpdir)
+
+
+def test_size():
+    try:
+        tmpdir = tempfile.mkdtemp()
+        pdict = PersistentDict("pytools-test", container_dir=tmpdir, safe_sync=False)
+
+        for i in range(10000):
+            pdict[f"foobarbazfoobbb{i}"] = i
+
+        size = pdict.nbytes()
+        print("sqlite size: ", size/1024/1024, " MByte")
+        assert 1024*1024//2 < size < 2*1024*1024
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+def test_len():
+    try:
+        tmpdir = tempfile.mkdtemp()
+        pdict = PersistentDict("pytools-test", container_dir=tmpdir, safe_sync=False)
+
+        assert len(pdict) == 0
+
+        for i in range(10000):
+            pdict[i] = i
+
+        assert len(pdict) == 10000
+
+        pdict.clear()
+
+        assert len(pdict) == 0
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+def test_repr():
+    try:
+        tmpdir = tempfile.mkdtemp()
+        pdict = PersistentDict("pytools-test", container_dir=tmpdir, safe_sync=False)
+
+        assert repr(pdict)[:15] == "PersistentDict("
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+def test_keys_values_items():
+    try:
+        tmpdir = tempfile.mkdtemp()
+        pdict = PersistentDict("pytools-test", container_dir=tmpdir, safe_sync=False)
+
+        for i in range(10000):
+            pdict[i] = i
+
+        # This also tests deterministic iteration order
+        assert len(pdict) == 10000 == len(set(pdict))
+        assert list(pdict.keys()) == list(range(10000))
+        assert list(pdict.values()) == list(range(10000))
+        assert list(pdict.items()) == list(zip(pdict, range(10000), strict=True))
+
+        assert ([k for k in pdict]  # noqa: C416
+                == list(pdict.keys())
+                == list(pdict)
+                == [k for k in pdict])  # noqa: C416
+
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+def global_fun():
+    pass
+
+
+def global_fun2():
+    pass
+
+
+def test_hash_function() -> None:
+    keyb = KeyBuilder()
+
+    # {{{ global functions
+
+    assert keyb(global_fun) == keyb(global_fun) == "79efd03f9a38ed77"
+    assert keyb(global_fun) != keyb(global_fun2)
+
+    # }}}
+
+    # {{{ closures
+
+    def get_fun(x):
+        def add_x(y):
+            return x + y
+        return add_x
+
+    f1 = get_fun(1)
+    f11 = get_fun(1)
+    f2 = get_fun(2)
+
+    fa = get_fun
+    fb = get_fun
+
+    assert fa == fb
+    assert keyb(fa) == keyb(fb)
+
+    assert f1 != f2
+    assert keyb(f1) != keyb(f2)
+
+    # FIXME: inconsistency!
+    assert f1 != f11
+    assert hash(f1) != hash(f11)
+    assert keyb(f1) == keyb(f11)
+
+    # }}}
+
+    # {{{ local functions
+
+    def local_fun():
+        pass
+
+    def local_fun2():
+        pass
+
+    assert keyb(local_fun) == keyb(local_fun) == "adc92e690b62dc2b"
+    assert keyb(local_fun) != keyb(local_fun2)
+
+    # }}}
+
+    # {{{ methods
+
+    class C1:
+        def method(self):
+            pass
+
+    class C2:
+        def method(self):
+            pass
+
+    assert keyb(C1.method) == keyb(C1.method) == "af19e056ad7749c4"
+    assert keyb(C1.method) != keyb(C2.method)
+
+    # }}}
+
+
+# {{{ basic concurrency tests
+
+def _conc_fn(tmpdir: str | None = None,
+             pdict: PersistentDict[int, int] | None = None) -> None:
+    import time
+
+    assert (pdict is None) ^ (tmpdir is None)
+
+    if pdict is None:
+        pdict = PersistentDict("pytools-test",
+                                container_dir=tmpdir,
+                                safe_sync=False)
+    n = 10000
+    s = 0
+
+    start = time.time()
+
+    for i in range(n):
+        if i % 1000 == 0:
+            print(f"i={i}")
+
+        if isinstance(pdict, WriteOncePersistentDict):
+            with contextlib.suppress(ReadOnlyEntryError):
+                pdict[i] = i
+        else:
+            pdict[i] = i
+
+        # Someone else already deleted the entry
+        with contextlib.suppress(NoSuchEntryError):
+            s += pdict[i]
+
+        if not isinstance(pdict, WriteOncePersistentDict):
+            # Suppressed in case someone else already deleted the entry
+            with contextlib.suppress(NoSuchEntryError):
+                del pdict[i]
+
+    end = time.time()
+
+    print(f"PersistentDict: time taken to write {n} entries to "
+        f"{pdict.filename}: {end-start} s={s}")
+
+
+def test_concurrency_processes() -> None:
+    from multiprocessing import Process
+
+    tmpdir = "_tmp_proc/"  # must be the same across all processes in this test
+
+    try:
+        # multiprocessing needs to pickle function arguments, so we can't pass
+        # the PersistentDict object (which is unpicklable) directly.
+        p = [Process(target=_conc_fn, args=(tmpdir, None)) for _ in range(4)]
+        for pp in p:
+            pp.start()
+        for pp in p:
+            pp.join()
+
+        assert all(pp.exitcode == 0 for pp in p), [pp.exitcode for pp in p]
+    finally:
+        shutil.rmtree(tmpdir)
+
+
+from threading import Thread
+
+
+class RaisingThread(Thread):
+    def run(self) -> None:
+        self._exc = None
+        try:
+            super().run()
+        except Exception as e:
+            self._exc = e
+
+    def join(self, timeout: float | None = None) -> None:
+        super().join(timeout=timeout)
+        if self._exc:
+            raise self._exc
+
+
+def test_concurrency_threads() -> None:
+    tmpdir = "_tmp_threads/"  # must be the same across all threads in this test
+
+    try:
+        # Share this pdict object among all threads to test thread safety
+        pdict: PersistentDict[int, int] = PersistentDict("pytools-test",
+                                                    container_dir=tmpdir,
+                                                    safe_sync=False)
+        t = [RaisingThread(target=_conc_fn, args=(None, pdict)) for _ in range(4)]
+        for tt in t:
+            tt.start()
+        for tt in t:
+            tt.join()
+            # Threads will raise in join() if they encountered an exception
+    finally:
+        shutil.rmtree(tmpdir)
+
+    try:
+        # Share this pdict object among all threads to test thread safety
+        pdict2: WriteOncePersistentDict[int, int] = WriteOncePersistentDict(
+                                                    "pytools-test",
+                                                    container_dir=tmpdir,
+                                                    safe_sync=False)
+        t = [RaisingThread(target=_conc_fn, args=(None, pdict2)) for _ in range(4)]
+        for tt in t:
+            tt.start()
+        for tt in t:
+            tt.join()
+            # Threads will raise in join() if they encountered an exception
+    finally:
+        shutil.rmtree(tmpdir)
+
+# }}}
 
 
 if __name__ == "__main__":

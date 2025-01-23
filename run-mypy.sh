@@ -2,6 +2,11 @@
 
 set -ex
 
-mypy --show-error-codes pytools
+python -m mypy pytools
 
-mypy --strict --follow-imports=skip pytools/datatable.py
+python -m mypy --strict --follow-imports=silent \
+    pytools/datatable.py \
+    pytools/graph.py \
+    pytools/persistent_dict.py \
+    pytools/prefork.py \
+    pytools/tag.py \
