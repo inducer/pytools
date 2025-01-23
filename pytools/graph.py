@@ -368,9 +368,9 @@ def compute_transitive_closure(
     closure = deepcopy(graph)
 
     # (assumes all graph nodes are included in keys)
-    for k in graph.keys():
-        for n1 in graph.keys():
-            for n2 in graph.keys():
+    for k in graph:
+        for n1 in graph:
+            for n2 in graph:
                 if k in closure[n1] and n2 in closure[k]:
                     closure[n1].add(n2)
 

@@ -28,6 +28,7 @@ THE SOFTWARE.
 """
 
 import builtins
+import contextlib
 import logging
 import operator
 import re
@@ -421,10 +422,8 @@ class RecordWithoutPickling:
     def get_copy_kwargs(self, **kwargs):
         for f in self.__class__.fields:
             if f not in kwargs:
-                try:
+                with contextlib.suppress(AttributeError):
                     kwargs[f] = getattr(self, f)
-                except AttributeError:
-                    pass
         return kwargs
 
     def copy(self, **kwargs):
@@ -615,10 +614,7 @@ def is_single_valued(
     except StopIteration:
         raise ValueError("empty iterable passed to 'single_valued()'") from None
 
-    for other_item in it:
-        if not equality_pred(other_item, first_item):
-            return False
-    return True
+    return all(equality_pred(other_item, first_item) for other_item in it)
 
 
 all_equal = is_single_valued
@@ -642,12 +638,7 @@ def single_valued(
     except StopIteration:
         raise ValueError("empty iterable passed to 'single_valued()'") from None
 
-    def others_same():
-        for other_item in it:
-            if not equality_pred(other_item, first_item):
-                return False
-        return True
-    assert others_same()
+    assert all(equality_pred(other_item, first_item) for other_item in it)
 
     return first_item
 
@@ -754,10 +745,7 @@ def memoize_on_first_arg(
                 )
 
     def wrapper(obj: T, *args: P.args, **kwargs: P.kwargs) -> R:
-        if kwargs:
-            key = (_HasKwargs, frozenset(kwargs.items()), *args)
-        else:
-            key = args
+        key = (_HasKwargs, frozenset(kwargs.items()), *args) if kwargs else args
 
         assert cache_dict_name is not None
         try:
@@ -2093,9 +2081,8 @@ def invoke_editor(s, filename="edit.txt", descr="the file"):
     from os.path import join
     full_name = join(tempdir, filename)
 
-    outf = open(full_name, "w")
-    outf.write(str(s))
-    outf.close()
+    with open(full_name, "w") as outf:
+        outf.write(str(s))
 
     import os
     if "EDITOR" in os.environ:
@@ -2107,9 +2094,8 @@ def invoke_editor(s, filename="edit.txt", descr="the file"):
                 "dropped directly into an editor next time.)")
         input(f"Edit {descr} at {full_name} now, then hit [Enter]:")
 
-    inf = open(full_name)
-    result = inf.read()
-    inf.close()
+    with open(full_name) as inf:
+        result = inf.read()
 
     return result
 
@@ -2634,16 +2620,14 @@ class ProcessLogger:
             use_late_start_logging = False
 
         if use_late_start_logging:
-            try:
+            # https://github.com/firedrakeproject/firedrake/issues/1422
+            #
+            # Starting a thread may fail in various environments, e.g. MPI.
+            # Since the late-start logging is an optional 'quality-of-life'
+            # feature for interactive use, tolerate failures of it without
+            # warning.
+            with contextlib.suppress(RuntimeError):
                 self.late_start_log_thread.start()
-            except RuntimeError:
-                # https://github.com/firedrakeproject/firedrake/issues/1422
-                #
-                # Starting a thread may fail in various environments, e.g. MPI.
-                # Since the late-start logging is an optional 'quality-of-life'
-                # feature for interactive use, tolerate failures of it without
-                # warning.
-                pass
 
         self.timer = ProcessTimer()
 

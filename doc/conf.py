@@ -17,8 +17,10 @@ author = "Andreas Kloeckner"
 #
 # The short X.Y version.
 ver_dic = {}
-exec(compile(open("../pytools/version.py").read(), "../pytools/version.py", "exec"),
+with open("../pytools/version.py") as vfile:
+    exec(compile(vfile.read(), "../pytools/version.py", "exec"),
         ver_dic)
+
 version = ".".join(str(x) for x in ver_dic["VERSION"])
 release = ver_dic["VERSION_TEXT"]
 

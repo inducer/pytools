@@ -5,15 +5,8 @@ def _cp(src, dest):
     from pytools import assert_not_a_file
     assert_not_a_file(dest)
 
-    inf = open(src, "rb")
-    try:
-        outf = open(dest, "wb")
-        try:
-            outf.write(inf.read())
-        finally:
-            outf.close()
-    finally:
-        inf.close()
+    with open(src, "rb") as inf, open(dest, "wb") as outf:
+        outf.write(inf.read())
 
 
 def get_timestamp():
@@ -43,10 +36,9 @@ class BatchJob:
 
         os.makedirs(self.path)
 
-        runscript = open(f"{self.path}/run.sh", "w")
-        import sys
-        runscript.write(f"{sys.executable} {main_file} setup.cpy")
-        runscript.close()
+        with open(f"{self.path}/run.sh", "w") as runscript:
+            import sys
+            runscript.write(f"{sys.executable} {main_file} setup.cpy")
 
         from os.path import basename
 
@@ -58,9 +50,8 @@ class BatchJob:
 
     def write_setup(self, lines):
         import os.path
-        setup = open(os.path.join(self.path, "setup.cpy"), "w")
-        setup.write("\n".join(lines))
-        setup.close()
+        with open(os.path.join(self.path, "setup.cpy"), "w") as setup:
+            setup.write("\n".join(lines))
 
 
 class INHERIT:
