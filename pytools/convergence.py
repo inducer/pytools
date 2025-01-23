@@ -145,15 +145,15 @@ class EOCRecorder:
         return self.pretty_print()
 
     def write_gnuplot_file(self, filename: str) -> None:
-        outfile = open(filename, "w")
-        for absc, err in self.history:
-            outfile.write(f"{absc:f} {err:f}\n")
-        result = self.estimate_order_of_convergence()
-        const = result[0, 0]
-        order = result[0, 1]
-        outfile.write("\n")
-        for absc, _err in self.history:
-            outfile.write(f"{absc:f} {const * absc**(-order):f}\n")
+        with open(filename, "w") as outfile:
+            for absc, err in self.history:
+                outfile.write(f"{absc:f} {err:f}\n")
+            result = self.estimate_order_of_convergence()
+            const = result[0, 0]
+            order = result[0, 1]
+            outfile.write("\n")
+            for absc, _err in self.history:
+                outfile.write(f"{absc:f} {const * absc**(-order):f}\n")
 
 
 def stringify_eocs(*eocs: EOCRecorder,

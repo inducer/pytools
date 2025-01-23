@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import sys
 
 from pytools import memoize
@@ -66,17 +67,12 @@ def refdebug(obj, top_level=True, exclude=()):
                 return True
 
         from sys import _getframe
-        if isinstance(o, FrameType) and \
-                o.f_code.co_filename == _getframe().f_code.co_filename:
-            return True
-
-        return False
+        return bool(isinstance(o, FrameType)
+                    and o.f_code.co_filename == _getframe().f_code.co_filename)
 
     if top_level:
-        try:
+        with contextlib.suppress(RefDebugQuit):
             refdebug(obj, top_level=False, exclude=exclude)
-        except RefDebugQuit:
-            pass
         return
 
     import gc
@@ -94,10 +90,7 @@ def refdebug(obj, top_level=True, exclude=()):
                 print_head = False
             r = reflist[idx]
 
-            if isinstance(r, FrameType):
-                s = str(r.f_code)
-            else:
-                s = str(r)
+            s = str(r.f_code) if isinstance(r, FrameType) else str(r)
 
             print(f"{idx}/{len(reflist)}: ", id(r), type(r), s)
 
