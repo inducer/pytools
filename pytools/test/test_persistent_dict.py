@@ -1054,8 +1054,10 @@ def test_nan_keys() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
         keyb = KeyBuilder()
-        pdict = PersistentDict("pytools-test", container_dir=tmpdir,
-                               safe_sync=False, key_builder=keyb)
+        pdict: PersistentDict[float, int] = PersistentDict("pytools-test",
+                                                        container_dir=tmpdir,
+                                                        safe_sync=False,
+                                                        key_builder=keyb)
 
         import math
 
