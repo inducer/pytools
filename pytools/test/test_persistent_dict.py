@@ -1061,9 +1061,15 @@ def test_nan_keys() -> None:
 
         import math
 
-        import numpy as np
+        nan_values = [math.nan, float("nan")]
 
-        for nan_value in [math.nan, np.nan, float("nan")]:
+        try:
+            import numpy as np
+            nan_values.append(np.nan)
+        except ImportError:
+            pass
+
+        for nan_value in nan_values:
             assert nan_value != nan_value
             assert keyb(nan_value) == keyb(nan_value)
 
