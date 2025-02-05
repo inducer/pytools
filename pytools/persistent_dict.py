@@ -291,6 +291,14 @@ class KeyBuilder:
         key_hash.update(str(key).encode("utf8"))
 
     def update_for_float(self, key_hash: Hash, key: float) -> None:
+        import math
+        if math.isnan(key):
+            # Also applies to np.nan, float("nan")
+            warn("Encountered a NaN while hashing. Since NaNs compare unequal "
+                 "to themselves, the resulting key can not be retrieved from a "
+                 "PersistentDict and will lead to a collision error on retrieval.",
+                 stacklevel=1)
+
         key_hash.update(key.hex().encode("utf8"))
 
     def update_for_complex(self, key_hash: Hash, key: float) -> None:

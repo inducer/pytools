@@ -1048,6 +1048,32 @@ def test_concurrency_threads() -> None:
 # }}}
 
 
+def test_nan_keys() -> None:
+    # test for https://github.com/inducer/pytools/issues/287
+
+    try:
+        tmpdir = tempfile.mkdtemp()
+        keyb = KeyBuilder()
+        pdict = PersistentDict("pytools-test", container_dir=tmpdir,
+                               safe_sync=False, key_builder=keyb)
+
+        import math
+
+        import numpy as np
+
+        for nan_value in [math.nan, np.nan, float("nan")]:
+            assert nan_value != nan_value
+            assert keyb(nan_value) == keyb(nan_value)
+
+            pdict[nan_value] = 42
+
+            with (pytest.warns(CollisionWarning),
+                  pytest.raises(NoSuchEntryCollisionError)):
+                pdict[math.nan]
+    finally:
+        shutil.rmtree(tmpdir)
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
