@@ -669,6 +669,12 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
         and if they occur, almost always due to a bug in the hash key
         generation code (:class:`KeyBuilder`).
 
+    .. warning::
+
+        Since NaNs compare unequal to themselves, keys that include NaNs can
+        not be retrieved from a :class:`WriteOncePersistentDict` and will lead to a
+        :exc:`NoSuchEntryCollisionError` on retrieval.
+
     .. automethod:: __init__
     .. automethod:: __getitem__
     .. automethod:: __setitem__
@@ -781,6 +787,12 @@ class PersistentDict(_PersistentDictBase[K, V]):
         key, based on the assumption that key conflicts are highly unlikely,
         and if they occur, almost always due to a bug in the hash key
         generation code (:class:`KeyBuilder`).
+
+    .. warning::
+
+        Since NaNs compare unequal to themselves, keys that include NaNs can
+        not be retrieved from a :class:`PersistentDict` and will lead to a
+        :exc:`NoSuchEntryCollisionError` on retrieval.
 
     .. automethod:: __init__
     .. automethod:: __getitem__
