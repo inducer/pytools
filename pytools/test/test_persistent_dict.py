@@ -1077,7 +1077,7 @@ def test_nan_keys() -> None:
 
             with (pytest.warns(CollisionWarning),
                   pytest.raises(NoSuchEntryCollisionError)):
-                pdict[math.nan]
+                pdict[nan_value]
     finally:
         shutil.rmtree(tmpdir)
 
