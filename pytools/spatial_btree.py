@@ -7,10 +7,7 @@ def do_boxes_intersect(bl, tr):
     (bl1, tr1) = bl
     (bl2, tr2) = tr
     (dimension,) = bl1.shape
-    for i in range(dimension):
-        if max(bl1[i], bl2[i]) > min(tr1[i], tr2[i]):
-            return False
-    return True
+    return all(max(bl1[i], bl2[i]) <= min(tr1[i], tr2[i]) for i in range(dimension))
 
 
 def make_buckets(bottom_left, top_right, allbuckets, max_elements_per_box):
@@ -131,10 +128,7 @@ class SpatialBinaryTreeBucket:
             (dimensions,) = point.shape
             bucket = self.buckets
             for dim in range(dimensions):
-                if point[dim] < self.center[dim]:
-                    bucket = bucket[0]
-                else:
-                    bucket = bucket[1]
+                bucket = bucket[0] if point[dim] < self.center[dim] else bucket[1]
 
             yield from bucket.generate_matches(point)
 

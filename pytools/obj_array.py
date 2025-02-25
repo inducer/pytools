@@ -369,10 +369,7 @@ def with_object_array_or_scalar(f, field, obj_array_only=False):
             "use obj_array_vectorize", DeprecationWarning, stacklevel=2)
 
     if obj_array_only:
-        if is_obj_array(field):
-            ls = field.shape
-        else:
-            ls = ()
+        ls = field.shape if is_obj_array(field) else ()
     else:
         ls = log_shape(field)
     if ls != ():

@@ -28,6 +28,7 @@ THE SOFTWARE.
 """
 
 import builtins
+import contextlib
 import logging
 import operator
 import re
@@ -421,10 +422,8 @@ class RecordWithoutPickling:
     def get_copy_kwargs(self, **kwargs: Any) -> Dict[str, Any]:
         for f in self.__class__.fields:
             if f not in kwargs:
-                try:
+                with contextlib.suppress(AttributeError):
                     kwargs[f] = getattr(self, f)
-                except AttributeError:
-                    pass
         return kwargs
 
     def copy(self, **kwargs: Any) -> "RecordWithoutPickling":
@@ -612,10 +611,7 @@ def is_single_valued(
     except StopIteration:
         raise ValueError("empty iterable passed to 'single_valued()'") from None
 
-    for other_item in it:
-        if not equality_pred(other_item, first_item):
-            return False
-    return True
+    return all(equality_pred(other_item, first_item) for other_item in it)
 
 
 all_equal = is_single_valued
@@ -639,12 +635,7 @@ def single_valued(
     except StopIteration:
         raise ValueError("empty iterable passed to 'single_valued()'") from None
 
-    def others_same():
-        for other_item in it:
-            if not equality_pred(other_item, first_item):
-                return False
-        return True
-    assert others_same()
+    assert all(equality_pred(other_item, first_item) for other_item in it)
 
     return first_item
 
@@ -751,10 +742,7 @@ def memoize_on_first_arg(
                 )
 
     def wrapper(obj: T, *args: P.args, **kwargs: P.kwargs) -> R:
-        if kwargs:
-            key = (_HasKwargs, frozenset(kwargs.items()), *args)
-        else:
-            key = args
+        key = (_HasKwargs, frozenset(kwargs.items()), *args) if kwargs else args
 
         assert cache_dict_name is not None
         try:
@@ -1922,89 +1910,6 @@ def word_wrap(text, width, wrap_using="\n"):
 # }}}
 
 
-# {{{ command line interfaces
-
-def _exec_arg(arg, execenv):
-    import os
-    if os.access(arg, os.F_OK):
-        exec(compile(open(arg), arg, "exec"), execenv)
-    else:
-        exec(compile(arg, "<command line>", "exec"), execenv)
-
-
-class CPyUserInterface:
-    class Parameters(Record):
-        pass
-
-    def __init__(self, variables, constants=None, doc=None):
-        if constants is None:
-            constants = {}
-        if doc is None:
-            doc = {}
-        self.variables = variables
-        self.constants = constants
-        self.doc = doc
-
-    def show_usage(self, progname):
-        print(f"usage: {progname} <FILE-OR-STATEMENTS>")
-        print()
-        print("FILE-OR-STATEMENTS may either be Python statements of the form")
-        print("'variable1 = value1; variable2 = value2' or the name of a file")
-        print("containing such statements. Any valid Python code may be used")
-        print("on the command line or in a command file. If new variables are")
-        print("used, they must start with 'user_' or just '_'.")
-        print()
-        print("The following variables are recognized:")
-        for v in sorted(self.variables):
-            print(f"  {v} = {self.variables[v]}")
-            if v in self.doc:
-                print(f"    {self.doc[v]}")
-
-        print()
-        print("The following constants are supplied:")
-        for c in sorted(self.constants):
-            print(f"  {c} = {self.constants[c]}")
-            if c in self.doc:
-                print(f"    {self.doc[c]}")
-
-    def gather(self, argv=None):
-        if argv is None:
-            argv = sys.argv
-
-        if len(argv) == 1 or (
-                ("-h" in argv)
-                or ("help" in argv)
-                or ("-help" in argv)
-                or ("--help" in argv)):
-            self.show_usage(argv[0])
-            sys.exit(2)
-
-        execenv = self.variables.copy()
-        execenv.update(self.constants)
-
-        for arg in argv[1:]:
-            _exec_arg(arg, execenv)
-
-        # check if the user set invalid keys
-        for added_key in (
-                set(execenv.keys())
-                - set(self.variables.keys())
-                - set(self.constants.keys())):
-            if not (added_key.startswith("user_") or added_key.startswith("_")):
-                raise ValueError(
-                        f"invalid setup key: '{added_key}' "
-                        "(user variables must start with 'user_' or '_')")
-
-        result = self.Parameters({key: execenv[key] for key in self.variables})
-        self.validate(result)
-        return result
-
-    def validate(self, setup):
-        pass
-
-# }}}
-
-
 # {{{ debugging
 
 class StderrToStdout:
@@ -2090,9 +1995,8 @@ def invoke_editor(s, filename="edit.txt", descr="the file"):
     from os.path import join
     full_name = join(tempdir, filename)
 
-    outf = open(full_name, "w")
-    outf.write(str(s))
-    outf.close()
+    with open(full_name, "w") as outf:
+        outf.write(str(s))
 
     import os
     if "EDITOR" in os.environ:
@@ -2104,9 +2008,8 @@ def invoke_editor(s, filename="edit.txt", descr="the file"):
                 "dropped directly into an editor next time.)")
         input(f"Edit {descr} at {full_name} now, then hit [Enter]:")
 
-    inf = open(full_name)
-    result = inf.read()
-    inf.close()
+    with open(full_name) as inf:
+        result = inf.read()
 
     return result
 
@@ -2631,16 +2534,14 @@ class ProcessLogger:
             use_late_start_logging = False
 
         if use_late_start_logging:
-            try:
+            # https://github.com/firedrakeproject/firedrake/issues/1422
+            #
+            # Starting a thread may fail in various environments, e.g. MPI.
+            # Since the late-start logging is an optional 'quality-of-life'
+            # feature for interactive use, tolerate failures of it without
+            # warning.
+            with contextlib.suppress(RuntimeError):
                 self.late_start_log_thread.start()
-            except RuntimeError:
-                # https://github.com/firedrakeproject/firedrake/issues/1422
-                #
-                # Starting a thread may fail in various environments, e.g. MPI.
-                # Since the late-start logging is an optional 'quality-of-life'
-                # feature for interactive use, tolerate failures of it without
-                # warning.
-                pass
 
         self.timer = ProcessTimer()
 

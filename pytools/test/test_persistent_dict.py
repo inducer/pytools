@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import shutil
 import sys
 import tempfile
@@ -232,14 +233,12 @@ def test_persistent_dict_cache_collisions() -> None:
         pdict[key1] = 1
 
         # check lookup
-        with pytest.warns(CollisionWarning):
-            with pytest.raises(NoSuchEntryCollisionError):
-                pdict.fetch(key2)
+        with pytest.warns(CollisionWarning), pytest.raises(NoSuchEntryCollisionError):
+            pdict.fetch(key2)
 
         # check deletion
-        with pytest.warns(CollisionWarning):
-            with pytest.raises(NoSuchEntryCollisionError):
-                del pdict[key2]
+        with pytest.warns(CollisionWarning), pytest.raises(NoSuchEntryCollisionError):
+            del pdict[key2]
 
         # check presence after deletion
         assert pdict[key1] == 1
@@ -377,9 +376,8 @@ def test_write_once_persistent_dict_cache_collisions() -> None:
         pdict[key1] = 1
 
         # check lookup
-        with pytest.warns(CollisionWarning):
-            with pytest.raises(NoSuchEntryCollisionError):
-                pdict.fetch(key2)
+        with pytest.warns(CollisionWarning), pytest.raises(NoSuchEntryCollisionError):
+            pdict.fetch(key2)
 
         # check update
         with pytest.raises(ReadOnlyEntryError):
@@ -854,7 +852,7 @@ def test_keys_values_items():
         assert list(pdict.values()) == list(range(10000))
         assert list(pdict.items()) == list(zip(pdict, range(10000), strict=True))
 
-        assert ([k for k in pdict.keys()]  # noqa: C416
+        assert ([k for k in pdict]  # noqa: C416
                 == list(pdict.keys())
                 == list(pdict)
                 == [k for k in pdict])  # noqa: C416
@@ -959,25 +957,19 @@ def _conc_fn(tmpdir: str | None = None,
             print(f"i={i}")
 
         if isinstance(pdict, WriteOncePersistentDict):
-            try:
+            with contextlib.suppress(ReadOnlyEntryError):
                 pdict[i] = i
-            except ReadOnlyEntryError:
-                pass
         else:
             pdict[i] = i
 
-        try:
+        # Someone else already deleted the entry
+        with contextlib.suppress(NoSuchEntryError):
             s += pdict[i]
-        except NoSuchEntryError:
-            # Someone else already deleted the entry
-            pass
 
         if not isinstance(pdict, WriteOncePersistentDict):
-            try:
+            # Suppressed in case someone else already deleted the entry
+            with contextlib.suppress(NoSuchEntryError):
                 del pdict[i]
-            except NoSuchEntryError:
-                # Someone else already deleted the entry
-                pass
 
     end = time.time()
 
@@ -1054,6 +1046,40 @@ def test_concurrency_threads() -> None:
         shutil.rmtree(tmpdir)
 
 # }}}
+
+
+def test_nan_keys() -> None:
+    # test for https://github.com/inducer/pytools/issues/287
+
+    try:
+        tmpdir = tempfile.mkdtemp()
+        keyb = KeyBuilder()
+        pdict: PersistentDict[float, int] = PersistentDict("pytools-test",
+                                                        container_dir=tmpdir,
+                                                        safe_sync=False,
+                                                        key_builder=keyb)
+
+        import math
+
+        nan_values = [math.nan, float("nan")]
+
+        try:
+            import numpy as np
+            nan_values.append(np.nan)
+        except ImportError:
+            pass
+
+        for nan_value in nan_values:
+            assert nan_value != nan_value
+            assert keyb(nan_value) == keyb(nan_value)
+
+            pdict[nan_value] = 42
+
+            with (pytest.warns(CollisionWarning),
+                  pytest.raises(NoSuchEntryCollisionError)):
+                pdict[nan_value]
+    finally:
+        shutil.rmtree(tmpdir)
 
 
 if __name__ == "__main__":
