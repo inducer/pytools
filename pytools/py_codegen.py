@@ -27,7 +27,7 @@ import marshal
 from importlib.util import MAGIC_NUMBER as BYTECODE_VERSION
 from types import FunctionType, ModuleType
 
-from pytools.codegen import (  # noqa
+from pytools.codegen import (  # noqa: F401
     CodeGenerator as CodeGeneratorBase,
     Indentation,
     remove_common_indentation,

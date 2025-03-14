@@ -72,12 +72,13 @@ extend-select = [
     "I",   # flake8-isort
     "N",   # pep8-naming
     "NPY", # numpy
+    "PGH", # pygrep-hooks
     "Q",   # flake8-quotes
-    "UP",  # pyupgrade
     "RUF", # ruff
+    "SIM", # flake8-simplify
+    "TC",  # flake8-type-checking
+    "UP",  # pyupgrade
     "W",   # pycodestyle
-    "TC",
-    "SIM",
 ]
 extend-ignore = [
     "C90",  # McCabe complexity
