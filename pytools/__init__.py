@@ -716,7 +716,7 @@ def memoize(*args: F, **kwargs: Any) -> F:
             return wrapper
 
     if not args:
-        return _decorator  # type: ignore
+        return _decorator  # type: ignore[return-value]
     if callable(args[0]) and len(args) == 1:
         return _decorator(args[0])
     raise TypeError(
