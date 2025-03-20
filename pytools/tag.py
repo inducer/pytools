@@ -276,8 +276,11 @@ class Taggable:
         :arg tags: An instance of :class:`~pytools.tag.Tag` or
             an iterable with instances therein.
         """
-        return self._with_new_tags(
-                tags=check_tag_uniqueness(normalize_tags(tags) | self.tags))
+        new_tags = check_tag_uniqueness(normalize_tags(tags) | self.tags)
+        if new_tags != self.tags:
+            return self._with_new_tags(tags=new_tags)
+        else:
+            return self
 
     def without_tags(self,
                      tags: ToTagSetConvertible, verify_existence: bool = True
@@ -297,7 +300,10 @@ class Taggable:
         if verify_existence and len(new_tags) > len(self.tags) - len(to_remove):
             raise ValueError("A tag specified for removal was not present.")
 
-        return self._with_new_tags(tags=check_tag_uniqueness(new_tags))
+        if new_tags != self.tags:
+            return self._with_new_tags(tags=check_tag_uniqueness(new_tags))
+        else:
+            return self
 
     @memoize_method
     def tags_of_type(self, tag_t: type[TagT]) -> frozenset[TagT]:
