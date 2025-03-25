@@ -1651,6 +1651,41 @@ class Table:
 
         return "\n".join(lines)
 
+    def str_with_maxlen(self, maxlen: int) -> str:
+        """
+        Returns a string representation of the table, limiting lines to
+        *maxlen*. Only makes sense with 'left' alignment in the last column.
+
+        .. doctest ::
+
+            >>> tbl = Table(alignments=['l', 'l'])
+            >>> tbl.add_row([0, 'normal column'])
+            >>> tbl.add_row([1, 'very very very very long column'])
+            >>> tbl.add_row([10, '20'])
+            >>> print(tbl.str_with_maxlen(15))
+            0  | normal ...
+            ---+-----------
+            1  | very v ...
+            10 | 20
+        """
+        if self._get_alignments()[-1] != "l":
+            from warnings import warn
+            warn("str_with_maxlen() only makes sense with 'left' "
+                 "alignment in the last column", stacklevel=2)
+
+        lines = str(self).split("\n")
+        lines = [line.rstrip() for line in lines]
+
+        for i, line in enumerate(lines):
+            if len(line) > maxlen:
+                if i == 1:
+                    # Header separator line
+                    lines[i] = line[:maxlen]
+                else:
+                    lines[i] = line[:maxlen-4] + " ..."
+
+        return "\n".join(lines)
+
     def github_markdown(self) -> str:
         r"""Returns a string representation of the table formatted as
         `GitHub-Flavored Markdown.
