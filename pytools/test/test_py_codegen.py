@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import pickle
 import sys
+from typing import cast
 
 import pytest
 
@@ -65,6 +67,56 @@ def test_function_decorators(capfd):
     assert f(0) == 42
     out, _err = capfd.readouterr()
     assert out == ""  # second print is not executed due to lru_cache
+
+
+def test_linecache_func() -> None:
+    cg = codegen.PythonFunctionGenerator("f", args=())
+    cg("return 42")
+
+    func = cg.get_function()
+    func()
+
+    mod_name = func.__code__.co_filename
+
+    import linecache
+
+    assert linecache.getlines(mod_name) == [
+        "def f():\n",
+        "    return 42\n",
+    ]
+
+    assert linecache.getline(mod_name, 1) == "def f():\n"
+    assert linecache.getline(mod_name, 2) == "    return 42\n"
+
+    pkl = pickle.dumps(cg.get_picklable_function())
+
+    pf = cast("codegen.PicklableFunction", pickle.loads(pkl))
+
+    post_pickle_mod_name = pf._callable.__code__.co_filename
+
+    assert post_pickle_mod_name != mod_name
+    assert linecache.getlines(post_pickle_mod_name) == [
+        "def f():\n",
+        "    return 42\n",
+    ]
+
+
+def test_linecache_mod() -> None:
+    cg2 = codegen.PythonCodeGenerator()
+    cg2("def f():")
+    cg2("    return 37")
+
+    mod = cg2.get_module()
+    mod["f"]()
+    mod_name = cast("str", mod["__code__"].co_filename)
+
+    assert mod_name
+
+    import linecache
+    assert linecache.getlines(mod_name) == [
+        "def f():\n",
+        "    return 37\n",
+    ]
 
 
 if __name__ == "__main__":

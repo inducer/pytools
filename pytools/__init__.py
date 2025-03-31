@@ -2226,13 +2226,15 @@ UNIQUE_NAME_GEN_COUNTER_RE = re.compile(r"^(?P<based_on>\w+)_(?P<counter>\d+)$")
 
 
 def generate_numbered_unique_names(
-        prefix: str, num: int | None = None) -> Iterable[tuple[int, str]]:
+        prefix: str,
+        num: int | None = None,
+        suffix: str = "") -> Iterable[tuple[int, str]]:
     if num is None:
-        yield (0, prefix)
+        yield (0, prefix + suffix)
         num = 0
 
     while True:
-        name = f"{prefix}_{num}"
+        name = f"{prefix}_{num}{suffix}"
         num += 1
         yield (num, name)
 
@@ -2254,19 +2256,22 @@ class UniqueNameGenerator:
     """
     def __init__(self,
             existing_names: Collection[str] | None = None,
-            forced_prefix: str = ""):
+            forced_prefix: str = "",
+            forced_suffix: str = "") -> None:
         """
         Create a new :class:`UniqueNameGenerator`.
 
         :arg existing_names: a :class:`set` of existing names that will be
             skipped when generating new names.
         :arg forced_prefix: all generated :class:`str` have this prefix.
+        :arg forced_suffix: all generated :class:`str` have this suffix.
         """
         if existing_names is None:
             existing_names = set()
 
         self.existing_names = set(existing_names)
         self.forced_prefix = forced_prefix
+        self.forced_suffix: str = forced_suffix
         self.prefix_to_counter: dict[str, int] = {}
 
     def is_name_conflicting(self, name: str) -> bool:
@@ -2326,7 +2331,8 @@ class UniqueNameGenerator:
 
         # }}}
 
-        for counter, var_name in generate_numbered_unique_names(based_on, counter):  # noqa: B020,B007
+        for counter, var_name in generate_numbered_unique_names(  # noqa: B020,B007
+                    based_on, counter, self.forced_suffix):
             if not self.is_name_conflicting(var_name):
                 break
 
