@@ -35,12 +35,18 @@ from pytools.codegen import (  # noqa: F401
 
 
 class PythonCodeGenerator(CodeGeneratorBase):
-    def get_module(self, name=None):
+    def get_module(self, name=None, write_file=True):
         if name is None:
             name = "<generated code>"
 
         result_dict = {}
         source_text = self.get()
+
+        if write_file:
+            with open(name, "w") as f:
+                f.write(source_text)
+                f.write("\n")
+
         exec(compile(
             source_text.rstrip()+"\n", name, "exec"),
                 result_dict)
@@ -65,7 +71,7 @@ class PythonFunctionGenerator(PythonCodeGenerator):
 
     @property
     def _gen_filename(self):
-        return f"<generated code for '{self.name}'>"
+        return f"generated_code_for_{self.name}"
 
     def get_function(self):
         return self.get_module(name=self._gen_filename)[self.name]
