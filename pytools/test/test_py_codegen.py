@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import sys
 
+import pytest
+
 import pytools
 import pytools.py_codegen as codegen
 
@@ -28,6 +30,41 @@ def test_picklable_function():
     f = pickle.loads(pickle.dumps(cg.get_picklable_function()))
 
     assert f() == 1
+
+
+def test_function_decorators(capfd):
+    cg = codegen.PythonFunctionGenerator("f", args=(), decorators=["@staticmethod"])
+    cg("return 42")
+
+    assert cg.get_function()() == 42
+
+    cg = codegen.PythonFunctionGenerator("f", args=(), decorators=["@classmethod"])
+    cg("return 42")
+
+    with pytest.raises(TypeError):
+        cg.get_function()()
+
+    cg = codegen.PythonFunctionGenerator("f", args=(),
+                                         decorators=["@staticmethod", "@classmethod"])
+    cg("return 42")
+
+    with pytest.raises(TypeError):
+        cg.get_function()()
+
+    cg = codegen.PythonFunctionGenerator("f", args=("x"),
+                decorators=["from functools import lru_cache", "@lru_cache"])
+    cg("print('Hello World!')")
+    cg("return 42")
+
+    f = cg.get_function()
+
+    assert f(0) == 42
+    out, _err = capfd.readouterr()
+    assert out == "Hello World!\n"
+
+    assert f(0) == 42
+    out, _err = capfd.readouterr()
+    assert out == ""  # second print is not executed due to lru_cache
 
 
 if __name__ == "__main__":
