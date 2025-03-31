@@ -52,9 +52,13 @@ class PythonCodeGenerator(CodeGeneratorBase):
 
 
 class PythonFunctionGenerator(PythonCodeGenerator):
-    def __init__(self, name, args):
+    def __init__(self, name, args, decorators=None):
         PythonCodeGenerator.__init__(self)
         self.name = name
+
+        if decorators:
+            for decorator in decorators:
+                self(decorator)
 
         self("def {}({}):".format(name, ", ".join(args)))
         self.indent()
