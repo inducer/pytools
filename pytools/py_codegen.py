@@ -26,6 +26,11 @@ THE SOFTWARE.
 import marshal
 from importlib.util import MAGIC_NUMBER as BYTECODE_VERSION
 from types import FunctionType, ModuleType
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 from pytools.codegen import (  # noqa: F401
     CodeGenerator as CodeGeneratorBase,
@@ -46,10 +51,11 @@ class PythonCodeGenerator(CodeGeneratorBase):
 
         import linecache
 
-        # if name in linecache.cache:
-        from warnings import warn
-        warn(f"Overwriting existing generated code in linecache: '{name}'.",
-                 stacklevel=3 if _from_get_function else 2)
+        if name in linecache.cache:
+            from warnings import warn
+            warn(f"Overwriting existing generated code in linecache: '{name}'.",
+                    stacklevel=3 if _from_get_function else 2)
+
         linecache.cache[name] = (None, None, source_text.split("\n"), None)
 
         # }}}
