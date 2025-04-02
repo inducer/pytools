@@ -35,7 +35,7 @@ from pytools.codegen import (  # noqa: F401
 
 
 class PythonCodeGenerator(CodeGeneratorBase):
-    def get_module(self, name=None):
+    def get_module(self, name=None, _from_get_function=False):
         if name is None:
             name = "<generated code>"
 
@@ -46,10 +46,10 @@ class PythonCodeGenerator(CodeGeneratorBase):
 
         import linecache
 
-        if name in linecache.cache:
-            from warnings import warn
-            warn(f"Overwriting existing generated code in linecache: '{name}'.",
-                 stacklevel=2)
+        # if name in linecache.cache:
+        from warnings import warn
+        warn(f"Overwriting existing generated code in linecache: '{name}'.",
+                 stacklevel=3 if _from_get_function else 2)
         linecache.cache[name] = (None, None, source_text.split("\n"), None)
 
         # }}}
@@ -78,12 +78,17 @@ class PythonFunctionGenerator(PythonCodeGenerator):
 
     @property
     def _gen_filename(self):
-        # Note that the '<ipython-input-' prefix is for compatibility with
-        # line_profiler: https://github.com/pyutils/line_profiler/blob/1630e7c9a295ace2feb1d2b188e68f4d2833fb20/line_profiler/line_profiler.py#L194-L210
-        return f"<ipython-input- generated code for '{self.name}'>"
+        import sys
+        if "line_profiler" in sys.modules:
+            # The '<ipython-input-' prefix is for compatibility with
+            # line_profiler: https://github.com/pyutils/line_profiler/blob/1630e7c9a295ace2feb1d2b188e68f4d2833fb20/line_profiler/line_profiler.py#L194-L210
+            return f"<ipython-input- generated: '{self.name}'>"
+
+        return f"<generated: '{self.name}'>"
 
     def get_function(self):
-        return self.get_module(name=self._gen_filename)[self.name]
+        return self.get_module(name=self._gen_filename,
+                               _from_get_function=True)[self.name]
 
     def get_picklable_function(self):
         module = self.get_picklable_module(name=self._gen_filename)
