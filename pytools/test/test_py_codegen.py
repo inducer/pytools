@@ -75,10 +75,13 @@ def test_linecache():
 
     import linecache
 
-    linecache.updatecache(cg._gen_filename)
+    assert linecache.getlines(cg._gen_filename) == [
+        "def f():",
+        "    return 42",
+    ]
 
-    assert linecache.getline(cg._gen_filename, 1).rstrip() == "def f():"
-    assert linecache.getline(cg._gen_filename, 2).rstrip() == "    return 42"
+    assert linecache.getline(cg._gen_filename, 1) == "def f():"
+    assert linecache.getline(cg._gen_filename, 2) == "    return 42"
 
 
 if __name__ == "__main__":

@@ -35,17 +35,24 @@ from pytools.codegen import (  # noqa: F401
 
 
 class PythonCodeGenerator(CodeGeneratorBase):
-    def get_module(self, name=None, write_file=True):
+    def get_module(self, name=None):
         if name is None:
             name = "<generated code>"
 
         result_dict = {}
         source_text = self.get()
 
-        if write_file:
-            with open(name, "w") as f:
-                f.write(source_text)
-                f.write("\n")
+        # {{{ Handle Python's linecache
+
+        import linecache
+
+        if name in linecache.cache:
+            from warnings import warn
+            warn(f"Overwriting existing generated code in linecache: '{name}'.",
+                 stacklevel=2)
+        linecache.cache[name] = (None, None, source_text.split("\n"), None)
+
+        # }}}
 
         exec(compile(
             source_text.rstrip()+"\n", name, "exec"),
@@ -71,7 +78,9 @@ class PythonFunctionGenerator(PythonCodeGenerator):
 
     @property
     def _gen_filename(self):
-        return f"generated_code_for_{self.name}"
+        # Note that the '<ipython-input-' prefix is for compatibility with
+        # line_profiler: https://github.com/pyutils/line_profiler/blob/1630e7c9a295ace2feb1d2b188e68f4d2833fb20/line_profiler/line_profiler.py#L194-L210
+        return f"<ipython-input- generated code for '{self.name}'>"
 
     def get_function(self):
         return self.get_module(name=self._gen_filename)[self.name]
