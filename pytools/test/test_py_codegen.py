@@ -67,6 +67,23 @@ def test_function_decorators(capfd):
     assert out == ""  # second print is not executed due to lru_cache
 
 
+def test_linecache():
+    cg = codegen.PythonFunctionGenerator("f", args=())
+    cg("return 42")
+
+    cg.get_function()()
+
+    import linecache
+
+    assert linecache.getlines(cg._gen_filename) == [
+        "def f():\n",
+        "    return 42\n",
+    ]
+
+    assert linecache.getline(cg._gen_filename, 1) == "def f():\n"
+    assert linecache.getline(cg._gen_filename, 2) == "    return 42\n"
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])

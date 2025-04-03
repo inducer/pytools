@@ -24,8 +24,14 @@ THE SOFTWARE.
 """
 
 import marshal
+from functools import cached_property
 from importlib.util import MAGIC_NUMBER as BYTECODE_VERSION
 from types import FunctionType, ModuleType
+from typing import TYPE_CHECKING, Any
+
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
 
 from pytools.codegen import (  # noqa: F401
     CodeGenerator as CodeGeneratorBase,
@@ -35,42 +41,68 @@ from pytools.codegen import (  # noqa: F401
 
 
 class PythonCodeGenerator(CodeGeneratorBase):
-    def get_module(self, name=None):
+    def get_module(self, name: str | None = None,
+                   _from_get_function: bool = False) -> dict[str, Any]:
         if name is None:
             name = "<generated code>"
 
-        result_dict = {}
+        result_dict: dict[str, Any] = {}
         source_text = self.get()
+
+        # {{{ Handle Python's linecache
+
+        import linecache
+
+        if name in linecache.cache:
+            from warnings import warn
+            warn(f"Overwriting existing generated code in linecache: '{name}'.",
+                    stacklevel=3 if _from_get_function else 2)
+
+        linecache.cache[name] = (None, None,  # type: ignore[assignment]
+                                 [e+"\n" for e in source_text.split("\n")], None)
+
+        # }}}
+
         exec(compile(
             source_text.rstrip()+"\n", name, "exec"),
                 result_dict)
+
+        # For pudb:
         result_dict["_MODULE_SOURCE_CODE"] = source_text
+
         return result_dict
 
-    def get_picklable_module(self, name=None):
+    def get_picklable_module(self, name: str | None = None) -> PicklableModule:
         return PicklableModule(self.get_module(name=name))
 
 
 class PythonFunctionGenerator(PythonCodeGenerator):
-    def __init__(self, name, args, decorators=None):
+    def __init__(self, name: str, args: Iterable[str],
+                 decorators: Iterable[str] = ()) -> None:
         PythonCodeGenerator.__init__(self)
         self.name = name
 
-        if decorators:
-            for decorator in decorators:
-                self(decorator)
+        for decorator in decorators:
+            self(decorator)
 
         self("def {}({}):".format(name, ", ".join(args)))
         self.indent()
 
-    @property
-    def _gen_filename(self):
-        return f"<generated code for '{self.name}'>"
+    @cached_property
+    def _gen_filename(self) -> str:
+        import sys
+        if "line_profiler" in sys.modules or "line_profiler" in self.get():
+            # The '<ipython-input-' prefix is for compatibility with
+            # line_profiler: https://github.com/pyutils/line_profiler/blob/1630e7c9a295ace2feb1d2b188e68f4d2833fb20/line_profiler/line_profiler.py#L194-L210
+            return f"<ipython-input- generated: '{self.name}'>"
 
-    def get_function(self):
-        return self.get_module(name=self._gen_filename)[self.name]
+        return f"<generated: '{self.name}'>"
 
-    def get_picklable_function(self):
+    def get_function(self) -> Callable[..., Any]:
+        return self.get_module(name=self._gen_filename,
+                               _from_get_function=True)[self.name]
+
+    def get_picklable_function(self) -> PicklableFunction:
         module = self.get_picklable_module(name=self._gen_filename)
         return PicklableFunction(module, self.name)
 
