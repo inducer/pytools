@@ -24,6 +24,7 @@ THE SOFTWARE.
 """
 
 import marshal
+from functools import cached_property
 from importlib.util import MAGIC_NUMBER as BYTECODE_VERSION
 from types import FunctionType, ModuleType
 from typing import TYPE_CHECKING
@@ -86,10 +87,10 @@ class PythonFunctionGenerator(PythonCodeGenerator):
         self("def {}({}):".format(name, ", ".join(args)))
         self.indent()
 
-    @property
-    def _gen_filename(self):
+    @cached_property
+    def _gen_filename(self) -> str:
         import sys
-        if "line_profiler" in sys.modules:
+        if "line_profiler" in sys.modules or "line_profiler" in self.get():
             # The '<ipython-input-' prefix is for compatibility with
             # line_profiler: https://github.com/pyutils/line_profiler/blob/1630e7c9a295ace2feb1d2b188e68f4d2833fb20/line_profiler/line_profiler.py#L194-L210
             return f"<ipython-input- generated: '{self.name}'>"
