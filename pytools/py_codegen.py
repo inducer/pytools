@@ -56,14 +56,18 @@ class PythonCodeGenerator(CodeGeneratorBase):
             warn(f"Overwriting existing generated code in linecache: '{name}'.",
                     stacklevel=3 if _from_get_function else 2)
 
-        linecache.cache[name] = (None, None, source_text.split("\n"), None)
+        linecache.cache[name] = (None, None,
+                                 [e+"\n" for e in source_text.split("\n")], None)
 
         # }}}
 
         exec(compile(
             source_text.rstrip()+"\n", name, "exec"),
                 result_dict)
+
+        # For pudb:
         result_dict["_MODULE_SOURCE_CODE"] = source_text
+
         return result_dict
 
     def get_picklable_module(self, name=None):
