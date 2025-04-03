@@ -27,11 +27,11 @@ import marshal
 from functools import cached_property
 from importlib.util import MAGIC_NUMBER as BYTECODE_VERSION
 from types import FunctionType, ModuleType
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Callable, Iterable
 
 from pytools.codegen import (  # noqa: F401
     CodeGenerator as CodeGeneratorBase,
@@ -41,11 +41,12 @@ from pytools.codegen import (  # noqa: F401
 
 
 class PythonCodeGenerator(CodeGeneratorBase):
-    def get_module(self, name=None, _from_get_function=False):
+    def get_module(self, name: str | None = None,
+                   _from_get_function: bool = False) -> dict[str, Any]:
         if name is None:
             name = "<generated code>"
 
-        result_dict = {}
+        result_dict: dict[str, Any] = {}
         source_text = self.get()
 
         # {{{ Handle Python's linecache
@@ -57,7 +58,7 @@ class PythonCodeGenerator(CodeGeneratorBase):
             warn(f"Overwriting existing generated code in linecache: '{name}'.",
                     stacklevel=3 if _from_get_function else 2)
 
-        linecache.cache[name] = (None, None,
+        linecache.cache[name] = (None, None,  # type: ignore[assignment]
                                  [e+"\n" for e in source_text.split("\n")], None)
 
         # }}}
@@ -71,7 +72,7 @@ class PythonCodeGenerator(CodeGeneratorBase):
 
         return result_dict
 
-    def get_picklable_module(self, name=None):
+    def get_picklable_module(self, name: str | None = None) -> PicklableModule:
         return PicklableModule(self.get_module(name=name))
 
 
@@ -97,11 +98,11 @@ class PythonFunctionGenerator(PythonCodeGenerator):
 
         return f"<generated: '{self.name}'>"
 
-    def get_function(self):
+    def get_function(self) -> Callable[..., Any]:
         return self.get_module(name=self._gen_filename,
                                _from_get_function=True)[self.name]
 
-    def get_picklable_function(self):
+    def get_picklable_function(self) -> PicklableFunction:
         module = self.get_picklable_module(name=self._gen_filename)
         return PicklableFunction(module, self.name)
 
