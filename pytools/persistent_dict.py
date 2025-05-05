@@ -41,20 +41,12 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, Protocol, TypeVar, cast
 from warnings import warn
 
+from siphash24 import siphash13
+
 
 class RecommendedHashNotFoundWarning(UserWarning):
     pass
 
-
-try:
-    from siphash24 import siphash13 as _default_hash
-except ImportError:
-    warn("Unable to import recommended hash 'siphash24.siphash13', "
-         "falling back to 'hashlib.sha256'. "
-         "Run 'python3 -m pip install siphash24' to install "
-         "the recommended hash.",
-         RecommendedHashNotFoundWarning, stacklevel=1)
-    from hashlib import sha256 as _default_hash
 
 if TYPE_CHECKING:
     from _typeshed import ReadableBuffer
@@ -171,7 +163,7 @@ class KeyBuilder:
 
     # this exists so that we can (conceivably) switch algorithms at some point
     # down the road
-    new_hash: Callable[..., Hash] = _default_hash
+    new_hash: Callable[..., Hash] = siphash13
 
     def rec(self, key_hash: Hash, key: Any) -> Hash:
         """
