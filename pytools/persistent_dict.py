@@ -38,14 +38,12 @@ import sys
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import fields as dc_fields, is_dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any, TypeVar, cast
+from typing import Any, TypeVar, cast
 from warnings import warn
 
 from siphash24 import siphash13
 
-
-if TYPE_CHECKING:
-    from pytools import Hash
+from pytools import Hash  # noqa: TC001 # Some places are importing it from here.
 
 
 class RecommendedHashNotFoundWarning(UserWarning):
