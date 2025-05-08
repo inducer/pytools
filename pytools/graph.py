@@ -91,7 +91,7 @@ from typing import (
 
 NodeT = TypeVar("NodeT", bound=Hashable)
 
-GraphT: TypeAlias[NodeT] = Mapping[NodeT, Collection[NodeT]]
+GraphT: TypeAlias = Mapping[NodeT, Collection[NodeT]]
 
 
 # {{{ reverse_graph
