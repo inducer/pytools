@@ -106,6 +106,13 @@ required-imports = ["from __future__ import annotations"]
 extend-ignore-names = ["update_for_*"]
 
 
+[tool.basedpyright]
+reportImplicitStringConcatenation = "none"
+reportUnnecessaryIsInstance = "none"
+reportUnusedCallResult = "none"
+reportExplicitAny = "none"
+
+
 [tool.mypy]
 python_version = "3.10"
 ignore_missing_imports = true

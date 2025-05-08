@@ -72,8 +72,7 @@ class MyStruct:
 
 
 def test_persistent_dict_storage_and_lookup() -> None:
-    try:
-        tmpdir = tempfile.mkdtemp()
+    with tempfile.TemporaryDirectory() as tmpdir:
         pdict: PersistentDict[Any, int] = PersistentDict("pytools-test",
                                                          container_dir=tmpdir,
                                                          safe_sync=False)
@@ -167,13 +166,9 @@ def test_persistent_dict_storage_and_lookup() -> None:
         with pytest.raises(NoSuchEntryError):
             pdict.fetch(3000)
 
-    finally:
-        shutil.rmtree(tmpdir)
-
 
 def test_persistent_dict_deletion() -> None:
-    try:
-        tmpdir = tempfile.mkdtemp()
+    with tempfile.TemporaryDirectory() as tmpdir:
         pdict: PersistentDict[int, int] = PersistentDict("pytools-test",
                                                          container_dir=tmpdir,
                                                          safe_sync=False)
@@ -190,12 +185,9 @@ def test_persistent_dict_deletion() -> None:
         with pytest.raises(NoSuchEntryError):
             del pdict[1]
 
-    finally:
-        shutil.rmtree(tmpdir)
 
 def test_persistent_dict_synchronization() -> None:
-    try:
-        tmpdir = tempfile.mkdtemp()
+    with tempfile.TemporaryDirectory() as tmpdir:
         pdict1: PersistentDict[int, int] = PersistentDict("pytools-test",
                                                           container_dir=tmpdir,
                                                           safe_sync=False)
@@ -216,12 +208,9 @@ def test_persistent_dict_synchronization() -> None:
         with pytest.raises(NoSuchEntryError):
             pdict2.fetch(0)
 
-    finally:
-        shutil.rmtree(tmpdir)
 
 def test_persistent_dict_cache_collisions() -> None:
-    try:
-        tmpdir = tempfile.mkdtemp()
+    with tempfile.TemporaryDirectory() as tmpdir:
         pdict: PersistentDict[PDictTestingKeyOrValue, int] = \
             PersistentDict("pytools-test", container_dir=tmpdir, safe_sync=False)
 
@@ -245,12 +234,9 @@ def test_persistent_dict_cache_collisions() -> None:
         pdict.store_if_not_present(key2, 2)
         assert pdict[key1] == 1
 
-    finally:
-        shutil.rmtree(tmpdir)
 
 def test_persistent_dict_clear() -> None:
-    try:
-        tmpdir = tempfile.mkdtemp()
+    with tempfile.TemporaryDirectory() as tmpdir:
         pdict: PersistentDict[int, int] = PersistentDict("pytools-test",
                                                          container_dir=tmpdir,
                                                          safe_sync=False)
@@ -262,13 +248,10 @@ def test_persistent_dict_clear() -> None:
         with pytest.raises(NoSuchEntryError):
             pdict.fetch(0)
 
-    finally:
-        shutil.rmtree(tmpdir)
 
 @pytest.mark.parametrize("in_mem_cache_size", (0, 256))
 def test_write_once_persistent_dict_storage_and_lookup(in_mem_cache_size) -> None:
-    try:
-        tmpdir = tempfile.mkdtemp()
+    with tempfile.TemporaryDirectory() as tmpdir:
         pdict: WriteOncePersistentDict[int, int] = WriteOncePersistentDict(
                 "pytools-test", container_dir=tmpdir,
                 in_mem_cache_size=in_mem_cache_size, safe_sync=False)
@@ -293,12 +276,9 @@ def test_write_once_persistent_dict_storage_and_lookup(in_mem_cache_size) -> Non
         pdict.store_if_not_present(1, 1)
         assert pdict[1] == 1
 
-    finally:
-        shutil.rmtree(tmpdir)
 
 def test_write_once_persistent_dict_lru_policy() -> None:
-    try:
-        tmpdir = tempfile.mkdtemp()
+    with tempfile.TemporaryDirectory() as tmpdir:
         pdict: WriteOncePersistentDict[Any, Any] = WriteOncePersistentDict(
                 "pytools-test", container_dir=tmpdir, in_mem_cache_size=3,
                 safe_sync=False)
@@ -333,12 +313,9 @@ def test_write_once_persistent_dict_lru_policy() -> None:
         val1 = pdict.fetch(1)
         assert pdict.fetch(1) is val1
 
-    finally:
-        shutil.rmtree(tmpdir)
 
 def test_write_once_persistent_dict_synchronization() -> None:
-    try:
-        tmpdir = tempfile.mkdtemp()
+    with tempfile.TemporaryDirectory() as tmpdir:
         pdict1: WriteOncePersistentDict[int, int] = \
             WriteOncePersistentDict("pytools-test", container_dir=tmpdir,
                                     safe_sync=False)
@@ -354,12 +331,9 @@ def test_write_once_persistent_dict_synchronization() -> None:
         with pytest.raises(ReadOnlyEntryError):
             pdict2[1] = 1
 
-    finally:
-        shutil.rmtree(tmpdir)
 
 def test_write_once_persistent_dict_cache_collisions() -> None:
-    try:
-        tmpdir = tempfile.mkdtemp()
+    with tempfile.TemporaryDirectory() as tmpdir:
         pdict: WriteOncePersistentDict[Any, int] = \
             WriteOncePersistentDict("pytools-test", container_dir=tmpdir,
                                     safe_sync=False)
@@ -380,12 +354,9 @@ def test_write_once_persistent_dict_cache_collisions() -> None:
         pdict.store_if_not_present(key2, 2)
         assert pdict[key1] == 1
 
-    finally:
-        shutil.rmtree(tmpdir)
 
 def test_write_once_persistent_dict_clear() -> None:
-    try:
-        tmpdir = tempfile.mkdtemp()
+    with tempfile.TemporaryDirectory() as tmpdir:
         pdict: WriteOncePersistentDict[int, int] = \
             WriteOncePersistentDict("pytools-test", container_dir=tmpdir,
                                     safe_sync=False)
@@ -396,8 +367,6 @@ def test_write_once_persistent_dict_clear() -> None:
 
         with pytest.raises(NoSuchEntryError):
             pdict.fetch(0)
-    finally:
-        shutil.rmtree(tmpdir)
 
 
 def test_dtype_hashing() -> None:
@@ -766,29 +735,26 @@ def test_xdg_cache_home() -> None:
 def test_speed():
     import time
 
-    tmpdir = tempfile.mkdtemp()
-    pdict = WriteOncePersistentDict("pytools-test", container_dir=tmpdir,
-                                    safe_sync=False)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pdict = WriteOncePersistentDict("pytools-test", container_dir=tmpdir,
+                                        safe_sync=False)
 
-    start = time.time()
-    for i in range(10000):
-        pdict[i] = i
-    end = time.time()
-    print("persistent dict write time: ", end-start)
-
-    start = time.time()
-    for _ in range(5):
+        start = time.time()
         for i in range(10000):
-            pdict[i]
-    end = time.time()
-    print("persistent dict read time: ", end-start)
+            pdict[i] = i
+        end = time.time()
+        print("persistent dict write time: ", end-start)
 
-    shutil.rmtree(tmpdir)
+        start = time.time()
+        for _ in range(5):
+            for i in range(10000):
+                pdict[i]
+        end = time.time()
+        print("persistent dict read time: ", end-start)
 
 
 def test_size():
-    try:
-        tmpdir = tempfile.mkdtemp()
+    with tempfile.TemporaryDirectory() as tmpdir:
         pdict = PersistentDict("pytools-test", container_dir=tmpdir, safe_sync=False)
 
         for i in range(10000):
@@ -797,14 +763,12 @@ def test_size():
         size = pdict.nbytes()
         print("sqlite size: ", size/1024/1024, " MByte")
         assert 1024*1024//2 < size < 2*1024*1024
-    finally:
-        shutil.rmtree(tmpdir)
 
 
 def test_len():
-    try:
-        tmpdir = tempfile.mkdtemp()
-        pdict = PersistentDict("pytools-test", container_dir=tmpdir, safe_sync=False)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pdict: PersistentDict[int, int] = PersistentDict(
+                        "pytools-test", container_dir=tmpdir, safe_sync=False)
 
         assert len(pdict) == 0
 
@@ -816,24 +780,19 @@ def test_len():
         pdict.clear()
 
         assert len(pdict) == 0
-    finally:
-        shutil.rmtree(tmpdir)
 
 
 def test_repr():
-    try:
-        tmpdir = tempfile.mkdtemp()
+    with tempfile.TemporaryDirectory() as tmpdir:
         pdict = PersistentDict("pytools-test", container_dir=tmpdir, safe_sync=False)
 
         assert repr(pdict)[:15] == "PersistentDict("
-    finally:
-        shutil.rmtree(tmpdir)
 
 
 def test_keys_values_items():
-    try:
-        tmpdir = tempfile.mkdtemp()
-        pdict = PersistentDict("pytools-test", container_dir=tmpdir, safe_sync=False)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pdict: PersistentDict[int, int] = PersistentDict(
+            "pytools-test", container_dir=tmpdir, safe_sync=False)
 
         for i in range(10000):
             pdict[i] = i
@@ -849,8 +808,6 @@ def test_keys_values_items():
                 == list(pdict)
                 == [k for k in pdict])  # noqa: C416
 
-    finally:
-        shutil.rmtree(tmpdir)
 
 def global_fun():
     pass
@@ -1042,8 +999,7 @@ def test_concurrency_threads() -> None:
 def test_nan_keys() -> None:
     # test for https://github.com/inducer/pytools/issues/287
 
-    try:
-        tmpdir = tempfile.mkdtemp()
+    with tempfile.TemporaryDirectory() as tmpdir:
         keyb = KeyBuilder()
         pdict: PersistentDict[float, int] = PersistentDict("pytools-test",
                                                         container_dir=tmpdir,
@@ -1069,8 +1025,6 @@ def test_nan_keys() -> None:
             with (pytest.warns(CollisionWarning),
                   pytest.raises(NoSuchEntryCollisionError)):
                 pdict[nan_value]
-    finally:
-        shutil.rmtree(tmpdir)
 
 
 if __name__ == "__main__":

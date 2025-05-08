@@ -74,6 +74,23 @@ jobs:
                 curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-mypy.sh
                 . ./prepare-and-run-mypy.sh python3 mypy
 
+    basedpyright:
+        runs-on: ubuntu-latest
+        steps:
+        -   uses: actions/checkout@v4
+        -   uses: actions/setup-python@v5
+            with:
+                python-version: '3.x'
+        -   name: "Main Script"
+            run: |
+                curl -L -O https://tiker.net/ci-support-v0
+                . ./ci-support-v0
+                build_py_project_in_venv
+                sudo apt install libopenmpi-dev
+                pip install numpy attrs orderedsets pytest mpi4py matplotlib
+                pip install basedpyright
+                basedpyright
+
     pytest:
         name: Pytest on Py${{ matrix.python-version }} ${{ matrix.os }}
         runs-on: ${{ matrix.os }}
