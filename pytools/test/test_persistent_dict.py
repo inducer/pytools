@@ -193,7 +193,6 @@ def test_persistent_dict_deletion() -> None:
     finally:
         shutil.rmtree(tmpdir)
 
-
 def test_persistent_dict_synchronization() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
@@ -219,7 +218,6 @@ def test_persistent_dict_synchronization() -> None:
 
     finally:
         shutil.rmtree(tmpdir)
-
 
 def test_persistent_dict_cache_collisions() -> None:
     try:
@@ -250,7 +248,6 @@ def test_persistent_dict_cache_collisions() -> None:
     finally:
         shutil.rmtree(tmpdir)
 
-
 def test_persistent_dict_clear() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
@@ -267,7 +264,6 @@ def test_persistent_dict_clear() -> None:
 
     finally:
         shutil.rmtree(tmpdir)
-
 
 @pytest.mark.parametrize("in_mem_cache_size", (0, 256))
 def test_write_once_persistent_dict_storage_and_lookup(in_mem_cache_size) -> None:
@@ -299,7 +295,6 @@ def test_write_once_persistent_dict_storage_and_lookup(in_mem_cache_size) -> Non
 
     finally:
         shutil.rmtree(tmpdir)
-
 
 def test_write_once_persistent_dict_lru_policy() -> None:
     try:
@@ -341,7 +336,6 @@ def test_write_once_persistent_dict_lru_policy() -> None:
     finally:
         shutil.rmtree(tmpdir)
 
-
 def test_write_once_persistent_dict_synchronization() -> None:
     try:
         tmpdir = tempfile.mkdtemp()
@@ -362,7 +356,6 @@ def test_write_once_persistent_dict_synchronization() -> None:
 
     finally:
         shutil.rmtree(tmpdir)
-
 
 def test_write_once_persistent_dict_cache_collisions() -> None:
     try:
@@ -389,7 +382,6 @@ def test_write_once_persistent_dict_cache_collisions() -> None:
 
     finally:
         shutil.rmtree(tmpdir)
-
 
 def test_write_once_persistent_dict_clear() -> None:
     try:
@@ -859,7 +851,6 @@ def test_keys_values_items():
 
     finally:
         shutil.rmtree(tmpdir)
-
 
 def global_fun():
     pass

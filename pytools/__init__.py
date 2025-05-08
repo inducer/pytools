@@ -45,6 +45,7 @@ from collections.abc import (
 from functools import reduce, wraps
 from sys import intern
 from typing import (
+    TYPE_CHECKING,
     Any,
     ClassVar,
     Concatenate,
@@ -52,11 +53,17 @@ from typing import (
     ParamSpec,
     Protocol,
     TypeVar,
+    cast,
 )
 
 from typing_extensions import Self, dataclass_transform
 
 from pytools.version import VERSION_TEXT
+
+
+if TYPE_CHECKING:
+    from _typeshed import ReadableBuffer
+    from typing_extensions import Self
 
 
 __version__ = VERSION_TEXT
@@ -188,6 +195,8 @@ Backports of newer Python functionality
 Hashing
 -------
 
+.. autoclass:: Hash
+
 .. autofunction:: unordered_hash
 
 Sampling
@@ -233,6 +242,8 @@ Type Variables Used
 .. class:: P
 
     Generic unbound invariant :class:`typing.ParamSpec`.
+
+.. class:: _HashT
 """
 
 # {{{ type variables
@@ -342,7 +353,7 @@ def module_getattr_for_deprecations(
 
 # {{{ math
 
-def delta(x, y):
+def delta(x: int, y: int) -> int:
     if x == y:
         return 1
     return 0
@@ -1481,10 +1492,10 @@ class _ConcatenableSequence(Generic[T_co], Protocol):
     .. automethod:: __add__
     .. automethod:: __len__
     """
-    def __getitem__(self, slice) -> Self:
+    def __getitem__(self, slice: slice, /) -> Self:
         ...
 
-    def __add__(self, other: Self) -> Self:
+    def __add__(self, value: Self, /) -> Self:
         ...
 
     def __len__(self) -> int:
@@ -2724,9 +2735,41 @@ def resolve_name(name):
 
 # {{{ unordered_hash
 
-def unordered_hash(hash_instance: Any,
-                   iterable: Iterable[Any],
-                   hash_constructor: Callable[[], Any] | None = None) -> Any:
+class Hash(Protocol):
+    """A protocol for the hashes from :mod:`hashlib`.
+
+    .. automethod:: update
+    .. automethod:: digest
+    .. automethod:: hexdigest
+    .. automethod:: copy
+    """
+    def update(self, obj: ReadableBuffer, /) -> None:
+        ...
+
+    def digest(self) -> bytes:
+        ...
+
+    def hexdigest(self) -> str:
+        ...
+
+    def copy(self) -> Self:
+        ...
+
+    @property
+    def digest_size(self) -> int:
+        ...
+
+    @property
+    def name(self) -> str:
+        ...
+
+
+_HashT = TypeVar("_HashT", bound=Hash)
+
+
+def unordered_hash(hash_instance: _HashT,
+                   iterable: Iterable[ReadableBuffer],
+                   hash_constructor: Callable[[], _HashT] | None = None) -> _HashT:
     """Using a hash algorithm given by the parameter-less constructor
     *hash_constructor*, return a hash object whose internal state
     depends on the entries of *iterable*, but not their order. If *hash*
@@ -2750,7 +2793,8 @@ def unordered_hash(hash_instance: Any,
     if hash_constructor is None:
         import hashlib
         from functools import partial
-        hash_constructor = partial(hashlib.new, hash_instance.name)
+        hash_constructor = cast(
+                "Callable[[], _HashT]", partial(hashlib.new, hash_instance.name))
 
     assert hash_constructor is not None
 

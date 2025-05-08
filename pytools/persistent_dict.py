@@ -38,19 +38,19 @@ import sys
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import fields as dc_fields, is_dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Protocol, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 from warnings import warn
 
 from siphash24 import siphash13
 
 
+if TYPE_CHECKING:
+    from pytools import Hash
+
+
 class RecommendedHashNotFoundWarning(UserWarning):
     pass
 
-
-if TYPE_CHECKING:
-    from _typeshed import ReadableBuffer
-    from typing_extensions import Self
 
 try:
     import attrs
@@ -85,7 +85,6 @@ This module also provides a disk-backed dictionary that uses persistent hashing.
 
 .. autoexception:: CollisionWarning
 
-.. autoclass:: Hash
 .. autoclass:: KeyBuilder
 .. autoclass:: PersistentDict
 .. autoclass:: WriteOncePersistentDict
@@ -105,27 +104,6 @@ Internal stuff that is only here because the documentation tool wants it
 
 
 # {{{ key generation
-
-class Hash(Protocol):
-    """A protocol for the hashes from :mod:`hashlib`.
-
-    .. automethod:: update
-    .. automethod:: digest
-    .. automethod:: hexdigest
-    .. automethod:: copy
-    """
-    def update(self, data: ReadableBuffer) -> None:
-        ...
-
-    def digest(self) -> bytes:
-        ...
-
-    def hexdigest(self) -> str:
-        ...
-
-    def copy(self) -> Self:
-        ...
-
 
 class KeyBuilder:
     """A (stateless) object that computes persistent hashes of objects fed to it.

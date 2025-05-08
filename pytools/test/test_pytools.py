@@ -27,11 +27,16 @@ THE SOFTWARE.
 import logging
 import sys
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import pytest
 
 from pytools import Record
 from pytools.tag import tag_dataclass
+
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 logger = logging.getLogger(__name__)
@@ -671,8 +676,8 @@ def test_sphere_sampling(sampling, visualize=False):
     triangles = mtri.Triangulation(theta, phi)
 
     ax.plot_trisurf(points[0], points[1], points[2], triangles=triangles.triangles)
-    ax.set_xlim([-radius, radius])
-    ax.set_ylim([-radius, radius])
+    ax.set_xlim((-radius, radius))
+    ax.set_ylim((-radius, radius))
     ax.set_zlim([-radius, radius])
     ax.margins(0.05, 0.05, 0.05)
 
@@ -878,7 +883,8 @@ def test_permutations():
 
     perm = list(generate_permutations([1, 2, 3, 4]))
     assert len(perm)  == factorial(4)
-    perm = list(generate_unique_permutations((1, 3, 3, 4)))
+    seq: Sequence[int] = (1, 3, 3, 4)
+    perm = list(generate_unique_permutations(seq))
     assert len(perm)  == 12
 
     perms = list(generate_permutations("1234"))
