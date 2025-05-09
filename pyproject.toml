@@ -109,6 +109,10 @@ reportUnnecessaryIsInstance = "none"
 reportUnusedCallResult = "none"
 reportExplicitAny = "none"
 
+# This reports even cycles that are qualified by 'if TYPE_CHECKING'. Not what
+# we care about at this moment.
+# https://github.com/microsoft/pyright/issues/746
+reportImportCycles = "none"
 
 [tool.mypy]
 python_version = "3.10"
