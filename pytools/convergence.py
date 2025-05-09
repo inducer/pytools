@@ -10,6 +10,7 @@ from __future__ import annotations
 import numbers
 
 import numpy as np
+from typing_extensions import override
 
 
 # {{{ eoc estimation --------------------------------------------------------------
@@ -141,6 +142,7 @@ class EOCRecorder:
             return tbl.csv()
         raise ValueError(f"unknown table type: {table_type}")
 
+    @override
     def __str__(self):
         return self.pretty_print()
 
@@ -211,6 +213,7 @@ class PConvergenceVerifier:
         self.orders.append(order)
         self.errors.append(error)
 
+    @override
     def __str__(self):
         from pytools import Table
         tbl = Table()

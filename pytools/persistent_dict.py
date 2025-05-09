@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing_extensions import override
+
 
 """Generic persistent, concurrent dictionary-like facility."""
 
@@ -573,6 +575,7 @@ class _PersistentDictBase(Mapping[K, V]):
         """Create the container directory to store the dictionary."""
         os.makedirs(self.container_dir, exist_ok=True)
 
+    @override
     def __getitem__(self, key: K) -> V:
         """Return the value associated with *key* in the dictionary."""
         return self.fetch(key)
@@ -581,26 +584,31 @@ class _PersistentDictBase(Mapping[K, V]):
         """Store (*key*, *value*) in the dictionary."""
         self.store(key, value)
 
+    @override
     def __len__(self) -> int:
         """Return the number of entries in the dictionary."""
         result, = next(self._exec_sql("SELECT COUNT(*) FROM dict"))
         assert isinstance(result, int)
         return result
 
+    @override
     def __iter__(self) -> Iterator[K]:
         """Return an iterator over the keys in the dictionary."""
         return self.keys()
 
+    @override
     def keys(self) -> Iterator[K]:  # type: ignore[override]
         """Return an iterator over the keys in the dictionary."""
         for row in self._exec_sql("SELECT key_value FROM dict ORDER BY rowid"):
             yield pickle.loads(row[0])[0]
 
+    @override
     def values(self) -> Iterator[V]:  # type: ignore[override]
         """Return an iterator over the values in the dictionary."""
         for row in self._exec_sql("SELECT key_value FROM dict ORDER BY rowid"):
             yield pickle.loads(row[0])[1]
 
+    @override
     def items(self) -> Iterator[tuple[K, V]]:  # type: ignore[override]
         """Return an iterator over the items in the dictionary."""
         for row in self._exec_sql("SELECT key_value FROM dict ORDER BY rowid"):
@@ -614,6 +622,7 @@ class _PersistentDictBase(Mapping[K, V]):
 
         return result
 
+    @override
     def __repr__(self) -> str:
         """Return a string representation of the dictionary."""
         return f"{type(self).__name__}({self.filename}, nitems={len(self)})"
@@ -690,6 +699,7 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
         """
         self._fetch.cache_clear()
 
+    @override
     def store(self, key: K, value: V, _skip_if_present: bool = False) -> None:
         keyhash = self.key_builder(key)
         v = pickle.dumps((key, value))
@@ -730,6 +740,7 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
         key, value = pickle.loads(row[0])
         return key, value
 
+    @override
     def fetch(self, key: K) -> V:
         keyhash = self.key_builder(key)
 
@@ -741,6 +752,7 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
             self._collision_check(key, stored_key)
             return value
 
+    @override
     def clear(self) -> None:
         super().clear()
         self._fetch.cache_clear()
@@ -796,6 +808,7 @@ class PersistentDict(_PersistentDictBase[K, V]):
                          enable_wal=enable_wal,
                          safe_sync=safe_sync)
 
+    @override
     def store(self, key: K, value: V, _skip_if_present: bool = False) -> None:
         keyhash = self.key_builder(key)
         v = pickle.dumps((key, value))
@@ -805,6 +818,7 @@ class PersistentDict(_PersistentDictBase[K, V]):
         self._exec_sql(f"INSERT OR {mode} INTO dict VALUES (?, ?)",
                               (keyhash, v))
 
+    @override
     def fetch(self, key: K) -> V:
         keyhash = self.key_builder(key)
 

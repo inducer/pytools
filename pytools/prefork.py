@@ -26,6 +26,8 @@ from abc import ABC, abstractmethod
 from subprocess import Popen
 from typing import TYPE_CHECKING, Any
 
+from typing_extensions import override
+
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -65,6 +67,7 @@ class DirectForker(Forker):
         self.apids: dict[int, Popen[bytes]] = {}
         self.count: int = 0
 
+    @override
     def call(self, cmdline: Sequence[str], cwd: str | None = None) -> int:
         from subprocess import call as spcall
 
@@ -74,6 +77,7 @@ class DirectForker(Forker):
             raise ExecError(
                     "error invoking '{}': {}".format(" ".join(cmdline), e)) from e
 
+    @override
     def call_async(self, cmdline: Sequence[str], cwd: str | None = None) -> int:
         try:
             self.count += 1
@@ -86,6 +90,7 @@ class DirectForker(Forker):
             raise ExecError(
                 "error invoking '{}': {}".format(" ".join(cmdline), e)) from e
 
+    @override
     def call_capture_output(self,
                             cmdline: Sequence[str],
                             cwd: str | None = None,
@@ -108,12 +113,14 @@ class DirectForker(Forker):
             raise ExecError(
                     "error invoking '{}': {}".format(" ".join(cmdline), e)) from e
 
+    @override
     def wait(self, aid: int) -> int:
         proc = self.apids.pop(aid)
         retc = proc.wait()
 
         return retc
 
+    @override
     def waitall(self) -> dict[int, int]:
         rets = {}
 
@@ -225,18 +232,21 @@ class IndirectForker(Forker):
         from os import waitpid
         waitpid(self.server_pid, 0)
 
+    @override
     def call(self, cmdline: Sequence[str], cwd: str | None = None) -> int:
         result = self._remote_invoke("call", cmdline, cwd)
 
         assert isinstance(result, int)
         return result
 
+    @override
     def call_async(self, cmdline: Sequence[str], cwd: str | None = None) -> int:
         result = self._remote_invoke("call_async", cmdline, cwd)
 
         assert isinstance(result, int)
         return result
 
+    @override
     def call_capture_output(self,
                             cmdline: Sequence[str],
                             cwd: str | None = None,
@@ -245,12 +255,14 @@ class IndirectForker(Forker):
         return self._remote_invoke("call_capture_output", cmdline, cwd,  # type: ignore[return-value]
                                    error_on_nonzero)
 
+    @override
     def wait(self, aid: int) -> int:
         result = self._remote_invoke("wait", aid)
 
         assert isinstance(result, int)
         return result
 
+    @override
     def waitall(self) -> dict[int, int]:
         result = self._remote_invoke("waitall")
 

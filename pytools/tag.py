@@ -30,7 +30,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, TypeVar
 from warnings import warn
 
-from typing_extensions import Self, dataclass_transform
+from typing_extensions import Self, dataclass_transform, override
 
 from pytools import memoize, memoize_method
 
@@ -101,9 +101,11 @@ class DottedName:
                              "start with double underscores")
         return cls(name_parts)
 
+    @override
     def __repr__(self) -> str:
         return self.__class__.__name__ + repr(self.name_parts)
 
+    @override
     def __eq__(self, other: object) -> bool:
         if isinstance(other, DottedName):
             return self.name_parts == other.name_parts
@@ -323,11 +325,13 @@ class Taggable:
                          for tag in self.tags
                          if not isinstance(tag, tag_t)})
 
+    @override
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Taggable):
             return self.tags == other.tags
         return super().__eq__(other)
 
+    @override
     def __hash__(self) -> int:
         return hash(self.tags)
 

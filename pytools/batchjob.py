@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing_extensions import override
+
 
 def _cp(src, dest):
     from pytools import assert_not_a_file
@@ -134,6 +136,7 @@ class ConstructorPlaceholder:
     def kwarg(self, name):
         return self.kwargs[name]
 
+    @override
     def __str__(self):
         return "{}({})".format(self.classname,
                 ",".join(
