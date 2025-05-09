@@ -1,19 +1,21 @@
+"""
+An in-memory relational database table
+======================================
+
+.. autoclass:: DataTable
+"""
+
 from __future__ import annotations
 
 from typing import IO, TYPE_CHECKING, Any
+
+from typing_extensions import override
 
 from pytools import Record
 
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Sequence
-
-__doc__ = """
-An in-memory relational database table
-======================================
-
-.. autoclass:: DataTable
-"""
 
 
 class Row(Record):
@@ -58,6 +60,7 @@ class DataTable:
     def __iter__(self) -> Iterator[list[Any]]:
         return self.data.__iter__()
 
+    @override
     def __str__(self) -> str:
         """Return a pretty-printed version of the table."""
 

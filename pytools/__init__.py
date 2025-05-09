@@ -57,7 +57,7 @@ from typing import (
     cast,
 )
 
-from typing_extensions import Self, dataclass_transform
+from typing_extensions import Self, dataclass_transform, override
 
 from pytools.version import VERSION_TEXT
 
@@ -441,6 +441,7 @@ class RecordWithoutPickling:
     def copy(self, **kwargs):
         return self.__class__(**self.get_copy_kwargs(**kwargs))
 
+    @override
     def __repr__(self):
         return "{}({})".format(
                 self.__class__.__name__,
@@ -483,23 +484,28 @@ class Record(RecordWithoutPickling):
             fields.add(key)
             setattr(self, key, value)
 
+    @override
     def __eq__(self, other):
         if self is other:
             return True
         return (self.__class__ == other.__class__
                 and self.__getstate__() == other.__getstate__())
 
+    @override
     def __ne__(self, other):
         return not self.__eq__(other)
 
 
 class ImmutableRecordWithoutPickling(RecordWithoutPickling):
     """Hashable record. Does not explicitly enforce immutability."""
+    _cached_hash: int | None
+
     def __init__(self, *args, **kwargs):
         RecordWithoutPickling.__init__(self, *args, **kwargs)
         self._cached_hash = None
 
-    def __hash__(self):
+    @override
+    def __hash__(self) -> int:
         # This attribute may vanish during pickling.
         if getattr(self, "_cached_hash", None) is None:
             self._cached_hash = hash((
@@ -507,6 +513,7 @@ class ImmutableRecordWithoutPickling(RecordWithoutPickling):
                     *(getattr(self, field) for field in self.__class__.fields)
                     ))
 
+        assert self._cached_hash is not None
         return self._cached_hash
 
 
@@ -876,6 +883,7 @@ class keyed_memoize_method(keyed_memoize_on_first_arg):  # noqa: N801
         Can memoize methods on classes that do not allow setting attributes
         (e.g. by overwriting ``__setattr__``), e.g. frozen :mod:`dataclasses`.
     """
+    @override
     def _default_cache_dict_name(self, function):
         return intern(f"_memoize_dic_{function.__name__}")
 
@@ -1631,6 +1639,7 @@ class Table:
             max(len(row[i]) for row in rows) for i in range(self.ncolumns)
             )
 
+    @override
     def __str__(self) -> str:
         """
         Returns a string representation of the table.
@@ -2499,10 +2508,12 @@ class ProcessTimer:
         self.wall_elapsed = time.perf_counter() - self.perf_counter_start
         self.process_elapsed = time.process_time() - self.process_time_start
 
+    @override
     def __str__(self):
         cpu = self.process_elapsed / self.wall_elapsed
         return f"{self.wall_elapsed:.2f}s wall {cpu:.2f}x CPU"
 
+    @override
     def __repr__(self):
         wall = self.wall_elapsed
         process = self.process_elapsed

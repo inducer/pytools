@@ -3,6 +3,8 @@ from __future__ import annotations
 import contextlib
 import sys
 
+from typing_extensions import override
+
 from pytools import memoize
 
 
@@ -177,10 +179,12 @@ class SetPropagatingDict(dict):
 
         self.target_dict = target_dict
 
+    @override
     def __setitem__(self, key, value):
         dict.__setitem__(self, key, value)
         self.target_dict[key] = value
 
+    @override
     def __delitem__(self, key):
         dict.__delitem__(self, key)
         del self.target_dict[key]

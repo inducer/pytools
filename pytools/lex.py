@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import re
 
+from typing_extensions import override
+
 
 class RuleError(RuntimeError):
     def __init__(self, rule):
         RuntimeError.__init__(self)
         self.Rule = rule
 
+    @override
     def __str__(self):
         return repr(self.Rule)
 
@@ -18,6 +21,7 @@ class InvalidTokenError(RuntimeError):
         self.string = s
         self.index = str_index
 
+    @override
     def __str__(self):
         return "at index {}: ...{}...".format(
                 self.index, self.string[self.index:self.index+20])
@@ -30,6 +34,7 @@ class ParseError(RuntimeError):
         self.string = s
         self.Token = token
 
+    @override
     def __str__(self):
         if self.Token is None:
             return f"{self.message} at end of input"
@@ -43,6 +48,7 @@ class RE:
         self.Content = s
         self.RE = re.compile(s, flags)
 
+    @override
     def __repr__(self) -> str:
         return f"RE({self.Content})"
 
