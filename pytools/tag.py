@@ -26,7 +26,7 @@ Internal stuff that is only here because the documentation tool wants it
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, TypeVar
 from warnings import warn
 
@@ -118,7 +118,7 @@ class DottedName:
 T = TypeVar("T")
 
 
-@dataclass_transform(eq_default=True, frozen_default=True)
+@dataclass_transform(eq_default=True, frozen_default=True, field_specifiers=(field,))
 def tag_dataclass(cls: type[T]) -> type[T]:
     return dataclass(init=True, frozen=True, eq=True, repr=True)(cls)
 
