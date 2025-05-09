@@ -253,11 +253,10 @@ class Taggable:
     # ReST references in docstrings must be fully qualified, as docstrings may
     # be inherited and appear in different contexts.
 
-    # type-checking only so that self.tags = ... in subclasses still works
-    if TYPE_CHECKING:
-        @property
-        def tags(self) -> frozenset[Tag]:
-            ...
+    # Before https://peps.python.org/pep-0767/, there isn't a good way to declare
+    # an attribute read-only. Mypy accepts @property, but this is unsound:
+    # https://peps.python.org/pep-0767/#clarifying-interaction-of-property-and-protocols
+    tags: frozenset[Tag]  # pyright: ignore[reportUninitializedInstanceVariable]
 
     def _with_new_tags(self, tags: frozenset[Tag]) -> Self:
         """
