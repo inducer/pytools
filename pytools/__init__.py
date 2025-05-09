@@ -29,6 +29,7 @@ THE SOFTWARE.
 
 import builtins
 import contextlib
+import dataclasses
 import logging
 import operator
 import re
@@ -3023,7 +3024,7 @@ def unique_union(*args: Iterable[T]) -> Collection[T]:
 # }}}
 
 
-@dataclass_transform(frozen_default=True)
+@dataclass_transform(frozen_default=True, field_specifiers=(dataclasses.field,))
 def opt_frozen_dataclass(
             *,
             init: bool = True,
