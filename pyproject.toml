@@ -43,9 +43,6 @@ test = [
     "pytest",
     "ruff",
 ]
-siphash = [
-    "siphash24>=1.6",
-]
 
 [project.urls]
 Documentation = "https://documen.tician.de/pytools/"
