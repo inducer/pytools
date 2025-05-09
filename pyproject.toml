@@ -113,6 +113,8 @@ reportExplicitAny = "none"
 # we care about at this moment.
 # https://github.com/microsoft/pyright/issues/746
 reportImportCycles = "none"
+pythonVersion = "3.10"
+pythonPlatform = "All"
 
 [tool.mypy]
 python_version = "3.10"
