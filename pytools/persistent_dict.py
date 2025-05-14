@@ -84,6 +84,7 @@ This module also provides a disk-backed dictionary that uses persistent hashing.
 .. autoexception:: ReadOnlyEntryError
 
 .. autoexception:: CollisionWarning
+.. autoexception:: NanKeyWarning
 
 .. autoclass:: KeyBuilder
 .. autoclass:: PersistentDict
@@ -104,6 +105,11 @@ Internal stuff that is only here because the documentation tool wants it
 
 
 # {{{ key generation
+
+class NanKeyWarning(UserWarning):
+    """Warning raised when a NaN is encountered while hashing a key in
+    :class:`KeyBuilder`."""
+
 
 class KeyBuilder:
     """A (stateless) object that computes persistent hashes of objects fed to it.
@@ -267,6 +273,7 @@ class KeyBuilder:
             warn("Encountered a NaN while hashing. Since NaNs compare unequal "
                  "to themselves, the resulting key can not be retrieved from a "
                  "PersistentDict and will lead to a collision error on retrieval.",
+                 NanKeyWarning,
                  stacklevel=1)
 
         key_hash.update(key.hex().encode("utf8"))
