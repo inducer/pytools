@@ -253,6 +253,8 @@ T = TypeVar("T")
 R = TypeVar("R")
 F = TypeVar("F", bound=Callable[..., Any])
 P = ParamSpec("P")
+K = TypeVar("K")
+V = TypeVar("V")
 
 # }}}
 
@@ -1120,13 +1122,13 @@ def partition2(iterable):
     return part_true, part_false
 
 
-def product(iterable: Iterable[Any]) -> Any:
+def product(iterable: Iterable[T]) -> T | int:
     from operator import mul
     return reduce(mul, iterable, 1)
 
 
-def reverse_dictionary(the_dict):
-    result = {}
+def reverse_dictionary(the_dict: Mapping[K, V]) -> dict[V, K]:
+    result: dict[V, K] = {}
     for key, value in the_dict.items():
         if value in result:
             raise RuntimeError(
