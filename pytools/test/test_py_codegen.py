@@ -67,7 +67,7 @@ def test_function_decorators(capfd):
     assert out == ""  # second print is not executed due to lru_cache
 
 
-def test_linecache():
+def test_linecache() -> None:
     cg = codegen.PythonFunctionGenerator("f", args=())
     cg("return 42")
 
@@ -75,13 +75,13 @@ def test_linecache():
 
     import linecache
 
-    assert linecache.getlines(cg._gen_filename) == [
+    assert linecache.getlines(cg._gen_filename) == [  # pyright: ignore [reportPrivateUsage]
         "def f():\n",
         "    return 42\n",
     ]
 
-    assert linecache.getline(cg._gen_filename, 1) == "def f():\n"
-    assert linecache.getline(cg._gen_filename, 2) == "    return 42\n"
+    assert linecache.getline(cg._gen_filename, 1) == "def f():\n"  # pyright: ignore [reportPrivateUsage]
+    assert linecache.getline(cg._gen_filename, 2) == "    return 42\n"  # pyright: ignore [reportPrivateUsage]
 
 
 if __name__ == "__main__":
