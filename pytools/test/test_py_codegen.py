@@ -33,25 +33,25 @@ def test_picklable_function():
 
 
 def test_function_decorators(capfd):
-    cg = codegen.PythonFunctionGenerator("f", args=(), decorators=["@staticmethod"])
+    cg = codegen.PythonFunctionGenerator("f1", args=(), decorators=["@staticmethod"])
     cg("return 42")
 
     assert cg.get_function()() == 42
 
-    cg = codegen.PythonFunctionGenerator("f", args=(), decorators=["@classmethod"])
+    cg = codegen.PythonFunctionGenerator("f2", args=(), decorators=["@classmethod"])
     cg("return 42")
 
     with pytest.raises(TypeError):
         cg.get_function()()
 
-    cg = codegen.PythonFunctionGenerator("f", args=(),
+    cg = codegen.PythonFunctionGenerator("f3", args=(),
                                          decorators=["@staticmethod", "@classmethod"])
     cg("return 42")
 
     with pytest.raises(TypeError):
         cg.get_function()()
 
-    cg = codegen.PythonFunctionGenerator("f", args=("x"),
+    cg = codegen.PythonFunctionGenerator("f4", args=("x"),
                 decorators=["from functools import lru_cache", "@lru_cache"])
     cg("print('Hello World!')")
     cg("return 42")
@@ -68,7 +68,7 @@ def test_function_decorators(capfd):
 
 
 def test_linecache() -> None:
-    cg = codegen.PythonFunctionGenerator("f", args=())
+    cg = codegen.PythonFunctionGenerator("g", args=())
     cg("return 42")
 
     cg.get_function()()
@@ -76,11 +76,11 @@ def test_linecache() -> None:
     import linecache
 
     assert linecache.getlines(cg._gen_filename) == [  # pyright: ignore [reportPrivateUsage]
-        "def f():\n",
+        "def g():\n",
         "    return 42\n",
     ]
 
-    assert linecache.getline(cg._gen_filename, 1) == "def f():\n"  # pyright: ignore [reportPrivateUsage]
+    assert linecache.getline(cg._gen_filename, 1) == "def g():\n"  # pyright: ignore [reportPrivateUsage]
     assert linecache.getline(cg._gen_filename, 2) == "    return 42\n"  # pyright: ignore [reportPrivateUsage]
 
 
