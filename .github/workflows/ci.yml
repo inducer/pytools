@@ -86,7 +86,8 @@ jobs:
                 curl -L -O https://tiker.net/ci-support-v0
                 . ./ci-support-v0
                 build_py_project_in_venv
-                sudo apt install libopenmpi-dev
+                sudo apt update
+                sudo apt -y install libopenmpi-dev
                 pip install numpy attrs orderedsets pytest mpi4py matplotlib
                 pip install basedpyright
                 basedpyright
