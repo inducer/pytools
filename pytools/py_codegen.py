@@ -58,7 +58,7 @@ class PythonCodeGenerator(CodeGeneratorBase):
             warn(f"Overwriting existing generated code in linecache: '{name}'.",
                     stacklevel=3 if _from_get_function else 2)
 
-        linecache.cache[name] = (None, None,  # type: ignore[assignment]
+        linecache.cache[name] = (None, None,  # type: ignore[assignment]  # pyright: ignore[reportArgumentType]
                                  [e+"\n" for e in source_text.split("\n")], None)
 
         # }}}
@@ -99,7 +99,7 @@ class PythonFunctionGenerator(PythonCodeGenerator):
         return f"<generated: '{self.name}'>"
 
     def get_function(self) -> Callable[..., Any]:
-        return self.get_module(name=self._gen_filename,
+        return self.get_module(name=self._gen_filename,  # pyright: ignore [reportAny]
                                _from_get_function=True)[self.name]
 
     def get_picklable_function(self) -> PicklableFunction:
