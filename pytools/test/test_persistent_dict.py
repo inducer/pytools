@@ -1018,11 +1018,15 @@ def test_nan_keys() -> None:
 
         for nan_value in nan_values:
             assert nan_value != nan_value
-            assert keyb(nan_value) == keyb(nan_value)
 
-            pdict[nan_value] = 42
+            with pytest.warns(UserWarning):
+                assert keyb(nan_value) == keyb(nan_value)
 
-            with (pytest.warns(CollisionWarning),
+            with pytest.warns(UserWarning):
+                pdict[nan_value] = 42
+
+            with (pytest.warns(UserWarning),
+                  pytest.warns(CollisionWarning),
                   pytest.raises(NoSuchEntryCollisionError)):
                 pdict[nan_value]
 
