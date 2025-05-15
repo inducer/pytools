@@ -67,9 +67,6 @@ class PythonCodeGenerator(CodeGeneratorBase):
             source_text.rstrip()+"\n", name, "exec"),
                 result_dict)
 
-        # For pudb:
-        result_dict["_MODULE_SOURCE_CODE"] = source_text
-
         return result_dict
 
     def get_picklable_module(self, name: str | None = None) -> PicklableModule:
