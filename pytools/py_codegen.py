@@ -40,6 +40,10 @@ from pytools.codegen import (  # noqa: F401
 )
 
 
+class ExistingLineCacheWarning(Warning):
+    """Warning for overwriting existing generated code in the linecache."""
+
+
 class PythonCodeGenerator(CodeGeneratorBase):
     def get_module(self, name: str | None = None,
                    _from_get_function: bool = False) -> dict[str, Any]:
@@ -56,7 +60,8 @@ class PythonCodeGenerator(CodeGeneratorBase):
         if name in linecache.cache:
             from warnings import warn
             warn(f"Overwriting existing generated code in linecache: '{name}'.",
-                    stacklevel=3 if _from_get_function else 2)
+                   ExistingLineCacheWarning,
+                   stacklevel=3 if _from_get_function else 2)
 
         linecache.cache[name] = (None, None,  # type: ignore[assignment]  # pyright: ignore[reportArgumentType]
                                  [e+"\n" for e in source_text.split("\n")], None)
@@ -91,9 +96,19 @@ class PythonFunctionGenerator(PythonCodeGenerator):
         if "line_profiler" in sys.modules or "line_profiler" in self.get():
             # The '<ipython-input-' prefix is for compatibility with
             # line_profiler: https://github.com/pyutils/line_profiler/blob/1630e7c9a295ace2feb1d2b188e68f4d2833fb20/line_profiler/line_profiler.py#L194-L210
-            return f"<ipython-input- generated: '{self.name}'>"
+            prefix = "<ipython-input- generated: '"
+        else:
+            prefix = "<generated: '"
 
-        return f"<generated: '{self.name}'>"
+        import linecache
+
+        from pytools import UniqueNameGenerator
+        name_gen = UniqueNameGenerator(
+            existing_names=linecache.cache.keys(),
+            forced_prefix=prefix,
+            forced_suffix="'>")
+
+        return name_gen(self.name)
 
     def get_function(self) -> Callable[..., Any]:
         return self.get_module(name=self._gen_filename,  # pyright: ignore [reportAny]
