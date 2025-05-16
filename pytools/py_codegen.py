@@ -26,6 +26,11 @@ THE SOFTWARE.
 import marshal
 from importlib.util import MAGIC_NUMBER as BYTECODE_VERSION
 from types import FunctionType, ModuleType
+from typing import TYPE_CHECKING, Any
+
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
 
 from pytools.codegen import (  # noqa: F401
     CodeGenerator as CodeGeneratorBase,
@@ -34,43 +39,93 @@ from pytools.codegen import (  # noqa: F401
 )
 
 
-class PythonCodeGenerator(CodeGeneratorBase):
-    def get_module(self, name=None):
-        if name is None:
-            name = "<generated code>"
+class ExistingLineCacheWarning(Warning):
+    """Warning for overwriting existing generated code in the linecache."""
 
-        result_dict = {}
+
+class PythonCodeGenerator(CodeGeneratorBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.unique_name: str | None = None
+
+    def _gen_unique_name(self, name: str = "") -> str:
+        if self.unique_name is not None:
+            return self.unique_name
+
+        import sys
+        if "line_profiler" in sys.modules or "line_profiler" in self.get():
+            # The '<ipython-input-' prefix is for compatibility with
+            # line_profiler: https://github.com/pyutils/line_profiler/blob/1630e7c9a295ace2feb1d2b188e68f4d2833fb20/line_profiler/line_profiler.py#L194-L210
+            prefix = "<ipython-input- generated: '"
+        else:
+            prefix = "<generated: '"
+
+        import linecache
+
+        from pytools import UniqueNameGenerator
+        name_gen = UniqueNameGenerator(
+            existing_names=linecache.cache.keys(),
+            forced_prefix=prefix,
+            forced_suffix="'>")
+
+        self.unique_name = name_gen(name)
+
+        return self.unique_name
+
+    def get_module(self, name: str | None = None,
+                   _from_get_function: bool = False) -> dict[str, Any]:
+        if name is None:
+            name = self._gen_unique_name("module")
+
+        result_dict: dict[str, Any] = {}
         source_text = self.get()
+
+        # {{{ Handle Python's linecache
+
+        import linecache
+
+        if name in linecache.cache:
+            from warnings import warn
+            warn(f"Overwriting existing generated code in linecache: '{name}'.",
+                   ExistingLineCacheWarning,
+                   stacklevel=3 if _from_get_function else 2)
+
+        linecache.cache[name] = (None, None,  # type: ignore[assignment]  # pyright: ignore[reportArgumentType]
+                                 [e+"\n" for e in source_text.split("\n")], None)
+
+        # }}}
+
         exec(compile(
             source_text.rstrip()+"\n", name, "exec"),
                 result_dict)
-        result_dict["_MODULE_SOURCE_CODE"] = source_text
+
         return result_dict
 
-    def get_picklable_module(self, name=None):
+    def get_picklable_module(self, name: str | None = None) -> PicklableModule:
         return PicklableModule(self.get_module(name=name))
 
 
 class PythonFunctionGenerator(PythonCodeGenerator):
-    def __init__(self, name, args, decorators=None):
+    def __init__(self, name: str, args: Iterable[str],
+                 decorators: Iterable[str] = ()) -> None:
         PythonCodeGenerator.__init__(self)
         self.name = name
 
-        if decorators:
-            for decorator in decorators:
-                self(decorator)
+        for decorator in decorators:
+            self(decorator)
 
         self("def {}({}):".format(name, ", ".join(args)))
         self.indent()
 
     @property
-    def _gen_filename(self):
-        return f"<generated code for '{self.name}'>"
+    def _gen_filename(self) -> str:
+        return self._gen_unique_name(self.name)
 
-    def get_function(self):
-        return self.get_module(name=self._gen_filename)[self.name]
+    def get_function(self) -> Callable[..., Any]:
+        return self.get_module(name=self._gen_filename,  # pyright: ignore [reportAny]
+                               _from_get_function=True)[self.name]
 
-    def get_picklable_function(self):
+    def get_picklable_function(self) -> PicklableFunction:
         module = self.get_picklable_module(name=self._gen_filename)
         return PicklableFunction(module, self.name)
 
