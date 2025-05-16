@@ -45,10 +45,29 @@ class ExistingLineCacheWarning(Warning):
 
 
 class PythonCodeGenerator(CodeGeneratorBase):
+    def _gen_unique_name(self, name: str) -> str:
+        import sys
+        if "line_profiler" in sys.modules or "line_profiler" in self.get():
+            # The '<ipython-input-' prefix is for compatibility with
+            # line_profiler: https://github.com/pyutils/line_profiler/blob/1630e7c9a295ace2feb1d2b188e68f4d2833fb20/line_profiler/line_profiler.py#L194-L210
+            prefix = "<ipython-input- generated: '"
+        else:
+            prefix = "<generated: '"
+
+        import linecache
+
+        from pytools import UniqueNameGenerator
+        name_gen = UniqueNameGenerator(
+            existing_names=linecache.cache.keys(),
+            forced_prefix=prefix,
+            forced_suffix="'>")
+
+        return name_gen(name)
+
     def get_module(self, name: str | None = None,
                    _from_get_function: bool = False) -> dict[str, Any]:
         if name is None:
-            name = "<generated code>"
+            name = self._gen_unique_name("module")
 
         result_dict: dict[str, Any] = {}
         source_text = self.get()
@@ -92,23 +111,7 @@ class PythonFunctionGenerator(PythonCodeGenerator):
 
     @cached_property
     def _gen_filename(self) -> str:
-        import sys
-        if "line_profiler" in sys.modules or "line_profiler" in self.get():
-            # The '<ipython-input-' prefix is for compatibility with
-            # line_profiler: https://github.com/pyutils/line_profiler/blob/1630e7c9a295ace2feb1d2b188e68f4d2833fb20/line_profiler/line_profiler.py#L194-L210
-            prefix = "<ipython-input- generated: '"
-        else:
-            prefix = "<generated: '"
-
-        import linecache
-
-        from pytools import UniqueNameGenerator
-        name_gen = UniqueNameGenerator(
-            existing_names=linecache.cache.keys(),
-            forced_prefix=prefix,
-            forced_suffix="'>")
-
-        return name_gen(self.name)
+        return self._gen_unique_name(self.name)
 
     def get_function(self) -> Callable[..., Any]:
         return self.get_module(name=self._gen_filename,  # pyright: ignore [reportAny]

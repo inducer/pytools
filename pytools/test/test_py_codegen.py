@@ -83,6 +83,18 @@ def test_linecache() -> None:
     assert linecache.getline(cg._gen_filename, 1) == "def f():\n"  # pyright: ignore [reportPrivateUsage]
     assert linecache.getline(cg._gen_filename, 2) == "    return 42\n"  # pyright: ignore [reportPrivateUsage]
 
+    cg = codegen.PythonCodeGenerator()
+    cg("def f():")
+    cg("    return 37")
+
+    mod = cg.get_module()
+    mod["f"]()
+
+    assert linecache.getlines("<generated: 'module'>") == [  # pyright: ignore [reportPrivateUsage]
+        "def f():\n",
+        "    return 37\n",
+    ]
+
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
