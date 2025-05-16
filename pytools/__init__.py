@@ -2271,7 +2271,7 @@ class UniqueNameGenerator:
 
         self.existing_names = set(existing_names)
         self.forced_prefix = forced_prefix
-        self.forced_suffix = forced_suffix
+        self.forced_suffix: str = forced_suffix
         self.prefix_to_counter: dict[str, int] = {}
 
     def is_name_conflicting(self, name: str) -> bool:
