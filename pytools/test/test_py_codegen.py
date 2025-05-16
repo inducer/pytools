@@ -68,32 +68,44 @@ def test_function_decorators(capfd):
 
 
 def test_linecache() -> None:
+    # {{{ PythonFunctionGenerator
+
     cg = codegen.PythonFunctionGenerator("f", args=())
     cg("return 42")
 
     cg.get_function()()
 
+    assert cg.unique_name
+
     import linecache
 
-    assert linecache.getlines(cg._gen_filename) == [  # pyright: ignore [reportPrivateUsage]
+    assert linecache.getlines(cg.unique_name) == [
         "def f():\n",
         "    return 42\n",
     ]
 
-    assert linecache.getline(cg._gen_filename, 1) == "def f():\n"  # pyright: ignore [reportPrivateUsage]
-    assert linecache.getline(cg._gen_filename, 2) == "    return 42\n"  # pyright: ignore [reportPrivateUsage]
+    assert linecache.getline(cg.unique_name, 1) == "def f():\n"
+    assert linecache.getline(cg.unique_name, 2) == "    return 42\n"
 
-    cg = codegen.PythonCodeGenerator()
-    cg("def f():")
-    cg("    return 37")
+    # }}}
 
-    mod = cg.get_module()
+    # {{{ PythonCodeGenerator
+
+    cg2 = codegen.PythonCodeGenerator()
+    cg2("def f():")
+    cg2("    return 37")
+
+    mod = cg2.get_module()
     mod["f"]()
 
-    assert linecache.getlines("<generated: 'module'>") == [  # pyright: ignore [reportPrivateUsage]
+    assert cg2.unique_name
+
+    assert linecache.getlines(cg2.unique_name) == [
         "def f():\n",
         "    return 37\n",
     ]
+
+    # }}}
 
 
 if __name__ == "__main__":
