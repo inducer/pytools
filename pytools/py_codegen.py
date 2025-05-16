@@ -24,7 +24,6 @@ THE SOFTWARE.
 """
 
 import marshal
-from functools import cached_property
 from importlib.util import MAGIC_NUMBER as BYTECODE_VERSION
 from types import FunctionType, ModuleType
 from typing import TYPE_CHECKING, Any
@@ -45,7 +44,14 @@ class ExistingLineCacheWarning(Warning):
 
 
 class PythonCodeGenerator(CodeGeneratorBase):
-    def _gen_unique_name(self, name: str) -> str:
+    def __init__(self) -> None:
+        super().__init__()
+        self.unique_name: str | None = None
+
+    def _gen_unique_name(self, name: str = "") -> str:
+        if self.unique_name is not None:
+            return self.unique_name
+
         import sys
         if "line_profiler" in sys.modules or "line_profiler" in self.get():
             # The '<ipython-input-' prefix is for compatibility with
@@ -62,7 +68,9 @@ class PythonCodeGenerator(CodeGeneratorBase):
             forced_prefix=prefix,
             forced_suffix="'>")
 
-        return name_gen(name)
+        self.unique_name = name_gen(name)
+
+        return self.unique_name
 
     def get_module(self, name: str | None = None,
                    _from_get_function: bool = False) -> dict[str, Any]:
@@ -109,7 +117,7 @@ class PythonFunctionGenerator(PythonCodeGenerator):
         self("def {}({}):".format(name, ", ".join(args)))
         self.indent()
 
-    @cached_property
+    @property
     def _gen_filename(self) -> str:
         return self._gen_unique_name(self.name)
 
