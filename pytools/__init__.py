@@ -440,7 +440,7 @@ class RecordWithoutPickling:
                     kwargs[f] = getattr(self, f)
         return kwargs
 
-    def copy(self, **kwargs):
+    def copy(self, **kwargs) -> Self:
         return self.__class__(**self.get_copy_kwargs(**kwargs))
 
     @override
