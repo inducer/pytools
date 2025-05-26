@@ -50,15 +50,6 @@ Ruff:
   except:
   - tags
 
-Mypy:
-  script:
-  - curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-mypy.sh
-  - ". ./prepare-and-run-mypy.sh python3 mypy"
-  tags:
-  - python3
-  except:
-  - tags
-
 Pylint:
   script:
   - EXTRA_INSTALL="numpy pymbolic orderedsets siphash24"

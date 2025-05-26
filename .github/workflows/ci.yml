@@ -59,21 +59,6 @@ jobs:
                 curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-pylint.sh
                 . ./prepare-and-run-pylint.sh "$(basename $GITHUB_REPOSITORY)"
 
-    mypy:
-        name: Mypy
-        runs-on: ubuntu-latest
-        steps:
-        -   uses: actions/checkout@v4
-        -
-            uses: actions/setup-python@v5
-            with:
-                python-version: '3.x'
-        -   name: "Main Script"
-            run: |
-                EXTRA_INSTALL="numpy"
-                curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-mypy.sh
-                . ./prepare-and-run-mypy.sh python3 mypy
-
     basedpyright:
         runs-on: ubuntu-latest
         steps:
