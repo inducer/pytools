@@ -121,6 +121,7 @@ pythonPlatform = "All"
 root = "pytools/test"
 reportUnknownArgumentType = "hint"
 reportPrivateUsage = "none"
+reportAny = "none"
 
 [tool.typos.default]
 extend-ignore-re = [
