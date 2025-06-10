@@ -122,13 +122,6 @@ root = "pytools/test"
 reportUnknownArgumentType = "hint"
 reportPrivateUsage = "none"
 
-[tool.mypy]
-python_version = "3.10"
-ignore_missing_imports = true
-warn_unused_ignores = true
-# TODO: enable this at some point
-# check_untyped_defs = true
-
 [tool.typos.default]
 extend-ignore-re = [
   "(?Rm)^.*(#|//)\\s*spellchecker:\\s*disable-line$"
