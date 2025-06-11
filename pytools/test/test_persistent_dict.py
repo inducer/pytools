@@ -528,6 +528,16 @@ def test_ABC_hashing() -> None:  # noqa: N802
 def test_class_hashing() -> None:
     keyb = KeyBuilder()
 
+    class WithoutUpdateMethod:
+        pass
+
+    assert keyb(WithoutUpdateMethod) == keyb(WithoutUpdateMethod)
+    assert keyb(WithoutUpdateMethod) == "da060d601d180d4c"
+
+    with pytest.raises(TypeError):
+        # does not have update_persistent_hash() = > will raise
+        keyb(WithoutUpdateMethod())
+
     class WithUpdateMethod:
         def update_persistent_hash(self, key_hash, key_builder):
             # Only called for instances of this class, not for the class itself
