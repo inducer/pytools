@@ -751,9 +751,17 @@ class _HasKwargs:
     pass
 
 
+class _MemoizedFunctionWithClear(Generic[T_contra, P, R], Protocol):
+    def __call__(self, obj: T_contra, *args: P.args, **kwargs: P.kwargs) -> R:
+        ...
+
+    def clear_cache(self) -> None:
+        pass
+
+
 def memoize_on_first_arg(
         function: Callable[Concatenate[T, P], R], *,
-        cache_dict_name: str | None = None) -> Callable[Concatenate[T, P], R]:
+        cache_dict_name: str | None = None) -> _MemoizedFunctionWithClear[T, P, R]:
     """Like :func:`memoize_method`, but for functions that take the object
     in which do memoization information is stored as first argument.
 
@@ -783,15 +791,15 @@ def memoize_on_first_arg(
         getattr(obj, cache_dict_name)[key] = result
         return result
 
-    def clear_cache(obj):
+    def clear_cache(obj: _MemoizedFunctionWithClear[T, P, R]):
         object.__delattr__(obj, cache_dict_name)
 
     from functools import update_wrapper
-    new_wrapper = update_wrapper(wrapper, function)
+    new_wrapper = cast(
+        "type[_MemoizedFunctionWithClear[T, P, R]]", cast("object",
+                    update_wrapper(wrapper, function)))
 
-    # type-ignore because mypy has a point here, stuffing random attributes
-    # into the function's dict is moderately sketchy.
-    new_wrapper.clear_cache = clear_cache  # type: ignore[attr-defined]
+    new_wrapper.clear_cache = clear_cache
 
     return new_wrapper
 
