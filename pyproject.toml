@@ -54,6 +54,7 @@ exclude = [
   "/doc/_build",
   "/.editorconfig",
   "/run-*.sh",
+  "/.basedpyright",
 ]
 
 [tool.ruff]
