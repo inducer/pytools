@@ -248,7 +248,7 @@ class KeyBuilder:
             module = sys.modules[key.__module__]
             resolved = module
             for attr in key.__qualname__.split("."):
-                resolved = getattr(resolved, attr)
+                resolved = getattr(resolved, attr)  # pyright: ignore[reportAny]
             if resolved is key:
                 # Globally accessible: hash based on name
                 self.rec(key_hash,
