@@ -525,6 +525,14 @@ def test_ABC_hashing() -> None:  # noqa: N802
     assert keyb(MyABC3) != keyb(MyABC) != keyb(MyABC3())
 
 
+class WithoutUpdateMethodGlobal:
+    pass
+
+
+class CollidingNameClass:
+    pass
+
+
 def test_class_hashing() -> None:
     keyb = KeyBuilder()
 
@@ -532,11 +540,36 @@ def test_class_hashing() -> None:
         pass
 
     assert keyb(WithoutUpdateMethod) == keyb(WithoutUpdateMethod)
-    assert keyb(WithoutUpdateMethod) == "da060d601d180d4c"
+    assert keyb(WithoutUpdateMethodGlobal) == keyb(WithoutUpdateMethodGlobal)
+
+    # This doesn't work with the function-local class "WithoutUpdateMethod", because
+    # local classes are instantiated at each function call, and thus their hash
+    # includes the id() of the class:
+    # assert keyb(WithoutUpdateMethod) == "N/A"
+    assert keyb(WithoutUpdateMethodGlobal) == "49c4673089d30507"
 
     with pytest.raises(TypeError):
         # does not have update_persistent_hash() = > will raise
         keyb(WithoutUpdateMethod())
+
+    with pytest.raises(TypeError):
+        # does not have update_persistent_hash() = > will raise
+        keyb(WithoutUpdateMethodGlobal())
+
+    # {{{ test for name collisions between top-level and function-local classes
+
+    def make_colliding_name_class():
+        class CollidingNameClass:
+            pass
+
+        return CollidingNameClass
+
+    top_level_cls = CollidingNameClass
+    shadowed_cls = make_colliding_name_class()
+
+    assert keyb(top_level_cls) != keyb(shadowed_cls)
+
+    # }}}
 
     class WithUpdateMethod:
         def update_persistent_hash(self, key_hash, key_builder):
@@ -558,7 +591,6 @@ def test_class_hashing() -> None:
     assert keyb(TagClass()) != keyb(TagClass2())
 
     assert keyb(TagClass()) == "7b3e4e66503438f6"
-    assert keyb(TagClass2) == "690b86bbf51aad83"
 
     @tag_dataclass
     class TagClass3(Tag):

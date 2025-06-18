@@ -244,8 +244,22 @@ class KeyBuilder:
     # understandably don't like it.
 
     def update_for_type(self, key_hash: Hash, key: type) -> None:
-        key_hash.update(
-            f"{key.__module__}.{key.__qualname__}.{key.__name__}".encode())
+        try:
+            module = sys.modules[key.__module__]
+            resolved = module
+            for attr in key.__qualname__.split("."):
+                resolved = getattr(resolved, attr)
+            if resolved is key:
+                # Globally accessible: hash based on name
+                self.rec(key_hash,
+                    f"{key.__module__}.{key.__qualname__}".encode()
+                )
+            else:
+                # Name collision or local class; fall back
+                self.rec(key_hash, f"{key.__module__}.{key.__qualname__}_{id(key)}")
+        except (KeyError, AttributeError):
+            # Can't resolve the class name, must be local
+            self.rec(key_hash, f"{key.__module__}.{key.__qualname__}_{id(key)}")
 
     update_for_ABCMeta = update_for_type
 
