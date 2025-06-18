@@ -251,15 +251,11 @@ class KeyBuilder:
                 resolved = getattr(resolved, attr)  # pyright: ignore[reportAny]
             if resolved is key:
                 # Globally accessible: hash based on name
-                self.rec(key_hash,
-                    f"{key.__module__}.{key.__qualname__}".encode()
-                )
+                self.rec(key_hash, f"{key.__module__}.{key.__qualname__}")
             else:
-                # Name collision or local class; fall back
-                self.rec(key_hash, f"{key.__module__}.{key.__qualname__}_{id(key)}")
+                raise ValueError(f"Cannot hash function-local class '{key}'")
         except (KeyError, AttributeError):
-            # Can't resolve the class name, must be local
-            self.rec(key_hash, f"{key.__module__}.{key.__qualname__}_{id(key)}")
+            raise ValueError(f"Cannot hash function-local class '{key}'") from None
 
     update_for_ABCMeta = update_for_type
 
