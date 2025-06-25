@@ -1059,7 +1059,7 @@ def len_iterable(iterable):
     return sum(1 for i in iterable)
 
 
-def flatten(iterable):
+def flatten(iterable: Iterable[Sequence[T]]) -> Iterable[T]:
     """For an iterable of sub-iterables, generate each member of each
     sub-iterable in turn, i.e. a flattened version of that super-iterable.
 
