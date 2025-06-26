@@ -43,6 +43,7 @@ nitpicky = True
 nitpick_ignore_regex = [
     ["py:class", r"typing_extensions\.(.+)"],
     ["py:class", r"ReadableBuffer"],
+    ["py:class", r"ObjectArray1D"],
 ]
 
 autodoc_type_aliases = {

@@ -128,3 +128,6 @@ reportAny = "none"
 extend-ignore-re = [
   "(?Rm)^.*(#|//)\\s*spellchecker:\\s*disable-line$"
 ]
+
+[tool.typos.default.extend-words]
+"nd" = "nd"

@@ -1,3 +1,58 @@
+# pyright: reportNoOverloadImplementation=none, reportUninitializedInstanceVariable=none
+
+"""
+Handling :mod:`numpy` Object Arrays
+===================================
+
+.. autoclass:: T
+.. autoclass:: ResultT
+.. autoclass:: ShapeT
+
+.. autoclass:: ObjectArray
+.. autoclass:: ObjectArray0D
+.. autoclass:: ObjectArray1D
+.. autoclass:: ObjectArray2D
+.. autoclass:: ObjectArrayND
+
+Creation
+--------
+
+.. autofunction:: from_numpy
+.. autofunction:: to_numpy
+.. autofunction:: make_obj_array
+.. autofunction:: flat_obj_array
+
+Mapping
+-------
+
+.. autofunction:: obj_array_vectorize
+.. autofunction:: obj_array_vectorize_n_args
+
+Numpy workarounds
+-----------------
+These functions work around a `long-standing, annoying numpy issue
+<https://github.com/numpy/numpy/issues/1740>`__.
+
+.. autofunction:: obj_array_real
+.. autofunction:: obj_array_imag
+.. autofunction:: obj_array_real_copy
+.. autofunction:: obj_array_imag_copy
+
+References
+----------
+
+.. currentmodule:: np
+
+.. class:: ndarray
+
+    See :class:`numpy.ndarray`.
+
+.. class:: dtype
+
+    See :class:`numpy.dtype`.
+"""
+
+
 from __future__ import annotations
 
 
@@ -24,40 +79,238 @@ THE SOFTWARE.
 """
 
 from functools import partial, update_wrapper
-from warnings import warn
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generic,
+    TypeAlias,
+    TypeVar,
+    cast,
+    overload,
+)
 
-import numpy as np
-
-
-__doc__ = """
-Handling :mod:`numpy` Object Arrays
-===================================
-
-Creation
---------
-
-.. autofunction:: make_obj_array
-.. autofunction:: flat_obj_array
-
-Mapping
--------
-
-.. autofunction:: obj_array_vectorize
-.. autofunction:: obj_array_vectorize_n_args
-
-Numpy workarounds
------------------
-These functions work around a `long-standing, annoying numpy issue
-<https://github.com/numpy/numpy/issues/1740>`__.
-
-.. autofunction:: obj_array_real
-.. autofunction:: obj_array_imag
-.. autofunction:: obj_array_real_copy
-.. autofunction:: obj_array_imag_copy
-"""
+from typing_extensions import Self, override
 
 
-def make_obj_array(res_list):
+# NOTE: Importing this must not require importing numpy, so do not be tempted
+# to move the numpy import out of the type checking block.
+
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Hashable, Iterator, Sequence
+
+    import numpy as np
+
+
+T = TypeVar("T", covariant=True)
+
+ResultT = TypeVar("ResultT")
+ShapeT = TypeVar("ShapeT", bound=tuple[int, ...])
+
+
+class _ObjectArrayMetaclass(type):
+    @override
+    def __instancecheck__(cls, instance: object) -> bool:
+        try:
+            import numpy as np
+        except ModuleNotFoundError:
+            return False
+        return isinstance(instance, np.ndarray) and instance.dtype == object
+
+
+class ObjectArray(Generic[ShapeT, T], metaclass=_ObjectArrayMetaclass):
+    """This is a fake type used to distinguish :class:`numpy.ndarray`
+    instances with a *dtype* of *object* for static type checking.
+    Unlike :class:`numpy.ndarray`, this "type" can straightforwardly
+    keep track of its entry type.
+    All instances of this "type" will actually be :class:`numpy.ndarray` at run time.
+    Note that this creates a "universe" of object arrays that's separate
+    from the usual numpy-generated one. In order to usefully interact
+    in a type-safe manner, object arrays should be "converted" to this
+    "type".
+
+    Furthermore, :func:`isinstance` has been customized so as to be accurate
+    for this "type".
+
+    For now, there is precise typing support for arrays up to two dimensions.
+
+    .. autoattribute:: shape
+    .. autoattribute:: dtype
+
+    The usual set of operations on :class:`numpy.ndarray` instances works
+    at run time; a subset of these operations are typed. If what you
+    need isn't typed, please submit a pull request.
+
+    This type is intended to be immutable, and hence covariant in *T*.
+    """
+    shape: ShapeT
+    dtype: np.dtype[Any]
+
+    if TYPE_CHECKING:
+        def __len__(self) -> int: ...
+
+        @property
+        def size(self) -> int: ...
+
+        @overload
+        def __getitem__(self, x: ShapeT, /) -> T: ...
+
+        @overload
+        def __getitem__(self: ObjectArray1D[T], x: int, /) -> T: ...
+
+        @overload
+        def __getitem__(self: ObjectArray2D[T], x: int, /) -> ObjectArray1D[T]: ...
+
+        @overload
+        def __getitem__(self: ObjectArrayND[T], x: int, /) -> ObjectArrayND[T] | T: ...
+
+        @overload
+        def __getitem__(
+            self: ObjectArray1D[T],
+            x: slice) -> ObjectArray1D[T]: ...
+
+        @overload
+        def __getitem__(
+            self: ObjectArray2D[T],
+            x: slice) -> ObjectArray2D[T]: ...
+
+        @overload
+        def __iter__(self: ObjectArray1D[T]) -> Iterator[T]: ...
+        @overload
+        def __iter__(self: ObjectArray2D[T]) -> Iterator[ObjectArray1D[T]]: ...
+
+        def __pos__(self) -> Self: ...
+        def __neg__(self) -> Self: ...
+        def __abs__(self) -> Self: ...
+
+        # Technically, arithmetic with T prohibits covariance, because T is a sink
+        # here. Precisely typing arithmetic is thorny, and I'm willing to take
+        # a gamble on this, I think. -AK, July 2025
+        @overload
+        def __add__(self, other: Self, /) -> Self: ...
+        @overload
+        def __add__(self, other: T, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
+        @overload
+        def __add__(self, other: int, /) -> Self: ...
+        @overload
+        def __radd__(self, other: T, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
+        @overload
+        def __radd__(self, other: int, /) -> Self: ...
+
+        @overload
+        def __sub__(self, other: Self, /) -> Self: ...
+        @overload
+        def __sub__(self, other: T, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
+        @overload
+        def __sub__(self, other: int, /) -> Self: ...
+        @overload
+        def __rsub__(self, other: T, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
+        @overload
+        def __rsub__(self, other: int, /) -> Self: ...
+
+        @overload
+        def __mul__(self, other: Self, /) -> Self: ...
+        @overload
+        def __mul__(self, other: T, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
+        @overload
+        def __mul__(self, other: int, /) -> Self: ...
+        @overload
+        def __rmul__(self, other: T, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
+        @overload
+        def __rmul__(self, other: int, /) -> Self: ...
+
+        @overload
+        def __truediv__(self, other: Self, /) -> Self: ...
+        @overload
+        def __truediv__(self, other: T, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
+        @overload
+        def __truediv__(self, other: int, /) -> Self: ...
+        @overload
+        def __rtruediv__(self, other: T, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
+        @overload
+        def __rtruediv__(self, other: int, /) -> Self: ...
+
+        @overload
+        def __pow__(self, other: Self, /) -> Self: ...
+        @overload
+        def __pow__(self, other: T, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
+        @overload
+        def __pow__(self, other: int, /) -> Self: ...
+        @overload
+        def __rpow__(self, other: T, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
+        @overload
+        def __rpow__(self, other: int, /) -> Self: ...
+
+        @overload
+        def __matmul__(
+                    self: ObjectArray1D[T],
+                    other: ObjectArray1D[T],
+                /) -> T: ...
+        @overload
+        def __matmul__(
+                    self: ObjectArray2D[T],
+                    other: ObjectArray1D[T],
+                /) -> ObjectArray1D[T]: ...
+        @overload
+        def __matmul__(
+                    self: ObjectArray1D[T],
+                    other: ObjectArray2D[T],
+                /) -> ObjectArray1D[T]: ...
+        @overload
+        def __matmul__(
+                    self: ObjectArray2D[T],
+                    other: ObjectArray2D[T],
+                /) -> ObjectArray2D[T]: ...
+
+        @property
+        def flat(self) -> ObjectArray1D[T]: ...
+
+        @overload
+        def tolist(self: ObjectArray0D[T]) -> T: ...
+        @overload
+        def tolist(self: ObjectArray1D[T]) -> list[T]: ...
+        @overload
+        def tolist(self: ObjectArray2D[T]) -> list[list[T]]: ...
+        @overload
+        def tolist(self) -> list[Any]: ...
+
+
+ObjectArray0D: TypeAlias = ObjectArray[tuple[()], T]
+ObjectArray1D: TypeAlias = ObjectArray[tuple[int], T]
+ObjectArray2D: TypeAlias = ObjectArray[tuple[int, int], T]
+ObjectArrayND: TypeAlias = ObjectArray[tuple[int, ...], T]
+
+
+def to_numpy(ary: ObjectArray[ShapeT, T]) -> np.ndarray[ShapeT, Any]:
+    return cast("np.ndarray[ShapeT, Any]", cast("object", ary))
+
+
+@overload
+def from_numpy(
+            ary: np.ndarray[ShapeT, Any],
+            tp: None = None,
+            /
+        ) -> ObjectArray[ShapeT, Any]: ...
+
+@overload
+def from_numpy(
+            ary: np.ndarray[ShapeT, Any],
+            tp: type[T],
+            /
+        ) -> ObjectArray[ShapeT, T]: ...
+
+
+def from_numpy(
+            ary: np.ndarray[ShapeT, Any],
+            tp: type[T] | None = None,  # pyright: ignore[reportUnusedParameter]
+            /
+        ) -> ObjectArray[ShapeT, T]:
+    if ary.dtype != object:  # pyright: ignore[reportAny]
+        ary = ary.astype(object)
+    return cast("ObjectArray[ShapeT, T]", cast("object", ary))
+
+
+def make_obj_array(res_list: Sequence[T]) -> ObjectArray1D[T]:
     """Create a one-dimensional object array from *res_list*.
     This differs from ``numpy.array(res_list, dtype=object)``
     by whether it tries to determine its shape by descending
@@ -84,6 +337,7 @@ def make_obj_array(res_list):
     live on a GPU), the recursive behavior of :func:`numpy.array`
     can be undesirable.
     """
+    import numpy as np
     result = np.empty((len(res_list),), dtype=object)
 
     # 'result[:] = res_list' may look tempting, however:
@@ -91,16 +345,17 @@ def make_obj_array(res_list):
     for idx in range(len(res_list)):
         result[idx] = res_list[idx]
 
-    return result
+    return cast("ObjectArray1D[T]", cast("object", result))
 
 
-def obj_array_to_hashable(f):
-    if isinstance(f, np.ndarray) and f.dtype.char == "O":
-        return tuple(f)
-    return f
+def obj_array_to_hashable(ary: ObjectArray[ShapeT, T] | Hashable, /) -> Hashable:
+    if isinstance(ary, ObjectArray):
+        ary = cast("ObjectArray[ShapeT, T]", ary)
+        return tuple(ary.flat.tolist())
+    return ary
 
 
-def flat_obj_array(*args):
+def flat_obj_array(*args: ObjectArray[ShapeT, T] | list[T] | T) -> ObjectArray1D[T]:
     """Return a one-dimensional flattened object array consisting of
     elements obtained by 'flattening' *args* as follows:
 
@@ -109,22 +364,39 @@ def flat_obj_array(*args):
     - Instances of :class:`list` will be flattened into the result.
     - Any other type will appear in the list as-is.
     """
-    res_list = []
+    import numpy as np
+    res_list: list[T] = []
     for arg in args:
         if isinstance(arg, list):
-            res_list.extend(arg)
+            res_list.extend(cast("list[T]", arg))
 
         # Only flatten genuine, non-subclassed object arrays.
-        elif type(arg) is np.ndarray:
+        elif isinstance(arg, ObjectArray) and type(arg) is np.ndarray:  # pyright: ignore[reportUnnecessaryComparison,reportUnknownArgumentType]
             res_list.extend(arg.flat)
 
         else:
-            res_list.append(arg)
+            res_list.append(cast("T", arg))
 
     return make_obj_array(res_list)
 
 
-def obj_array_vectorize(f, ary):
+@overload
+def obj_array_vectorize(
+            f: Callable[[T], ResultT],
+            ary: ObjectArray[ShapeT, T],
+        ) -> ObjectArray[ShapeT, ResultT]: ...
+
+@overload
+def obj_array_vectorize(
+            f: Callable[[T], ResultT],
+            ary: T,
+        ) -> ResultT: ...
+
+
+def obj_array_vectorize(
+            f: Callable[[T], ResultT],
+            ary: T | ObjectArray[ShapeT, T],
+        ) -> ResultT | ObjectArray[ShapeT, ResultT]:
     """Apply the function *f* to all entries of the object array *ary*.
     Return an object array of the same shape consisting of the return
     values.
@@ -136,21 +408,33 @@ def obj_array_vectorize(f, ary):
         issue described under :func:`make_obj_array`.
     """
 
-    if isinstance(ary, np.ndarray) and ary.dtype.char == "O":
+    import numpy as np
+    if isinstance(ary, ObjectArray):
         result = np.empty_like(ary)
+        ary = cast("ObjectArray[ShapeT, T]", ary)
         for i in np.ndindex(ary.shape):
             result[i] = f(ary[i])
-        return result
+        return cast("ObjectArray[ShapeT, ResultT]", cast("object", result))
+
     return f(ary)
 
 
-def obj_array_vectorized(f):
+# FIXME: It'd be nice to do make this more precise (T->T, ObjArray->ObjArray),
+# but I don't know how.
+def obj_array_vectorized(
+            f: Callable[[T], T]
+        ) -> Callable[[T | ObjectArray[ShapeT, T]], T | ObjectArray[ShapeT, T]]:
     wrapper = partial(obj_array_vectorize, f)
     update_wrapper(wrapper, f)
-    return wrapper
+    return wrapper  # pyright: ignore[reportReturnType]
 
 
-def rec_obj_array_vectorize(f, ary):
+# FIXME: I don't know that this function *can* be precisely typed.
+# We could probably handle a few specific nesting levels, but is it worth it?
+def rec_obj_array_vectorize(
+            f: Callable[[object], object],
+            ary: object | ObjectArray[ShapeT, object]
+        ) -> object | ObjectArray[ShapeT, object]:
     """Apply the function *f* to all entries of the object array *ary*.
     Return an object array of the same shape consisting of the return
     values.
@@ -164,15 +448,22 @@ def rec_obj_array_vectorize(f, ary):
         This function exists because :class:`numpy.vectorize` suffers from the same
         issue described under :func:`make_obj_array`.
     """
-    if isinstance(ary, np.ndarray) and ary.dtype.char == "O":
+    if isinstance(ary, ObjectArray):
+        import numpy as np
+        ary = cast("ObjectArray[ShapeT, object]", ary)
         result = np.empty_like(ary)
         for i in np.ndindex(ary.shape):
             result[i] = rec_obj_array_vectorize(f, ary[i])
-        return result
+        return cast("ObjectArray[Any, ShapeT]", cast("object", result))
+
     return f(ary)
 
 
-def rec_obj_array_vectorized(f):
+def rec_obj_array_vectorized(
+            f: Callable[[object], ResultT]
+        ) -> Callable[
+                [object | ObjectArray[ShapeT, object]],
+                object | ObjectArray[ShapeT, object]]:
     wrapper = partial(rec_obj_array_vectorize, f)
     update_wrapper(wrapper, f)
     return wrapper
@@ -194,6 +485,7 @@ def obj_array_vectorize_n_args(f, *args):
         This function exists because :class:`numpy.vectorize` suffers from the same
         issue described under :func:`make_obj_array`.
     """
+    import numpy as np
     oarray_arg_indices = []
     for i, arg in enumerate(args):
         if isinstance(arg, np.ndarray) and arg.dtype.char == "O":
@@ -254,196 +546,5 @@ def obj_array_imag_copy(ary):
 
 # }}}
 
-
-# {{{ deprecated junk
-
-def is_obj_array(val):
-    warn("is_obj_array is deprecated and will go away in 2022, "
-            "just inline the check.", DeprecationWarning, stacklevel=2)
-
-    try:
-        return isinstance(val, np.ndarray) and val.dtype.char == "O"
-    except AttributeError:
-        return False
-
-
-def log_shape(array):
-    """Returns the "logical shape" of the array.
-
-    The "logical shape" is the shape that's left when the node-depending
-    dimension has been eliminated.
-    """
-
-    warn("log_shape is deprecated and will go away in 2021, "
-            "use the actual object array shape.",
-            DeprecationWarning, stacklevel=2)
-
-    try:
-        if array.dtype.char == "O":
-            return array.shape
-        return array.shape[:-1]
-    except AttributeError:
-        return ()
-
-
-def join_fields(*args):
-    warn("join_fields is deprecated and will go away in 2022, "
-            "use flat_obj_array", DeprecationWarning, stacklevel=2)
-
-    return flat_obj_array(*args)
-
-
-def is_equal(a, b):
-    warn("is_equal is deprecated and will go away in 2021, "
-            "use numpy.array_equal", DeprecationWarning, stacklevel=2)
-
-    if is_obj_array(a):
-        return is_obj_array(b) and (a.shape == b.shape) and (a == b).all()
-    return not is_obj_array(b) and a == b
-
-
-is_field_equal = is_equal
-
-
-def gen_len(expr):
-    if is_obj_array(expr):
-        return len(expr)
-    return 1
-
-
-def gen_slice(expr, slice_):
-    warn("gen_slice is deprecated and will go away in 2021",
-            DeprecationWarning, stacklevel=2)
-
-    result = expr[slice_]
-    if len(result) == 1:
-        return result[0]
-    return result
-
-
-def obj_array_equal(a, b):
-    warn("obj_array_equal is deprecated and will go away in 2021, "
-            "use numpy.array_equal", DeprecationWarning, stacklevel=2)
-
-    a_is_oa = is_obj_array(a)
-    assert a_is_oa == is_obj_array(b)
-
-    if a_is_oa:
-        return np.array_equal(a, b)
-    return a == b
-
-
-def to_obj_array(ary):
-    warn("to_obj_array is deprecated and will go away in 2021, "
-            "use make_obj_array", DeprecationWarning,
-            stacklevel=2)
-
-    ls = log_shape(ary)
-    result = np.empty(ls, dtype=object)
-
-    for i in np.ndindex(ls):
-        result[i] = ary[i]
-
-    return result
-
-
-def setify_field(f):
-    warn("setify_field is deprecated and will go away in 2021",
-            DeprecationWarning, stacklevel=2)
-
-    if is_obj_array(f):
-        return set(f)
-    return {f}
-
-
-def cast_field(field, dtype):
-    warn("cast_field is deprecated and will go away in 2021",
-            DeprecationWarning, stacklevel=2)
-
-    return with_object_array_or_scalar(
-            lambda f: f.astype(dtype), field)
-
-
-def with_object_array_or_scalar(f, field, obj_array_only=False):
-    warn("with_object_array_or_scalar is deprecated and will go away in 2022, "
-            "use obj_array_vectorize", DeprecationWarning, stacklevel=2)
-
-    if obj_array_only:
-        ls = field.shape if is_obj_array(field) else ()
-    else:
-        ls = log_shape(field)
-    if ls != ():
-        result = np.zeros(ls, dtype=object)
-        for i in np.ndindex(ls):
-            result[i] = f(field[i])
-        return result
-    return f(field)
-
-
-def as_oarray_func(f):
-    wrapper = partial(with_object_array_or_scalar, f)
-    update_wrapper(wrapper, f)
-    return wrapper
-
-
-def with_object_array_or_scalar_n_args(f, *args):
-    warn("with_object_array_or_scalar_n_args is deprecated and "
-            "will go away in 2022, "
-            "use obj_array_vectorize_n_args", DeprecationWarning, stacklevel=2)
-
-    oarray_arg_indices = []
-    for i, arg in enumerate(args):
-        if is_obj_array(arg):
-            oarray_arg_indices.append(i)
-
-    if not oarray_arg_indices:
-        return f(*args)
-
-    leading_oa_index = oarray_arg_indices[0]
-
-    ls = log_shape(args[leading_oa_index])
-    if ls != ():
-        result = np.zeros(ls, dtype=object)
-
-        new_args = list(args)
-        for i in np.ndindex(ls):
-            for arg_i in oarray_arg_indices:
-                new_args[arg_i] = args[arg_i][i]
-
-            result[i] = f(*new_args)
-        return result
-    return f(*args)
-
-
-def as_oarray_func_n_args(f):
-    wrapper = partial(with_object_array_or_scalar_n_args, f)
-    update_wrapper(wrapper, f)
-    return wrapper
-
-
-def oarray_real(ary):
-    warn("oarray_real is deprecated and will go away in 2022, "
-            "use obj_array_real", DeprecationWarning, stacklevel=2)
-    return obj_array_real(ary)
-
-
-def oarray_imag(ary):
-    warn("oarray_imag is deprecated and will go away in 2022, "
-            "use obj_array_imag", DeprecationWarning, stacklevel=2)
-    return obj_array_imag(ary)
-
-
-def oarray_real_copy(ary):
-    warn("oarray_real_copy is deprecated and will go away in 2022, "
-            "use obj_array_real_copy", DeprecationWarning, stacklevel=2)
-    return obj_array_real_copy(ary)
-
-
-def oarray_imag_copy(ary):
-    warn("oarray_imag_copy is deprecated and will go away in 2022, "
-            "use obj_array_imag_copy", DeprecationWarning, stacklevel=2)
-    return obj_array_imag_copy(ary)
-
-# }}}
 
 # vim: foldmethod=marker
