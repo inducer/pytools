@@ -3112,6 +3112,22 @@ def opt_frozen_dataclass(
     return map_cls
 
 
+ShapeT = TypeVar("ShapeT", bound=tuple[int, ...])
+
+
+def ndindex(shape: ShapeT) -> Iterable[ShapeT]:
+    """A more-precisely-typed wrapper around :class:`numpy.ndindex`, since
+    :mod:`numpy` 2.3.1 only provides a tuple of :class:`~typing.Any`.
+
+    .. note:: Requires :mod:`numpy`.
+
+    .. versionadded:: 2025.2
+    """
+    # undocumented for now
+    import numpy as np
+    return np.ndindex(shape)
+
+
 def _test():
     import doctest
     doctest.testmod()
