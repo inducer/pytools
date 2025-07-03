@@ -1144,7 +1144,7 @@ def set_sum(set_iterable):
     return reduce(or_, set_iterable, set())
 
 
-def div_ceil(nr, dr):
+def div_ceil(nr: int, dr: int):
     return -(-nr // dr)
 
 
