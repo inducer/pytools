@@ -152,6 +152,9 @@ class ObjectArray(Generic[ShapeT, T], metaclass=_ObjectArrayMetaclass):
         @property
         def size(self) -> int: ...
 
+        @property
+        def T(self) -> Self: ...  # noqa: N802
+
         @overload
         def __getitem__(self, x: ShapeT, /) -> T: ...
 
