@@ -1148,7 +1148,11 @@ def div_ceil(nr: int, dr: int):
     return -(-nr // dr)
 
 
-def uniform_interval_splitting(n, granularity, max_intervals):
+def uniform_interval_splitting(
+            n: int,
+            granularity: int,
+            max_intervals: int
+        ) -> tuple[int, int]:
     """ Return *(interval_size, num_intervals)* such that::
 
         num_intervals * interval_size >= n
