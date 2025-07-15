@@ -21,6 +21,9 @@ Creation
 .. autofunction:: to_numpy
 .. autofunction:: make_obj_array
 .. autofunction:: flat_obj_array
+.. autofunction:: stack
+.. autofunction:: concatenate
+.. autofunction:: trace
 
 Mapping
 -------
@@ -352,6 +355,46 @@ def make_obj_array(res_list: Sequence[T]) -> ObjectArray1D[T]:
 
 
 def obj_array_to_hashable(ary: ObjectArray[ShapeT, T] | Hashable, /) -> Hashable:
+
+
+def stack(
+            arrays: Sequence[ObjectArray[ShapeT, T]],
+            /, *, axis: Literal[0] = 0,
+        ) -> ObjectArray[tuple[int, Unpack[ShapeT]], T]:
+    """
+    .. versionadded:: 2025.2.2
+    """
+    if axis != 0:
+        raise NotImplementedError("axis != 0")
+
+    import numpy as np
+    return cast("ObjectArray[tuple[int, Unpack[ShapeT]], T]", cast("object",
+                            np.stack(cast("Sequence[NDArray[Any]]", arrays))))
+
+
+def concatenate(
+            arrays: Sequence[ObjectArray[tuple[int, Unpack[ShapeT]], T]],
+            /, *, axis: Literal[0] = 0,
+        ) -> ObjectArray[tuple[int, Unpack[ShapeT]], T]:
+    """
+    .. versionadded:: 2025.2.2
+    """
+    if axis != 0:
+        raise NotImplementedError("axis != 0")
+
+    import numpy as np
+    return cast("ObjectArray[tuple[int, Unpack[ShapeT]], T]", cast("object",
+                np.concatenate(cast("Sequence[NDArray[Any]]", arrays))))
+
+
+def trace(
+            array: ObjectArray2D[T], /,
+        ) -> T:
+    """
+    .. versionadded:: 2025.2.2
+    """
+    import numpy as np
+    return cast("T", np.trace(cast("NDArray[Any]", cast("object", array))))
     if isinstance(ary, ObjectArray):
         ary = cast("ObjectArray[ShapeT, T]", ary)
         return tuple(ary.flat.tolist())
