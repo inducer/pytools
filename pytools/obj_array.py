@@ -19,8 +19,8 @@ Creation
 
 .. autofunction:: from_numpy
 .. autofunction:: to_numpy
-.. autofunction:: make_obj_array
-.. autofunction:: flat_obj_array
+.. autofunction:: new_1d
+.. autofunction:: flat
 .. autofunction:: stack
 .. autofunction:: concatenate
 .. autofunction:: trace
@@ -28,8 +28,8 @@ Creation
 Mapping
 -------
 
-.. autofunction:: obj_array_vectorize
-.. autofunction:: obj_array_vectorize_n_args
+.. autofunction:: vectorize
+.. autofunction:: vectorize_n_args
 
 Numpy workarounds
 -----------------
@@ -81,18 +81,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-from functools import partial, update_wrapper
+from functools import partial, update_wrapper, wraps
 from typing import (
     TYPE_CHECKING,
     Any,
     Generic,
+    Literal,
     TypeAlias,
     TypeVar,
     cast,
     overload,
 )
+from warnings import warn
 
-from typing_extensions import Self, override
+from typing_extensions import Self, Unpack, deprecated, override
 
 
 # NOTE: Importing this must not require importing numpy, so do not be tempted
@@ -103,6 +105,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Hashable, Iterator, Sequence
 
     import numpy as np
+    from numpy.typing import NDArray
 
 
 T = TypeVar("T", covariant=True)
@@ -316,7 +319,7 @@ def from_numpy(
     return cast("ObjectArray[ShapeT, T]", cast("object", ary))
 
 
-def make_obj_array(res_list: Sequence[T]) -> ObjectArray1D[T]:
+def new_1d(res_list: Sequence[T]) -> ObjectArray1D[T]:
     """Create a one-dimensional object array from *res_list*.
     This differs from ``numpy.array(res_list, dtype=object)``
     by whether it tries to determine its shape by descending
@@ -332,8 +335,8 @@ def make_obj_array(res_list: Sequence[T]) -> ObjectArray1D[T]:
         >>> a.shape
         (2, 5)
         >>> # meanwhile:
-        >>> from pytools.obj_array import make_obj_array
-        >>> b = make_obj_array([np.arange(5), np.arange(5)])
+        >>> from pytools.obj_array import new_1d
+        >>> b = new_1d([np.arange(5), np.arange(5)])
         >>> b
         array([array([0, 1, 2, 3, 4]), array([0, 1, 2, 3, 4])], dtype=object)
         >>> b.shape
@@ -342,6 +345,10 @@ def make_obj_array(res_list: Sequence[T]) -> ObjectArray1D[T]:
     In some settings (such as when the sub-arrays are large and/or
     live on a GPU), the recursive behavior of :func:`numpy.array`
     can be undesirable.
+
+    .. versionadded:: 2025.2.2
+
+        Renamed from ``make_obj_array``.
     """
     import numpy as np
     result = np.empty((len(res_list),), dtype=object)
@@ -354,7 +361,10 @@ def make_obj_array(res_list: Sequence[T]) -> ObjectArray1D[T]:
     return cast("ObjectArray1D[T]", cast("object", result))
 
 
-def obj_array_to_hashable(ary: ObjectArray[ShapeT, T] | Hashable, /) -> Hashable:
+@deprecated("use obj_array.new_1d instead")
+def make_obj_array(res_list: Sequence[T]) -> ObjectArray1D[T]:
+    # No run-time warning yet to avoid excessive warning spam.
+    return new_1d(res_list)
 
 
 def stack(
@@ -395,13 +405,21 @@ def trace(
     """
     import numpy as np
     return cast("T", np.trace(cast("NDArray[Any]", cast("object", array))))
+
+
+def to_hashable(ary: ObjectArray[ShapeT, T] | Hashable, /) -> Hashable:
     if isinstance(ary, ObjectArray):
         ary = cast("ObjectArray[ShapeT, T]", ary)
         return tuple(ary.flat.tolist())
     return ary
 
 
-def flat_obj_array(*args: ObjectArray[ShapeT, T] | list[T] | T) -> ObjectArray1D[T]:
+@deprecated("use obj_array.to_hashable")
+def obj_array_to_hashable(ary: ObjectArray[ShapeT, T] | Hashable, /) -> Hashable:
+    return to_hashable(ary)
+
+
+def flat(*args: ObjectArray[ShapeT, T] | list[T] | T) -> ObjectArray1D[T]:
     """Return a one-dimensional flattened object array consisting of
     elements obtained by 'flattening' *args* as follows:
 
@@ -423,23 +441,30 @@ def flat_obj_array(*args: ObjectArray[ShapeT, T] | list[T] | T) -> ObjectArray1D
         else:
             res_list.append(cast("T", arg))
 
-    return make_obj_array(res_list)
+    return new_1d(res_list)
+
+
+@deprecated("use obj_array.flat")
+def flat_obj_array(*args: ObjectArray[ShapeT, T] | list[T] | T) -> ObjectArray1D[T]:
+    warn("flat_obj_array is deprecated, use obj_array.flat instead. "
+         "This will stop working in 2027.", DeprecationWarning, stacklevel=2)
+    return flat(*args)
 
 
 @overload
-def obj_array_vectorize(
+def vectorize(
             f: Callable[[T], ResultT],
             ary: ObjectArray[ShapeT, T],
         ) -> ObjectArray[ShapeT, ResultT]: ...
 
 @overload
-def obj_array_vectorize(
+def vectorize(
             f: Callable[[T], ResultT],
             ary: T,
         ) -> ResultT: ...
 
 
-def obj_array_vectorize(
+def vectorize(
             f: Callable[[T], ResultT],
             ary: T | ObjectArray[ShapeT, T],
         ) -> ResultT | ObjectArray[ShapeT, ResultT]:
@@ -451,7 +476,7 @@ def obj_array_vectorize(
     .. note ::
 
         This function exists because :class:`numpy.vectorize` suffers from the same
-        issue described under :func:`make_obj_array`.
+        issue described under :func:`new_1d`.
     """
 
     import numpy as np
@@ -465,19 +490,38 @@ def obj_array_vectorize(
     return f(ary)
 
 
+@deprecated("use obj_array.vectorize")
+def obj_array_vectorize(
+            f: Callable[[T], ResultT],
+            ary: T | ObjectArray[ShapeT, T],
+        ) -> ResultT | ObjectArray[ShapeT, ResultT]:
+    warn("obj_array_vectorize is deprecated, use obj_array.vectorize instead. "
+         "This will stop working in 2027.", DeprecationWarning, stacklevel=2)
+    return vectorize(f, ary)
+
+
 # FIXME: It'd be nice to do make this more precise (T->T, ObjArray->ObjArray),
 # but I don't know how.
-def obj_array_vectorized(
+def vectorized(
             f: Callable[[T], T]
         ) -> Callable[[T | ObjectArray[ShapeT, T]], T | ObjectArray[ShapeT, T]]:
-    wrapper = partial(obj_array_vectorize, f)
+    wrapper = partial(vectorize, f)
     update_wrapper(wrapper, f)
     return wrapper  # pyright: ignore[reportReturnType]
 
 
+@deprecated("use obj_array.vectorized instead")
+def obj_array_vectorized(
+            f: Callable[[T], T]
+        ) -> Callable[[T | ObjectArray[ShapeT, T]], T | ObjectArray[ShapeT, T]]:
+    warn("obj_array_vectorized is deprecated, use obj_array.vectorized instead. "
+         "This will stop working in 2027.", DeprecationWarning, stacklevel=2)
+    return vectorized(f)
+
+
 # FIXME: I don't know that this function *can* be precisely typed.
 # We could probably handle a few specific nesting levels, but is it worth it?
-def rec_obj_array_vectorize(
+def rec_vectorize(
             f: Callable[[object], object],
             ary: object | ObjectArray[ShapeT, object]
         ) -> object | ObjectArray[ShapeT, object]:
@@ -492,17 +536,28 @@ def rec_obj_array_vectorize(
     .. note ::
 
         This function exists because :class:`numpy.vectorize` suffers from the same
-        issue described under :func:`make_obj_array`.
+        issue described under :func:`new_1d`.
     """
     if isinstance(ary, ObjectArray):
         import numpy as np
         ary = cast("ObjectArray[ShapeT, object]", ary)
         result = np.empty_like(ary)
         for i in np.ndindex(ary.shape):
-            result[i] = rec_obj_array_vectorize(f, ary[i])
+            result[i] = rec_vectorize(f, ary[i])
         return cast("ObjectArray[Any, ShapeT]", cast("object", result))
 
     return f(ary)
+
+
+@deprecated("use obj_array.rec_vectorize instead")
+def rec_obj_array_vectorize(
+            f: Callable[[object], object],
+            ary: object | ObjectArray[ShapeT, object]
+        ) -> object | ObjectArray[ShapeT, object]:
+    warn("rec_obj_array_vectorized is deprecated, "
+         "use obj_array.rec_vectorized instead. "
+         "This will stop working in 2027.", DeprecationWarning, stacklevel=2)
+    return rec_vectorize(f, ary)
 
 
 def rec_obj_array_vectorized(
@@ -510,12 +565,12 @@ def rec_obj_array_vectorized(
         ) -> Callable[
                 [object | ObjectArray[ShapeT, object]],
                 object | ObjectArray[ShapeT, object]]:
-    wrapper = partial(rec_obj_array_vectorize, f)
+    wrapper = partial(rec_vectorize, f)
     update_wrapper(wrapper, f)
     return wrapper
 
 
-def obj_array_vectorize_n_args(f, *args):
+def vectorize_n_args(f, *args):
     """Apply the function *f* elementwise to all entries of any
     object arrays in *args*. All such object arrays are expected
     to have the same shape (but this is not checked).
@@ -529,7 +584,7 @@ def obj_array_vectorize_n_args(f, *args):
     .. note ::
 
         This function exists because :class:`numpy.vectorize` suffers from the same
-        issue described under :func:`make_obj_array`.
+        issue described under :func:`new_1d`.
     """
     import numpy as np
     oarray_arg_indices = []
@@ -552,7 +607,15 @@ def obj_array_vectorize_n_args(f, *args):
     return result
 
 
-def obj_array_vectorized_n_args(f):
+@deprecated("use obj_array.vectorize_n_args")
+def obj_array_vectorize_n_args(f, *args):
+    warn("obj_array_vectorize_n_args is deprecated, "
+         "use obj_array.vectorize_n_args instead. "
+         "This will stop working in 2027.", DeprecationWarning, stacklevel=2)
+    return obj_array_vectorize_n_args(f, *args)
+
+
+def vectorized_n_args(f):
     # Unfortunately, this can't use partial(), as the callable returned by it
     # will not be turned into a bound method upon attribute access.
     # This may happen here, because the decorator *could* be used
@@ -566,29 +629,37 @@ def obj_array_vectorized_n_args(f):
     # > other callable objects (and all non-callable objects) are retrieved
     # > without transformation.
 
+    @wraps(f)
     def wrapper(*args):
-        return obj_array_vectorize_n_args(f, *args)
+        return vectorize_n_args(f, *args)
 
-    update_wrapper(wrapper, f)
     return wrapper
+
+
+@deprecated("use obj_array.vectorized_n_args")
+def obj_array_vectorized_n_args(f):
+    warn("obj_array_vectorized_n_args is deprecated, "
+         "use obj_array.vectorized_n_args instead. "
+         "This will stop working in 2027.", DeprecationWarning, stacklevel=2)
+    return vectorized_n_args(f)
 
 
 # {{{ workarounds for https://github.com/numpy/numpy/issues/1740
 
 def obj_array_real(ary):
-    return rec_obj_array_vectorize(lambda x: x.real, ary)
+    return rec_vectorize(lambda x: x.real, ary)
 
 
 def obj_array_imag(ary):
-    return rec_obj_array_vectorize(lambda x: x.imag, ary)
+    return rec_vectorize(lambda x: x.imag, ary)
 
 
 def obj_array_real_copy(ary):
-    return rec_obj_array_vectorize(lambda x: x.real.copy(), ary)
+    return rec_vectorize(lambda x: x.real.copy(), ary)
 
 
 def obj_array_imag_copy(ary):
-    return rec_obj_array_vectorize(lambda x: x.imag.copy(), ary)
+    return rec_vectorize(lambda x: x.imag.copy(), ary)
 
 # }}}
 
