@@ -416,8 +416,8 @@ class FakeArray:
 def test_make_obj_array_iteration():
     pytest.importorskip("numpy")
 
-    from pytools.obj_array import make_obj_array
-    make_obj_array([FakeArray()])
+    import pytools.obj_array as obj_array
+    obj_array.new_1d([FakeArray()])
 
     assert FakeArray.nopes == 0, FakeArray.nopes
 
@@ -430,9 +430,9 @@ def test_obj_array_vectorize(c=1):
     np = pytest.importorskip("numpy")
     la = pytest.importorskip("numpy.linalg")
 
-    # {{{ functions
+    import pytools.obj_array as obj_array
 
-    import pytools.obj_array as obj
+    # {{{ functions
 
     def add_one(ary):
         assert ary.dtype.char != "O"
@@ -442,12 +442,12 @@ def test_obj_array_vectorize(c=1):
         assert x.dtype.char != "O" and y.dtype.char != "O"
         return x * y + c
 
-    @obj.obj_array_vectorized
+    @obj_array.vectorized
     def vectorized_add_one(ary):
         assert ary.dtype.char != "O"
         return ary + c
 
-    @obj.obj_array_vectorized_n_args
+    @obj_array.vectorized_n_args
     def vectorized_two_add_one(x, y):
         assert x.dtype.char != "O" and y.dtype.char != "O"
         return x * y + c
@@ -460,7 +460,7 @@ def test_obj_array_vectorize(c=1):
             assert ary.dtype.char != "O"
             return ary + self.c
 
-        @obj.obj_array_vectorized_n_args
+        @obj_array.vectorized_n_args
         def vectorized_add(self, ary):
             assert ary.dtype.char != "O"
             return ary + self.c
@@ -472,12 +472,12 @@ def test_obj_array_vectorize(c=1):
     # {{{ check
 
     scalar_ary = np.ones(42, dtype=np.float64)
-    object_ary = obj.make_obj_array([scalar_ary, scalar_ary, scalar_ary])
+    object_ary = obj_array.new_1d([scalar_ary, scalar_ary, scalar_ary])
 
     for func, vectorizer, nargs in [
-            (add_one, obj.obj_array_vectorize, 1),
-            (two_add_one, obj.obj_array_vectorize_n_args, 2),
-            (adder.add, obj.obj_array_vectorize, 1),
+            (add_one, obj_array.vectorize, 1),
+            (two_add_one, obj_array.vectorize_n_args, 2),
+            (adder.add, obj_array.vectorize, 1),
             ]:
         input_ary = [scalar_ary] * nargs
         result = vectorizer(func, *input_ary)
