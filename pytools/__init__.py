@@ -56,8 +56,9 @@ from typing import (
     TypeVar,
     cast,
 )
+from warnings import warn
 
-from typing_extensions import Self, dataclass_transform, override
+from typing_extensions import Self, dataclass_transform, deprecated, override
 
 from pytools.version import VERSION_TEXT
 
@@ -110,6 +111,12 @@ Argmin/max
 .. autofunction:: argmax2
 .. autofunction:: argmin
 .. autofunction:: argmax
+
+Reductions
+----------
+.. autofunction:: product
+.. autofunction:: set_union
+.. autofunction:: fset_union
 
 Cartesian products
 ------------------
@@ -1139,7 +1146,25 @@ def reverse_dictionary(the_dict: Mapping[K, V]) -> dict[V, K]:
     return result
 
 
+def set_union(iterable: Iterable[Iterable[T]]):
+    """
+    .. versionadded:: 2025.2.2
+    """
+    return cast("set[T]", set()).union(*iterable)
+
+
+def fset_union(iterable: Iterable[Iterable[T]]):
+    """
+    .. versionadded:: 2025.2.2
+    """
+    return cast("frozenset[T]", frozenset()).union(*iterable)
+
+
+@deprecated("use set_union/fset_union instead")
 def set_sum(set_iterable):
+    warn("set_sum is deprecated, "
+         "use set_union instead. "
+         "This will stop working in 2027.", DeprecationWarning, stacklevel=2)
     from operator import or_
     return reduce(or_, set_iterable, set())
 
