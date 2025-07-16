@@ -264,6 +264,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 P = ParamSpec("P")
 K = TypeVar("K")
 V = TypeVar("V")
+EmptyT = TypeVar("EmptyT")
 
 # }}}
 
@@ -1087,7 +1088,10 @@ def linear_combination(coefficients, vectors):
     return result
 
 
-def common_prefix(iterable, empty=None):
+def common_prefix(
+            iterable: Iterable[Sequence[T]],
+            empty: EmptyT = None
+        ) -> EmptyT | Sequence[T]:
     it = iter(iterable)
     try:
         pfx = next(it)
@@ -1105,13 +1109,19 @@ def common_prefix(iterable, empty=None):
     return pfx
 
 
-def decorate(function, iterable):
+def decorate(
+            function: Callable[[T], V],
+            iterable: Iterable[T],
+        ) -> list[tuple[T, V]]:
     return [(x, function(x)) for x in iterable]
 
 
-def partition(criterion, iterable):
-    part_true = []
-    part_false = []
+def partition(
+            criterion: Callable[[T], bool],
+            iterable: Iterable[T]
+        ) -> tuple[list[T], list[T]]:
+    part_true: list[T] = []
+    part_false: list[T] = []
     for i in iterable:
         if criterion(i):
             part_true.append(i)
@@ -1120,9 +1130,11 @@ def partition(criterion, iterable):
     return part_true, part_false
 
 
-def partition2(iterable):
-    part_true = []
-    part_false = []
+def partition2(
+            iterable: Iterable[tuple[bool, T]]
+        ) -> tuple[list[T], list[T]]:
+    part_true: list[T] = []
+    part_false: list[T] = []
     for pred, i in iterable:
         if pred:
             part_true.append(i)
