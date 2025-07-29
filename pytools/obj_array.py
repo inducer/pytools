@@ -175,6 +175,12 @@ class ObjectArray(Generic[ShapeT, T], metaclass=_ObjectArrayMetaclass):
 
         @overload
         def __getitem__(
+                self: ObjectArrayND[T],
+                x: tuple[int | slice, ...],
+            /) -> ObjectArrayND[T] | T: ...
+
+        @overload
+        def __getitem__(
             self: ObjectArray1D[T],
             x: slice) -> ObjectArray1D[T]: ...
 
@@ -270,6 +276,12 @@ class ObjectArray(Generic[ShapeT, T], metaclass=_ObjectArrayMetaclass):
                     self: ObjectArray2D[T],
                     other: ObjectArray2D[T],
                 /) -> ObjectArray2D[T]: ...
+
+        @overload
+        def __matmul__(
+                    self: ObjectArrayND[T],
+                    other: ObjectArrayND[T],
+                /) -> ObjectArrayND[T] | T: ...
 
         @property
         def flat(self) -> ObjectArray1D[T]: ...
