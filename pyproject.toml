@@ -111,6 +111,14 @@ reportUnusedCallResult = "none"
 reportExplicitAny = "none"
 reportUnreachable = "hint"
 
+exclude = [
+    "doc",
+    ".conda-root",
+    "build",
+    ".env",
+    ".run-pylint.py",
+]
+
 # This reports even cycles that are qualified by 'if TYPE_CHECKING'. Not what
 # we care about at this moment.
 # https://github.com/microsoft/pyright/issues/746
