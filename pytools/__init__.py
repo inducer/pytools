@@ -3169,6 +3169,11 @@ def ndindex(shape: ShapeT) -> Iterable[ShapeT]:
     return np.ndindex(shape)
 
 
+def not_none(obj: T | None) -> T:
+    assert obj is not None
+    return obj
+
+
 def _test():
     import doctest
     doctest.testmod()
