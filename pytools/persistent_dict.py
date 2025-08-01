@@ -604,19 +604,19 @@ class _PersistentDictBase(Mapping[K, V]):
         return self.keys()
 
     @override
-    def keys(self) -> Iterator[K]:  # type: ignore[override]
+    def keys(self) -> Iterator[K]:
         """Return an iterator over the keys in the dictionary."""
         for row in self._exec_sql("SELECT key_value FROM dict ORDER BY rowid"):
             yield pickle.loads(row[0])[0]
 
     @override
-    def values(self) -> Iterator[V]:  # type: ignore[override]
+    def values(self) -> Iterator[V]:
         """Return an iterator over the values in the dictionary."""
         for row in self._exec_sql("SELECT key_value FROM dict ORDER BY rowid"):
             yield pickle.loads(row[0])[1]
 
     @override
-    def items(self) -> Iterator[tuple[K, V]]:  # type: ignore[override]
+    def items(self) -> Iterator[tuple[K, V]]:
         """Return an iterator over the items in the dictionary."""
         for row in self._exec_sql("SELECT key_value FROM dict ORDER BY rowid"):
             yield pickle.loads(row[0])

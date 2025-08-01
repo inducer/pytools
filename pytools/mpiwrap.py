@@ -14,7 +14,7 @@ import pytools.prefork  # pylint:disable=wrong-import-position
 pytools.prefork.enable_prefork()
 
 
-if Is_initialized():  # type: ignore[name-defined] # noqa: F405
+if Is_initialized():  # noqa: F405
     raise RuntimeError("MPI already initialized before MPI wrapper import")
 
 
