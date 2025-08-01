@@ -67,7 +67,9 @@ if TYPE_CHECKING:
     import threading
     import types
 
+    import numpy as np
     from _typeshed import ReadableBuffer
+    from numpy.typing import NDArray
     from typing_extensions import Self
 
 
@@ -2804,7 +2806,7 @@ class log_process:  # noqa: N801
 
 # {{{ sorting in natural order
 
-def natorder(item):
+def natorder(item: str) -> list[int]:
     """Return a key for natural order string comparison.
 
     See :func:`natsorted`.
@@ -2812,7 +2814,8 @@ def natorder(item):
     .. versionadded:: 2020.1
     """
     import re
-    result = []
+
+    result: list[int] = []
     for (int_val, string_val) in re.findall(r"(\d+)|(\D+)", item):
         if int_val:
             result.append(int(int_val))
@@ -2826,7 +2829,9 @@ def natorder(item):
     return result
 
 
-def natsorted(iterable, key=None, reverse=False):
+def natsorted(iterable: Iterable[T],
+              key: Callable[[T], str] | None = None,
+              reverse: bool = False) -> Sequence[T]:
     """Sort using natural order [1]_, as opposed to lexicographic order.
 
     Example::
@@ -2848,9 +2853,12 @@ def natsorted(iterable, key=None, reverse=False):
 
     .. versionadded:: 2020.1
     """
+    def identity(x: T) -> str:
+        return x  # pyright: ignore[reportReturnType]
+
     if key is None:
-        def key(x):
-            return x
+        key = identity
+
     return sorted(iterable, key=lambda y: natorder(key(y)), reverse=reverse)
 
 # }}}
@@ -2865,7 +2873,7 @@ _NAME_PATTERN = re.compile(f"^({_DOTTED_WORDS})(:({_DOTTED_WORDS})?)?$", re.I)
 del _DOTTED_WORDS
 
 
-def resolve_name(name):
+def resolve_name(name: str) -> Any:
     """A backport of :func:`pkgutil.resolve_name` (added in Python 3.9).
 
     .. versionadded:: 2021.1.2
@@ -2966,7 +2974,8 @@ def unordered_hash(hash_instance: _HashT,
 
 # {{{ sphere_sample
 
-def sphere_sample_equidistant(npoints_approx: int, r: float = 1.0):
+def sphere_sample_equidistant(npoints_approx: int,
+                              r: float = 1.0) -> NDArray[np.floating]:
     """Generate points regularly distributed on a sphere
     based on https://www.cmu.edu/biolphys/deserno/pdf/sphere_equi.pdf.
 
@@ -3015,7 +3024,7 @@ _SPHERE_FIBONACCI_OFFSET = (
 
 def sphere_sample_fibonacci(
         npoints: int, r: float = 1.0, *,
-        optimize: str | None = None):
+        optimize: str | None = None) -> NDArray[np.floating]:
     """Generate points on a sphere based on an offset Fibonacci lattice from [2]_.
 
     .. [2] http://extremelearning.com.au/how-to-evenly-distribute-points-on-a-sphere-more-effectively-than-the-canonical-fibonacci-lattice/
