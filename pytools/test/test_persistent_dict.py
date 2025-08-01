@@ -589,17 +589,17 @@ def test_attrs_hashing() -> None:
         name: str
         value: int
 
-    assert (keyb(MyAttrs("hi", 1)) == "5b6c5da60eb2bd0f")  # type: ignore[call-arg]
+    assert (keyb(MyAttrs("hi", 1)) == "5b6c5da60eb2bd0f")
 
-    assert keyb(MyAttrs("hi", 1)) == keyb(MyAttrs("hi", 1))  # type: ignore[call-arg]
-    assert keyb(MyAttrs("hi", 1)) != keyb(MyAttrs("hi", 2))  # type: ignore[call-arg]
+    assert keyb(MyAttrs("hi", 1)) == keyb(MyAttrs("hi", 1))
+    assert keyb(MyAttrs("hi", 1)) != keyb(MyAttrs("hi", 2))
 
     @dataclass
     class MyDC:
         name: str
         value: int
 
-    assert keyb(MyDC("hi", 1)) != keyb(MyAttrs("hi", 1))  # type: ignore[call-arg]
+    assert keyb(MyDC("hi", 1)) != keyb(MyAttrs("hi", 1))
 
     @attrs.define
     class MyAttrs2:
@@ -607,8 +607,8 @@ def test_attrs_hashing() -> None:
         value: int
 
     # Class types must be encoded in hash
-    assert (keyb(MyAttrs2("hi", 1))  # type: ignore[call-arg]
-            != keyb(MyAttrs("hi", 1)))  # type: ignore[call-arg]
+    assert (keyb(MyAttrs2("hi", 1))
+            != keyb(MyAttrs("hi", 1)))
 
 
 def test_datetime_hashing() -> None:
