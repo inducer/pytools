@@ -275,15 +275,20 @@ EmptyT = TypeVar("EmptyT")
 
 # Undocumented on purpose for now, unclear that this is a great idea, given
 # that typing.deprecated exists.
-class MovedFunctionDeprecationWrapper:
-    def __init__(self, f: F, deadline: int | str | None = None) -> None:
+class MovedFunctionDeprecationWrapper(Generic[P, R]):
+    f: Callable[P, R]
+    deadline: int | str | None
+
+    def __init__(self,
+                 f: Callable[P, R],
+                 deadline: int | str | None = None) -> None:
         if deadline is None:
             deadline = "the future"
 
         self.f = f
         self.deadline = deadline
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
         from warnings import warn
         warn(f"This function is deprecated and will go away in {self.deadline}. "
             f"Use {self.f.__module__}.{self.f.__name__} instead.",
@@ -292,9 +297,11 @@ class MovedFunctionDeprecationWrapper:
         return self.f(*args, **kwargs)
 
 
-def deprecate_keyword(oldkey: str,
+def deprecate_keyword(
+        oldkey: str,
         newkey: str | None = None, *,
-        deadline: str | None = None):
+        deadline: str | None = None
+        ) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """Decorator used to deprecate function keyword arguments.
 
     :arg oldkey: deprecated argument name.
@@ -306,9 +313,9 @@ def deprecate_keyword(oldkey: str,
     if deadline is None:
         deadline = "the future"
 
-    def wrapper(func):
+    def wrapper(func: Callable[P, R]) -> Callable[P, R]:
         @wraps(func)
-        def inner_wrapper(*args, **kwargs):
+        def inner_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             if oldkey in kwargs:
                 if newkey is None:
                     warn(f"The '{oldkey}' keyword is deprecated and will "
