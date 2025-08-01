@@ -49,17 +49,17 @@ def test_opt_frozen_dataclass() -> None:
     # Needs to be frozen by default
     if __debug__:
         with pytest.raises(AttributeError):
-            a.x = 2  # type: ignore[misc]
+            a.x = 2
     else:
-        a.x = 2  # type: ignore[misc]
+        a.x = 2
 
-    assert a.__dataclass_params__.frozen is __debug__  # type: ignore[attr-defined]  # pylint: disable=no-member
+    assert a.__dataclass_params__.frozen is __debug__  # pylint: disable=no-member
 
     # }}}
 
     with pytest.raises(TypeError):
         # Can't specify frozen parameter
-        @opt_frozen_dataclass(frozen=False)  # type: ignore[call-arg]  # pylint: disable=unexpected-keyword-arg
+        @opt_frozen_dataclass(frozen=False)  # pylint: disable=unexpected-keyword-arg
         class B:
             x: int
 

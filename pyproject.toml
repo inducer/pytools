@@ -39,7 +39,7 @@ numpy = [
     "numpy>=1.6",
 ]
 test = [
-    "mypy",
+    "basedpyright",
     "pytest",
     "ruff",
 ]

@@ -198,7 +198,7 @@ def test_memoize_frozen() -> None:
     c0 = FrozenDataclass(10)
     assert c0.double_value() == 20
 
-    c0.double_value.clear_cache(c0)  # type: ignore[attr-defined]
+    c0.double_value.clear_cache(c0)
 
     # }}}
 
@@ -220,7 +220,7 @@ def test_memoize_frozen() -> None:
     c1 = FrozenClass(10)
     assert c1.double_value() == 20
 
-    c1.double_value.clear_cache(c1)  # type: ignore[attr-defined]
+    c1.double_value.clear_cache(c1)
 
     # }}}
 
@@ -559,7 +559,7 @@ def test_tag() -> None:
     # a subclass of Tag
     with pytest.raises(TypeError):
         check_tag_uniqueness(frozenset((
-            "I am not a tag", best_in_show_ribbon,  # type: ignore[arg-type]
+            "I am not a tag", best_in_show_ribbon,
             blue_ribbon, red_ribbon)))
 
     # Test that instantiation succeeds if there are multiple instances
@@ -590,7 +590,7 @@ def test_tag() -> None:
 
     # Test that tagged() fails if tags are not a FrozenSet of Tags
     with pytest.raises(TypeError):
-        t1.tagged(tags=frozenset((1,)))  # type: ignore[arg-type]
+        t1.tagged(tags=frozenset((1,)))
 
     # Test without_tags() function
     t4 = t2.without_tags(red_ribbon)

@@ -767,7 +767,7 @@ def memoize(*args: F, **kwargs: Any) -> F:
             return wrapper
 
     if not args:
-        return _decorator  # type: ignore[return-value]
+        return _decorator
     if callable(args[0]) and len(args) == 1:
         return _decorator(args[0])
     raise TypeError(
@@ -819,9 +819,10 @@ def memoize_on_first_arg(
     from functools import update_wrapper
     new_wrapper = update_wrapper(wrapper, function)
 
-    # type-ignore because mypy has a point here, stuffing random attributes
-    # into the function's dict is moderately sketchy.
-    new_wrapper.clear_cache = clear_cache  # type: ignore[attr-defined]
+    # FIXME: pyright has a point here, stuffing random attributes into the
+    # function's dict is moderately sketchy. See what `functools.cache` is doing
+    # about it.
+    new_wrapper.clear_cache = clear_cache
 
     return new_wrapper
 
@@ -894,7 +895,7 @@ class keyed_memoize_on_first_arg(Generic[T, P, R]):  # noqa: N801
 
         from functools import update_wrapper
         new_wrapper = update_wrapper(wrapper, function)
-        new_wrapper.clear_cache = clear_cache       # type: ignore[attr-defined]
+        new_wrapper.clear_cache = clear_cache
 
         return new_wrapper
 
