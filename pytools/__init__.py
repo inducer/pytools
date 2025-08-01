@@ -165,7 +165,6 @@ Name generation
 Deprecation Warnings
 --------------------
 
-.. autofunction:: deprecate_keyword
 .. autofunction:: module_getattr_for_deprecations
 
 Functions for dealing with (large) auxiliary files
@@ -275,15 +274,20 @@ EmptyT = TypeVar("EmptyT")
 
 # Undocumented on purpose for now, unclear that this is a great idea, given
 # that typing.deprecated exists.
-class MovedFunctionDeprecationWrapper:
-    def __init__(self, f: F, deadline: int | str | None = None) -> None:
+class MovedFunctionDeprecationWrapper(Generic[P, R]):
+    f: Callable[P, R]
+    deadline: int | str
+
+    def __init__(self,
+                 f: Callable[P, R],
+                 deadline: int | str | None = None) -> None:
         if deadline is None:
             deadline = "the future"
 
         self.f = f
         self.deadline = deadline
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
         from warnings import warn
         warn(f"This function is deprecated and will go away in {self.deadline}. "
             f"Use {self.f.__module__}.{self.f.__name__} instead.",
@@ -292,9 +296,12 @@ class MovedFunctionDeprecationWrapper:
         return self.f(*args, **kwargs)
 
 
-def deprecate_keyword(oldkey: str,
+# Deprecated. Should probably use `typing.deprecated` instead.
+def deprecate_keyword(
+        oldkey: str,
         newkey: str | None = None, *,
-        deadline: str | None = None):
+        deadline: str | None = None
+        ):
     """Decorator used to deprecate function keyword arguments.
 
     :arg oldkey: deprecated argument name.
@@ -305,6 +312,10 @@ def deprecate_keyword(oldkey: str,
 
     if deadline is None:
         deadline = "the future"
+
+    warn("'deprecate_keyword' is itself deprecated and will go away in Q1 2026. "
+         "Use 'warnings.deprecated' or a custom deprecation warning.",
+         DeprecationWarning, stacklevel=2)
 
     def wrapper(func):
         @wraps(func)
