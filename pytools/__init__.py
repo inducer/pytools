@@ -64,6 +64,7 @@ from pytools.version import VERSION_TEXT
 
 
 if TYPE_CHECKING:
+    import threading
     import types
 
     from _typeshed import ReadableBuffer
@@ -2630,8 +2631,12 @@ class ProcessTimer:
 
 # {{{ log utilities
 
-def _log_start_if_long(logger, sleep_duration, done_indicator,
-                       noisy_level, description):
+def _log_start_if_long(
+        logger: logging.Logger,
+        sleep_duration: float,
+        done_indicator: list[bool],
+        noisy_level: int,
+        description: str) -> None:
     from time import sleep
     sleep(sleep_duration)
 
@@ -2652,11 +2657,25 @@ class ProcessLogger:
     .. automethod:: __exit__
     """
 
-    default_noisy_level = logging.INFO
+    default_noisy_level: ClassVar[int] = logging.INFO
+
+    logger: logging.Logger
+    description: str
+    silent_level: int
+    noisy_level: int
+    long_threshold_seconds: float
+    late_start_log_thread: threading.Thread
+    timer: ProcessTimer
+
+    _done_indicator: list[bool]
 
     def __init__(
-            self, logger, description,
-            silent_level=None, noisy_level=None, long_threshold_seconds=None):
+            self,
+            logger: logging.Logger,
+            description: str,
+            silent_level: int | None = None,
+            noisy_level: int | None = None,
+            long_threshold_seconds: float | None = None) -> None:
         self.logger = logger
         self.description = description
         self.silent_level = silent_level or logging.DEBUG
@@ -2710,14 +2729,18 @@ class ProcessLogger:
 
         self.timer = ProcessTimer()
 
-    def done(
-            self, extra_msg=None, *extra_fmt_args):
+    def done(self,
+             extra_msg: str | None = None,
+             *extra_fmt_args: str) -> None:
         self.timer.done()
         self._done_indicator[0] = True
 
+        wall = self.timer.wall_elapsed
+        assert wall is not None
+
         completion_level = (
                 self.noisy_level
-                if self.timer.wall_elapsed > self.long_threshold_seconds
+                if wall > self.long_threshold_seconds
                 else self.silent_level)
 
         msg = "%s: completed (%s)"
@@ -2732,12 +2755,15 @@ class ProcessLogger:
     def __enter__(self):
         pass
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self,
+                 exc_type: type[BaseException],
+                 exc_val: BaseException | None,
+                 exc_tb: types.TracebackType | None) -> None:
         self.done()
 
 
 class DebugProcessLogger(ProcessLogger):
-    default_noisy_level = logging.DEBUG
+    default_noisy_level: ClassVar[int] = logging.DEBUG
 
 
 class log_process:  # noqa: N801
@@ -2748,13 +2774,20 @@ class log_process:  # noqa: N801
     .. automethod:: __call__
     """
 
-    def __init__(self, logger, description=None, long_threshold_seconds=None):
+    logger: logging.Logger
+    description: str | None
+    long_threshold_seconds: float | None
+
+    def __init__(self,
+                 logger: logging.Logger,
+                 description: str | None = None,
+                 long_threshold_seconds: float | None = None) -> None:
         self.logger = logger
         self.description = description
         self.long_threshold_seconds = long_threshold_seconds
 
-    def __call__(self, wrapped):
-        def wrapper(*args, **kwargs):
+    def __call__(self, wrapped: Callable[P, R]) -> Callable[P, R]:
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             with ProcessLogger(
                     self.logger,
                     self.description or wrapped.__name__,
