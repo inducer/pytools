@@ -64,6 +64,8 @@ from pytools.version import VERSION_TEXT
 
 
 if TYPE_CHECKING:
+    import types
+
     from _typeshed import ReadableBuffer
     from typing_extensions import Self
 
@@ -2525,46 +2527,70 @@ SUPPORTS_PROCESS_TIME = True
 class ProcessTimer:
     """Measures elapsed wall time and process time.
 
+    .. versionadded:: 2018.5
+
+    .. autoattribute:: wall_elapsed
+    .. autoattribute:: process_elapsed
+
     .. automethod:: __enter__
     .. automethod:: __exit__
     .. automethod:: done
-
-    Timing data attributes:
-
-    .. attribute:: wall_elapsed
-    .. attribute:: process_elapsed
-
-    .. versionadded:: 2018.5
     """
 
-    def __init__(self):
+    perf_counter_start: float
+    process_time_start: float
+
+    wall_elapsed: float | None
+    """Elapsed wall time since the timer was started."""
+    process_elapsed: float | None
+    """Elapsed process time since the timer was started. This is a sum of the
+    system and user CPU time for the current process."""
+
+    def __init__(self) -> None:
         import time
+
         self.perf_counter_start = time.perf_counter()
         self.process_time_start = time.process_time()
 
         self.wall_elapsed = None
         self.process_elapsed = None
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
+        self.wall_elapsed = None
+        self.process_elapsed = None
+
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self,
+                 exc_type: type[BaseException],
+                 exc_val: BaseException | None,
+                 exc_tb: types.TracebackType | None) -> None:
         self.done()
 
-    def done(self):
+    def done(self) -> None:
+        """Update elapsed time since the creation of the timer."""
         import time
+
         self.wall_elapsed = time.perf_counter() - self.perf_counter_start
         self.process_elapsed = time.process_time() - self.process_time_start
 
     @override
-    def __str__(self):
-        cpu = self.process_elapsed / self.wall_elapsed
-        return f"{self.wall_elapsed:.2f}s wall {cpu:.2f}x CPU"
+    def __str__(self) -> str:
+        if self.wall_elapsed is None or self.process_elapsed is None:
+            wall = cpu = 0.0
+        else:
+            wall = self.wall_elapsed
+            cpu = self.process_elapsed / wall
+
+        return f"{wall:.2f}s wall {cpu:.2f}x CPU"
 
     @override
-    def __repr__(self):
-        wall = self.wall_elapsed
-        process = self.process_elapsed
+    def __repr__(self) -> str:
+        if self.wall_elapsed is None or self.process_elapsed is None:
+            wall = process = 0.0
+        else:
+            wall = self.wall_elapsed
+            process = self.process_elapsed
 
         return (f"{type(self).__name__}"
                 f"(wall_elapsed={wall!r}s, process_elapsed={process!r}s)")
