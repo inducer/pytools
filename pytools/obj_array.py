@@ -40,19 +40,6 @@ These functions work around a `long-standing, annoying numpy issue
 .. autofunction:: obj_array_imag
 .. autofunction:: obj_array_real_copy
 .. autofunction:: obj_array_imag_copy
-
-References
-----------
-
-.. currentmodule:: np
-
-.. class:: ndarray
-
-    See :class:`numpy.ndarray`.
-
-.. class:: dtype
-
-    See :class:`numpy.dtype`.
 """
 
 
