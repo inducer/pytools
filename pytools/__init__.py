@@ -257,6 +257,10 @@ Type Variables Used
     Generic unbound invariant :class:`typing.ParamSpec`.
 
 .. class:: _HashT
+
+.. class:: ReadableBuffer
+
+    Anything that implements the read-write buffer interface.
 """
 
 # {{{ type variables
