@@ -192,7 +192,7 @@ def _fork_server(sock: socket.socket) -> None:
                 _send_packet(sock, ("ok", None))
                 break
             try:
-                result = funcs[func_name](*args, **kwargs)  # type: ignore[operator]
+                result = funcs[func_name](*args, **kwargs)
             # FIXME: Is catching all exceptions the right course of action?
             except Exception as e:  # pylint:disable=broad-except
                 _send_packet(sock, ("exception", e))
@@ -252,7 +252,7 @@ class IndirectForker(Forker):
                             cwd: str | None = None,
                             error_on_nonzero: bool = True,
                             ) -> tuple[int, bytes, bytes]:
-        return self._remote_invoke("call_capture_output", cmdline, cwd,  # type: ignore[return-value]
+        return self._remote_invoke("call_capture_output", cmdline, cwd,
                                    error_on_nonzero)
 
     @override

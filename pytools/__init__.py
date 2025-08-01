@@ -64,7 +64,12 @@ from pytools.version import VERSION_TEXT
 
 
 if TYPE_CHECKING:
+    import threading
+    import types
+
+    import numpy as np
     from _typeshed import ReadableBuffer
+    from numpy.typing import NDArray
     from typing_extensions import Self
 
 
@@ -252,6 +257,10 @@ Type Variables Used
     Generic unbound invariant :class:`typing.ParamSpec`.
 
 .. class:: _HashT
+
+.. class:: ReadableBuffer
+
+    Anything that implements the read-write buffer interface.
 """
 
 # {{{ type variables
@@ -273,15 +282,20 @@ EmptyT = TypeVar("EmptyT")
 
 # Undocumented on purpose for now, unclear that this is a great idea, given
 # that typing.deprecated exists.
-class MovedFunctionDeprecationWrapper:
-    def __init__(self, f: F, deadline: int | str | None = None) -> None:
+class MovedFunctionDeprecationWrapper(Generic[P, R]):
+    f: Callable[P, R]
+    deadline: int | str | None
+
+    def __init__(self,
+                 f: Callable[P, R],
+                 deadline: int | str | None = None) -> None:
         if deadline is None:
             deadline = "the future"
 
         self.f = f
         self.deadline = deadline
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
         from warnings import warn
         warn(f"This function is deprecated and will go away in {self.deadline}. "
             f"Use {self.f.__module__}.{self.f.__name__} instead.",
@@ -290,9 +304,11 @@ class MovedFunctionDeprecationWrapper:
         return self.f(*args, **kwargs)
 
 
-def deprecate_keyword(oldkey: str,
+def deprecate_keyword(
+        oldkey: str,
         newkey: str | None = None, *,
-        deadline: str | None = None):
+        deadline: str | None = None
+        ) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """Decorator used to deprecate function keyword arguments.
 
     :arg oldkey: deprecated argument name.
@@ -304,9 +320,9 @@ def deprecate_keyword(oldkey: str,
     if deadline is None:
         deadline = "the future"
 
-    def wrapper(func):
+    def wrapper(func: Callable[P, R]) -> Callable[P, R]:
         @wraps(func)
-        def inner_wrapper(*args, **kwargs):
+        def inner_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             if oldkey in kwargs:
                 if newkey is None:
                     warn(f"The '{oldkey}' keyword is deprecated and will "
@@ -747,7 +763,7 @@ def memoize(*args: F, **kwargs: Any) -> F:
             return wrapper
 
     if not args:
-        return _decorator  # type: ignore[return-value]
+        return _decorator
     if callable(args[0]) and len(args) == 1:
         return _decorator(args[0])
     raise TypeError(
@@ -799,9 +815,10 @@ def memoize_on_first_arg(
     from functools import update_wrapper
     new_wrapper = update_wrapper(wrapper, function)
 
-    # type-ignore because mypy has a point here, stuffing random attributes
-    # into the function's dict is moderately sketchy.
-    new_wrapper.clear_cache = clear_cache  # type: ignore[attr-defined]
+    # FIXME: pyright has a point here, stuffing random attributes into the
+    # function's dict is moderately sketchy. See what `functools.cache` is doing
+    # about it.
+    new_wrapper.clear_cache = clear_cache
 
     return new_wrapper
 
@@ -874,7 +891,7 @@ class keyed_memoize_on_first_arg(Generic[T, P, R]):  # noqa: N801
 
         from functools import update_wrapper
         new_wrapper = update_wrapper(wrapper, function)
-        new_wrapper.clear_cache = clear_cache       # type: ignore[attr-defined]
+        new_wrapper.clear_cache = clear_cache
 
         return new_wrapper
 
@@ -2199,13 +2216,13 @@ class ProgressBar:
 
 # {{{ file system related
 
-def assert_not_a_file(name):
+def assert_not_a_file(name: str) -> None:
     import os
     if os.access(name, os.F_OK):
-        raise OSError(f"file `{name}' already exists")
+        raise OSError(f"file '{name}' already exists")
 
 
-def add_python_path_relative_to_script(rel_path):
+def add_python_path_relative_to_script(rel_path: str) -> None:
     from os.path import abspath, dirname, join
 
     script_name = sys.argv[0]
@@ -2253,7 +2270,7 @@ def match_precision(dtype, dtype_to_match):
 
 # {{{ unique name generation
 
-def generate_unique_names(prefix):
+def generate_unique_names(prefix: str) -> Iterator[str]:
     yield prefix
 
     try_num = 0
@@ -2294,6 +2311,12 @@ class UniqueNameGenerator:
     .. automethod:: add_names
     .. automethod:: __call__
     """
+
+    existing_names: set[str]
+    forced_prefix: str
+    forced_suffix: str
+    prefix_to_counter: dict[str, int]
+
     def __init__(self,
             existing_names: Collection[str] | None = None,
             forced_prefix: str = "",
@@ -2311,14 +2334,14 @@ class UniqueNameGenerator:
 
         self.existing_names = set(existing_names)
         self.forced_prefix = forced_prefix
-        self.forced_suffix: str = forced_suffix
-        self.prefix_to_counter: dict[str, int] = {}
+        self.forced_suffix = forced_suffix
+        self.prefix_to_counter = {}
 
     def is_name_conflicting(self, name: str) -> bool:
         """Returns *True* if *name* conflicts with an existing :class:`str`."""
         return name in self.existing_names
 
-    def _name_added(self, name: str) -> None:
+    def _name_added(self, name: str) -> None:  # pyright: ignore[reportUnusedParameter]
         """Callback to alert subclasses when a name has been added.
 
         .. note::
@@ -2371,17 +2394,23 @@ class UniqueNameGenerator:
 
         # }}}
 
-        for counter, var_name in generate_numbered_unique_names(  # noqa: B020,B007
+        var_name = None
+        for try_counter, try_var_name in generate_numbered_unique_names(
                     based_on, counter, self.forced_suffix):
-            if not self.is_name_conflicting(var_name):
+            if not self.is_name_conflicting(try_var_name):
+                counter = try_counter
+                var_name = try_var_name
                 break
 
-        self.prefix_to_counter[based_on] = counter
+        if counter is None or var_name is None:
+            raise ValueError("could not find a non-conflicting name")
 
-        var_name = intern(var_name)  # pylint: disable=undefined-loop-variable
+        self.prefix_to_counter[based_on] = counter
+        var_name = intern(var_name)
 
         self.existing_names.add(var_name)
         self._name_added(var_name)
+
         return var_name
 
 # }}}
@@ -2390,15 +2419,22 @@ class UniqueNameGenerator:
 # {{{ recursion limit
 
 class MinRecursionLimit:
-    def __init__(self, min_rec_limit):
-        self.min_rec_limit = min_rec_limit
+    min_rec_limit: int
+    prev_recursion_limit: int | None
 
-    def __enter__(self):
+    def __init__(self, min_rec_limit: int) -> None:
+        self.min_rec_limit = min_rec_limit
+        self.prev_recursion_limit = None
+
+    def __enter__(self) -> None:
         self.prev_recursion_limit = sys.getrecursionlimit()
         new_limit = max(self.prev_recursion_limit, self.min_rec_limit)
         sys.setrecursionlimit(new_limit)
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self,
+                 exc_type: type[BaseException],
+                 exc_val: BaseException | None,
+                 exc_tb: types.TracebackType | None) -> None:
         # Deep recursion can produce deeply nested data structures
         # (or long chains of to-be gc'd generators) that cannot be
         # undergo garbage collection with a lower recursion limit.
@@ -2416,7 +2452,7 @@ class MinRecursionLimit:
 
 # {{{ download from web if not present
 
-def download_from_web_if_not_present(url, local_name=None):
+def download_from_web_if_not_present(url: str, local_name: str | None = None) -> None:
     """
     .. versionadded:: 2017.5
     """
@@ -2444,7 +2480,7 @@ def download_from_web_if_not_present(url, local_name=None):
 
 # {{{ find git revisions
 
-def find_git_revision(tree_root):
+def find_git_revision(tree_root: str) -> str | None:
     # Keep this routine self-contained so that it can be copy-pasted into
     # setup.py.
 
@@ -2458,7 +2494,7 @@ def find_git_revision(tree_root):
     # stolen from
     # https://github.com/numpy/numpy/blob/055ce3e90b50b5f9ef8cf1b8641c42e391f10735/setup.py#L70-L92
     import os
-    env = {}
+    env: dict[str, Any] = {}
     for k in ["SYSTEMROOT", "PATH", "HOME"]:
         v = os.environ.get(k)
         if v is not None:
@@ -2488,7 +2524,7 @@ def find_git_revision(tree_root):
     return git_rev
 
 
-def find_module_git_revision(module_file, n_levels_up):
+def find_module_git_revision(module_file: str, n_levels_up: int) -> str | None:
     from os.path import dirname, join
     tree_root = join(*([dirname(module_file), ".." * n_levels_up]))
 
@@ -2499,8 +2535,8 @@ def find_module_git_revision(module_file, n_levels_up):
 
 # {{{ create a reshaped view of a numpy array
 
-def reshaped_view(a, newshape):
-    """ Create a new view object with shape ``newshape`` without copying the data of
+def reshaped_view(a, newshape: int | tuple[int, ...]):
+    """Create a new view object with shape ``newshape`` without copying the data of
     ``a``. This function is different from ``numpy.reshape`` by raising an
     exception when data copy is necessary.
 
@@ -2525,46 +2561,70 @@ SUPPORTS_PROCESS_TIME = True
 class ProcessTimer:
     """Measures elapsed wall time and process time.
 
+    .. versionadded:: 2018.5
+
+    .. autoattribute:: wall_elapsed
+    .. autoattribute:: process_elapsed
+
     .. automethod:: __enter__
     .. automethod:: __exit__
     .. automethod:: done
-
-    Timing data attributes:
-
-    .. attribute:: wall_elapsed
-    .. attribute:: process_elapsed
-
-    .. versionadded:: 2018.5
     """
 
-    def __init__(self):
+    perf_counter_start: float
+    process_time_start: float
+
+    wall_elapsed: float | None
+    """Elapsed wall time since the timer was started."""
+    process_elapsed: float | None
+    """Elapsed process time since the timer was started. This is a sum of the
+    system and user CPU time for the current process."""
+
+    def __init__(self) -> None:
         import time
+
         self.perf_counter_start = time.perf_counter()
         self.process_time_start = time.process_time()
 
         self.wall_elapsed = None
         self.process_elapsed = None
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
+        self.wall_elapsed = None
+        self.process_elapsed = None
+
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self,
+                 exc_type: type[BaseException],
+                 exc_val: BaseException | None,
+                 exc_tb: types.TracebackType | None) -> None:
         self.done()
 
-    def done(self):
+    def done(self) -> None:
+        """Update elapsed time since the creation of the timer."""
         import time
+
         self.wall_elapsed = time.perf_counter() - self.perf_counter_start
         self.process_elapsed = time.process_time() - self.process_time_start
 
     @override
-    def __str__(self):
-        cpu = self.process_elapsed / self.wall_elapsed
-        return f"{self.wall_elapsed:.2f}s wall {cpu:.2f}x CPU"
+    def __str__(self) -> str:
+        if self.wall_elapsed is None or self.process_elapsed is None:
+            wall = cpu = 0.0
+        else:
+            wall = self.wall_elapsed
+            cpu = self.process_elapsed / wall
+
+        return f"{wall:.2f}s wall {cpu:.2f}x CPU"
 
     @override
-    def __repr__(self):
-        wall = self.wall_elapsed
-        process = self.process_elapsed
+    def __repr__(self) -> str:
+        if self.wall_elapsed is None or self.process_elapsed is None:
+            wall = process = 0.0
+        else:
+            wall = self.wall_elapsed
+            process = self.process_elapsed
 
         return (f"{type(self).__name__}"
                 f"(wall_elapsed={wall!r}s, process_elapsed={process!r}s)")
@@ -2574,8 +2634,12 @@ class ProcessTimer:
 
 # {{{ log utilities
 
-def _log_start_if_long(logger, sleep_duration, done_indicator,
-                       noisy_level, description):
+def _log_start_if_long(
+        logger: logging.Logger,
+        sleep_duration: float,
+        done_indicator: list[bool],
+        noisy_level: int,
+        description: str) -> None:
     from time import sleep
     sleep(sleep_duration)
 
@@ -2596,11 +2660,25 @@ class ProcessLogger:
     .. automethod:: __exit__
     """
 
-    default_noisy_level = logging.INFO
+    default_noisy_level: ClassVar[int] = logging.INFO
+
+    logger: logging.Logger
+    description: str
+    silent_level: int
+    noisy_level: int
+    long_threshold_seconds: float
+    late_start_log_thread: threading.Thread
+    timer: ProcessTimer
+
+    _done_indicator: list[bool]
 
     def __init__(
-            self, logger, description,
-            silent_level=None, noisy_level=None, long_threshold_seconds=None):
+            self,
+            logger: logging.Logger,
+            description: str,
+            silent_level: int | None = None,
+            noisy_level: int | None = None,
+            long_threshold_seconds: float | None = None) -> None:
         self.logger = logger
         self.description = description
         self.silent_level = silent_level or logging.DEBUG
@@ -2654,14 +2732,18 @@ class ProcessLogger:
 
         self.timer = ProcessTimer()
 
-    def done(
-            self, extra_msg=None, *extra_fmt_args):
+    def done(self,
+             extra_msg: str | None = None,
+             *extra_fmt_args: str) -> None:
         self.timer.done()
         self._done_indicator[0] = True
 
+        wall = self.timer.wall_elapsed
+        assert wall is not None
+
         completion_level = (
                 self.noisy_level
-                if self.timer.wall_elapsed > self.long_threshold_seconds
+                if wall > self.long_threshold_seconds
                 else self.silent_level)
 
         msg = "%s: completed (%s)"
@@ -2676,12 +2758,15 @@ class ProcessLogger:
     def __enter__(self):
         pass
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self,
+                 exc_type: type[BaseException],
+                 exc_val: BaseException | None,
+                 exc_tb: types.TracebackType | None) -> None:
         self.done()
 
 
 class DebugProcessLogger(ProcessLogger):
-    default_noisy_level = logging.DEBUG
+    default_noisy_level: ClassVar[int] = logging.DEBUG
 
 
 class log_process:  # noqa: N801
@@ -2692,13 +2777,20 @@ class log_process:  # noqa: N801
     .. automethod:: __call__
     """
 
-    def __init__(self, logger, description=None, long_threshold_seconds=None):
+    logger: logging.Logger
+    description: str | None
+    long_threshold_seconds: float | None
+
+    def __init__(self,
+                 logger: logging.Logger,
+                 description: str | None = None,
+                 long_threshold_seconds: float | None = None) -> None:
         self.logger = logger
         self.description = description
         self.long_threshold_seconds = long_threshold_seconds
 
-    def __call__(self, wrapped):
-        def wrapper(*args, **kwargs):
+    def __call__(self, wrapped: Callable[P, R]) -> Callable[P, R]:
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             with ProcessLogger(
                     self.logger,
                     self.description or wrapped.__name__,
@@ -2715,7 +2807,7 @@ class log_process:  # noqa: N801
 
 # {{{ sorting in natural order
 
-def natorder(item):
+def natorder(item: str) -> list[int]:
     """Return a key for natural order string comparison.
 
     See :func:`natsorted`.
@@ -2723,7 +2815,8 @@ def natorder(item):
     .. versionadded:: 2020.1
     """
     import re
-    result = []
+
+    result: list[int] = []
     for (int_val, string_val) in re.findall(r"(\d+)|(\D+)", item):
         if int_val:
             result.append(int(int_val))
@@ -2737,7 +2830,9 @@ def natorder(item):
     return result
 
 
-def natsorted(iterable, key=None, reverse=False):
+def natsorted(iterable: Iterable[T],
+              key: Callable[[T], str] | None = None,
+              reverse: bool = False) -> Sequence[T]:
     """Sort using natural order [1]_, as opposed to lexicographic order.
 
     Example::
@@ -2759,9 +2854,12 @@ def natsorted(iterable, key=None, reverse=False):
 
     .. versionadded:: 2020.1
     """
+    def identity(x: T) -> str:
+        return x  # pyright: ignore[reportReturnType]
+
     if key is None:
-        def key(x):
-            return x
+        key = identity
+
     return sorted(iterable, key=lambda y: natorder(key(y)), reverse=reverse)
 
 # }}}
@@ -2776,7 +2874,7 @@ _NAME_PATTERN = re.compile(f"^({_DOTTED_WORDS})(:({_DOTTED_WORDS})?)?$", re.I)
 del _DOTTED_WORDS
 
 
-def resolve_name(name):
+def resolve_name(name: str) -> Any:
     """A backport of :func:`pkgutil.resolve_name` (added in Python 3.9).
 
     .. versionadded:: 2021.1.2
@@ -2877,7 +2975,8 @@ def unordered_hash(hash_instance: _HashT,
 
 # {{{ sphere_sample
 
-def sphere_sample_equidistant(npoints_approx: int, r: float = 1.0):
+def sphere_sample_equidistant(npoints_approx: int,
+                              r: float = 1.0) -> NDArray[np.floating]:
     """Generate points regularly distributed on a sphere
     based on https://www.cmu.edu/biolphys/deserno/pdf/sphere_equi.pdf.
 
@@ -2926,7 +3025,7 @@ _SPHERE_FIBONACCI_OFFSET = (
 
 def sphere_sample_fibonacci(
         npoints: int, r: float = 1.0, *,
-        optimize: str | None = None):
+        optimize: str | None = None) -> NDArray[np.floating]:
     """Generate points on a sphere based on an offset Fibonacci lattice from [2]_.
 
     .. [2] http://extremelearning.com.au/how-to-evenly-distribute-points-on-a-sphere-more-effectively-than-the-canonical-fibonacci-lattice/
