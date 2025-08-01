@@ -2212,13 +2212,13 @@ class ProgressBar:
 
 # {{{ file system related
 
-def assert_not_a_file(name):
+def assert_not_a_file(name: str) -> None:
     import os
     if os.access(name, os.F_OK):
-        raise OSError(f"file `{name}' already exists")
+        raise OSError(f"file '{name}' already exists")
 
 
-def add_python_path_relative_to_script(rel_path):
+def add_python_path_relative_to_script(rel_path: str) -> None:
     from os.path import abspath, dirname, join
 
     script_name = sys.argv[0]
@@ -2266,7 +2266,7 @@ def match_precision(dtype, dtype_to_match):
 
 # {{{ unique name generation
 
-def generate_unique_names(prefix):
+def generate_unique_names(prefix: str) -> Iterator[str]:
     yield prefix
 
     try_num = 0
@@ -2307,6 +2307,12 @@ class UniqueNameGenerator:
     .. automethod:: add_names
     .. automethod:: __call__
     """
+
+    existing_names: set[str]
+    forced_prefix: str
+    forced_suffix: str
+    prefix_to_counter: dict[str, int]
+
     def __init__(self,
             existing_names: Collection[str] | None = None,
             forced_prefix: str = "",
@@ -2324,14 +2330,14 @@ class UniqueNameGenerator:
 
         self.existing_names = set(existing_names)
         self.forced_prefix = forced_prefix
-        self.forced_suffix: str = forced_suffix
-        self.prefix_to_counter: dict[str, int] = {}
+        self.forced_suffix = forced_suffix
+        self.prefix_to_counter = {}
 
     def is_name_conflicting(self, name: str) -> bool:
         """Returns *True* if *name* conflicts with an existing :class:`str`."""
         return name in self.existing_names
 
-    def _name_added(self, name: str) -> None:
+    def _name_added(self, name: str) -> None:  # pyright: ignore[reportUnusedParameter]
         """Callback to alert subclasses when a name has been added.
 
         .. note::
@@ -2384,17 +2390,23 @@ class UniqueNameGenerator:
 
         # }}}
 
-        for counter, var_name in generate_numbered_unique_names(  # noqa: B020,B007
+        var_name = None
+        for try_counter, try_var_name in generate_numbered_unique_names(
                     based_on, counter, self.forced_suffix):
-            if not self.is_name_conflicting(var_name):
+            if not self.is_name_conflicting(try_var_name):
+                counter = try_counter
+                var_name = try_var_name
                 break
 
-        self.prefix_to_counter[based_on] = counter
+        if counter is None or var_name is None:
+            raise ValueError("could not find a non-conflicting name")
 
-        var_name = intern(var_name)  # pylint: disable=undefined-loop-variable
+        self.prefix_to_counter[based_on] = counter
+        var_name = intern(var_name)
 
         self.existing_names.add(var_name)
         self._name_added(var_name)
+
         return var_name
 
 # }}}
