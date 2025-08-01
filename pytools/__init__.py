@@ -2415,15 +2415,22 @@ class UniqueNameGenerator:
 # {{{ recursion limit
 
 class MinRecursionLimit:
-    def __init__(self, min_rec_limit):
-        self.min_rec_limit = min_rec_limit
+    min_rec_limit: int
+    prev_recursion_limit: int | None
 
-    def __enter__(self):
+    def __init__(self, min_rec_limit: int) -> None:
+        self.min_rec_limit = min_rec_limit
+        self.prev_recursion_limit = None
+
+    def __enter__(self) -> None:
         self.prev_recursion_limit = sys.getrecursionlimit()
         new_limit = max(self.prev_recursion_limit, self.min_rec_limit)
         sys.setrecursionlimit(new_limit)
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self,
+                 exc_type: type[BaseException],
+                 exc_val: BaseException | None,
+                 exc_tb: types.TracebackType | None) -> None:
         # Deep recursion can produce deeply nested data structures
         # (or long chains of to-be gc'd generators) that cannot be
         # undergo garbage collection with a lower recursion limit.
@@ -2441,7 +2448,7 @@ class MinRecursionLimit:
 
 # {{{ download from web if not present
 
-def download_from_web_if_not_present(url, local_name=None):
+def download_from_web_if_not_present(url: str, local_name: str | None = None) -> None:
     """
     .. versionadded:: 2017.5
     """
@@ -2469,7 +2476,7 @@ def download_from_web_if_not_present(url, local_name=None):
 
 # {{{ find git revisions
 
-def find_git_revision(tree_root):
+def find_git_revision(tree_root: str) -> str | None:
     # Keep this routine self-contained so that it can be copy-pasted into
     # setup.py.
 
@@ -2483,7 +2490,7 @@ def find_git_revision(tree_root):
     # stolen from
     # https://github.com/numpy/numpy/blob/055ce3e90b50b5f9ef8cf1b8641c42e391f10735/setup.py#L70-L92
     import os
-    env = {}
+    env: dict[str, Any] = {}
     for k in ["SYSTEMROOT", "PATH", "HOME"]:
         v = os.environ.get(k)
         if v is not None:
@@ -2513,7 +2520,7 @@ def find_git_revision(tree_root):
     return git_rev
 
 
-def find_module_git_revision(module_file, n_levels_up):
+def find_module_git_revision(module_file: str, n_levels_up: int) -> str | None:
     from os.path import dirname, join
     tree_root = join(*([dirname(module_file), ".." * n_levels_up]))
 
@@ -2524,8 +2531,8 @@ def find_module_git_revision(module_file, n_levels_up):
 
 # {{{ create a reshaped view of a numpy array
 
-def reshaped_view(a, newshape):
-    """ Create a new view object with shape ``newshape`` without copying the data of
+def reshaped_view(a, newshape: int | tuple[int, ...]):
+    """Create a new view object with shape ``newshape`` without copying the data of
     ``a``. This function is different from ``numpy.reshape`` by raising an
     exception when data copy is necessary.
 
