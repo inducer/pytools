@@ -20,6 +20,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 intersphinx_mapping = {
     "loopy": ("https://documen.tician.de/loopy", None),
+    "matplotlib": ("https://matplotlib.org/stable/", None),
     "numpy": ("https://numpy.org/doc/stable", None),
     "platformdirs": ("https://platformdirs.readthedocs.io/en/latest", None),
     "pymbolic": ("https://documen.tician.de/pymbolic", None),
@@ -41,7 +42,10 @@ sphinxconfig_missing_reference_aliases = {
     "np.ndarray": "class:numpy.ndarray",
     "np.floating": "class:numpy.floating",
     # pytools typing
+    "BoundingBox": "obj:pytools.spatial_btree.BoundingBox",
+    "Element": "obj:pytools.spatial_btree.Element",
     "ObjectArray1D": "obj:pytools.obj_array.ObjectArray1D",
+    "Point": "obj:pytools.spatial_btree.Point",
     "ReadableBuffer": "data:pytools.ReadableBuffer",
 }
 
