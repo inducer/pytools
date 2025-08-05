@@ -1,34 +1,68 @@
+"""
+Spatial Binary Tree
+===================
+
+.. autoclass:: Point
+.. autoclass:: Element
+.. autoclass:: BoundingBox
+.. autoclass:: SpatialBinaryTree
+
+.. autoclass:: SpatialBinaryTreeBucket
+"""
+
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, TextIO, TypeAlias, cast
 
 import numpy as np
 
 
-def do_boxes_intersect(bl, tr):
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+Point: TypeAlias = np.ndarray[tuple[int], np.dtype[np.floating]]
+Element: TypeAlias = Any
+BoundingBox: TypeAlias = tuple[Point, Point]
+SpatialBinaryTree: TypeAlias = (
+    "SpatialBinaryTreeBucket | tuple[SpatialBinaryTree, SpatialBinaryTree]")
+
+
+def do_boxes_intersect(bl: BoundingBox, tr: BoundingBox) -> bool:
     (bl1, tr1) = bl
     (bl2, tr2) = tr
     (dimension,) = bl1.shape
     return all(max(bl1[i], bl2[i]) <= min(tr1[i], tr2[i]) for i in range(dimension))
 
 
-def make_buckets(bottom_left, top_right, allbuckets, max_elements_per_box):
+def make_buckets(
+        bottom_left: Point,
+        top_right: Point,
+        allbuckets: list[SpatialBinaryTreeBucket],
+        max_elements_per_box: int
+    ) -> SpatialBinaryTree:
     (dimensions,) = bottom_left.shape
-
     half = (top_right - bottom_left) / 2.
 
-    def do(dimension, pos):
+    def do(dimension: int, pos: Point) -> SpatialBinaryTree:
         if dimension == dimensions:
-            origin = bottom_left + pos*half
-            bucket = SpatialBinaryTreeBucket(origin, origin + half,
+            origin = bottom_left + pos * half
+            bucket = SpatialBinaryTreeBucket(
+                    origin,
+                    origin + half,
                     max_elements_per_box=max_elements_per_box)
+
             allbuckets.append(bucket)
             return bucket
+
         pos[dimension] = 0
         first = do(dimension + 1, pos)
+
         pos[dimension] = 1
         second = do(dimension + 1, pos)
-        return [first, second]
 
-    return do(0, np.zeros((dimensions,), np.float64))
+        return first, second
+
+    return do(0, np.zeros((dimensions,), dtype=bottom_left.dtype))
 
 
 class SpatialBinaryTreeBucket:
@@ -36,50 +70,74 @@ class SpatialBinaryTreeBucket:
     It automatically decides whether it needs to create more subdivisions
     beneath itself or not.
 
-    .. attribute:: elements
+    .. autoattribute:: elements
 
-        a list of tuples *(element, bbox)* where bbox is again
-        a tuple *(lower_left, upper_right)* of :class:`numpy.ndarray` instances
-        satisfying ``(lower_right <= upper_right).all()``.
+    .. autoattribute:: bottom_left
+    .. autoattribute:: top_right
+    .. autoattribute:: center
+    .. autoattribute:: max_elements_per_box
+
+    .. automethod:: insert
+    .. automethod:: generate_matches
+    .. automethod:: visualize
+    .. automethod:: plot
     """
 
-    def __init__(self, bottom_left, top_right, max_elements_per_box=None):
-        """:param bottom_left: A :mod: 'numpy' array of the minimal coordinates
-        of the box being partitioned.
-        :param top_right: A :mod: 'numpy' array of the maximal coordinates of
-        the box being partitioned."""
+    elements: list[tuple[Element, BoundingBox]]
+    """A list of tuples *(element, bbox)* where bbox is again a tuple
+    *(lower_left, upper_right)* of :class:`numpy.ndarray` instances
+    satisfying ``(lower_right <= upper_right).all()``.
+    """
 
-        self.elements = []
+    bottom_left: Point
+    top_right: Point
+    center: Point
+    max_elements_per_box: int
+
+    buckets: SpatialBinaryTree | None
+    all_buckets: list[SpatialBinaryTreeBucket] | None
+
+    def __init__(self,
+                 bottom_left: Point,
+                 top_right: Point,
+                 max_elements_per_box: int | None = None) -> None:
+        """
+        :param bottom_left: a :mod:`numpy.ndarray` of the minimal coordinates
+            of the box being partitioned.
+        :param top_right: a :mod:`numpy.ndarray` array of the maximal coordinates
+            of the box being partitioned.
+        """
 
         self.bottom_left = bottom_left
         self.top_right = top_right
         self.center = (bottom_left + top_right) / 2
 
         # As long as buckets is None, there are no subdivisions
-        self.buckets = None
         self.elements = []
+        self.buckets = None
+        self.all_buckets = None
 
         if max_elements_per_box is None:
             dimensions, = self.bottom_left.shape
-            max_elements_per_box = 8 * 2**dimensions
+            max_elements_per_box = cast("int", 8 * 2**dimensions)
 
         self.max_elements_per_box = max_elements_per_box
 
-    def insert(self, element, bbox):
+    def insert(self, element: Element, bbox: BoundingBox) -> None:
         """Insert an element into the spatial tree.
 
         :param element: the element to be stored in the retrieval data
-        structure.  It is treated as opaque and no assumptions are made on it.
+            structure. It is treated as opaque and no assumptions are made on it.
 
-        :param bbox: A bounding box supplied as a tuple *lower_left,
-        upper_right* of :mod:`numpy` vectors, such that *(lower_right <=
-        upper_right).all()*.
-
-        Despite these names, the bounding box (and this entire data structure)
-        may be of any dimension.
+        :param bbox: a bounding box supplied as a tuple ``(bottom_left, top_right)``
+            of :mod:`numpy` vectors, such that ``(bottom_left <= top_right).all()``.
+            Despite these names, the bounding box (and this entire data structure)
+            may be of any dimension.
         """
 
-        def insert_into_subdivision(element, bbox):
+        def insert_into_subdivision(element: Element, bbox: BoundingBox) -> None:
+            assert self.all_buckets is not None
+
             bucket_matches = [
                 ibucket
                 for ibucket, bucket in enumerate(self.all_buckets)
@@ -122,34 +180,47 @@ class SpatialBinaryTreeBucket:
             # Go find which sudivision to place element
             insert_into_subdivision(element, bbox)
 
-    def generate_matches(self, point):
+    def generate_matches(self, point: Point) -> Iterator[Element]:
         if self.buckets:
             # We have subdivisions. Use them.
             (dimensions,) = point.shape
             bucket = self.buckets
             for dim in range(dimensions):
+                assert isinstance(bucket, tuple)
                 bucket = bucket[0] if point[dim] < self.center[dim] else bucket[1]
 
+            assert isinstance(bucket, SpatialBinaryTreeBucket)
             yield from bucket.generate_matches(point)
 
         # Perform linear search.
         for el, _ in self.elements:
             yield el
 
-    def visualize(self, file):
+    def visualize(self, file: TextIO) -> None:
         file.write(f"{self.bottom_left[0]:f} {self.bottom_left[1]:f}\n")
         file.write(f"{self.top_right[0]:f} {self.bottom_left[1]:f}\n")
         file.write(f"{self.top_right[0]:f} {self.top_right[1]:f}\n")
         file.write(f"{self.bottom_left[0]:f} {self.top_right[1]:f}\n")
         file.write(f"{self.bottom_left[0]:f} {self.bottom_left[1]:f}\n\n")
+
         if self.buckets:
+            assert self.all_buckets is not None
             for i in self.all_buckets:
                 i.visualize(file)
 
-    def plot(self, **kwargs):
-        import matplotlib.patches as mpatches
-        import matplotlib.pyplot as pt
+    def plot(self, **kwargs: Any) -> None:
+        """
+        :param ax: an :class:`~matplotlib.axes.Axes` object on which to plot the tree.
+        :param kwargs: any remaining arguments are passed to
+            :class:`matplotlib.patches.PathPatch`.
+        """
+        import matplotlib.pyplot as plt
+        from matplotlib.patches import PathPatch
         from matplotlib.path import Path
+
+        ax = kwargs.pop("ax", None)
+        if ax is None:
+            ax = plt.gca()
 
         el = self.bottom_left
         eh = self.top_right
@@ -163,9 +234,10 @@ class SpatialBinaryTreeBucket:
 
         codes, verts = zip(*pathdata, strict=True)
         path = Path(verts, codes)
-        patch = mpatches.PathPatch(path, **kwargs)
-        pt.gca().add_patch(patch)
+        patch = PathPatch(path, **kwargs)
+        ax.add_patch(patch)
 
         if self.buckets:
-            for i in self.all_buckets:
-                i.plot(**kwargs)
+            assert self.all_buckets is not None
+            for bucket in self.all_buckets:
+                bucket.plot(ax=ax, **kwargs)
