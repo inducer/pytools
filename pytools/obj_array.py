@@ -162,19 +162,29 @@ class ObjectArray(Generic[ShapeT, T], metaclass=_ObjectArrayMetaclass):
 
         @overload
         def __getitem__(
-                self: ObjectArrayND[T],
-                x: tuple[int | slice, ...],
-            /) -> ObjectArrayND[T] | T: ...
-
-        @overload
-        def __getitem__(
             self: ObjectArray1D[T],
-            x: slice) -> ObjectArray1D[T]: ...
+            x: slice, /) -> ObjectArray1D[T]: ...
 
         @overload
         def __getitem__(
             self: ObjectArray2D[T],
-            x: slice) -> ObjectArray2D[T]: ...
+            x: slice, /) -> ObjectArray2D[T]: ...
+
+        @overload
+        def __getitem__(
+            self: ObjectArray2D[T],
+            x: tuple[slice, int], /) -> ObjectArray1D[T]: ...
+
+        @overload
+        def __getitem__(
+            self: ObjectArray2D[T],
+            x: tuple[int, slice], /) -> ObjectArray1D[T]: ...
+
+        @overload
+        def __getitem__(
+                self: ObjectArrayND[T],
+                x: tuple[int | slice, ...],
+            /) -> ObjectArrayND[T] | T: ...
 
         @overload
         def __iter__(self: ObjectArray1D[T]) -> Iterator[T]: ...
