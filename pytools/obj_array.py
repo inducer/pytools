@@ -416,6 +416,38 @@ def trace(
     return cast("T", np.trace(cast("NDArray[Any]", cast("object", array))))
 
 
+@overload
+def sum(
+            array: ObjectArrayND[T],
+            axis: None,
+        ) -> T: ...
+
+
+@overload
+def sum(
+            array: ObjectArray1D[T],
+            axis: int,
+        ) -> T: ...
+
+
+@overload
+def sum(
+            array: ObjectArray2D[T],
+            axis: int,
+        ) -> ObjectArray1D[T]: ...
+
+
+def sum(
+            array: ObjectArrayND[T],
+            axis: int | None,
+        ) -> ObjectArrayND[T] | T:
+    import numpy as np
+    return cast("ObjectArrayND[T] | T", np.sum(
+            cast("NDArray[Any]", cast("object", array)),
+            axis=axis,
+        ))
+
+
 def to_hashable(ary: ObjectArray[ShapeT, T] | Hashable, /) -> Hashable:
     if isinstance(ary, ObjectArray):
         ary = cast("ObjectArray[ShapeT, T]", ary)
