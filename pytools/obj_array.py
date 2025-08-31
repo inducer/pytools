@@ -443,7 +443,7 @@ def sum(
 
 def sum(
             array: ObjectArrayND[T],
-            axis: int | None,
+            axis: int | None = None,
         ) -> ObjectArrayND[T] | T:
     import numpy as np
     return cast("ObjectArrayND[T] | T", np.sum(
