@@ -273,7 +273,11 @@ class ObjectArray(Generic[ShapeT, T], metaclass=_ObjectArrayMetaclass):
                     self: ObjectArray2D[T],
                     other: ObjectArray2D[T],
                 /) -> ObjectArray2D[T]: ...
-
+        @overload
+        def __matmul__(
+                    self: ObjectArray2D[T],
+                    other: np.ndarray[tuple[int, int], np.dtype[Any]],
+                /) -> ObjectArray2D[T]: ...
         @overload
         def __matmul__(
                     self: ObjectArrayND[T],
