@@ -285,7 +285,9 @@ class ObjectArray(Generic[ShapeT, T], metaclass=_ObjectArrayMetaclass):
                 /) -> ObjectArrayND[T] | T: ...
 
         @property
-        def flat(self) -> ObjectArray1D[T]: ...
+        def flat(self) -> Iterator[T]: ...
+
+        def flatten(self) -> ObjectArray1D[T]: ...
 
         @overload
         def tolist(self: ObjectArray0D[T]) -> T: ...
@@ -455,7 +457,7 @@ def sum(
 def to_hashable(ary: ObjectArray[ShapeT, T] | Hashable, /) -> Hashable:
     if isinstance(ary, ObjectArray):
         ary = cast("ObjectArray[ShapeT, T]", ary)
-        return tuple(ary.flat.tolist())
+        return tuple(ary.flat)
     return ary
 
 
