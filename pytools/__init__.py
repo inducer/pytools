@@ -2738,7 +2738,7 @@ class ProcessLogger:
 
     def done(self,
              extra_msg: str | None = None,
-             *extra_fmt_args: str) -> None:
+             *extra_fmt_args: object) -> None:
         self.timer.done()
         self._done_indicator[0] = True
 
@@ -2751,7 +2751,7 @@ class ProcessLogger:
                 else self.silent_level)
 
         msg = "%s: completed (%s)"
-        fmt_args = [self.description, str(self.timer)]
+        fmt_args: list[object] = [self.description, str(self.timer)]
 
         if extra_msg:
             msg = f"{msg}: {extra_msg}"
