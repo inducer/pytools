@@ -659,7 +659,7 @@ def obj_array_vectorize_n_args(f, *args):
     warn("obj_array_vectorize_n_args is deprecated, "
          "use obj_array.vectorize_n_args instead. "
          "This will stop working in 2027.", DeprecationWarning, stacklevel=2)
-    return obj_array_vectorize_n_args(f, *args)
+    return vectorize_n_args(f, *args)
 
 
 def vectorized_n_args(f):
