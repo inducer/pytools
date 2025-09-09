@@ -35,6 +35,10 @@ autodoc_type_aliases = {
     "NodeT": "pytools.graph.NodeT",
 }
 
+nitpick_ignore_regex = [
+    ["py:class", r"optype.*"],
+]
+
 sphinxconfig_missing_reference_aliases = {
     # numpy typing
     "NDArray": "obj:numpy.typing.NDArray",
@@ -42,10 +46,7 @@ sphinxconfig_missing_reference_aliases = {
     "np.ndarray": "class:numpy.ndarray",
     "np.floating": "class:numpy.floating",
     # pytools typing
-    "BoundingBox": "obj:pytools.spatial_btree.BoundingBox",
-    "Element": "obj:pytools.spatial_btree.Element",
     "ObjectArray1D": "obj:pytools.obj_array.ObjectArray1D",
-    "Point": "obj:pytools.spatial_btree.Point",
     "ReadableBuffer": "data:pytools.ReadableBuffer",
 }
 
