@@ -51,10 +51,12 @@ from typing import (
     ClassVar,
     Concatenate,
     Generic,
+    Literal,
     ParamSpec,
     Protocol,
     TypeVar,
     cast,
+    overload,
 )
 from warnings import warn
 
@@ -69,7 +71,8 @@ if TYPE_CHECKING:
 
     import numpy as np
     from _typeshed import ReadableBuffer
-    from numpy.typing import NDArray
+    from numpy.typing import DTypeLike, NDArray
+    from optype import CanLt
     from typing_extensions import Self
 
 
@@ -260,6 +263,10 @@ Type Variables Used
 .. class:: ReadableBuffer
 
     Anything that implements the read-write buffer interface.
+
+.. class:: SupportsLessThanT
+
+    An invariant :class:`typing.TypeVar` bound to :class:`optype.CanLt`.
 """
 
 # {{{ type variables
@@ -273,6 +280,7 @@ P = ParamSpec("P")
 K = TypeVar("K")
 V = TypeVar("V")
 EmptyT = TypeVar("EmptyT")
+SupportsLessThanT = TypeVar("SupportsLessThanT", bound="CanLt[Any]")
 
 # }}}
 
@@ -1293,12 +1301,26 @@ def find_max_where(predicate, prec=1e-5, initial_guess=1, fail_bound=1e38):
 
 # {{{ argmin, argmax
 
-def argmin2(iterable, return_value=False):
+class SupportsLessThan(Protocol[T_contra]):
+    def __lt__(self, other: T_contra, /) -> bool: ...
+
+
+@overload
+def argmin2(iterable: Iterable[tuple[T, SupportsLessThanT]],
+            return_value: Literal[True]) -> tuple[T, SupportsLessThanT]: ...
+
+@overload
+def argmin2(iterable: Iterable[tuple[T, SupportsLessThanT]],
+            return_value: Literal[False] = False) -> T: ...
+
+
+def argmin2(iterable: Iterable[tuple[T, SupportsLessThanT]],
+            return_value: bool = False) -> T | tuple[T, SupportsLessThanT]:
     it = iter(iterable)
     try:
         current_argmin, current_min = next(it)
     except StopIteration:
-        raise ValueError("argmin of empty iterable") from None
+        raise ValueError("argmin() iterable argument is empty") from None
 
     for arg, item in it:
         if item < current_min:
@@ -1307,15 +1329,26 @@ def argmin2(iterable, return_value=False):
 
     if return_value:
         return current_argmin, current_min
+
     return current_argmin
 
 
-def argmax2(iterable, return_value=False):
+@overload
+def argmax2(iterable: Iterable[tuple[T, SupportsLessThanT]],
+            return_value: Literal[True]) -> tuple[T, SupportsLessThanT]: ...
+
+@overload
+def argmax2(iterable: Iterable[tuple[T, SupportsLessThanT]],
+            return_value: Literal[False] = False) -> T: ...
+
+
+def argmax2(iterable: Iterable[tuple[T, SupportsLessThanT]],
+            return_value: bool = False) -> T | tuple[T, SupportsLessThanT]:
     it = iter(iterable)
     try:
         current_argmax, current_max = next(it)
     except StopIteration:
-        raise ValueError("argmax of empty iterable") from None
+        raise ValueError("argmax() iterable argument is empty") from None
 
     for arg, item in it:
         if item > current_max:
@@ -1324,15 +1357,16 @@ def argmax2(iterable, return_value=False):
 
     if return_value:
         return current_argmax, current_max
+
     return current_argmax
 
 
-def argmin(iterable):
-    return argmin2(enumerate(iterable))
+def argmin(iterable: Iterable[SupportsLessThanT]) -> int:
+    return argmin2(enumerate(iterable), return_value=False)
 
 
-def argmax(iterable):
-    return argmax2(enumerate(iterable))
+def argmax(iterable: Iterable[SupportsLessThanT]) -> int:
+    return argmax2(enumerate(iterable), return_value=False)
 
 # }}}
 
@@ -2011,12 +2045,12 @@ def string_histogram(
 # }}}
 
 
-def word_wrap(text, width, wrap_using="\n"):
+def word_wrap(text: str, width: int, wrap_using: str = "\n") -> str:
     # http://code.activestate.com/recipes/148061-one-liner-word-wrap-function/
     r"""
     A word-wrap function that preserves existing line breaks
     and most spaces in the text. Expects that existing line
-    breaks are posix newlines (``\n``).
+    breaks are POSIX newlines (``\n``).
     """
     space_or_break = [" ", wrap_using]
     return reduce(lambda line, word: "{}{}{}".format(
@@ -2239,14 +2273,18 @@ def add_python_path_relative_to_script(rel_path: str) -> None:
 
 # {{{ numpy dtype mangling
 
-def common_dtype(dtypes, default=None):
-    dtypes = list(dtypes)
-    if dtypes:
-        return argmax2((dtype, dtype.num) for dtype in dtypes)
+def common_dtype(dtypes: Iterator[DTypeLike],
+                 default: DTypeLike = None) -> np.dtype[Any]:
+    import numpy as np
+
+    ddtypes = [np.dtype(dtype) for dtype in dtypes]
+    if ddtypes:
+        return argmax2((dtype, dtype.num) for dtype in ddtypes)
+
     if default is not None:
-        return default
-    raise ValueError(
-            "cannot find common dtype of empty dtype list")
+        return np.dtype(default)
+
+    raise ValueError("cannot find common dtype of empty dtype list")
 
 
 def to_uncomplex_dtype(dtype):

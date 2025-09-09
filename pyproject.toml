@@ -40,6 +40,7 @@ numpy = [
 ]
 test = [
     "basedpyright",
+    "optype",
     "pytest",
     "ruff",
 ]
