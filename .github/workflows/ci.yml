@@ -55,7 +55,7 @@ jobs:
                 python-version: '3.x'
         -   name: "Main Script"
             run: |
-                EXTRA_INSTALL="numpy pymbolic orderedsets"
+                EXTRA_INSTALL="numpy pymbolic orderedsets optype"
                 curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-pylint.sh
                 . ./prepare-and-run-pylint.sh "$(basename $GITHUB_REPOSITORY)"
 
@@ -68,13 +68,15 @@ jobs:
                 python-version: '3.x'
         -   name: "Main Script"
             run: |
-                curl -L -O https://tiker.net/ci-support-v0
-                . ./ci-support-v0
-                build_py_project_in_venv
+                EXTRA_INSTALL="basedpyright numpy attrs orderedsets pytest mpi4py matplotlib optype"
+
                 sudo apt update
                 sudo apt -y install libopenmpi-dev
-                pip install numpy attrs orderedsets pytest mpi4py matplotlib
-                pip install basedpyright
+
+                curl -L -O https://tiker.net/ci-support-v0
+                . ./ci-support-v0
+
+                build_py_project_in_venv
                 basedpyright
 
     pytest:
@@ -163,7 +165,7 @@ jobs:
                 python-version: '3.x'
         -   name: "Main Script"
             run: |
-                EXTRA_INSTALL="numpy"
+                EXTRA_INSTALL="numpy optype"
                 curl -L -O https://tiker.net/ci-support-v0
                 . ci-support-v0
                 build_py_project_in_venv
