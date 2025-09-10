@@ -218,8 +218,9 @@ def compute_sccs(graph: GraphT[NodeT]) -> list[list[NodeT]]:
             for child in children:
                 if child not in visit_order:
                     # Recurse.
-                    call_stack.append((top, children, child))
-                    call_stack.append((child, iter(graph[child]), None))
+                    call_stack.extend((
+                        (top, children, child),
+                        (child, iter(graph[child]), None)))
                     break
                 if child in visiting:
                     scc_root[top] = min(

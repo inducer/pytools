@@ -37,6 +37,7 @@ Dot helper functions
 import html
 import logging
 import os
+from pathlib import Path
 
 
 logger = logging.getLogger(__name__)
@@ -58,7 +59,7 @@ def dot_escape(s: str) -> str:
     return html.escape(s.replace("\\", "\\\\"))
 
 
-def show_dot(dot_code: str, output_to: str | None = None) -> str | None:
+def show_dot(dot_code: str, output_to: str | None = None) -> Path | None:
     """
     Visualize the graph represented by *dot_code*.
 
@@ -82,13 +83,11 @@ def show_dot(dot_code: str, output_to: str | None = None) -> str | None:
 
     import subprocess
     from tempfile import mkdtemp
-    temp_dir = mkdtemp(prefix="tmp_pytools_dot")
+    temp_path = Path(mkdtemp(prefix="tmp_pytools_dot"))
 
     dot_file_name = "code.dot"
 
-    from os.path import join
-    with open(join(temp_dir, dot_file_name), "w") as dotf:
-        dotf.write(dot_code)
+    (temp_path / dot_file_name).write_text(dot_code)
 
     # {{{ preprocess 'output_to'
 
@@ -110,13 +109,13 @@ def show_dot(dot_code: str, output_to: str | None = None) -> str | None:
     # }}}
 
     if output_to == "xwindow":
-        subprocess.check_call(["dot", "-Tx11", dot_file_name], cwd=temp_dir)
+        subprocess.check_call(["dot", "-Tx11", dot_file_name], cwd=temp_path)
     elif output_to in ["browser", "svg"]:
         svg_file_name = "code.svg"
         subprocess.check_call(["dot", "-Tsvg", "-o", svg_file_name, dot_file_name],
-                              cwd=temp_dir)
+                              cwd=temp_path)
 
-        full_svg_file_name = join(temp_dir, svg_file_name)
+        full_svg_file_name = temp_path / svg_file_name
         logger.info("show_dot: svg written to '%s'", full_svg_file_name)
 
         if output_to == "svg":
@@ -124,12 +123,13 @@ def show_dot(dot_code: str, output_to: str | None = None) -> str | None:
         assert output_to == "browser"
 
         from webbrowser import open as browser_open
-        browser_open("file://" + full_svg_file_name)
+        browser_open(full_svg_file_name.as_uri())
     else:
         raise ValueError("`output_to` can be one of 'xwindow', 'browser', or 'svg',"
                          f" got '{output_to}'")
 
     return None
+
 # }}}
 
 

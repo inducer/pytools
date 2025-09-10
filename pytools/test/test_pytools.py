@@ -617,7 +617,7 @@ def test_unordered_hash():
     # FIXME: Use randbytes once >=3.9 is OK
     lst = [bytes([random.randrange(256) for _ in range(20)])
             for _ in range(200)]
-    lorig = lst[:]
+    lorig = lst.copy()
     random.shuffle(lst)
 
     from pytools import unordered_hash

@@ -496,7 +496,7 @@ def test_frozenorderedset_hashing() -> None:
 
 
 def test_ABC_hashing() -> None:  # noqa: N802
-    from abc import ABC, ABCMeta
+    from abc import ABC
 
     keyb = KeyBuilder()
 
@@ -518,7 +518,7 @@ def test_ABC_hashing() -> None:  # noqa: N802
     assert keyb(MyABC2) != keyb(MyABC)
     assert keyb(MyABC2())
 
-    class MyABC3(metaclass=ABCMeta):  # noqa: B024
+    class MyABC3(ABC):  # noqa: B024
         def update_persistent_hash(self, key_hash, key_builder):
             key_builder.rec(key_hash, 42)
 
