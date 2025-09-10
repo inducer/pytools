@@ -2,10 +2,16 @@ from __future__ import annotations
 
 import contextlib
 import sys
+from collections import UserDict
+from typing import TypeVar
 
 from typing_extensions import override
 
 from pytools import memoize
+
+
+K = TypeVar("K")
+V = TypeVar("V")
 
 
 # {{{ debug files -------------------------------------------------------------
@@ -171,9 +177,9 @@ else:
     setup_readline()
 
 
-class SetPropagatingDict(dict):
+class SetPropagatingDict(UserDict[K, V]):
     def __init__(self, source_dicts, target_dict):
-        dict.__init__(self)
+        super().__init__()
         for s in source_dicts[::-1]:
             self.update(s)
 
@@ -181,12 +187,12 @@ class SetPropagatingDict(dict):
 
     @override
     def __setitem__(self, key, value):
-        dict.__setitem__(self, key, value)
+        super().__setitem__(key, value)
         self.target_dict[key] = value
 
     @override
     def __delitem__(self, key):
-        dict.__delitem__(self, key)
+        super().__delitem__(key)
         del self.target_dict[key]
 
 
@@ -199,7 +205,7 @@ def shell(locals_=None, globals_=None):
     if globals_ is None:
         globals_ = calling_frame.f_globals
 
-    ns = SetPropagatingDict([locals_, globals_], locals_)
+    ns = SetPropagatingDict[str, object]([locals_, globals_], locals_)
 
     if HAVE_READLINE:
         readline.set_completer(

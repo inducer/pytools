@@ -78,6 +78,7 @@ extend-select = [
     "TC",  # flake8-type-checking
     "UP",  # pyupgrade
     "W",   # pycodestyle
+    "FURB",
 ]
 extend-ignore = [
     "C90",  # McCabe complexity

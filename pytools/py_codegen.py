@@ -221,7 +221,7 @@ class PicklableModule:
                     f"(got: {magic!r}, expected: {BYTECODE_VERSION!r})")
 
         unique_filename = _linecache_unique_name(
-                        name_prefix if name_prefix else "module", source_code)
+                        name_prefix or "module", source_code)
         mod_globals = _get_empty_module_dict(unique_filename)
         mod_globals.update(nondefault_globals)
 

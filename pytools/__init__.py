@@ -44,6 +44,7 @@ from collections.abc import (
     Sequence,
 )
 from functools import reduce, wraps
+from pathlib import Path
 from sys import intern
 from typing import (
     TYPE_CHECKING,
@@ -2144,28 +2145,25 @@ def typedump(val: Any, max_seq: int = 5,
             return objname(val)
 
 
-def invoke_editor(s, filename="edit.txt", descr="the file"):
+def invoke_editor(s: str, filename: str = "edit.txt", descr: str = "the file"):
     from tempfile import mkdtemp
-    tempdir = mkdtemp()
+    tempdir = Path(mkdtemp())
 
-    from os.path import join
-    full_name = join(tempdir, filename)
+    full_path = tempdir / filename
 
-    with open(full_name, "w") as outf:
-        outf.write(str(s))
+    full_path.write_text(str(s))
 
     import os
     if "EDITOR" in os.environ:
         from subprocess import Popen
-        p = Popen([os.environ["EDITOR"], full_name])
+        p = Popen([os.environ["EDITOR"], full_path])
         os.waitpid(p.pid, 0)
     else:
         print("(Set the EDITOR environment variable to be "
                 "dropped directly into an editor next time.)")
-        input(f"Edit {descr} at {full_name} now, then hit [Enter]:")
+        input(f"Edit {descr} at {full_path} now, then hit [Enter]:")
 
-    with open(full_name) as inf:
-        result = inf.read()
+    result = full_path.read_text()
 
     return result
 
@@ -2514,8 +2512,7 @@ def download_from_web_if_not_present(url: str, local_name: str | None = None) ->
         with urlopen(req) as inf:
             contents = inf.read()
 
-            with open(local_name, "wb") as outf:
-                outf.write(contents)
+        Path(local_name).write_bytes(contents)
 
 # }}}
 
@@ -2861,7 +2858,7 @@ def natorder(item: str) -> list[int]:
     result: list[int] = []
     for (int_val, string_val) in re.findall(r"(\d+)|(\D+)", item):
         if int_val:
-            result.append(int(int_val))
+            result.append(int(int_val))  # noqa: FURB113
             # Tie-breaker in case of leading zeros in *int_val*.  Longer values
             # compare smaller to preserve order of numbers in decimal notation,
             # e.g., "1.001" < "1.01"
@@ -2912,7 +2909,7 @@ def natsorted(iterable: Iterable[T],
 # https://github.com/python/cpython/commit/1ed61617a4a6632905ad6a0b440cd2cafb8b6414
 
 _DOTTED_WORDS = r"[a-z_]\w*(\.[a-z_]\w*)*"
-_NAME_PATTERN = re.compile(f"^({_DOTTED_WORDS})(:({_DOTTED_WORDS})?)?$", re.I)
+_NAME_PATTERN = re.compile(f"^({_DOTTED_WORDS})(:({_DOTTED_WORDS})?)?$", re.IGNORECASE)
 del _DOTTED_WORDS
 
 
