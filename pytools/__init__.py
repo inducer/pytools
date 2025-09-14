@@ -41,6 +41,7 @@ from collections.abc import (
     Iterable,
     Iterator,
     Mapping,
+    MutableSequence,
     Sequence,
 )
 from functools import reduce, wraps
@@ -61,7 +62,14 @@ from typing import (
 )
 from warnings import warn
 
-from typing_extensions import Self, dataclass_transform, deprecated, override
+from typing_extensions import (
+    Self,
+    TypeVarTuple,
+    Unpack,
+    dataclass_transform,
+    deprecated,
+    override,
+)
 
 from pytools.version import VERSION_TEXT
 
@@ -275,6 +283,7 @@ Type Variables Used
 T = TypeVar("T")
 T_co = TypeVar("T_co", covariant=True)
 T_contra = TypeVar("T_contra", contravariant=True)
+Ts = TypeVarTuple("Ts")
 R = TypeVar("R", covariant=True)
 F = TypeVar("F", bound=Callable[..., Any])
 P = ParamSpec("P")
@@ -1064,11 +1073,13 @@ def monkeypatch_class(_name, bases, namespace):
 
 # {{{ generic utilities
 
-def add_tuples(t1, t2):
+# FIXME: to type these correctly, TypeVarTuple would need to support bounds
+def add_tuples(t1: tuple[Unpack[Ts]], t2: tuple[Unpack[Ts]]) -> tuple[Unpack[Ts]]:
     return tuple(t1v + t2v for t1v, t2v in zip(t1, t2, strict=True))
 
 
-def negate_tuple(t1):
+# FIXME: to type these correctly, TypeVarTuple would need to support bounds
+def negate_tuple(t1: tuple[Unpack[Ts]]) -> tuple[Unpack[Ts]]:
     return tuple(-t1v for t1v in t1)
 
 
@@ -1093,8 +1104,8 @@ def shift(vec, dist):
     return result
 
 
-def len_iterable(iterable):
-    return sum(1 for i in iterable)
+def len_iterable(iterable: Iterable[object]) -> int:
+    return sum(1 for _ in iterable)
 
 
 def flatten(iterable: Iterable[Iterable[T]]) -> Iterable[T]:
