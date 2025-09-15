@@ -1720,7 +1720,7 @@ class Table:
             alignments = tuple(alignments)
 
         self.rows: list[tuple[str, ...]] = []
-        self.alignments = alignments
+        self.alignments: tuple[str, ...] = alignments
 
     @property
     def nrows(self) -> int:
@@ -1750,7 +1750,7 @@ class Table:
                 + (self.alignments[-1],) * (self.ncolumns - len(self.alignments))
                 )[:self.ncolumns]
 
-    def _get_column_widths(self, rows) -> tuple[int, ...]:
+    def _get_column_widths(self, rows: list[tuple[str, ...]]) -> tuple[int, ...]:
         return tuple(
             max(len(row[i]) for row in rows) for i in range(self.ncolumns)
             )
@@ -1928,7 +1928,7 @@ class Table:
         if hline_after is None:
             hline_after = ()
 
-        lines = []
+        lines: list[str] = []
         for row_nr, row in enumerate(self.rows[skip_lines:]):
             lines.append(fr"{' & '.join(row)} \\")
             if row_nr in hline_after:
@@ -1985,7 +1985,7 @@ def merge_tables(*tables: Table,
     if isinstance(skip_columns, int):
         skip_columns = (skip_columns,)
 
-    def remove_columns(i, row):
+    def remove_columns(i: int, row: tuple[str, ...]) -> tuple[str, ...]:
         if i == 0 or skip_columns is None:
             return row
         return tuple(
@@ -1993,13 +1993,13 @@ def merge_tables(*tables: Table,
             )
 
     alignments = sum((
-        remove_columns(i, tbl._get_alignments())
+        remove_columns(i, tbl._get_alignments())  # pyright: ignore[reportPrivateUsage]
         for i, tbl in enumerate(tables)
         ), ())
     result = Table(alignments=alignments)
 
     for i in range(tables[0].nrows):
-        row = []
+        row: list[str] = []
         for j, tbl in enumerate(tables):
             row.extend(remove_columns(j, tbl.rows[i]))
 
@@ -2097,8 +2097,10 @@ class StderrToStdout:
         del self.stderr_backup
 
 
-def typedump(val: Any, max_seq: int = 5,
-             special_handlers: Mapping[type, Callable] | None = None,
+def typedump(val: object, max_seq: int = 5,
+             special_handlers: (
+                 Mapping[type, Callable[[object], str]]
+                 | None) = None,
              fully_qualified_name: bool = True) -> str:
     """
     Return a string representation of the type of *val*, recursing into
@@ -2125,14 +2127,16 @@ def typedump(val: Any, max_seq: int = 5,
     else:
         return hdlr(val)
 
-    def objname(obj: Any) -> str:
+    def objname(obj: object) -> str:
         if type(obj).__module__ == "builtins":
             if fully_qualified_name:
                 return type(obj).__qualname__
+
             return type(obj).__name__
 
         if fully_qualified_name:
             return type(obj).__module__ + "." + type(obj).__qualname__
+
         return type(obj).__name__
 
     # Special handling for 'str' since it is also iterable
@@ -2199,13 +2203,31 @@ class ProgressBar:
     .. automethod:: __enter__
     .. automethod:: __exit__
     """
-    def __init__(self, descr: str, total: int, initial: int = 0,
+
+    description: str
+    total: int
+    done: int
+    length: int
+
+    last_squares: int
+    start_time: float
+    last_update_time: float
+    speed_meas_start_time: float
+    speed_meas_start_done: int
+    time_per_step: float | None
+
+    def __init__(self,
+                 descr: str,
+                 total: int,
+                 initial: int = 0,
                  length: int = 40) -> None:
         import time
+
         self.description = descr
         self.total = total
         self.done = initial
         self.length = length
+
         self.last_squares = -1
         self.start_time = time.time()
         self.last_update_time = self.start_time
@@ -2213,7 +2235,7 @@ class ProgressBar:
         self.speed_meas_start_time = self.start_time
         self.speed_meas_start_done = initial
 
-        self.time_per_step: float | None = None
+        self.time_per_step = None
 
     def draw(self) -> None:
         import time
@@ -2262,7 +2284,10 @@ class ProgressBar:
     def __enter__(self) -> None:
         self.draw()
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    def __exit__(self,
+                 exc_type: type[BaseException],
+                 exc_val: BaseException | None,
+                 exc_tb: types.TracebackType | None) -> None:
         self.finished()
 
 # }}}
