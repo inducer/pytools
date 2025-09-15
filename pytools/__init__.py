@@ -1324,10 +1324,6 @@ def find_max_where(predicate, prec=1e-5, initial_guess=1, fail_bound=1e38):
 
 # {{{ argmin, argmax
 
-class SupportsLessThan(Protocol[T_contra]):
-    def __lt__(self, other: T_contra, /) -> bool: ...
-
-
 @overload
 def argmin2(iterable: Iterable[tuple[T, SupportsLessThanT]],
             return_value: Literal[True]) -> tuple[T, SupportsLessThanT]: ...
