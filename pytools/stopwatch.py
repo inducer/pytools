@@ -7,7 +7,7 @@ from pytools import DependentDictionary, Reference
 
 class StopWatch:
     def __init__(self) -> None:
-        self.Elapsed = 0.0
+        self.Elapsed: float = 0
         self.LastStart: float | None = None
 
     def start(self) -> StopWatch:
@@ -31,8 +31,8 @@ class StopWatch:
 
 class Job:
     def __init__(self, name: str) -> None:
-        self.Name = name
-        self.StopWatch = StopWatch().start()
+        self.Name: str = name
+        self.StopWatch: StopWatch = StopWatch().start()
 
         if self.is_visible():
             print(f"{name}...")
@@ -52,8 +52,8 @@ class Job:
 
 class EtaEstimator:
     def __init__(self, total_steps: int) -> None:
-        self.stopwatch = StopWatch().start()
-        self.total_steps = total_steps
+        self.stopwatch: StopWatch = StopWatch().start()
+        self.total_steps: int = total_steps
         assert total_steps > 0
 
     def estimate(self, done: int) -> float | None:
@@ -72,5 +72,5 @@ def print_job_summary() -> None:
 
 HIDDEN_JOBS: list[str] = []
 VISIBLE_JOBS: list[str] = []
-JOB_TIMES = DependentDictionary(lambda x: 0)
+JOB_TIMES = DependentDictionary[str, float](lambda d, x: 0.0)
 PRINT_JOBS = Reference(True)
