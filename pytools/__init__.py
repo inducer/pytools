@@ -573,75 +573,85 @@ class ImmutableRecord(ImmutableRecordWithoutPickling, Record):
 # }}}
 
 
-class Reference:
-    def __init__(self, value):
-        self.value = value
+class Reference(Generic[T]):
+    def __init__(self, value: T) -> None:
+        self.value: T = value
 
-    def get(self):
+    def get(self) -> T:
         from warnings import warn
         warn("Reference.get() is deprecated -- use ref.value instead. "
              "This will stop working in 2025.", stacklevel=2)
         return self.value
 
-    def set(self, value):
+    def set(self, value: T) -> None:
         self.value = value
 
 
-class FakeList:
-    def __init__(self, f, length):
-        self._Length = length
-        self._Function = f
+class FakeList(Generic[R]):
+    def __init__(self, f: Callable[[int], R], length: int) -> None:
+        self._Length: int = length
+        self._Function: Callable[[int], R] = f
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self._Length
 
-    def __getitem__(self, index):
-        try:
-            return [self._Function(i)
-                    for i in range(*index.indices(self._Length))]
-        except AttributeError:
+    @overload
+    def __getitem__(self, index: int) -> R: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> Sequence[R]: ...
+
+    def __getitem__(self, index: object) -> R | Sequence[R]:
+        if isinstance(index, int):
             return self._Function(index)
+        elif isinstance(index, slice):
+            return [self._Function(i) for i in range(*index.indices(self._Length))]
+        else:
+            raise TypeError(
+                f"list indices must be 'int' or 'slice', not '{type(index).__name__}'")
 
 
 # {{{ dependent dictionary
 
-class DependentDictionary:
-    def __init__(self, f, start=None):
+class DependentDictionary(Generic[T, R]):
+    def __init__(self,
+                 f: Callable[[dict[T, R], T], R],
+                 start: dict[T, R] | None = None) -> None:
         if start is None:
             start = {}
 
-        self._Function = f
-        self._Dictionary = start.copy()
+        self._Function: Callable[[dict[T, R], T], R] = f
+        self._Dictionary: dict[T, R] = start.copy()
 
-    def copy(self):
+    def copy(self) -> DependentDictionary[T, R]:
         return DependentDictionary(self._Function, self._Dictionary)
 
-    def __contains__(self, key):
+    def __contains__(self, key: T) -> bool:
         try:
             self[key]
             return True
         except KeyError:
             return False
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: T) -> R:
         try:
             return self._Dictionary[key]
         except KeyError:
             return self._Function(self._Dictionary, key)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: T, value: R) -> None:
         self._Dictionary[key] = value
 
     def genuineKeys(self):  # noqa: N802
         return list(self._Dictionary.keys())
 
-    def iteritems(self):
+    def iteritems(self) -> Iterable[tuple[T, R]]:
         return self._Dictionary.items()
 
-    def iterkeys(self):
+    def iterkeys(self) -> Iterable[T]:
         return self._Dictionary.keys()
 
-    def itervalues(self):
+    def itervalues(self) -> Iterable[R]:
         return self._Dictionary.values()
 
 # }}}
@@ -689,7 +699,7 @@ def is_single_valued(
 all_equal = is_single_valued
 
 
-def all_roughly_equal(iterable, threshold):
+def all_roughly_equal(iterable: Iterable[object], threshold: float) -> bool:
     return is_single_valued(iterable,
             equality_pred=lambda a, b: abs(a-b) < threshold)
 
@@ -1083,7 +1093,7 @@ def negate_tuple(t1: tuple[Unpack[Ts]]) -> tuple[Unpack[Ts]]:
     return tuple(-t1v for t1v in t1)
 
 
-def shift(vec, dist):
+def shift(vec: MutableSequence[T], dist: int) -> Sequence[T]:
     """Return a copy of *vec* shifted by *dist* such that
 
     .. code:: python
@@ -1093,13 +1103,13 @@ def shift(vec, dist):
 
     result = vec[:]
 
-    N = len(vec)  # noqa: N806
-    dist = dist % N
+    n = len(vec)
+    dist = dist % n
 
     # modulo only returns positive distances!
     if dist > 0:
-        result[dist:] = vec[:N-dist]
-        result[:dist] = vec[N-dist:]
+        result[dist:] = vec[:n-dist]
+        result[:dist] = vec[n-dist:]
 
     return result
 
@@ -1126,6 +1136,7 @@ def linear_combination(coefficients, vectors):
     result = coefficients[0] * vectors[0]
     for c, v in zip(coefficients[1:], vectors[1:], strict=True):
         result += c*v
+
     return result
 
 
