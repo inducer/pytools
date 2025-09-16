@@ -32,7 +32,11 @@ Tools for Source Code Generation
 .. autofunction:: remove_common_indentation
 """
 
-from typing import Any
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    import types
 
 
 # {{{ code generation
@@ -50,9 +54,15 @@ class CodeGenerator:
     .. automethod:: indent
     .. automethod:: dedent
     """
+
+    preamble: list[str]
+    code: list[str]
+    level: int
+    indent_amount: int
+
     def __init__(self) -> None:
-        self.preamble: list[str] = []
-        self.code: list[str] = []
+        self.preamble = []
+        self.code = []
         self.level = 0
         self.indent_amount = 4
 
@@ -91,17 +101,23 @@ class CodeGenerator:
 class Indentation:
     """A context manager for indentation for use with :class:`CodeGenerator`.
 
-    .. attribute:: generator
+    .. autoattribute:: generator
     .. automethod:: __enter__
     .. automethod:: __exit__
     """
+
+    generator: CodeGenerator
+
     def __init__(self, generator: CodeGenerator):
         self.generator = generator
 
     def __enter__(self) -> None:
         self.generator.indent()
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    def __exit__(self,
+                 exc_type: type[BaseException],
+                 exc_val: BaseException | None,
+                 exc_tb: types.TracebackType | None) -> None:
         self.generator.dedent()
 
 # }}}
@@ -133,8 +149,8 @@ def remove_common_indentation(code: str, require_leading_newline: bool = True):
     while lines[-1].strip() == "":
         lines.pop(-1)
 
+    base_indent = 0
     if lines:
-        base_indent = 0
         while lines[0][base_indent] in " \t":
             base_indent += 1
 
