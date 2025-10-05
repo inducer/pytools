@@ -715,8 +715,8 @@ def test_strtobool():
     assert strtobool("off") is False
 
     with pytest.raises(ValueError):
-        strtobool("tru")
-        strtobool("fal")
+        strtobool("tru")  # spellchecker: disable-line
+        strtobool("fal")  # spellchecker: disable-line
         strtobool("xxx")
         strtobool(".")
 
