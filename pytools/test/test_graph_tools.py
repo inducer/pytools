@@ -258,8 +258,8 @@ def test_prioritized_topological_sort():
     from pytools.graph import compute_topological_order
     rng = random.Random(0)
 
-    def generate_random_graph(nnodes):
-        graph = {i: set() for i in range(nnodes)}
+    def generate_random_graph(nnodes: int):
+        graph: dict[int, set[int]] = {i: set() for i in range(nnodes)}
         for i in range(nnodes):
             # to avoid cycles only consider edges node_i->node_j where j > i.
             for j in range(i+1, nnodes):
@@ -270,14 +270,15 @@ def test_prioritized_topological_sort():
 
     nnodes = rng.randint(40, 100)
     rev_dep_graph = generate_random_graph(nnodes)
-    dep_graph = {i: set() for i in range(nnodes)}
+    dep_graph: dict[int, set[int]] = {i: set() for i in range(nnodes)}
 
     for i in range(nnodes):
         for rev_dep in rev_dep_graph[i]:
             dep_graph[rev_dep].add(i)
 
     keys = [rng.random() for _ in range(nnodes)]
-    topo_order = compute_topological_order(rev_dep_graph, key=keys.__getitem__)
+    topo_order = compute_topological_order(
+                        rev_dep_graph, key=keys.__getitem__)
 
     for scheduled_node in topo_order:
         nodes_with_no_deps = {node for node, deps in dep_graph.items()
@@ -303,7 +304,7 @@ def test_as_graphviz_dot():
              "B": [],
              "C": ["A"]}
 
-    from pytools.graph import NodeT, as_graphviz_dot
+    from pytools.graph import Node, NodeT, as_graphviz_dot
 
     def edge_labels(n1: NodeT, n2: NodeT) -> str:
         if n1 == "A" and n2 == "B":
@@ -311,7 +312,7 @@ def test_as_graphviz_dot():
 
         return ""
 
-    def node_labels(node: NodeT) -> str:
+    def node_labels(node: Node) -> str:
         if node == "A":
             return "foonode"
 
