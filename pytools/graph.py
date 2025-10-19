@@ -281,6 +281,8 @@ class _HeapEntry(Generic[NodeT]):
 
 def compute_topological_order(
         graph: GraphT[NodeT],
+        # should not use CanLt[object] because many types can't compare against
+        # everything under the sun
         key: Callable[[NodeT], optype.CanLt[Any]] | None = None,
         ) -> list[NodeT]:
     """Compute a topological order of nodes in a directed graph.
