@@ -2872,10 +2872,15 @@ class log_process:  # noqa: N801
         self.long_threshold_seconds = long_threshold_seconds
 
     def __call__(self, wrapped: Callable[P, R]) -> Callable[P, R]:
+        if self.description:
+            description = f"{wrapped.__qualname__} ({self.description})"
+        else:
+            description = wrapped.__qualname__
+
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             with ProcessLogger(
                     self.logger,
-                    self.description or wrapped.__name__,
+                    description,
                     long_threshold_seconds=self.long_threshold_seconds):
                 return wrapped(*args, **kwargs)
 
