@@ -50,17 +50,6 @@ Ruff:
   except:
   - tags
 
-Pylint:
-  script: |
-    EXTRA_INSTALL="numpy pymbolic orderedsets siphash24 optype"
-    py_version=3
-    curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-pylint.sh
-    . ./prepare-and-run-pylint.sh "$CI_PROJECT_NAME"
-  tags:
-  - python3
-  except:
-  - tags
-
 Documentation:
   script: |
     EXTRA_INSTALL="numpy siphash24 optype"
