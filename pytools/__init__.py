@@ -2315,7 +2315,7 @@ def add_python_path_relative_to_script(rel_path: str) -> None:
 # {{{ numpy dtype mangling
 
 def common_dtype(dtypes: Iterator[DTypeLike],
-                 default: DTypeLike = None) -> np.dtype[Any]:
+                 default: DTypeLike | None = None) -> np.dtype[Any]:
     import numpy as np
 
     ddtypes = [np.dtype(dtype) for dtype in dtypes]
