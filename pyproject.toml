@@ -118,7 +118,6 @@ exclude = [
     ".conda-root",
     "build",
     ".env",
-    ".run-pylint.py",
 ]
 
 # This reports even cycles that are qualified by 'if TYPE_CHECKING'. Not what
