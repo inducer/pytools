@@ -2285,7 +2285,7 @@ class ProgressBar:
         self.draw()
 
     def __exit__(self,
-                 exc_type: type[BaseException],
+                 exc_type: type[BaseException] | None,
                  exc_val: BaseException | None,
                  exc_tb: types.TracebackType | None) -> None:
         self.finished()
@@ -2515,7 +2515,7 @@ class MinRecursionLimit:
         sys.setrecursionlimit(new_limit)
 
     def __exit__(self,
-                 exc_type: type[BaseException],
+                 exc_type: type[BaseException] | None,
                  exc_val: BaseException | None,
                  exc_tb: types.TracebackType | None) -> None:
         # Deep recursion can produce deeply nested data structures
@@ -2678,7 +2678,7 @@ class ProcessTimer:
         return self
 
     def __exit__(self,
-                 exc_type: type[BaseException],
+                 exc_type: type[BaseException] | None,
                  exc_val: BaseException | None,
                  exc_tb: types.TracebackType | None) -> None:
         self.done()
@@ -2841,7 +2841,7 @@ class ProcessLogger:
         pass
 
     def __exit__(self,
-                 exc_type: type[BaseException],
+                 exc_type: type[BaseException] | None,
                  exc_val: BaseException | None,
                  exc_tb: types.TracebackType | None) -> None:
         self.done()
