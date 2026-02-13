@@ -115,7 +115,7 @@ class Indentation:
         self.generator.indent()
 
     def __exit__(self,
-                 exc_type: type[BaseException],
+                 exc_type: type[BaseException] | None,
                  exc_val: BaseException | None,
                  exc_tb: types.TracebackType | None) -> None:
         self.generator.dedent()
