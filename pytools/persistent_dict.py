@@ -244,8 +244,18 @@ class KeyBuilder:
     # understandably don't like it.
 
     def update_for_type(self, key_hash: Hash, key: type) -> None:
-        key_hash.update(
-            f"{key.__module__}.{key.__qualname__}.{key.__name__}".encode())
+        try:
+            module = sys.modules[key.__module__]
+            resolved = module
+            for attr in key.__qualname__.split("."):
+                resolved = getattr(resolved, attr)  # pyright: ignore[reportAny]
+            if resolved is key:
+                # Globally accessible: hash based on name
+                self.rec(key_hash, f"{key.__module__}.{key.__qualname__}")
+            else:
+                raise ValueError(f"Cannot hash function-local class '{key}'")
+        except (KeyError, AttributeError):
+            raise ValueError(f"Cannot hash function-local class '{key}'") from None
 
     update_for_ABCMeta = update_for_type
 

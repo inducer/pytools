@@ -503,8 +503,6 @@ def test_ABC_hashing() -> None:  # noqa: N802
     class MyABC(ABC):  # noqa: B024
         pass
 
-    assert keyb(MyABC) != keyb(ABC)
-
     with pytest.raises(TypeError):
         keyb(MyABC())
 
@@ -515,18 +513,28 @@ def test_ABC_hashing() -> None:  # noqa: N802
         def update_persistent_hash(self, key_hash, key_builder):
             key_builder.rec(key_hash, 42)
 
-    assert keyb(MyABC2) != keyb(MyABC)
     assert keyb(MyABC2())
 
     class MyABC3(ABC):  # noqa: B024
         def update_persistent_hash(self, key_hash, key_builder):
             key_builder.rec(key_hash, 42)
 
-    assert keyb(MyABC3) != keyb(MyABC) != keyb(MyABC3())
+    assert keyb(MyABC3())
+
+
+class WithoutUpdateMethodGlobal:
+    pass
 
 
 def test_class_hashing() -> None:
     keyb = KeyBuilder()
+
+    assert keyb(WithoutUpdateMethodGlobal) == keyb(WithoutUpdateMethodGlobal)
+    assert keyb(WithoutUpdateMethodGlobal) == "49c4673089d30507"
+
+    with pytest.raises(TypeError):
+        # does not have update_persistent_hash() = > will raise
+        keyb(WithoutUpdateMethodGlobal())
 
     class WithUpdateMethod:
         def update_persistent_hash(self, key_hash, key_builder):
@@ -540,15 +548,11 @@ def test_class_hashing() -> None:
     class TagClass2(Tag):
         pass
 
-    assert keyb(WithUpdateMethod) != keyb(WithUpdateMethod())
-    assert keyb(TagClass) != keyb(TagClass())
-    assert keyb(TagClass2) != keyb(TagClass2())
+    assert keyb(WithUpdateMethod()) == keyb(WithUpdateMethod())
 
-    assert keyb(TagClass) != keyb(TagClass2)
     assert keyb(TagClass()) != keyb(TagClass2())
 
     assert keyb(TagClass()) == "7b3e4e66503438f6"
-    assert keyb(TagClass2) == "690b86bbf51aad83"
 
     @tag_dataclass
     class TagClass3(Tag):
