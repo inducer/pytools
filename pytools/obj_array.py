@@ -4,7 +4,7 @@
 Handling :mod:`numpy` Object Arrays
 ===================================
 
-.. autoclass:: T
+.. autoclass:: T_co
 .. autoclass:: ResultT
 .. autoclass:: ShapeT
 
@@ -95,7 +95,7 @@ if TYPE_CHECKING:
     from numpy.typing import NDArray
 
 
-T = TypeVar("T", covariant=True)
+T_co = TypeVar("T_co", covariant=True)
 
 ResultT = TypeVar("ResultT")
 ShapeT = TypeVar("ShapeT", bound=tuple[int, ...])
@@ -111,7 +111,7 @@ class _ObjectArrayMetaclass(type):
         return isinstance(instance, np.ndarray) and instance.dtype == object
 
 
-class ObjectArray(Generic[ShapeT, T], metaclass=_ObjectArrayMetaclass):
+class ObjectArray(Generic[ShapeT, T_co], metaclass=_ObjectArrayMetaclass):
     """This is a fake type used to distinguish :class:`numpy.ndarray`
     instances with a *dtype* of *object* for static type checking.
     Unlike :class:`numpy.ndarray`, this "type" can straightforwardly
@@ -149,47 +149,53 @@ class ObjectArray(Generic[ShapeT, T], metaclass=_ObjectArrayMetaclass):
         def T(self) -> Self: ...  # noqa: N802
 
         @overload
-        def __getitem__(self, x: ShapeT, /) -> T: ...
+        def __getitem__(self, x: ShapeT, /) -> T_co: ...
 
         @overload
-        def __getitem__(self: ObjectArray1D[T], x: int, /) -> T: ...
-
-        @overload
-        def __getitem__(self: ObjectArray2D[T], x: int, /) -> ObjectArray1D[T]: ...
-
-        @overload
-        def __getitem__(self: ObjectArrayND[T], x: int, /) -> ObjectArrayND[T] | T: ...
+        def __getitem__(self: ObjectArray1D[T_co], x: int, /) -> T_co: ...
 
         @overload
         def __getitem__(
-            self: ObjectArray1D[T],
-            x: slice, /) -> ObjectArray1D[T]: ...
+                self: ObjectArray2D[T_co],
+                x: int,
+            /) -> ObjectArray1D[T_co]: ...
 
         @overload
         def __getitem__(
-            self: ObjectArray2D[T],
-            x: slice, /) -> ObjectArray2D[T]: ...
+                self: ObjectArrayND[T_co],
+                x: int,
+            /) -> ObjectArrayND[T_co] | T_co: ...
 
         @overload
         def __getitem__(
-            self: ObjectArray2D[T],
-            x: tuple[slice, int], /) -> ObjectArray1D[T]: ...
+            self: ObjectArray1D[T_co],
+            x: slice, /) -> ObjectArray1D[T_co]: ...
 
         @overload
         def __getitem__(
-            self: ObjectArray2D[T],
-            x: tuple[int, slice], /) -> ObjectArray1D[T]: ...
+            self: ObjectArray2D[T_co],
+            x: slice, /) -> ObjectArray2D[T_co]: ...
 
         @overload
         def __getitem__(
-                self: ObjectArrayND[T],
+            self: ObjectArray2D[T_co],
+            x: tuple[slice, int], /) -> ObjectArray1D[T_co]: ...
+
+        @overload
+        def __getitem__(
+            self: ObjectArray2D[T_co],
+            x: tuple[int, slice], /) -> ObjectArray1D[T_co]: ...
+
+        @overload
+        def __getitem__(
+                self: ObjectArrayND[T_co],
                 x: tuple[int | slice, ...],
-            /) -> ObjectArrayND[T] | T: ...
+            /) -> ObjectArrayND[T_co] | T_co: ...
 
         @overload
-        def __iter__(self: ObjectArray1D[T]) -> Iterator[T]: ...
+        def __iter__(self: ObjectArray1D[T_co]) -> Iterator[T_co]: ...
         @overload
-        def __iter__(self: ObjectArray2D[T]) -> Iterator[ObjectArray1D[T]]: ...
+        def __iter__(self: ObjectArray2D[T_co]) -> Iterator[ObjectArray1D[T_co]]: ...
 
         def __pos__(self) -> Self: ...
         def __neg__(self) -> Self: ...
@@ -201,111 +207,111 @@ class ObjectArray(Generic[ShapeT, T], metaclass=_ObjectArrayMetaclass):
         @overload
         def __add__(self, other: Self, /) -> Self: ...
         @overload
-        def __add__(self, other: T, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
+        def __add__(self, other: T_co, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
         @overload
         def __add__(self, other: complex, /) -> Self: ...
         @overload
-        def __radd__(self, other: T, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
+        def __radd__(self, other: T_co, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
         @overload
         def __radd__(self, other: complex, /) -> Self: ...
 
         @overload
         def __sub__(self, other: Self, /) -> Self: ...
         @overload
-        def __sub__(self, other: T, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
+        def __sub__(self, other: T_co, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
         @overload
         def __sub__(self, other: complex, /) -> Self: ...
         @overload
-        def __rsub__(self, other: T, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
+        def __rsub__(self, other: T_co, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
         @overload
         def __rsub__(self, other: complex, /) -> Self: ...
 
         @overload
         def __mul__(self, other: Self, /) -> Self: ...
         @overload
-        def __mul__(self, other: T, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
+        def __mul__(self, other: T_co, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
         @overload
         def __mul__(self, other: complex, /) -> Self: ...
         @overload
-        def __rmul__(self, other: T, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
+        def __rmul__(self, other: T_co, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
         @overload
         def __rmul__(self, other: complex, /) -> Self: ...
 
         @overload
         def __truediv__(self, other: Self, /) -> Self: ...
         @overload
-        def __truediv__(self, other: T, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
+        def __truediv__(self, other: T_co, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
         @overload
         def __truediv__(self, other: complex, /) -> Self: ...
         @overload
-        def __rtruediv__(self, other: T, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
+        def __rtruediv__(self, other: T_co, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
         @overload
         def __rtruediv__(self, other: complex, /) -> Self: ...
 
         @overload
         def __pow__(self, other: Self, /) -> Self: ...
         @overload
-        def __pow__(self, other: T, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
+        def __pow__(self, other: T_co, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
         @overload
         def __pow__(self, other: complex, /) -> Self: ...
         @overload
-        def __rpow__(self, other: T, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
+        def __rpow__(self, other: T_co, /) -> Self: ...  # pyright: ignore[reportGeneralTypeIssues]
         @overload
         def __rpow__(self, other: complex, /) -> Self: ...
 
         @overload
         def __matmul__(
-                    self: ObjectArray1D[T],
-                    other: ObjectArray1D[T],
-                /) -> T: ...
+                    self: ObjectArray1D[T_co],
+                    other: ObjectArray1D[T_co],
+                /) -> T_co: ...
         @overload
         def __matmul__(
-                    self: ObjectArray2D[T],
-                    other: ObjectArray1D[T],
-                /) -> ObjectArray1D[T]: ...
+                    self: ObjectArray2D[T_co],
+                    other: ObjectArray1D[T_co],
+                /) -> ObjectArray1D[T_co]: ...
         @overload
         def __matmul__(
-                    self: ObjectArray1D[T],
-                    other: ObjectArray2D[T],
-                /) -> ObjectArray1D[T]: ...
+                    self: ObjectArray1D[T_co],
+                    other: ObjectArray2D[T_co],
+                /) -> ObjectArray1D[T_co]: ...
         @overload
         def __matmul__(
-                    self: ObjectArray2D[T],
-                    other: ObjectArray2D[T],
-                /) -> ObjectArray2D[T]: ...
+                    self: ObjectArray2D[T_co],
+                    other: ObjectArray2D[T_co],
+                /) -> ObjectArray2D[T_co]: ...
         @overload
         def __matmul__(
-                    self: ObjectArray2D[T],
+                    self: ObjectArray2D[T_co],
                     other: np.ndarray[tuple[int, int], np.dtype[Any]],
-                /) -> ObjectArray2D[T]: ...
+                /) -> ObjectArray2D[T_co]: ...
         @overload
         def __matmul__(
-                    self: ObjectArrayND[T],
-                    other: ObjectArrayND[T],
-                /) -> ObjectArrayND[T] | T: ...
+                    self: ObjectArrayND[T_co],
+                    other: ObjectArrayND[T_co],
+                /) -> ObjectArrayND[T_co] | T_co: ...
 
         @property
-        def flat(self) -> Iterator[T]: ...
+        def flat(self) -> Iterator[T_co]: ...
 
-        def flatten(self) -> ObjectArray1D[T]: ...
+        def flatten(self) -> ObjectArray1D[T_co]: ...
 
         @overload
-        def tolist(self: ObjectArray0D[T]) -> T: ...
+        def tolist(self: ObjectArray0D[T_co]) -> T_co: ...
         @overload
-        def tolist(self: ObjectArray1D[T]) -> list[T]: ...
+        def tolist(self: ObjectArray1D[T_co]) -> list[T_co]: ...
         @overload
-        def tolist(self: ObjectArray2D[T]) -> list[list[T]]: ...
+        def tolist(self: ObjectArray2D[T_co]) -> list[list[T_co]]: ...
         @overload
         def tolist(self) -> list[Any]: ...
 
 
-ObjectArray0D: TypeAlias = ObjectArray[tuple[()], T]
-ObjectArray1D: TypeAlias = ObjectArray[tuple[int], T]
-ObjectArray2D: TypeAlias = ObjectArray[tuple[int, int], T]
-ObjectArrayND: TypeAlias = ObjectArray[tuple[int, ...], T]
+ObjectArray0D: TypeAlias = ObjectArray[tuple[()], T_co]
+ObjectArray1D: TypeAlias = ObjectArray[tuple[int], T_co]
+ObjectArray2D: TypeAlias = ObjectArray[tuple[int, int], T_co]
+ObjectArrayND: TypeAlias = ObjectArray[tuple[int, ...], T_co]
 
 
-def to_numpy(ary: ObjectArray[ShapeT, T]) -> np.ndarray[ShapeT, Any]:
+def to_numpy(ary: ObjectArray[ShapeT, T_co]) -> np.ndarray[ShapeT, Any]:
     return cast("np.ndarray[ShapeT, Any]", cast("object", ary))
 
 
@@ -319,22 +325,22 @@ def from_numpy(
 @overload
 def from_numpy(
             ary: np.ndarray[ShapeT, Any],
-            tp: type[T],
+            tp: type[T_co],
             /
-        ) -> ObjectArray[ShapeT, T]: ...
+        ) -> ObjectArray[ShapeT, T_co]: ...
 
 
 def from_numpy(
             ary: np.ndarray[ShapeT, Any],
-            tp: type[T] | None = None,  # pyright: ignore[reportUnusedParameter]
+            tp: type[T_co] | None = None,  # pyright: ignore[reportUnusedParameter]
             /
-        ) -> ObjectArray[ShapeT, T]:
+        ) -> ObjectArray[ShapeT, T_co]:
     if ary.dtype != object:  # pyright: ignore[reportAny]
         ary = ary.astype(object)
-    return cast("ObjectArray[ShapeT, T]", cast("object", ary))
+    return cast("ObjectArray[ShapeT, T_co]", cast("object", ary))
 
 
-def new_1d(res_list: Sequence[T]) -> ObjectArray1D[T]:
+def new_1d(res_list: Sequence[T_co]) -> ObjectArray1D[T_co]:
     """Create a one-dimensional object array from *res_list*.
     This differs from ``numpy.array(res_list, dtype=object)``
     by whether it tries to determine its shape by descending
@@ -373,19 +379,19 @@ def new_1d(res_list: Sequence[T]) -> ObjectArray1D[T]:
     for idx in range(len(res_list)):
         result[idx] = res_list[idx]
 
-    return cast("ObjectArray1D[T]", cast("object", result))
+    return cast("ObjectArray1D[T_co]", cast("object", result))
 
 
 @deprecated("use obj_array.new_1d instead")
-def make_obj_array(res_list: Sequence[T]) -> ObjectArray1D[T]:
+def make_obj_array(res_list: Sequence[T_co]) -> ObjectArray1D[T_co]:
     # No run-time warning yet to avoid excessive warning spam.
     return new_1d(res_list)
 
 
 def stack(
-            arrays: Sequence[ObjectArray[ShapeT, T]],
+            arrays: Sequence[ObjectArray[ShapeT, T_co]],
             /, *, axis: Literal[0] = 0,
-        ) -> ObjectArray[tuple[int, Unpack[ShapeT]], T]:
+        ) -> ObjectArray[tuple[int, Unpack[ShapeT]], T_co]:
     """
     .. versionadded:: 2025.2.2
     """
@@ -393,14 +399,14 @@ def stack(
         raise NotImplementedError("axis != 0")
 
     import numpy as np
-    return cast("ObjectArray[tuple[int, Unpack[ShapeT]], T]", cast("object",
+    return cast("ObjectArray[tuple[int, Unpack[ShapeT]], T_co]", cast("object",
                             np.stack(cast("Sequence[NDArray[Any]]", arrays))))
 
 
 def concatenate(
-            arrays: Sequence[ObjectArray[tuple[int, Unpack[ShapeT]], T]],
+            arrays: Sequence[ObjectArray[tuple[int, Unpack[ShapeT]], T_co]],
             /, *, axis: Literal[0] = 0,
-        ) -> ObjectArray[tuple[int, Unpack[ShapeT]], T]:
+        ) -> ObjectArray[tuple[int, Unpack[ShapeT]], T_co]:
     """
     .. versionadded:: 2025.2.2
     """
@@ -408,65 +414,65 @@ def concatenate(
         raise NotImplementedError("axis != 0")
 
     import numpy as np
-    return cast("ObjectArray[tuple[int, Unpack[ShapeT]], T]", cast("object",
+    return cast("ObjectArray[tuple[int, Unpack[ShapeT]], T_co]", cast("object",
                 np.concatenate(cast("Sequence[NDArray[Any]]", arrays))))
 
 
 def trace(
-            array: ObjectArray2D[T], /,
-        ) -> T:
+            array: ObjectArray2D[T_co], /,
+        ) -> T_co:
     """
     .. versionadded:: 2025.2.2
     """
     import numpy as np
-    return cast("T", np.trace(cast("NDArray[Any]", cast("object", array))))
+    return cast("T_co", np.trace(cast("NDArray[Any]", cast("object", array))))
 
 
 @overload
 def sum(
-            array: ObjectArrayND[T],
+            array: ObjectArrayND[T_co],
             axis: None,
-        ) -> T: ...
+        ) -> T_co: ...
 
 
 @overload
 def sum(
-            array: ObjectArray1D[T],
+            array: ObjectArray1D[T_co],
             axis: int,
-        ) -> T: ...
+        ) -> T_co: ...
 
 
 @overload
 def sum(
-            array: ObjectArray2D[T],
+            array: ObjectArray2D[T_co],
             axis: int,
-        ) -> ObjectArray1D[T]: ...
+        ) -> ObjectArray1D[T_co]: ...
 
 
 def sum(
-            array: ObjectArrayND[T],
+            array: ObjectArrayND[T_co],
             axis: int | None = None,
-        ) -> ObjectArrayND[T] | T:
+        ) -> ObjectArrayND[T_co] | T_co:
     import numpy as np
-    return cast("ObjectArrayND[T] | T", np.sum(
+    return cast("ObjectArrayND[T_co] | T_co", np.sum(
             cast("NDArray[Any]", cast("object", array)),
             axis=axis,
         ))
 
 
-def to_hashable(ary: ObjectArray[ShapeT, T] | Hashable, /) -> Hashable:
+def to_hashable(ary: ObjectArray[ShapeT, T_co] | Hashable, /) -> Hashable:
     if isinstance(ary, ObjectArray):
-        ary = cast("ObjectArray[ShapeT, T]", ary)
+        ary = cast("ObjectArray[ShapeT, T_co]", ary)
         return tuple(ary.flat)
     return ary
 
 
 @deprecated("use obj_array.to_hashable")
-def obj_array_to_hashable(ary: ObjectArray[ShapeT, T] | Hashable, /) -> Hashable:
+def obj_array_to_hashable(ary: ObjectArray[ShapeT, T_co] | Hashable, /) -> Hashable:
     return to_hashable(ary)
 
 
-def flat(*args: ObjectArray[ShapeT, T] | list[T] | T) -> ObjectArray1D[T]:
+def flat(*args: ObjectArray[ShapeT, T_co] | list[T_co] | T_co) -> ObjectArray1D[T_co]:
     """Return a one-dimensional flattened object array consisting of
     elements obtained by 'flattening' *args* as follows:
 
@@ -476,23 +482,25 @@ def flat(*args: ObjectArray[ShapeT, T] | list[T] | T) -> ObjectArray1D[T]:
     - Any other type will appear in the list as-is.
     """
     import numpy as np
-    res_list: list[T] = []
+    res_list: list[T_co] = []
     for arg in args:
         if isinstance(arg, list):
-            res_list.extend(cast("list[T]", arg))
+            res_list.extend(cast("list[T_co]", arg))
 
         # Only flatten genuine, non-subclassed object arrays.
         elif isinstance(arg, ObjectArray) and type(arg) is np.ndarray:  # pyright: ignore[reportUnnecessaryComparison,reportUnknownArgumentType]
             res_list.extend(arg.flat)
 
         else:
-            res_list.append(cast("T", arg))
+            res_list.append(cast("T_co", arg))
 
     return new_1d(res_list)
 
 
 @deprecated("use obj_array.flat")
-def flat_obj_array(*args: ObjectArray[ShapeT, T] | list[T] | T) -> ObjectArray1D[T]:
+def flat_obj_array(
+            *args: ObjectArray[ShapeT, T_co] | list[T_co] | T_co
+        ) -> ObjectArray1D[T_co]:
     warn("flat_obj_array is deprecated, use obj_array.flat instead. "
          "This will stop working in 2027.", DeprecationWarning, stacklevel=2)
     return flat(*args)
@@ -500,20 +508,20 @@ def flat_obj_array(*args: ObjectArray[ShapeT, T] | list[T] | T) -> ObjectArray1D
 
 @overload
 def vectorize(
-            f: Callable[[T], ResultT],
-            ary: ObjectArray[ShapeT, T],
+            f: Callable[[T_co], ResultT],
+            ary: ObjectArray[ShapeT, T_co],
         ) -> ObjectArray[ShapeT, ResultT]: ...
 
 @overload
 def vectorize(
-            f: Callable[[T], ResultT],
-            ary: T,
+            f: Callable[[T_co], ResultT],
+            ary: T_co,
         ) -> ResultT: ...
 
 
 def vectorize(
-            f: Callable[[T], ResultT],
-            ary: T | ObjectArray[ShapeT, T],
+            f: Callable[[T_co], ResultT],
+            ary: T_co | ObjectArray[ShapeT, T_co],
         ) -> ResultT | ObjectArray[ShapeT, ResultT]:
     """Apply the function *f* to all entries of the object array *ary*.
     Return an object array of the same shape consisting of the return
@@ -529,7 +537,7 @@ def vectorize(
     import numpy as np
     if isinstance(ary, ObjectArray):
         result = np.empty_like(ary)
-        ary = cast("ObjectArray[ShapeT, T]", ary)
+        ary = cast("ObjectArray[ShapeT, T_co]", ary)
         for i in np.ndindex(ary.shape):
             result[i] = f(ary[i])
         return cast("ObjectArray[ShapeT, ResultT]", cast("object", result))
@@ -539,8 +547,8 @@ def vectorize(
 
 @deprecated("use obj_array.vectorize")
 def obj_array_vectorize(
-            f: Callable[[T], ResultT],
-            ary: T | ObjectArray[ShapeT, T],
+            f: Callable[[T_co], ResultT],
+            ary: T_co | ObjectArray[ShapeT, T_co],
         ) -> ResultT | ObjectArray[ShapeT, ResultT]:
     warn("obj_array_vectorize is deprecated, use obj_array.vectorize instead. "
          "This will stop working in 2027.", DeprecationWarning, stacklevel=2)
@@ -550,8 +558,10 @@ def obj_array_vectorize(
 # FIXME: It'd be nice to do make this more precise (T->T, ObjArray->ObjArray),
 # but I don't know how.
 def vectorized(
-            f: Callable[[T], T]
-        ) -> Callable[[T | ObjectArray[ShapeT, T]], T | ObjectArray[ShapeT, T]]:
+            f: Callable[[T_co], T_co]
+        ) -> Callable[
+                [T_co | ObjectArray[ShapeT, T_co]],
+                T_co | ObjectArray[ShapeT, T_co]]:
     wrapper = partial(vectorize, f)
     update_wrapper(wrapper, f)
     return wrapper  # pyright: ignore[reportReturnType]
@@ -559,8 +569,10 @@ def vectorized(
 
 @deprecated("use obj_array.vectorized instead")
 def obj_array_vectorized(
-            f: Callable[[T], T]
-        ) -> Callable[[T | ObjectArray[ShapeT, T]], T | ObjectArray[ShapeT, T]]:
+            f: Callable[[T_co], T_co]
+        ) -> Callable[
+                [T_co | ObjectArray[ShapeT, T_co]],
+                T_co | ObjectArray[ShapeT, T_co]]:
     warn("obj_array_vectorized is deprecated, use obj_array.vectorized instead. "
          "This will stop working in 2027.", DeprecationWarning, stacklevel=2)
     return vectorized(f)

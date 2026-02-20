@@ -106,7 +106,7 @@ def _make_module(
     code_obj = compile(
                 source_text.rstrip()+"\n", name, "exec")
     result_dict["__code__"] = code_obj
-    exec(code_obj, result_dict)
+    exec(code_obj, result_dict)  # noqa: S102
 
     return result_dict
 
@@ -156,7 +156,7 @@ def _get_empty_module_dict(filename: str | None = None) -> dict[str, Any]:
     result_dict: dict[str, Any] = {}
     code_obj = compile("", filename, "exec")
     result_dict["__code__"] = code_obj
-    exec(code_obj, result_dict)
+    exec(code_obj, result_dict)  # noqa: S102
     return result_dict
 
 

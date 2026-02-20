@@ -116,9 +116,7 @@ class DirectForker(Forker):
     @override
     def wait(self, aid: int) -> int:
         proc = self.apids.pop(aid)
-        retc = proc.wait()
-
-        return retc
+        return proc.wait()
 
     @override
     def waitall(self) -> dict[int, int]:

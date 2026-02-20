@@ -263,11 +263,11 @@ class DataTable:
                 other_batch = [(None,) * len(other_table.column_names)]
 
             for this_batch_row in this_batch:
-                for other_batch_row in other_batch:
-                    result_data.append((
+                result_data.extend((
                             key,
                             *without(this_batch_row, this_key_idx),
-                            *without(other_batch_row, other_key_idx)))
+                            *without(other_batch_row, other_key_idx))
+                            for other_batch_row in other_batch)
 
             if outer:
                 if this_over and other_over:
