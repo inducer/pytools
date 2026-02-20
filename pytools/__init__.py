@@ -629,9 +629,10 @@ class DependentDictionary(Generic[T, R]):
     def __contains__(self, key: T) -> bool:
         try:
             self[key]
-            return True
         except KeyError:
             return False
+        else:
+            return True
 
     def __getitem__(self, key: T) -> R:
         try:
@@ -1609,7 +1610,7 @@ def generate_all_integer_tuples_below(
         n, length, least_abs))
 
 
-class _ConcatenableSequence(Generic[T_co], Protocol):
+class _ConcatenableSequence(Protocol, Generic[T_co]):
     """
     A protocol that supports the following:
 
@@ -2185,9 +2186,7 @@ def invoke_editor(s: str, filename: str = "edit.txt", descr: str = "the file"):
                 "dropped directly into an editor next time.)")
         input(f"Edit {descr} at {full_path} now, then hit [Enter]:")
 
-    result = full_path.read_text()
-
-    return result
+    return full_path.read_text()
 
 # }}}
 
