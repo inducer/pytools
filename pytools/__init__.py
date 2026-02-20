@@ -255,9 +255,12 @@ Type Variables Used
 -------------------
 
 .. class:: T
-.. class:: R
 
     Generic unbound invariant :class:`typing.TypeVar`.
+
+.. class:: R_co
+
+    Generic unbound covariant :class:`typing.TypeVar`.
 
 .. class:: F
 
@@ -284,7 +287,7 @@ T = TypeVar("T")
 T_co = TypeVar("T_co", covariant=True)
 T_contra = TypeVar("T_contra", contravariant=True)
 Ts = TypeVarTuple("Ts")
-R = TypeVar("R", covariant=True)
+R_co = TypeVar("R_co", covariant=True)
 F = TypeVar("F", bound=Callable[..., Any])
 P = ParamSpec("P")
 K = TypeVar("K")
@@ -299,12 +302,12 @@ SupportsLessThanT = TypeVar("SupportsLessThanT", bound="CanLt[Any]")
 
 # Undocumented on purpose for now, unclear that this is a great idea, given
 # that typing.deprecated exists.
-class MovedFunctionDeprecationWrapper(Generic[P, R]):
-    f: Callable[P, R]
+class MovedFunctionDeprecationWrapper(Generic[P, R_co]):
+    f: Callable[P, R_co]
     deadline: int | str
 
     def __init__(self,
-                 f: Callable[P, R],
+                 f: Callable[P, R_co],
                  deadline: int | str | None = None) -> None:
         if deadline is None:
             deadline = "the future"
@@ -312,7 +315,7 @@ class MovedFunctionDeprecationWrapper(Generic[P, R]):
         self.f = f
         self.deadline = deadline
 
-    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R_co:
         from warnings import warn
         warn(f"This function is deprecated and will go away in {self.deadline}. "
             f"Use {self.f.__module__}.{self.f.__name__} instead.",
@@ -587,21 +590,21 @@ class Reference(Generic[T]):
         self.value = value
 
 
-class FakeList(Generic[R]):
-    def __init__(self, f: Callable[[int], R], length: int) -> None:
+class FakeList(Generic[R_co]):
+    def __init__(self, f: Callable[[int], R_co], length: int) -> None:
         self._Length: int = length
-        self._Function: Callable[[int], R] = f
+        self._Function: Callable[[int], R_co] = f
 
     def __len__(self) -> int:
         return self._Length
 
     @overload
-    def __getitem__(self, index: int) -> R: ...
+    def __getitem__(self, index: int) -> R_co: ...
 
     @overload
-    def __getitem__(self, index: slice) -> Sequence[R]: ...
+    def __getitem__(self, index: slice) -> Sequence[R_co]: ...
 
-    def __getitem__(self, index: object) -> R | Sequence[R]:
+    def __getitem__(self, index: object) -> R_co | Sequence[R_co]:
         if isinstance(index, int):
             return self._Function(index)
         elif isinstance(index, slice):
@@ -613,17 +616,17 @@ class FakeList(Generic[R]):
 
 # {{{ dependent dictionary
 
-class DependentDictionary(Generic[T, R]):
+class DependentDictionary(Generic[T, R_co]):
     def __init__(self,
-                 f: Callable[[dict[T, R], T], R],
-                 start: dict[T, R] | None = None) -> None:
+                 f: Callable[[dict[T, R_co], T], R_co],
+                 start: dict[T, R_co] | None = None) -> None:
         if start is None:
             start = {}
 
-        self._Function: Callable[[dict[T, R], T], R] = f
-        self._Dictionary: dict[T, R] = start.copy()
+        self._Function: Callable[[dict[T, R_co], T], R_co] = f
+        self._Dictionary: dict[T, R_co] = start.copy()
 
-    def copy(self) -> DependentDictionary[T, R]:
+    def copy(self) -> DependentDictionary[T, R_co]:
         return DependentDictionary(self._Function, self._Dictionary)
 
     def __contains__(self, key: T) -> bool:
@@ -633,25 +636,25 @@ class DependentDictionary(Generic[T, R]):
         except KeyError:
             return False
 
-    def __getitem__(self, key: T) -> R:
+    def __getitem__(self, key: T) -> R_co:
         try:
             return self._Dictionary[key]
         except KeyError:
             return self._Function(self._Dictionary, key)
 
-    def __setitem__(self, key: T, value: R) -> None:
+    def __setitem__(self, key: T, value: R_co) -> None:
         self._Dictionary[key] = value
 
     def genuineKeys(self):  # noqa: N802
         return list(self._Dictionary.keys())
 
-    def iteritems(self) -> Iterable[tuple[T, R]]:
+    def iteritems(self) -> Iterable[tuple[T, R_co]]:
         return self._Dictionary.items()
 
     def iterkeys(self) -> Iterable[T]:
         return self._Dictionary.keys()
 
-    def itervalues(self) -> Iterable[R]:
+    def itervalues(self) -> Iterable[R_co]:
         return self._Dictionary.values()
 
 # }}}
@@ -810,8 +813,8 @@ class _HasKwargs:
 
 
 def memoize_on_first_arg(
-        function: Callable[Concatenate[T, P], R], *,
-        cache_dict_name: str | None = None) -> Callable[Concatenate[T, P], R]:
+        function: Callable[Concatenate[T, P], R_co], *,
+        cache_dict_name: str | None = None) -> Callable[Concatenate[T, P], R_co]:
     """Like :func:`memoize_method`, but for functions that take the object
     in which do memoization information is stored as first argument.
 
@@ -823,7 +826,7 @@ def memoize_on_first_arg(
                 f"_memoize_dic_{function.__module__}{function.__name__}"
                 )
 
-    def wrapper(obj: T, *args: P.args, **kwargs: P.kwargs) -> R:
+    def wrapper(obj: T, *args: P.args, **kwargs: P.kwargs) -> R_co:
         key = (_HasKwargs, frozenset(kwargs.items()), *args) if kwargs else args
 
         assert cache_dict_name is not None
@@ -856,8 +859,8 @@ def memoize_on_first_arg(
 
 
 def memoize_method(
-        method: Callable[Concatenate[T, P], R]
-        ) -> Callable[Concatenate[T, P], R]:
+        method: Callable[Concatenate[T, P], R_co]
+        ) -> Callable[Concatenate[T, P], R_co]:
     """Supports cache deletion via ``method_name.clear_cache(self)``.
 
     .. versionchanged:: 2021.2
@@ -870,7 +873,7 @@ def memoize_method(
             cache_dict_name=intern(f"_memoize_dic_{method.__name__}"))
 
 
-class keyed_memoize_on_first_arg(Generic[T, P, R]):  # noqa: N801
+class keyed_memoize_on_first_arg(Generic[T, P, R_co]):  # noqa: N801
     """Like :func:`memoize_method`, but for functions that take the object
     in which memoization information is stored as first argument.
 
@@ -891,19 +894,19 @@ class keyed_memoize_on_first_arg(Generic[T, P, R]):  # noqa: N801
         self.cache_dict_name = cache_dict_name
 
     def _default_cache_dict_name(self,
-            function: Callable[Concatenate[T, P], R]) -> str:
+            function: Callable[Concatenate[T, P], R_co]) -> str:
         return intern(f"_memoize_dic_{function.__module__}{function.__name__}")
 
     def __call__(
-            self, function: Callable[Concatenate[T, P], R]
-            ) -> Callable[Concatenate[T, P], R]:
+            self, function: Callable[Concatenate[T, P], R_co]
+            ) -> Callable[Concatenate[T, P], R_co]:
         cache_dict_name = self.cache_dict_name
         key = self.key
 
         if cache_dict_name is None:
             cache_dict_name = self._default_cache_dict_name(function)
 
-        def wrapper(obj: T, *args: P.args, **kwargs: P.kwargs) -> R:
+        def wrapper(obj: T, *args: P.args, **kwargs: P.kwargs) -> R_co:
             cache_key = key(*args, **kwargs)
 
             assert cache_dict_name is not None
@@ -983,9 +986,9 @@ class memoize_in:  # noqa: N801
 
         self.cache_dict = memoize_in_dict.setdefault(identifier, {})
 
-    def __call__(self, inner: Callable[P, R]) -> Callable[P, R]:
+    def __call__(self, inner: Callable[P, R_co]) -> Callable[P, R_co]:
         @wraps(inner)
-        def new_inner(*args: P.args, **kwargs: P.kwargs) -> R:
+        def new_inner(*args: P.args, **kwargs: P.kwargs) -> R_co:
             assert not kwargs
 
             try:
@@ -1021,9 +1024,9 @@ class keyed_memoize_in(Generic[P]):  # noqa: N801
         self.cache_dict = memoize_in_dict.setdefault(identifier, {})
         self.key = key
 
-    def __call__(self, inner: Callable[P, R]) -> Callable[P, R]:
+    def __call__(self, inner: Callable[P, R_co]) -> Callable[P, R_co]:
         @wraps(inner)
-        def new_inner(*args: P.args, **kwargs: P.kwargs) -> R:
+        def new_inner(*args: P.args, **kwargs: P.kwargs) -> R_co:
             assert not kwargs
             key = self.key(*args, **kwargs)
 
@@ -1609,7 +1612,7 @@ def generate_all_integer_tuples_below(
         n, length, least_abs))
 
 
-class _ConcatenableSequence(Generic[T_co], Protocol):
+class _ConcatenableSequence(Protocol, Generic[T_co]):
     """
     A protocol that supports the following:
 
@@ -2185,9 +2188,8 @@ def invoke_editor(s: str, filename: str = "edit.txt", descr: str = "the file"):
                 "dropped directly into an editor next time.)")
         input(f"Edit {descr} at {full_path} now, then hit [Enter]:")
 
-    result = full_path.read_text()
+    return full_path.read_text()
 
-    return result
 
 # }}}
 
@@ -2871,13 +2873,13 @@ class log_process:  # noqa: N801
         self.description = description
         self.long_threshold_seconds = long_threshold_seconds
 
-    def __call__(self, wrapped: Callable[P, R]) -> Callable[P, R]:
+    def __call__(self, wrapped: Callable[P, R_co]) -> Callable[P, R_co]:
         if self.description:
             description = f"{wrapped.__qualname__} ({self.description})"
         else:
             description = wrapped.__qualname__
 
-        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R_co:
             with ProcessLogger(
                     self.logger,
                     description,
@@ -2885,9 +2887,8 @@ class log_process:  # noqa: N801
                 return wrapped(*args, **kwargs)
 
         from functools import update_wrapper
-        new_wrapper = update_wrapper(wrapper, wrapped)
+        return update_wrapper(wrapper, wrapped)
 
-        return new_wrapper
 
 # }}}
 

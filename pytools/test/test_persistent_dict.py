@@ -99,7 +99,7 @@ def test_persistent_dict_storage_and_lookup() -> None:
             pdict[k] = v
 
         for k, v in d.items():
-            assert d[k] == pdict[k]
+            assert v == pdict[k]
             assert v == pdict[k]
 
         # }}}
@@ -110,7 +110,7 @@ def test_persistent_dict_storage_and_lookup() -> None:
             pdict[k] = v + 1
 
         for k, v in d.items():
-            assert d[k] + 1 == pdict[k]
+            assert v + 1 == pdict[k]
             assert v + 1 == pdict[k]
 
         # }}}
@@ -121,7 +121,7 @@ def test_persistent_dict_storage_and_lookup() -> None:
             pdict.store_if_not_present(k, d[k] + 2)
 
         for k, v in d.items():
-            assert d[k] + 1 == pdict[k]
+            assert v + 1 == pdict[k]
             assert v + 1 == pdict[k]
 
         pdict.store_if_not_present(2001, 2001)
@@ -1019,7 +1019,7 @@ def test_nan_keys() -> None:
             pass
 
         for nan_value in nan_values:
-            assert nan_value != nan_value
+            assert nan_value != nan_value  # noqa: PLR0124
 
             with pytest.warns(NanKeyWarning):
                 assert keyb(nan_value) == keyb(nan_value)

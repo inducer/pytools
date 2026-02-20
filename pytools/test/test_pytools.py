@@ -416,7 +416,7 @@ class FakeArray:
 def test_make_obj_array_iteration():
     pytest.importorskip("numpy")
 
-    import pytools.obj_array as obj_array
+    from pytools import obj_array
     obj_array.new_1d([FakeArray()])
 
     assert FakeArray.nopes == 0, FakeArray.nopes
@@ -430,7 +430,7 @@ def test_obj_array_vectorize(c=1):
     np = pytest.importorskip("numpy")
     la = pytest.importorskip("numpy.linalg")
 
-    import pytools.obj_array as obj_array
+    from pytools import obj_array
 
     # {{{ functions
 

@@ -90,7 +90,14 @@ extend-ignore = [
 
     # FIXME: This is a longer discussion...
     "RUF067", # __init__ should only contain reexports
+    "DTZ",
+    "TRY",
+    "BLE",
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"pytools/test/*.py" = ["S102"]
+"doc/conf.py" = ["S102"]
 
 [tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"
