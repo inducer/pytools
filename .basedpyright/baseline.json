@@ -823,7 +823,7 @@
                 "code": "reportGeneralTypeIssues",
                 "range": {
                     "startColumn": 41,
-                    "endColumn": 42,
+                    "endColumn": 45,
                     "lineCount": 1
                 }
             },
@@ -4690,8 +4690,8 @@
             {
                 "code": "reportUnknownMemberType",
                 "range": {
-                    "startColumn": 20,
-                    "endColumn": 38,
+                    "startColumn": 16,
+                    "endColumn": 34,
                     "lineCount": 1
                 }
             },
