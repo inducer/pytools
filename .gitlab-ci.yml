@@ -29,18 +29,6 @@ Pytest without Numpy:
     reports:
       junit: test/pytest.xml
 
-# Examples:
-#   script: |
-#     EXTRA_INSTALL="numpy pymbolic"
-#     curl -L -O https://tiker.net/ci-support-v0
-#     . ./ci-support-v0
-#     build_py_project_in_venv
-#     run_examples
-#   tags:
-#   - python3
-#   except:
-#   - tags
-
 Ruff:
   script: |
     pipx install ruff
