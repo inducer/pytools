@@ -124,8 +124,8 @@ def refdebug(obj, top_level=True, exclude=()):
                 print("type expression, obj is your object:")
                 expr_str = input()
                 try:
-                    res = eval(expr_str, {"obj": r})  # pylint:disable=eval-used
-                except Exception:  # pylint:disable=broad-except
+                    res = eval(expr_str, {"obj": r})
+                except Exception:
                     from traceback import print_exc
                     print_exc()
                 print(res)
@@ -156,7 +156,7 @@ def setup_readline():
     if exists(hist_filename):
         try:
             readline.read_history_file(hist_filename)
-        except Exception:  # pylint:disable=broad-except
+        except Exception:
             # http://docs.python.org/3/howto/pyporting.html#capturing-the-currently-raised-exception
             import sys
             e = sys.exc_info()[1]

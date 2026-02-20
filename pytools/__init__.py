@@ -508,11 +508,8 @@ class RecordWithoutPickling:
         fields.update(new_fields)
 
     def __getattr__(self, name):
-        # This method is implemented to avoid pylint 'no-member' errors for
-        # attribute access.
         raise AttributeError(
-                "'{}' object has no attribute '{}'".format(
-                    self.__class__.__name__, name))
+                f"'{self.__class__.__name__}' object has no attribute '{name}'")
 
 
 class Record(RecordWithoutPickling):
