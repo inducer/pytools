@@ -459,7 +459,7 @@ class _PersistentDictBase(Mapping[K, V]):
             else:
                 container_dir = platformdirs.user_cache_dir("pytools", "pytools")
 
-        self.filename = join(container_dir, f"pdict-v5-{identifier}"
+        self.filename = join(container_dir, f"pdict-v5-{identifier}-"
                              + ".".join(str(i) for i in sys.version_info)
                              + ".sqlite")
 
