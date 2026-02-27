@@ -21,6 +21,12 @@ Internal stuff that is only here because the documentation tool wants it
 .. class:: TagT
 
     A type variable with lower bound :class:`Tag`.
+
+.. autodata:: ToTagSetConvertible
+    :no-index:
+.. class:: ToTagSetConvertible
+
+    See above.
 """
 
 from __future__ import annotations
