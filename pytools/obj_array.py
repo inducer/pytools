@@ -7,6 +7,7 @@ Handling :mod:`numpy` Object Arrays
 .. autoclass:: T_co
 .. autoclass:: ResultT
 .. autoclass:: ShapeT
+.. autoclass:: NumpyTypeT
 
 .. autoclass:: ObjectArray
 .. autoclass:: ObjectArray0D
@@ -99,6 +100,7 @@ T_co = TypeVar("T_co", covariant=True)
 
 ResultT = TypeVar("ResultT")
 ShapeT = TypeVar("ShapeT", bound=tuple[int, ...])
+NumpyTypeT = TypeVar("NumpyTypeT", bound="np.generic[Any]")
 
 
 class _ObjectArrayMetaclass(type):
@@ -340,7 +342,37 @@ def from_numpy(
     return cast("ObjectArray[ShapeT, T_co]", cast("object", ary))
 
 
-def new_1d(res_list: Sequence[T_co]) -> ObjectArray1D[T_co]:
+@overload
+def new_1d(  # pyright: ignore[reportOverlappingOverload]
+        res_list: np.ndarray[tuple[int], np.dtype[NumpyTypeT]]
+    ) -> ObjectArray1D[NumpyTypeT]: ...
+
+@overload
+def new_1d(
+        res_list: np.ndarray[tuple[int, int], np.dtype[NumpyTypeT]]
+    ) -> ObjectArray1D[np.ndarray[tuple[int], np.dtype[NumpyTypeT]]]: ...
+
+@overload
+def new_1d(
+        res_list: np.ndarray[tuple[int, int, int], np.dtype[NumpyTypeT]]
+    ) -> ObjectArray1D[np.ndarray[tuple[int, int], np.dtype[NumpyTypeT]]]: ...
+
+@overload
+def new_1d(
+        res_list: np.ndarray[tuple[int, ...], np.dtype[NumpyTypeT]]
+    ) -> ObjectArray1D[np.ndarray[tuple[int, ...], np.dtype[NumpyTypeT]]]: ...
+
+@overload
+def new_1d(res_list: Sequence[T_co]) -> ObjectArray1D[T_co]: ...
+
+
+def new_1d(
+        res_list: (
+            Sequence[T_co]
+            | np.ndarray[tuple[int, ...], np.dtype[NumpyTypeT]]
+            )
+    ) -> (ObjectArray1D[T_co]
+          | ObjectArray1D[np.ndarray[tuple[int, ...], np.dtype[NumpyTypeT]]]):
     """Create a one-dimensional object array from *res_list*.
     This differs from ``numpy.array(res_list, dtype=object)``
     by whether it tries to determine its shape by descending

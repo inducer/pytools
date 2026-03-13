@@ -45,6 +45,7 @@ sphinxconfig_missing_reference_aliases = {
     "np.dtype": "class:numpy.dtype",
     "np.ndarray": "class:numpy.ndarray",
     "np.floating": "class:numpy.floating",
+    "np.generic[Any]": "class:numpy.generic",
     # pytools typing
     "ObjectArray1D": "obj:pytools.obj_array.ObjectArray1D",
     "ReadableBuffer": "data:pytools.ReadableBuffer",
