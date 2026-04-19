@@ -128,6 +128,7 @@ exclude = [
     ".conda-root",
     "build",
     ".env",
+    ".venv",
 ]
 
 # This reports even cycles that are qualified by 'if TYPE_CHECKING'. Not what
