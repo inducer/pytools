@@ -8,12 +8,17 @@
 from __future__ import annotations
 
 import numbers
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from typing_extensions import override
 
 
-# {{{ eoc estimation --------------------------------------------------------------
+if TYPE_CHECKING:
+    import optype.numpy as onp
+
+
+# {{{ eoc estimation
 
 def estimate_order_of_convergence(abscissae, errors):
     r"""Assuming that abscissae and errors are connected by a law of the form
@@ -48,7 +53,11 @@ class EOCRecorder:
     def __init__(self) -> None:
         self.history: list[tuple[float, float]] = []
 
-    def add_data_point(self, abscissa: float, error: float) -> None:
+    def add_data_point(
+            self,
+            abscissa: float | np.floating[Any] | onp.Array0D[np.floating[Any]],
+            error: float | np.floating[Any] | onp.Array0D[np.floating[Any]]
+        ) -> None:
         if not (isinstance(abscissa, numbers.Number)
                 or (isinstance(abscissa, np.ndarray) and abscissa.shape == ())):
             raise TypeError(
@@ -58,7 +67,7 @@ class EOCRecorder:
                 or (isinstance(error, np.ndarray) and error.shape == ())):
             raise TypeError(f"'error' is not a scalar: '{type(error).__name__}'")
 
-        self.history.append((abscissa, error))
+        self.history.append((float(abscissa), float(error)))
 
     def estimate_order_of_convergence(self,
             gliding_mean: int | None = None,
