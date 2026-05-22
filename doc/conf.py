@@ -37,6 +37,7 @@ autodoc_type_aliases = {
 
 nitpick_ignore_regex = [
     ["py:class", r"optype.*"],
+    ["py:class", r"onp.*"],
 ]
 
 sphinxconfig_missing_reference_aliases = {
