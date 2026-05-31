@@ -5546,6 +5546,24 @@
                 }
             }
         ],
+        "./pytools/graphviz.py": [
+            {
+                "code": "reportAny",
+                "range": {
+                    "startColumn": 12,
+                    "endColumn": 29,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportAny",
+                "range": {
+                    "startColumn": 32,
+                    "endColumn": 57,
+                    "lineCount": 1
+                }
+            }
+        ],
         "./pytools/mpi.py": [
             {
                 "code": "reportUnknownParameterType",
