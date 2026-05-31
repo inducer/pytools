@@ -82,7 +82,6 @@ if TYPE_CHECKING:
     from _typeshed import ReadableBuffer
     from numpy.typing import DTypeLike, NDArray
     from optype import CanLt
-    from typing_extensions import Self
 
 
 __version__ = VERSION_TEXT
