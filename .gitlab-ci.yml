@@ -52,7 +52,7 @@ Ruff:
 
 Documentation:
   script: |
-    EXTRA_INSTALL="numpy siphash24 optype"
+    EXTRA_INSTALL="numpy siphash24 optype<0.18"
     curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-docs.sh
     . ./build-docs.sh
   tags:

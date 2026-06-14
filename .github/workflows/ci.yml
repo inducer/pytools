@@ -53,7 +53,7 @@ jobs:
                 python-version: '3.x'
         -   name: "Main Script"
             run: |
-                EXTRA_INSTALL="basedpyright numpy attrs orderedsets pytest mpi4py matplotlib optype"
+                EXTRA_INSTALL="basedpyright numpy attrs orderedsets pytest mpi4py matplotlib optype<0.18"
 
                 sudo apt update
                 sudo apt -y install libopenmpi-dev
@@ -150,7 +150,7 @@ jobs:
                 python-version: '3.x'
         -   name: "Main Script"
             run: |
-                EXTRA_INSTALL="numpy optype"
+                EXTRA_INSTALL="numpy optype<0.18"
                 curl -L -O https://tiker.net/ci-support-v0
                 . ci-support-v0
                 build_py_project_in_venv
