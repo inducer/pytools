@@ -40,7 +40,8 @@ numpy = [
 ]
 test = [
     "basedpyright",
-    "optype",
+    # NOTE: 0.18 requires Python 3.12
+    "optype<0.18",
     "pytest",
     "ruff",
 ]
