@@ -520,6 +520,7 @@ class RecordWithoutPickling:
 class Record(RecordWithoutPickling):
     __slots__: ClassVar[list[str]] = []
 
+    @override
     def __getstate__(self):
         return {
                 key: getattr(self, key)
@@ -3352,7 +3353,7 @@ def ndindex(shape: ShapeT) -> Iterable[ShapeT]:
     """
     # undocumented for now
     import numpy as np
-    return np.ndindex(shape)
+    return np.ndindex(shape)  # pyright: ignore[reportReturnType]
 
 
 def not_none(obj: T | None) -> T:

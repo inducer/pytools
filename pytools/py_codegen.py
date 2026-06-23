@@ -23,22 +23,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-
 import marshal
 from dataclasses import dataclass, field
 from importlib.util import MAGIC_NUMBER as BYTECODE_VERSION
 from types import FunctionType, ModuleType
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
-
-if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+from typing_extensions import override
 
 from pytools.codegen import (
     CodeGenerator as CodeGeneratorBase,
     Indentation,
     remove_common_indentation,
 )
+
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
 
 
 __all__ = (
@@ -173,6 +174,7 @@ class PicklableModule:
     name_prefix: str | None = field(kw_only=True, default=None)
     source_code: str | None = field(kw_only=True, default=None)
 
+    @override
     def __getstate__(self):
         functions: _FunctionsType = {}
         modules: _ModulesType = {}
@@ -268,6 +270,7 @@ class PicklableFunction:
     def __call__(self, *args: object, **kwargs: object) -> object:
         return self._callable(*args, **kwargs)  # pyright: ignore[reportAny]
 
+    @override
     def __getstate__(self):
         return {"module": self.module, "name": self.name}
 

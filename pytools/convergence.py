@@ -72,8 +72,8 @@ class EOCRecorder:
     def estimate_order_of_convergence(self,
             gliding_mean: int | None = None,
             ) -> np.ndarray:
-        abscissae = np.array([a for a, e in self.history])
-        errors = np.array([e for a, e in self.history])
+        abscissae = np.array([a for a, e in self.history], dtype=np.float64)
+        errors = np.array([e for a, e in self.history], dtype=np.float64)
 
         # NOTE: in case any of the errors are exactly 0.0, which
         # can give NaNs in `estimate_order_of_convergence`

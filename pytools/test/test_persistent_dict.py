@@ -9,6 +9,7 @@ from enum import Enum, IntEnum
 from typing import Any
 
 import pytest
+from typing_extensions import override
 
 from pytools.persistent_dict import (
     CollisionWarning,
@@ -32,6 +33,7 @@ class PDictTestingKeyOrValue:
             hash_key = val
         self.hash_key = hash_key
 
+    @override
     def __getstate__(self) -> dict[str, Any]:
         return {"val": self.val, "hash_key": self.hash_key}
 
