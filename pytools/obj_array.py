@@ -566,12 +566,16 @@ def vectorize(
         issue described under :func:`new_1d`.
     """
 
-    import numpy as np
     if isinstance(ary, ObjectArray):
+        import numpy as np
+
+        from pytools import ndindex
+
         result = np.empty_like(ary)
         ary = cast("ObjectArray[ShapeT, T_co]", ary)
-        for i in np.ndindex(ary.shape):
+        for i in ndindex(ary.shape):
             result[i] = f(ary[i])
+
         return cast("ObjectArray[ShapeT, ResultT]", cast("object", result))
 
     return f(ary)
@@ -631,10 +635,14 @@ def rec_vectorize(
     """
     if isinstance(ary, ObjectArray):
         import numpy as np
+
+        from pytools import ndindex
+
         ary = cast("ObjectArray[ShapeT, object]", ary)
         result = np.empty_like(ary)
-        for i in np.ndindex(ary.shape):
+        for i in ndindex(ary.shape):
             result[i] = rec_vectorize(f, ary[i])
+
         return cast("ObjectArray[Any, ShapeT]", cast("object", result))
 
     return f(ary)
