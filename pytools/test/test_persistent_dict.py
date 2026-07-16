@@ -497,12 +497,12 @@ def test_frozenorderedset_hashing() -> None:
     assert keyb(FrozenOrderedSet([1, 2, 3])) == keyb(FrozenOrderedSet([3, 2, 1]))
 
 
-def test_ABC_hashing() -> None:  # noqa: N802
+def test_ABC_hashing() -> None:  # ruff:ignore[invalid-function-name]
     from abc import ABC
 
     keyb = KeyBuilder()
 
-    class MyABC(ABC):  # noqa: B024
+    class MyABC(ABC):  # ruff:ignore[abstract-base-class-without-abstract-method]
         pass
 
     assert keyb(MyABC) != keyb(ABC)
@@ -520,7 +520,7 @@ def test_ABC_hashing() -> None:  # noqa: N802
     assert keyb(MyABC2) != keyb(MyABC)
     assert keyb(MyABC2())
 
-    class MyABC3(ABC):  # noqa: B024
+    class MyABC3(ABC):  # ruff:ignore[abstract-base-class-without-abstract-method]
         def update_persistent_hash(self, key_hash, key_builder):
             key_builder.rec(key_hash, 42)
 
@@ -805,10 +805,10 @@ def test_keys_values_items():
         assert list(pdict.values()) == list(range(10000))
         assert list(pdict.items()) == list(zip(pdict, range(10000), strict=True))
 
-        assert ([k for k in pdict]  # noqa: C416
+        assert ([k for k in pdict]  # ruff:ignore[unnecessary-comprehension]
                 == list(pdict.keys())
                 == list(pdict)
-                == [k for k in pdict])  # noqa: C416
+                == [k for k in pdict])  # ruff:ignore[unnecessary-comprehension]
 
 
 def global_fun():
@@ -1021,7 +1021,7 @@ def test_nan_keys() -> None:
             pass
 
         for nan_value in nan_values:
-            assert nan_value != nan_value  # noqa: PLR0124
+            assert nan_value != nan_value  # ruff:ignore[comparison-with-itself]
 
             with pytest.warns(NanKeyWarning):
                 assert keyb(nan_value) == keyb(nan_value)

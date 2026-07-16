@@ -62,7 +62,7 @@ def open_unique_debug_file(stem, extension=""):
 
 # {{{ refcount debugging ------------------------------------------------------
 
-class RefDebugQuit(Exception):  # noqa: N818
+class RefDebugQuit(Exception):  # ruff:ignore[error-suffix-on-exception-name]
     pass
 
 

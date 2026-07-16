@@ -148,7 +148,7 @@ class ObjectArray(Generic[ShapeT, T_co], metaclass=_ObjectArrayMetaclass):
         def size(self) -> int: ...
 
         @property
-        def T(self) -> Self: ...  # noqa: N802
+        def T(self) -> Self: ...  # ruff:ignore[invalid-function-name]
 
         @overload
         def __getitem__(self, x: ShapeT, /) -> T_co: ...
