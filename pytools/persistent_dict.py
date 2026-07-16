@@ -45,7 +45,9 @@ from warnings import warn
 
 from siphash24 import siphash13
 
-from pytools import Hash  # noqa: TC001 # Some places are importing it from here.
+from pytools import (
+    Hash,  # ruff:ignore[typing-only-first-party-import] # Some places are importing it from here.
+)
 
 
 class RecommendedHashNotFoundWarning(UserWarning):
@@ -533,7 +535,7 @@ class _PersistentDictBase(Mapping[K, V]):
 
             # This is here so we can step through equality comparison to
             # see what is actually non-equal.
-            stored_key == key  # noqa: B015
+            stored_key == key  # ruff:ignore[useless-comparison]
             raise NoSuchEntryCollisionError(key)
 
     def _exec_sql(self, *args: Any) -> sqlite3.Cursor:

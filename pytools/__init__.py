@@ -645,7 +645,7 @@ class DependentDictionary(Generic[T, R_co]):
     def __setitem__(self, key: T, value: R_co) -> None:
         self._Dictionary[key] = value
 
-    def genuineKeys(self):  # noqa: N802
+    def genuineKeys(self):  # ruff:ignore[invalid-function-name]
         return list(self._Dictionary.keys())
 
     def iteritems(self) -> Iterable[tuple[T, R_co]]:
@@ -873,7 +873,7 @@ def memoize_method(
             cache_dict_name=intern(f"_memoize_dic_{method.__name__}"))
 
 
-class keyed_memoize_on_first_arg(Generic[T, P, R_co]):  # noqa: N801
+class keyed_memoize_on_first_arg(Generic[T, P, R_co]):  # ruff:ignore[invalid-class-name]
     """Like :func:`memoize_method`, but for functions that take the object
     in which memoization information is stored as first argument.
 
@@ -931,7 +931,7 @@ class keyed_memoize_on_first_arg(Generic[T, P, R_co]):  # noqa: N801
         return new_wrapper
 
 
-class keyed_memoize_method(keyed_memoize_on_first_arg):  # noqa: N801
+class keyed_memoize_method(keyed_memoize_on_first_arg):  # ruff:ignore[invalid-class-name]
     """Like :class:`memoize_method`, but additionally uses a function *key* to
     compute the key under which the function result is stored.
 
@@ -952,7 +952,7 @@ class keyed_memoize_method(keyed_memoize_on_first_arg):  # noqa: N801
         return intern(f"_memoize_dic_{function.__name__}")
 
 
-class memoize_in:  # noqa: N801
+class memoize_in:  # ruff:ignore[invalid-class-name]
     """Adds a cache to the function it decorates. The cache is attached
     to *container* and must be uniquely specified by *identifier* (i.e.
     all functions using the same *container* and *identifier* will be using
@@ -1001,7 +1001,7 @@ class memoize_in:  # noqa: N801
         return new_inner
 
 
-class keyed_memoize_in(Generic[P]):  # noqa: N801
+class keyed_memoize_in(Generic[P]):  # ruff:ignore[invalid-class-name]
     """Like :class:`memoize_in`, but additionally uses a function *key* to
     compute the key under which the function result is memoized.
 
@@ -2853,7 +2853,7 @@ class DebugProcessLogger(ProcessLogger):
     default_noisy_level: ClassVar[int] = logging.DEBUG
 
 
-class log_process:  # noqa: N801
+class log_process:  # ruff:ignore[invalid-class-name]
     """A decorator that uses :class:`ProcessLogger` to log data about calls
     to the wrapped function.
 
@@ -2907,7 +2907,7 @@ def natorder(item: str) -> list[int]:
     result: list[int] = []
     for (int_val, string_val) in re.findall(r"(\d+)|(\D+)", item):
         if int_val:
-            result.append(int(int_val))  # noqa: FURB113
+            result.append(int(int_val))  # ruff:ignore[repeated-append]
             # Tie-breaker in case of leading zeros in *int_val*.  Longer values
             # compare smaller to preserve order of numbers in decimal notation,
             # e.g., "1.001" < "1.01"
@@ -3078,13 +3078,13 @@ def sphere_sample_equidistant(npoints_approx: int,
     count = 0
     a = 4 * np.pi / npoints_approx
     d = a ** 0.5
-    M_theta = int(np.ceil(np.pi / d))  # noqa: N806
+    M_theta = int(np.ceil(np.pi / d))  # ruff:ignore[non-lowercase-variable-in-function]
     d_theta = np.pi / M_theta
     d_phi = a / d_theta
 
     for m in range(M_theta):
         theta = np.pi * (m + 0.5) / M_theta
-        M_phi = int(np.ceil(2 * np.pi * np.sin(theta) / d_phi))  # noqa: N806
+        M_phi = int(np.ceil(2 * np.pi * np.sin(theta) / d_phi))  # ruff:ignore[non-lowercase-variable-in-function]
         for n in range(M_phi):
             phi = 2 * np.pi * n / M_phi
             points.append(np.array([

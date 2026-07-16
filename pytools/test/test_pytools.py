@@ -832,7 +832,7 @@ def test_record():
     assert str(r) == "SimpleRecord(a=1, b=2, c=3, d=4, e=5)"
 
     with pytest.raises(AttributeError):
-        r.ff  # noqa: B018
+        r.ff  # ruff:ignore[useless-expression]
 
     # Test pickling
     import pickle
