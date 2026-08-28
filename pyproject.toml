@@ -81,12 +81,13 @@ extend-select = [
     "FURB",
 ]
 extend-ignore = [
-    "C90",  # McCabe complexity
-    "multiple-spaces-before-operator",
+    "complex-structure",
+    "f-string",
     "missing-whitespace-around-arithmetic-operator",
     "module-import-not-at-top-of-file",
+    "multiple-spaces-before-operator",
     "printf-string-formatting",
-    "f-string",
+    "pytest-parameter-with-default-argument",
 
     # FIXME: This is a longer discussion...
     "non-empty-init-module",
