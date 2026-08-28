@@ -1426,7 +1426,7 @@ def cartesian_product_sum(list1, list2):
 
 # {{{ elementary statistics
 
-def average(iterable):
+def average(iterable: Iterator[float]) -> float:
     """Return the average of the values in iterable.
 
     iterable may not be empty.
