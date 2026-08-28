@@ -839,13 +839,13 @@ def memoize_on_first_arg(
 
         result = function(obj, *args, **kwargs)
         if attribute_error:
-            object.__setattr__(obj, cache_dict_name, {key: result})
+            object.__setattr__(obj, cache_dict_name, {key: result})  # ruff: ignore[unnecessary-dunder-call]
             return result
         getattr(obj, cache_dict_name)[key] = result
         return result
 
     def clear_cache(obj):
-        object.__delattr__(obj, cache_dict_name)
+        object.__delattr__(obj, cache_dict_name)  # ruff: ignore[unnecessary-dunder-call]
 
     from functools import update_wrapper
     new_wrapper = update_wrapper(wrapper, function)
@@ -1431,7 +1431,7 @@ def average(iterable):
 
     iterable may not be empty.
     """
-    it = iterable.__iter__()
+    it = iter(iterable)
 
     try:
         s = next(it)

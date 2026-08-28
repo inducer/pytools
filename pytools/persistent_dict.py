@@ -224,6 +224,7 @@ class KeyBuilder:
 
         if not isinstance(key, type):
             try:
+                # ruff: ignore[unnecessary-dunder-call]
                 object.__setattr__(key, "_pytools_persistent_hash_digest", digest)
             except AttributeError:
                 pass
