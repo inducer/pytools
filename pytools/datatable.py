@@ -206,8 +206,8 @@ class DataTable:
         this_key_idx = self.column_indices[column]
         other_key_idx = other_table.column_indices[other_column]
 
-        this_iter = self.data.__iter__()
-        other_iter = other_table.data.__iter__()
+        this_iter = iter(self.data)
+        other_iter = iter(other_table.data)
 
         result_columns = tuple(self.column_names[this_key_idx]) + \
                 without(tuple(self.column_names), this_key_idx) + \

@@ -716,8 +716,14 @@ def test_strtobool():
 
     with pytest.raises(ValueError):
         strtobool("tru")  # spellchecker: disable-line
+
+    with pytest.raises(ValueError):
         strtobool("fal")  # spellchecker: disable-line
+
+    with pytest.raises(ValueError):
         strtobool("xxx")
+
+    with pytest.raises(ValueError):
         strtobool(".")
 
     assert strtobool(None, False) is False
