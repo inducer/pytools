@@ -6,7 +6,7 @@ import sys
 import tempfile
 from dataclasses import dataclass
 from enum import Enum, IntEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from typing_extensions import override
@@ -21,6 +21,10 @@ from pytools.persistent_dict import (
     WriteOncePersistentDict,
 )
 from pytools.tag import Tag, tag_dataclass
+
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 # {{{ type for testing
@@ -712,26 +716,16 @@ def test_datetime_hashing() -> None:
     # }}}
 
 
-def test_xdg_cache_home() -> None:
-    import os
-    xdg_dir = "tmpdir_pytools_xdg_test"
+def test_xdg_cache_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    xdg_dir = tmp_path / "xdg-cache"
 
-    assert not os.path.exists(xdg_dir)
+    assert not xdg_dir.exists()
 
-    old_xdg_cache_home = os.environ.get("XDG_CACHE_HOME")
-    try:
-        os.environ["XDG_CACHE_HOME"] = xdg_dir
+    monkeypatch.setenv("XDG_CACHE_HOME", str(xdg_dir))
 
-        PersistentDict("pytools-test", safe_sync=False)
+    PersistentDict("pytools-test", safe_sync=False)
 
-        assert os.path.exists(xdg_dir)
-    finally:
-        if old_xdg_cache_home is not None:
-            os.environ["XDG_CACHE_HOME"] = old_xdg_cache_home
-        else:
-            del os.environ["XDG_CACHE_HOME"]
-
-        shutil.rmtree(xdg_dir)
+    assert xdg_dir.exists()
 
 
 def test_speed():
