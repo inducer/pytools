@@ -32,6 +32,7 @@ import contextlib
 import dataclasses
 import logging
 import operator
+import pathlib
 import re
 import sys
 from collections.abc import (
@@ -45,7 +46,6 @@ from collections.abc import (
     Sequence,
 )
 from functools import reduce, wraps
-from pathlib import Path
 from sys import intern
 from typing import (
     TYPE_CHECKING,
@@ -75,6 +75,7 @@ from pytools.version import VERSION_TEXT
 
 
 if TYPE_CHECKING:
+    import os
     import threading
     import types
 
@@ -2537,27 +2538,39 @@ class MinRecursionLimit:
 
 # {{{ download from web if not present
 
-def download_from_web_if_not_present(url: str, local_name: str | None = None) -> None:
+def download_from_web_if_not_present(
+        url: str,
+        local_name: str | os.PathLike[Any] | None = None, *,
+        timeout: int | None = None,
+    ) -> None:
     """
     .. versionadded:: 2017.5
+
+    :arg timeout: a timeout in seconds for the download.
     """
 
-    from os.path import basename, exists
     if local_name is None:
-        local_name = basename(url)
+        from urllib.parse import unquote, urlparse
 
-    if not exists(local_name):
+        # NOTE: try to get a file name from the URL itself:
+        # 1. urlparse.path will strip away any query parameters
+        # 2. unquote will remove any URL-quoted characters
+        # 3. path.name will just take the last fragment from the path
+        local_name = pathlib.PurePosixPath(unquote(urlparse(url).path)).name
+    local_name = pathlib.Path(local_name) if local_name else pathlib.Path("download")
+
+    if not local_name.exists():
         from urllib.request import Request, urlopen
 
-        from pytools.version import VERSION_TEXT
+        # NOTE: ensure that the whole directory hierarchy exists for the local file
+        local_name.parent.mkdir(parents=True, exist_ok=True)
         req = Request(url, headers={
             "User-Agent": f"pytools/{VERSION_TEXT}"
             })
-
-        with urlopen(req) as inf:
+        with urlopen(req, timeout=timeout) as inf:
             contents = inf.read()
 
-        Path(local_name).write_bytes(contents)
+        local_name.write_bytes(contents)
 
 # }}}
 
