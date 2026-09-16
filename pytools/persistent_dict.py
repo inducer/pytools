@@ -454,13 +454,7 @@ class _PersistentDictBase(Mapping[K, V]):
         from os.path import join
         if container_dir is None:
             import platformdirs
-
-            if sys.platform == "darwin" and os.getenv("XDG_CACHE_HOME") is not None:
-                # platformdirs does not handle XDG_CACHE_HOME on macOS
-                # https://github.com/platformdirs/platformdirs/issues/269
-                container_dir = join(os.getenv("XDG_CACHE_HOME"), "pytools")
-            else:
-                container_dir = platformdirs.user_cache_dir("pytools", "pytools")
+            container_dir = platformdirs.user_cache_dir("pytools", "pytools")
 
         self.filename = join(container_dir, f"pdict-v5-{identifier}-"
                              + ".".join(str(i) for i in sys.version_info)
