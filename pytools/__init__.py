@@ -2171,25 +2171,26 @@ def typedump(val: object, max_seq: int = 5,
             return objname(val)
 
 
-def invoke_editor(s: str, filename: str = "edit.txt", descr: str = "the file"):
-    from tempfile import mkdtemp
-    tempdir = Path(mkdtemp())
-
-    full_path = tempdir / filename
-
-    full_path.write_text(str(s))
-
+def invoke_editor(s: str,
+                  filename: str | os.PathLike[str] = "edit.txt",
+                  descr: str = "the file") -> str:
     import os
-    if "EDITOR" in os.environ:
-        from subprocess import Popen
-        p = Popen([os.environ["EDITOR"], full_path])
-        os.waitpid(p.pid, 0)
-    else:
-        print("(Set the EDITOR environment variable to be "
-                "dropped directly into an editor next time.)")
-        input(f"Edit {descr} at {full_path} now, then hit [Enter]:")
+    from tempfile import TemporaryDirectory
 
-    return full_path.read_text()
+    with TemporaryDirectory() as tempdir:
+        full_path = pathlib.Path(tempdir) / filename
+        full_path.write_text(str(s))
+
+        if "EDITOR" in os.environ:
+            from subprocess import Popen
+            p = Popen([os.environ["EDITOR"], full_path])
+            os.waitpid(p.pid, 0)
+        else:
+            print("(Set the EDITOR environment variable to be "
+                    "dropped directly into an editor next time.)")
+            input(f"Edit {descr} at {full_path} now, then hit [Enter]:")
+
+        return full_path.read_text()
 
 
 # }}}
