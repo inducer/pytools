@@ -2185,7 +2185,7 @@ def invoke_editor(s: str,
         if (editor := os.environ.get("EDITOR")) is not None:
             from subprocess import Popen
             p = Popen([*shlex.split(editor), str(full_path)])
-            os.waitpid(p.pid, 0)
+            p.wait()
         else:
             print("(Set the EDITOR environment variable to be "
                     "dropped directly into an editor next time.)")
