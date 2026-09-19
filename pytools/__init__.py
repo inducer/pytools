@@ -2175,15 +2175,16 @@ def invoke_editor(s: str,
                   filename: str | os.PathLike[str] = "edit.txt",
                   descr: str = "the file") -> str:
     import os
+    import shlex
     from tempfile import TemporaryDirectory
 
     with TemporaryDirectory() as tempdir:
         full_path = pathlib.Path(tempdir) / filename
         full_path.write_text(str(s))
 
-        if "EDITOR" in os.environ:
+        if (editor := os.environ.get("EDITOR")) is not None:
             from subprocess import Popen
-            p = Popen([os.environ["EDITOR"], full_path])
+            p = Popen([*shlex.split(editor), str(full_path)])
             os.waitpid(p.pid, 0)
         else:
             print("(Set the EDITOR environment variable to be "
