@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import pathlib
 import shutil
 import sys
 import tempfile
@@ -167,10 +168,21 @@ def test_persistent_dict_storage_and_lookup() -> None:
 
         # }}}
 
-        # check not found
+        # {{{ check pathlib
+
+        path = pathlib.Path(__file__)
+        pdict[path] = 10
+        assert pdict[path] == 10
+        assert __file__ not in pdict
+
+        # }}}
+
+        # {{{ check not found
 
         with pytest.raises(NoSuchEntryError):
             pdict.fetch(3000)
+
+        # }}}
 
 
 def test_persistent_dict_deletion() -> None:
