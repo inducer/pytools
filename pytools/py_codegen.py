@@ -39,6 +39,7 @@ from pytools.codegen import (
 
 
 if TYPE_CHECKING:
+    import os
     from collections.abc import Callable, Iterable
 
 
@@ -150,7 +151,9 @@ class PythonFunctionGenerator(PythonCodeGenerator):
 
 # {{{ pickling of binaries for generated code
 
-def _get_empty_module_dict(filename: str | None = None) -> dict[str, Any]:
+def _get_empty_module_dict(
+        filename: str | os.PathLike[str] | None = None
+    ) -> dict[str, Any]:
     if filename is None:
         filename = "<generated code>"
 

@@ -15,6 +15,8 @@ from typing_extensions import override
 
 
 if TYPE_CHECKING:
+    import os
+
     import optype.numpy as onp
 
 
@@ -155,7 +157,7 @@ class EOCRecorder:
     def __str__(self):
         return self.pretty_print()
 
-    def write_gnuplot_file(self, filename: str) -> None:
+    def write_gnuplot_file(self, filename: str | os.PathLike[str]) -> None:
         with open(filename, "w") as outfile:
             outfile.writelines(f"{absc:f} {err:f}\n" for absc, err in self.history)
             result = self.estimate_order_of_convergence()
