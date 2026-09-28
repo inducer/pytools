@@ -51,6 +51,7 @@ from pytools import Hash  # ruff:ignore[typing-only-first-party-import]
 
 if TYPE_CHECKING:
     import os
+    import threading
 
 
 class RecommendedHashNotFoundWarning(UserWarning):
@@ -440,6 +441,15 @@ V = TypeVar("V")
 
 
 class _PersistentDictBase(Mapping[K, V]):
+    identifier: str
+    key_builder: KeyBuilder
+
+    container_dir: pathlib.Path
+    filename: pathlib.Path
+
+    mutex: threading.Lock
+    conn: sqlite3.Connection
+
     def __init__(self,
                  identifier: str,
                  key_builder: KeyBuilder | None = None,
@@ -450,7 +460,7 @@ class _PersistentDictBase(Mapping[K, V]):
         # when something in the constructor fails (e.g. mkdir missing permissions)
         from threading import Lock
         self.mutex = Lock()
-        self.conn = None
+        self.conn = None  # pyright: ignore[reportAttributeAccessIssue]
 
         if key_builder is None:
             key_builder = KeyBuilder()
