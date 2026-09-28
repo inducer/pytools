@@ -2300,19 +2300,27 @@ class ProgressBar:
 
 # {{{ file system related
 
-def assert_not_a_file(name: str) -> None:
+def assert_not_a_file(name: str | os.PathLike[str]) -> None:
     import os
     if os.access(name, os.F_OK):
         raise OSError(f"file '{name}' already exists")
 
 
-def add_python_path_relative_to_script(rel_path: str) -> None:
-    from os.path import abspath, dirname, join
+def add_python_path_relative_to_script(
+        rel_path: str | os.PathLike[str],
+        script_name: str | os.PathLike[str] | None = None
+    ) -> None:
+    if script_name is None:
+        script_name = sys.argv[0]
 
-    script_name = sys.argv[0]
-    rel_script_dir = dirname(script_name)
+    # NOTE: sys.argv[0] can be "" when running in the REPL or something, so we
+    # guard against empty values by defaulting to the CWD.
+    if not script_name:
+        rel_script_dir = pathlib.Path.cwd()
+    else:
+        rel_script_dir = pathlib.Path(script_name).expanduser().resolve().parent
 
-    sys.path.append(abspath(join(rel_script_dir, rel_path)))
+    sys.path.append(str(rel_script_dir / rel_path))
 
 # }}}
 
@@ -2542,7 +2550,7 @@ class MinRecursionLimit:
 
 def download_from_web_if_not_present(
         url: str,
-        local_name: str | os.PathLike[Any] | None = None, *,
+        local_name: str | os.PathLike[str] | None = None, *,
         timeout: int | None = None,
     ) -> None:
     """
@@ -2579,55 +2587,58 @@ def download_from_web_if_not_present(
 
 # {{{ find git revisions
 
-def find_git_revision(tree_root: str) -> str | None:
-    # Keep this routine self-contained so that it can be copy-pasted into
-    # setup.py.
+def find_git_revision(tree_root: str | os.PathLike[str]) -> str | None:
+    # Keep this routine self-contained so that it can be copy-pasted into setup.py.
+    import pathlib
 
-    from os.path import abspath, exists, join
-    tree_root = abspath(tree_root)
-
-    if not exists(join(tree_root, ".git")):
+    tree_root = pathlib.Path(tree_root).expanduser().resolve()
+    if not (tree_root / ".git").exists():
         return None
 
-    # construct minimal environment
-    # stolen from
+    # construct minimal environment -- stolen from
     # https://github.com/numpy/numpy/blob/055ce3e90b50b5f9ef8cf1b8641c42e391f10735/setup.py#L70-L92
     import os
+
     env: dict[str, Any] = {}
     for k in ["SYSTEMROOT", "PATH", "HOME"]:
-        v = os.environ.get(k)
-        if v is not None:
+        if (v := os.environ.get(k)) is not None:
             env[k] = v
+
     # LANGUAGE is used on win32
     env["LANGUAGE"] = "C"
     env["LANG"] = "C"
     env["LC_ALL"] = "C"
 
     from subprocess import PIPE, STDOUT, Popen
+
     p = Popen(["git", "rev-parse", "HEAD"], shell=False,
               stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True,
               cwd=tree_root, env=env)
     (git_rev, _) = p.communicate()
 
     git_rev = git_rev.decode()
-
     git_rev = git_rev.rstrip()
 
     retcode = p.returncode
     assert retcode is not None
+
     if retcode != 0:
         from warnings import warn
-        warn("unable to find git revision", stacklevel=1)
+        warn(f"unable to find git revision in '{tree_root}'", stacklevel=1)
         return None
 
     return git_rev
 
 
-def find_module_git_revision(module_file: str, n_levels_up: int) -> str | None:
-    from os.path import dirname, join
-    tree_root = join(*([dirname(module_file), ".." * n_levels_up]))
-
-    return find_git_revision(tree_root)
+def find_module_git_revision(
+        module_file: str | os.PathLike[str],
+        n_levels_up: int = 1,
+    ) -> str | None:
+    tree_root = pathlib.Path(module_file).expanduser().resolve()
+    try:
+        return find_git_revision(tree_root.parents[n_levels_up])
+    except IndexError:
+        return None
 
 # }}}
 
@@ -2816,7 +2827,7 @@ class ProcessLogger:
             use_late_start_logging = False
 
         import os
-        if os.environ.get("PYTOOLS_LOG_NO_THREADS", ""):
+        if "PYTOOLS_LOG_NO_THREADS" in os.environ:
             use_late_start_logging = False
 
         if use_late_start_logging:

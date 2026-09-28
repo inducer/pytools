@@ -33,21 +33,24 @@ THE SOFTWARE.
 
 
 import logging
-import os
+import pathlib
 import pickle
 import sqlite3
 import sys
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import fields as dc_fields, is_dataclass
 from enum import Enum
-from typing import Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 from warnings import warn
 
 from siphash24 import siphash13
 
-from pytools import (
-    Hash,  # ruff:ignore[typing-only-first-party-import] # Some places are importing it from here.
-)
+# Some places are importing it from here.
+from pytools import Hash  # ruff:ignore[typing-only-first-party-import]
+
+
+if TYPE_CHECKING:
+    import os
 
 
 class RecommendedHashNotFoundWarning(UserWarning):
@@ -440,31 +443,31 @@ class _PersistentDictBase(Mapping[K, V]):
     def __init__(self,
                  identifier: str,
                  key_builder: KeyBuilder | None = None,
-                 container_dir: str | None = None,
+                 container_dir: str | os.PathLike[str] | None = None,
                  enable_wal: bool = False,
                  safe_sync: bool | None = None) -> None:
-        self.identifier = identifier
+        # NOTE: this is here to make sure that __del__ doesn't crash horribly
+        # when something in the constructor fails (e.g. mkdir missing permissions)
+        from threading import Lock
+        self.mutex = Lock()
         self.conn = None
 
         if key_builder is None:
             key_builder = KeyBuilder()
 
-        self.key_builder = key_builder
-
-        from os.path import join
         if container_dir is None:
             import platformdirs
             container_dir = platformdirs.user_cache_dir("pytools", "pytools")
 
-        self.filename = join(container_dir, f"pdict-v5-{identifier}-"
-                             + ".".join(str(i) for i in sys.version_info)
-                             + ".sqlite")
+        container_dir = pathlib.Path(container_dir)
+        container_dir.mkdir(parents=True, exist_ok=True)
 
+        py_version = ".".join(str(i) for i in sys.version_info)
+
+        self.identifier = identifier
+        self.key_builder = key_builder
         self.container_dir = container_dir
-        self._make_container_dir()
-
-        from threading import Lock
-        self.mutex = Lock()
+        self.filename = container_dir / f"pdict-v5-{identifier}-{py_version}.sqlite"
 
         # * isolation_level=None: enable autocommit mode
         #   https://www.sqlite.org/lang_transaction.html#implicit_versus_explicit_transactions
@@ -533,10 +536,10 @@ class _PersistentDictBase(Mapping[K, V]):
             stored_key == key  # ruff:ignore[useless-comparison]
             raise NoSuchEntryCollisionError(key)
 
-    def _exec_sql(self, *args: Any) -> sqlite3.Cursor:
+    def _exec_sql(self, query: str, *args: Any) -> sqlite3.Cursor:
         def execute() -> sqlite3.Cursor:
             assert self.conn is not None
-            return self.conn.execute(*args)
+            return self.conn.execute(query, *args)
 
         cursor = self._exec_sql_fn(execute)
         if not isinstance(cursor, sqlite3.Cursor):
@@ -574,10 +577,6 @@ class _PersistentDictBase(Mapping[K, V]):
     def fetch(self, key: K) -> V:
         """Return the value associated with *key* in the dictionary."""
         raise NotImplementedError
-
-    def _make_container_dir(self) -> None:
-        """Create the container directory to store the dictionary."""
-        os.makedirs(self.container_dir, exist_ok=True)
 
     @override
     def __getitem__(self, key: K) -> V:
@@ -667,7 +666,7 @@ class WriteOncePersistentDict(_PersistentDictBase[K, V]):
     """
     def __init__(self, identifier: str,
                  key_builder: KeyBuilder | None = None,
-                 container_dir: str | None = None,
+                 container_dir: str | os.PathLike[str] | None = None,
                  *,
                  enable_wal: bool = False,
                  safe_sync: bool | None = None,
@@ -791,7 +790,7 @@ class PersistentDict(_PersistentDictBase[K, V]):
     def __init__(self,
                  identifier: str,
                  key_builder: KeyBuilder | None = None,
-                 container_dir: str | None = None,
+                 container_dir: str | os.PathLike[str] | None = None,
                  *,
                  enable_wal: bool = False,
                  safe_sync: bool | None = None) -> None:
