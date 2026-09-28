@@ -33,6 +33,7 @@ THE SOFTWARE.
 
 
 import logging
+import os
 import pathlib
 import pickle
 import sqlite3
@@ -50,7 +51,6 @@ from pytools import Hash  # ruff:ignore[typing-only-first-party-import]
 
 
 if TYPE_CHECKING:
-    import os
     import threading
 
 
@@ -183,7 +183,7 @@ class KeyBuilder:
             tname = tp.__name__
             method = None
             try:
-                method = getattr(self, "update_for_"+tname)
+                method = getattr(self, f"update_for_{tname}")
             except AttributeError:
                 if "numpy" in sys.modules:
                     import numpy as np
@@ -216,6 +216,9 @@ class KeyBuilder:
 
                     elif _HAS_ATTRS and attrs.has(tp):
                         method = self.update_for_attrs
+
+                    elif isinstance(key, os.PathLike):
+                        method = self.update_for_Path
 
             if method is not None:
                 inner_key_hash = self.new_hash()
@@ -311,6 +314,17 @@ class KeyBuilder:
     def update_for_NoneType(self, key_hash: Hash, key: None) -> None:
         del key
         key_hash.update(b"<None>")
+
+    def update_for_Path(self, key_hash: Hash, key: pathlib.Path) -> None:
+        # NOTE: add <Path> to avoid collision with str
+        key_hash.update(b"<Path>")
+        key_hash.update(os.fspath(key).encode("utf8"))
+
+    update_for_PosixPath = update_for_Path
+    update_for_WindowsPath = update_for_Path
+    update_for_PurePath = update_for_Path
+    update_for_PurePosixPath = update_for_Path
+    update_for_PureWindowsPath = update_for_Path
 
     def update_for_dtype(self, key_hash: Hash, key: Any) -> None:
         key_hash.update(key.str.encode("utf8"))
